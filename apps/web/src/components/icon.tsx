@@ -1,6 +1,9 @@
 import {
   Backpack,
   BedDouble,
+  Binoculars,
+  Map,
+  Mountain,
   BookOpen,
   Briefcase,
   Building2,
@@ -39,6 +42,9 @@ import {
 // Maps icon names from the shared menu config to icon components.
 const icons: Record<string, LucideIcon> = {
   backpack: Backpack,
+  binoculars: Binoculars,
+  map: Map,
+  mountain: Mountain,
   briefcase: Briefcase,
   gem: Gem,
   'layout-dashboard': LayoutDashboard,

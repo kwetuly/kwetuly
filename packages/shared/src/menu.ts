@@ -22,6 +22,21 @@ export type MenuSection = {
 
 export const MENU: MenuSection[] = [
   {
+    // Trip catalogue lives at /tours; this section only groups the menu links.
+    slug: 'safaris',
+    icon: 'mountain',
+    label: { en: 'Safaris & Tours', sw: 'Safari na Ziara' },
+    tagline: { en: 'Every circuit of Tanzania, with trusted local operators', sw: 'Kila kanda ya Tanzania, na waendeshaji wa ndani wanaoaminika' },
+    items: [
+      { slug: 'all', icon: 'map', href: '/tours', status: 'live', label: { en: 'All tours', sw: 'Ziara zote' }, blurb: { en: 'Northern, southern, western and coast', sw: 'Kaskazini, kusini, magharibi na pwani' } },
+      { slug: 'safari', icon: 'binoculars', href: '/tours?category=safari', status: 'live', label: { en: 'Safaris', sw: 'Safari za wanyama' }, blurb: { en: 'Serengeti, Ngorongoro, Ruaha, Nyerere', sw: 'Serengeti, Ngorongoro, Ruaha, Nyerere' } },
+      { slug: 'climbs', icon: 'mountain', href: '/tours?category=mountain', status: 'live', label: { en: 'Kilimanjaro & climbs', sw: 'Kilimanjaro na milima' }, blurb: { en: 'Machame, Lemosho, Marangu, Meru, Lengai', sw: 'Machame, Lemosho, Marangu, Meru, Lengai' } },
+      { slug: 'day-trips', icon: 'sun', href: '/tours?kind=day_trip', status: 'live', label: { en: 'Day trips', sw: 'Safari za siku moja' }, blurb: { en: 'Waterfalls, coffee farms, hot springs', sw: 'Maporomoko, mashamba ya kahawa, chemchemi' } },
+      { slug: 'combos', icon: 'route', href: '/tours?kind=combo', status: 'live', label: { en: 'Combo trips', sw: 'Safari mchanganyiko' }, blurb: { en: 'Kili + safari + Zanzibar and more', sw: 'Kili + safari + Zanzibar na zaidi' } },
+      { slug: 'signature', icon: 'sparkles', href: '/tours?signature=1', status: 'live', label: { en: 'Rafrika signature trips', sw: 'Safari maalum za Rafrika' }, blurb: { en: 'Unique trips designed by our guides', sw: 'Safari za kipekee zilizobuniwa na waongozaji wetu' } },
+    ],
+  },
+  {
     // URL slug is "trips" because /guides/[slug] is used for guide profiles.
     slug: 'trips',
     icon: 'compass',
@@ -30,7 +45,6 @@ export const MENU: MenuSection[] = [
     items: [
       { slug: 'find', icon: 'users', href: '/guides', status: 'live', label: { en: 'Find a guide', sw: 'Tafuta mwongozaji' }, blurb: { en: 'Filter by language, region and experience', sw: 'Chuja kwa lugha, mkoa na uzoefu' } },
       { slug: 'calls', icon: 'video', href: '/calls', status: 'live', label: { en: '1-on-1 prep calls', sw: 'Simu za maandalizi' }, blurb: { en: 'Kili, safari or Zanzibar advice from a guide you choose', sw: 'Ushauri wa Kili, safari au Zanzibar kutoka kwa mwongozaji unayemchagua' } },
-      { slug: 'day-trips', icon: 'sun', label: { en: 'Day trips', sw: 'Safari za siku moja' }, blurb: { en: 'Waterfalls, coffee farms, hot springs', sw: 'Maporomoko, mashamba ya kahawa, chemchemi' } },
       { slug: 'group-trips', icon: 'users-round', label: { en: 'Join a group trip', sw: 'Jiunge na kundi' }, blurb: { en: 'Share a trip, split the cost', sw: 'Shiriki safari, gawana gharama' } },
       { slug: 'trip-requests', icon: 'gavel', label: { en: 'Post a trip request', sw: 'Weka ombi la safari' }, blurb: { en: 'Guides send you Regular, Premium and VIP offers', sw: 'Waongozaji wanakutumia ofa za kawaida, premium na VIP' } },
     ],
