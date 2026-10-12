@@ -1,4 +1,6 @@
+import Image from 'next/image';
 import Link from 'next/link';
+import { photoUrl, tripPhoto } from '@/lib/photos';
 import { Clock, MapPin, Sparkles } from 'lucide-react';
 import { TRIP_CATEGORIES, TRIP_KINDS } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
@@ -18,13 +20,16 @@ const gradients: Record<string, string> = {
   event: 'from-[#0a1f17] via-[#0e6b4f] to-[#ffb627]',
 };
 
-export function TripCover({ trip, className = '' }: { trip: Trip; className?: string }) {
+// Photo cover with the category gradient underneath (shown while the photo loads).
+export function TripCover({ trip, className = '', sizes = '(min-width: 1024px) 33vw, 100vw', priority = false }: { trip: Trip; className?: string; sizes?: string; priority?: boolean }) {
   const category = trip.categories[0] ?? 'safari';
   const icon = TRIP_CATEGORIES.find((c) => c.id === category)?.icon ?? 'compass';
+  const photo = tripPhoto(trip.slug, trip.categories);
+  const position = className.includes('absolute') ? '' : 'relative';
   return (
-    <div className={`relative overflow-hidden bg-gradient-to-br ${gradients[category] ?? gradients.safari} ${className}`}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] [background-size:18px_18px]" />
+    <div className={`${position} overflow-hidden bg-gradient-to-br ${gradients[category] ?? gradients.safari} ${className}`}>
       <Icon name={icon} className="absolute -bottom-4 -right-4 size-32 text-white/25" />
+      <Image src={photoUrl(photo, 1200)} alt={photo.alt} fill sizes={sizes} priority={priority} className="object-cover transition duration-700 group-hover:scale-105" />
     </div>
   );
 }
@@ -33,7 +38,7 @@ export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale;
   return (
     <Link href={`/${locale}/tours/${trip.slug}`} className="group overflow-hidden rounded-3xl border border-line bg-white shadow-[0_10px_40px_-12px_rgba(10,31,23,0.12)] transition hover:-translate-y-1">
       <div className="relative">
-        <TripCover trip={trip} className="h-36" />
+        <TripCover trip={trip} className="h-52" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           {trip.is_signature && (
             <span className="inline-flex items-center gap-1 rounded-full bg-night px-3 py-1 text-xs font-bold text-gold">

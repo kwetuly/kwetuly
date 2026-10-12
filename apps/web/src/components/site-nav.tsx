@@ -8,6 +8,7 @@ import { MENU } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import { itemHref } from '@/lib/menu';
 import { Icon } from './icon';
+import { Logo } from './logo';
 
 // Desktop: hover/focus mega-menus. Mobile: full-screen drawer with expandable sections.
 export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: string }) {
@@ -77,7 +78,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
         createPortal(
         <div className="fixed inset-0 z-50 flex flex-col bg-night text-white lg:hidden" role="dialog" aria-modal="true">
           <div className="flex items-center justify-between px-4 py-4">
-            <span className="text-xl font-extrabold">Rafrika</span>
+            <Logo tone="light" className="text-2xl" />
             <button
               type="button"
               onClick={() => setOpen(false)}

@@ -10,6 +10,7 @@ import { AuthLinks } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
+import { Logo } from '@/components/logo';
 import { itemHref } from '@/lib/menu';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin'] });
@@ -33,11 +34,8 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
       <body className="flex min-h-full flex-col">
         <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-xl">
           <nav className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-            <Link href={`/${locale}`} className="flex items-center gap-2 text-xl font-extrabold tracking-tight">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sunset to-gold text-base text-white shadow-md">
-                R
-              </span>
-              <span className="text-night">Rafrika</span>
+            <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
+              <Logo className="text-[28px]" />
             </Link>
             <div className="ml-2 hidden lg:block">
               <SiteNav locale={locale} soonLabel={t.nav.soon} />
@@ -61,9 +59,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
         {process.env.ANTHROPIC_API_KEY && <Concierge labels={t.concierge} />}
 
         <footer className="pattern-kanga text-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-7">
-            <div className="lg:col-span-1">
-              <p className="text-2xl font-extrabold">Rafrika</p>
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
+            <div>
+              <Logo tone="light" className="text-3xl" />
               <p className="mt-2 text-sm text-white/70">{t.footer.tagline}</p>
             </div>
             {MENU.map((section) => (
@@ -82,7 +80,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             ))}
           </div>
           <div className="border-t border-white/10">
-            <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/60">© 2026 Rafrika. {t.footer.rights}</p>
+            <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/60">
+              © 2026 Rafrika. {t.footer.rights} · Photos: Unsplash photographers
+            </p>
           </div>
         </footer>
       </body>

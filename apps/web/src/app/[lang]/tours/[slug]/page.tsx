@@ -44,8 +44,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
   return (
     <>
       <section className="relative text-white">
-        <TripCover trip={trip} className="absolute inset-0" />
-        <div className="absolute inset-0 bg-gradient-to-t from-night via-night/60 to-transparent" />
+        <TripCover trip={trip} className="absolute inset-0" sizes="100vw" priority />
+        <div className="absolute inset-0 bg-gradient-to-t from-night via-night/60 to-night/10" />
         <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/tours`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4" aria-hidden /> {tt.title}
