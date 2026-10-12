@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Rafrika design tokens — keep in sync with packages/shared/src/theme.ts */
+@theme {
+  --color-forest: #0f5132;
+  --color-forest-dark: #0a3a24;
+  --color-mint: #d1e7dd;
+  --color-charcoal: #212529;
+  --color-muted: #6c757d;
+  --color-line: #e5e7eb;
+  --color-surface: #f8f9fa;
+  --radius-brand: 12px;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-charcoal);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-brand bg-forest px-5 py-3 font-semibold text-white transition hover:bg-forest-dark disabled:opacity-60;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center rounded-brand border border-forest px-5 py-3 font-semibold text-forest transition hover:bg-mint;
+}
+
+.field {
+  @apply w-full rounded-brand border border-line bg-white px-4 py-3 text-base outline-none focus:border-forest focus:ring-2 focus:ring-mint;
+}
+
+.label {
+  @apply mb-1 block text-sm font-medium;
+}
+
+.card {
+  @apply rounded-brand border border-line bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.05)];
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full bg-mint px-3 py-1 text-xs font-semibold text-forest;
+}

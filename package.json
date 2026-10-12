@@ -1,0 +1,14 @@
+{
+  "name": "rafrika",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "web": "npm run dev --workspace @rafrika/web",
+    "web:build": "npm run build --workspace @rafrika/web",
+    "mobile": "npm run start --workspace @rafrika/mobile",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

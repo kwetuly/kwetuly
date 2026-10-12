@@ -1,0 +1,198 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { GROUP_SIZES, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/config';
+import { requireUser } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
+import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
+import { saveGuideProfile } from './actions';
+
+export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
+
+type PrivateDetails = {
+  phone: string | null;
+  whatsapp_number: string | null;
+  registration_number: string | null;
+  kinapa_tanapa_id: string | null;
+  id_document_path: string | null;
+};
+
+export default async function DashboardPage({ searchParams }: PageProps<'/[lang]/dashboard'>) {
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <h1 className="text-3xl font-bold">{t.dashboard.title}</h1>
+      <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-brand bg-surface" />}>
+        <Editor t={t} locale={locale} searchParams={searchParams} />
+      </Suspense>
+    </div>
+  );
+}
+
+async function Editor({
+  t,
+  locale,
+  searchParams,
+}: {
+  t: Dictionary;
+  locale: Locale;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const user = await requireUser(locale);
+  const supabase = await createClient();
+  const { data: guide } = await supabase.from('guides').select(GUIDE_COLUMNS).eq('owner_id', user.id).maybeSingle<Guide>();
+  const { data: details } = guide
+    ? await supabase
+        .from('guide_private')
+        .select('phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path')
+        .eq('guide_id', guide.id)
+        .maybeSingle<PrivateDetails>()
+    : { data: null };
+  const status = await searchParams;
+  const d = t.dashboard;
+
+  const statusText =
+    guide?.verification_status === 'approved'
+      ? d.statusApproved
+      : guide?.verification_status === 'rejected'
+        ? d.statusRejected
+        : d.statusPending;
+
+  return (
+    <>
+      {guide && (
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-brand bg-mint p-4 text-forest">
+          <span>{statusText}</span>
+          {guide.verification_status === 'approved' && (
+            <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
+              {d.viewProfile}
+            </Link>
+          )}
+        </div>
+      )}
+      {status.saved && <p className="mt-4 rounded-brand bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
+      {status.error && <p className="mt-4 rounded-brand bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+
+      <form action={saveGuideProfile} className="mt-6 space-y-8">
+        <input type="hidden" name="locale" value={locale} />
+
+        <fieldset className="card space-y-4">
+          <legend className="px-1 text-lg font-semibold">{d.publicSection}</legend>
+          <Field label={d.displayName}>
+            <input className="field" name="display_name" required maxLength={80} defaultValue={guide?.display_name ?? user.fullName ?? ''} />
+          </Field>
+          <Field label={`${d.slug} (rafrika.com/${locale}/guides/…)`}>
+            <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
+          </Field>
+          <Field label={d.photo}>
+            <input className="field" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
+          </Field>
+          <Field label={d.headline}>
+            <input className="field" name="headline" maxLength={140} defaultValue={guide?.headline ?? ''} placeholder={d.headlineHint} />
+          </Field>
+          <Field label={d.bio}>
+            <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
+          </Field>
+          <Field label={d.baseRegion}>
+            <select className="field" name="base_region" required defaultValue={guide?.base_region ?? ''}>
+              <option value="" disabled>—</option>
+              {REGIONS.map((r) => <option key={r}>{r}</option>)}
+            </select>
+          </Field>
+          <Checkboxes name="regions" label={d.regions} options={REGIONS.map((r) => ({ value: r, label: r }))} checked={guide?.regions ?? []} />
+          <Checkboxes name="specialties" label={d.specialties} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} checked={guide?.specialties ?? []} />
+          <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label={d.maxGroup}>
+              <select className="field" name="max_group_size" defaultValue={String(guide?.max_group_size ?? 8)}>
+                {GROUP_SIZES.map((g) => <option key={g.max} value={g.max}>{g[locale]}</option>)}
+              </select>
+            </Field>
+            <Field label={d.years}>
+              <input className="field" name="years_experience" type="number" min={0} max={70} defaultValue={guide?.years_experience ?? ''} />
+            </Field>
+            <Field label={d.summits}>
+              <input className="field" name="summits" type="number" min={0} defaultValue={guide?.summits ?? ''} />
+            </Field>
+          </div>
+          <Field label={`${d.certifications} (First Aid, WFR…)`}>
+            <input className="field" name="certifications" maxLength={300} defaultValue={guide?.certifications.join(', ') ?? ''} />
+          </Field>
+          <Field label={d.association}>
+            <input className="field" name="association" maxLength={80} defaultValue={guide?.association ?? ''} placeholder="TTGA" />
+          </Field>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="has_vehicle" defaultChecked={guide?.has_vehicle ?? false} className="size-4 accent-forest" />
+            {d.hasVehicle}
+          </label>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Facebook"><input className="field" name="facebook_url" type="url" defaultValue={guide?.facebook_url ?? ''} placeholder="https://" /></Field>
+            <Field label="Instagram"><input className="field" name="instagram_url" type="url" defaultValue={guide?.instagram_url ?? ''} placeholder="https://" /></Field>
+            <Field label="TikTok"><input className="field" name="tiktok_url" type="url" defaultValue={guide?.tiktok_url ?? ''} placeholder="https://" /></Field>
+          </div>
+          <p className="text-sm text-muted">{d.followUs}</p>
+          <Field label={d.visibility}>
+            <select className="field" name="visibility" defaultValue={guide?.visibility ?? 'public'}>
+              <option value="public">{d.visibilityPublic}</option>
+              <option value="link_only">{d.visibilityLink}</option>
+            </select>
+          </Field>
+        </fieldset>
+
+        <fieldset className="card space-y-4">
+          <legend className="px-1 text-lg font-semibold">{d.privateSection}</legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={d.phone}><input className="field" name="phone" type="tel" defaultValue={details?.phone ?? ''} /></Field>
+            <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? ''} /></Field>
+            <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
+            <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
+          </div>
+          <Field label={`${d.idDocument}${details?.id_document_path ? ' ✓' : ''}`}>
+            <input className="field" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
+          </Field>
+        </fieldset>
+
+        <button className="btn w-full sm:w-auto">{d.save}</button>
+      </form>
+    </>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="label">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Checkboxes({
+  name,
+  label,
+  options,
+  checked,
+}: {
+  name: string;
+  label: string;
+  options: { value: string; label: string }[];
+  checked: string[];
+}) {
+  return (
+    <fieldset>
+      <legend className="label">{label}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <label key={o.value} className="cursor-pointer">
+            <input type="checkbox" name={name} value={o.value} defaultChecked={checked.includes(o.value)} className="peer sr-only" />
+            <span className="inline-block rounded-full border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
+              {o.label}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
