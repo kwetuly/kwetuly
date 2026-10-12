@@ -57,7 +57,8 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
         </header>
 
         <main className="flex-1">{children}</main>
-        <Concierge labels={t.concierge} />
+        {/* The AI chat appears automatically once ANTHROPIC_API_KEY is set in .env.local. */}
+        {process.env.ANTHROPIC_API_KEY && <Concierge labels={t.concierge} />}
 
         <footer className="pattern-kanga text-white">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-7">
