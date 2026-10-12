@@ -110,7 +110,7 @@ export default async function HomePage() {
           </Link>
         </div>
         <Link
-          href={`/${locale}/community/afcon-2027`}
+          href={`/${locale}/discover/afcon-2027`}
           className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-gold via-[#ff9a3d] to-sunset p-8 text-night sm:p-10"
         >
           <div className="absolute right-6 top-6 text-7xl opacity-90 transition group-hover:scale-110 group-hover:rotate-12" aria-hidden>

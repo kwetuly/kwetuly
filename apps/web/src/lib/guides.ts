@@ -25,10 +25,34 @@ export type Guide = {
   visibility: 'public' | 'link_only';
   verification_status: 'pending' | 'approved' | 'rejected';
   plan: 'msingi' | 'pro';
+  call_enabled: boolean;
+  call_price_usd: number | null;
+  call_minutes: number;
+  call_topics: string[];
 };
 
 export const GUIDE_COLUMNS =
-  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan';
+  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics';
+
+// Approved, public guides who offer 1-on-1 prep calls, optionally for one topic.
+export async function listCallGuides(topic?: string): Promise<Guide[]> {
+  'use cache';
+  cacheTag('guides');
+  cacheLife('minutes');
+
+  let query = publicClient()
+    .from('guides')
+    .select(GUIDE_COLUMNS)
+    .eq('verification_status', 'approved')
+    .eq('visibility', 'public')
+    .eq('call_enabled', true)
+    .order('plan', { ascending: false })
+    .limit(60);
+  if (topic) query = query.contains('call_topics', [topic]);
+
+  const { data } = await query;
+  return (data ?? []) as Guide[];
+}
 
 // Public data has no session, so it can be cached and shared between visitors.
 function publicClient() {

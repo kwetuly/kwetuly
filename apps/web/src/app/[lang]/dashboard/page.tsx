@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { GROUP_SIZES, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireUser, type CurrentUser } from '@/lib/auth';
+import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
@@ -19,28 +20,41 @@ type PrivateDetails = {
   id_document_path: string | null;
 };
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 export default async function DashboardPage({ searchParams }: PageProps<'/[lang]/dashboard'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-bold">{t.dashboard.title}</h1>
       <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-brand bg-surface" />}>
-        <Editor t={t} locale={locale} searchParams={searchParams} />
+        <DashboardForRole t={t} locale={locale} searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Editor({
+// Each account type gets its own dashboard and never sees the others' tools.
+async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: SearchParams }) {
+  const user = await requireUser(locale);
+  const params = await searchParams;
+  if (user.role === 'guide' || user.guide || params.as === 'guide') {
+    return <GuideEditor t={t} locale={locale} user={user} status={params} />;
+  }
+  if (user.role === 'provider') return <BusinessDashboard t={t} locale={locale} user={user} />;
+  return <TravelerDashboard t={t} locale={locale} user={user} />;
+}
+
+async function GuideEditor({
   t,
   locale,
-  searchParams,
+  user,
+  status,
 }: {
   t: Dictionary;
   locale: Locale;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  user: CurrentUser;
+  status: Awaited<SearchParams>;
 }) {
-  const user = await requireUser(locale);
   const supabase = await createClient();
   const { data: guide } = await supabase.from('guides').select(GUIDE_COLUMNS).eq('owner_id', user.id).maybeSingle<Guide>();
   const { data: details } = guide
@@ -50,7 +64,6 @@ async function Editor({
         .eq('guide_id', guide.id)
         .maybeSingle<PrivateDetails>()
     : { data: null };
-  const status = await searchParams;
   const d = t.dashboard;
 
   const statusText =
@@ -62,13 +75,19 @@ async function Editor({
 
   return (
     <>
+      <h1 className="text-3xl font-bold">{d.title}</h1>
       {guide && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-brand bg-mint p-4 text-forest">
           <span>{statusText}</span>
           {guide.verification_status === 'approved' && (
-            <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
-              {d.viewProfile}
-            </Link>
+            <>
+              <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
+                {d.viewProfile}
+              </Link>
+              <Link href={`/${locale}/hub`} className="btn ml-auto px-4 py-2 text-sm">
+                {t.nav.hub}
+              </Link>
+            </>
           )}
         </div>
       )}
@@ -142,6 +161,26 @@ async function Editor({
         </fieldset>
 
         <fieldset className="card space-y-4">
+          <legend className="px-1 text-lg font-semibold">{d.callsSection}</legend>
+          <p className="text-sm text-muted">{d.callsHint}</p>
+          <label className="flex items-center gap-2 font-semibold">
+            <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-sunset" />
+            {d.callEnabled}
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={d.callPrice}>
+              <input className="field" name="call_price_usd" type="number" min={0} step="1" defaultValue={guide?.call_price_usd ?? ''} placeholder="49" />
+            </Field>
+            <Field label={d.callMinutes}>
+              <select className="field" name="call_minutes" defaultValue={String(guide?.call_minutes ?? 45)}>
+                {[30, 45, 60, 90].map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Checkboxes name="call_topics" label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} checked={guide?.call_topics ?? []} />
+        </fieldset>
+
+        <fieldset className="card space-y-4">
           <legend className="px-1 text-lg font-semibold">{d.privateSection}</legend>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={d.phone}><input className="field" name="phone" type="tel" defaultValue={details?.phone ?? ''} /></Field>
@@ -156,6 +195,101 @@ async function Editor({
 
         <button className="btn w-full sm:w-auto">{d.save}</button>
       </form>
+    </>
+  );
+}
+
+type MyCall = {
+  id: string;
+  topic: string;
+  status: CallStatus;
+  scheduled_at: string | null;
+  meeting_link: string | null;
+  guides: { display_name: string; slug: string } | null;
+};
+
+async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: Locale; user: CurrentUser }) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('call_requests')
+    .select('id, topic, status, scheduled_at, meeting_link, guides(display_name, slug)')
+    .eq('traveler_id', user.id)
+    .order('created_at', { ascending: false })
+    .returns<MyCall[]>();
+  const calls = data ?? [];
+
+  return (
+    <>
+      <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
+      <section className="card mt-6">
+        <h2 className="text-lg font-bold">{t.traveler.calls}</h2>
+        {calls.length === 0 ? (
+          <div className="mt-3">
+            <p className="text-muted">{t.traveler.noCalls}</p>
+            <Link href={`/${locale}/calls`} className="btn mt-4">{t.traveler.findCall}</Link>
+          </div>
+        ) : (
+          <ul className="mt-4 divide-y divide-line">
+            {calls.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-center gap-3 py-3">
+                <span className="font-semibold">{topicName(c.topic, locale)}</span>
+                {c.guides && (
+                  <Link href={`/${locale}/guides/${c.guides.slug}`} className="text-forest underline">
+                    {c.guides.display_name}
+                  </Link>
+                )}
+                <span className="badge ml-auto">{t.hub.status[c.status]}</span>
+                {c.status === 'accepted' && c.scheduled_at && (
+                  <span className="w-full text-sm text-muted">
+                    {new Date(c.scheduled_at).toLocaleString(locale)}
+                    {c.meeting_link && (
+                      <>
+                        {' · '}
+                        <a href={c.meeting_link} className="font-semibold text-sunset underline" target="_blank" rel="noopener">
+                          {t.traveler.joinCall}
+                        </a>
+                      </>
+                    )}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <Link href={`/${locale}/dashboard?as=guide`} className="mt-6 inline-block text-sm font-semibold text-forest underline">
+        {t.traveler.becomeGuide}
+      </Link>
+    </>
+  );
+}
+
+type MyJob = { id: string; title: string; role_needed: string; status: 'pending' | 'approved' | 'rejected'; created_at: string };
+
+async function BusinessDashboard({ t, locale, user }: { t: Dictionary; locale: Locale; user: CurrentUser }) {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('jobs')
+    .select('id, title, role_needed, status, created_at')
+    .eq('posted_by', user.id)
+    .order('created_at', { ascending: false })
+    .returns<MyJob[]>();
+  const jobs = data ?? [];
+
+  return (
+    <>
+      <h1 className="text-3xl font-bold">{t.jobs.postTitle}</h1>
+      <Link href={`/${locale}/jobs/post`} className="btn mt-6">{t.jobs.postNew}</Link>
+      <ul className="card mt-6 divide-y divide-line">
+        {jobs.length === 0 && <li className="py-2 text-muted">—</li>}
+        {jobs.map((j) => (
+          <li key={j.id} className="flex items-center gap-3 py-3">
+            <span className="font-semibold">{j.title}</span>
+            <span className="text-sm text-muted">{JOB_ROLES.find((r) => r.id === j.role_needed)?.[locale]}</span>
+            <span className="badge ml-auto">{t.jobs.status[j.status]}</span>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

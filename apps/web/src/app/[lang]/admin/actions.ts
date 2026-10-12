@@ -29,3 +29,17 @@ export async function reviewGuide(formData: FormData) {
   revalidateTag('guides', 'max');
   redirect(`/${locale}/admin`);
 }
+
+export async function reviewJob(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const supabase = await createClient();
+  await supabase
+    .from('jobs')
+    .update({ status: formData.get('decision') === 'approve' ? 'approved' : 'rejected' })
+    .eq('id', String(formData.get('job_id') ?? ''));
+  redirect(`/${locale}/admin#jobs`);
+}

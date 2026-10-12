@@ -9,6 +9,7 @@ import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { SiteNav } from '@/components/site-nav';
+import { Concierge } from '@/components/concierge';
 import { itemHref } from '@/lib/menu';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin'] });
@@ -56,6 +57,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
         </header>
 
         <main className="flex-1">{children}</main>
+        <Concierge labels={t.concierge} />
 
         <footer className="pattern-kanga text-white">
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-7">

@@ -55,6 +55,25 @@ export const GROUP_SIZES = [
   { max: 30, en: 'Large groups', sw: 'Makundi makubwa' },
 ] as const;
 
+// Topics a guide can offer 1-on-1 prep calls on.
+export const CALL_TOPICS = [
+  { id: 'kilimanjaro', en: 'Kilimanjaro prep', sw: 'Maandalizi ya Kilimanjaro' },
+  { id: 'safari', en: 'Safari planning', sw: 'Kupanga safari' },
+  { id: 'zanzibar', en: 'Zanzibar & coast', sw: 'Zanzibar na pwani' },
+  { id: 'culture', en: 'Culture & etiquette', sw: 'Utamaduni na adabu' },
+  { id: 'meru', en: 'Mount Meru & other climbs', sw: 'Mlima Meru na mingine' },
+  { id: 'itinerary', en: 'Full trip itinerary', sw: 'Ratiba kamili ya safari' },
+] as const;
+
+export const JOB_ROLES = [
+  { id: 'guide', en: 'Guide', sw: 'Mwongozaji' },
+  { id: 'assistant_guide', en: 'Assistant guide', sw: 'Msaidizi wa mwongozaji' },
+  { id: 'cook', en: 'Cook', sw: 'Mpishi' },
+  { id: 'porter', en: 'Porter', sw: 'Mpagazi' },
+  { id: 'driver', en: 'Driver', sw: 'Dereva' },
+  { id: 'other', en: 'Other crew', sw: 'Wengine' },
+] as const;
+
 export const PLANS = {
   msingi: { name: 'Msingi', priceUsdMonthly: 0 },
   pro: { name: 'Pro', priceUsdMonthly: null }, // price to be decided

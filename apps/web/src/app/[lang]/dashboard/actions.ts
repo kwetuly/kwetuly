@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 
@@ -80,6 +80,10 @@ export async function saveGuideProfile(formData: FormData) {
     instagram_url: httpsUrl(formData, 'instagram_url'),
     tiktok_url: httpsUrl(formData, 'tiktok_url'),
     visibility: formData.get('visibility') === 'link_only' ? 'link_only' : 'public',
+    call_enabled: formData.get('call_enabled') === 'on',
+    call_price_usd: int(formData, 'call_price_usd'),
+    call_minutes: Math.min(Math.max(int(formData, 'call_minutes') ?? 45, 15), 180),
+    call_topics: allowed(formData.getAll('call_topics'), CALL_TOPICS.map((c) => c.id)),
   };
 
   // Profile photo goes to the public avatars bucket, in a folder named after the user.

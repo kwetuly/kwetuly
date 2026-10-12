@@ -29,6 +29,7 @@ export const MENU: MenuSection[] = [
     tagline: { en: 'Verified local guides, booked direct', sw: 'Waongozaji waliothibitishwa, moja kwa moja' },
     items: [
       { slug: 'find', icon: 'users', href: '/guides', status: 'live', label: { en: 'Find a guide', sw: 'Tafuta mwongozaji' }, blurb: { en: 'Filter by language, region and experience', sw: 'Chuja kwa lugha, mkoa na uzoefu' } },
+      { slug: 'calls', icon: 'video', href: '/calls', status: 'live', label: { en: '1-on-1 prep calls', sw: 'Simu za maandalizi' }, blurb: { en: 'Kili, safari or Zanzibar advice from a guide you choose', sw: 'Ushauri wa Kili, safari au Zanzibar kutoka kwa mwongozaji unayemchagua' } },
       { slug: 'day-trips', icon: 'sun', label: { en: 'Day trips', sw: 'Safari za siku moja' }, blurb: { en: 'Waterfalls, coffee farms, hot springs', sw: 'Maporomoko, mashamba ya kahawa, chemchemi' } },
       { slug: 'group-trips', icon: 'users-round', label: { en: 'Join a group trip', sw: 'Jiunge na kundi' }, blurb: { en: 'Share a trip, split the cost', sw: 'Shiriki safari, gawana gharama' } },
       { slug: 'trip-requests', icon: 'gavel', label: { en: 'Post a trip request', sw: 'Weka ombi la safari' }, blurb: { en: 'Guides send you Regular, Premium and VIP offers', sw: 'Waongozaji wanakutumia ofa za kawaida, premium na VIP' } },
@@ -59,13 +60,15 @@ export const MENU: MenuSection[] = [
     ],
   },
   {
-    slug: 'gear',
-    icon: 'tent',
-    label: { en: 'Gear', sw: 'Vifaa' },
-    tagline: { en: 'Rent it here or buy before you fly', sw: 'Kodi hapa au nunua kabla ya kusafiri' },
+    slug: 'shop',
+    icon: 'shopping-bag',
+    label: { en: 'Gear & Shop', sw: 'Vifaa na Duka' },
+    tagline: { en: 'Rent gear, and take a piece of Tanzania home', sw: 'Kodi vifaa, na beba kipande cha Tanzania nyumbani' },
     items: [
-      { slug: 'rent', icon: 'repeat', label: { en: 'Rent locally', sw: 'Kodi hapa' }, blurb: { en: 'Sleeping bags, jackets, poles, boots', sw: 'Mifuko ya kulalia, jaketi, fimbo, viatu' } },
-      { slug: 'buy', icon: 'shopping-bag', label: { en: 'Buy before you fly', sw: 'Nunua kabla ya kusafiri' }, blurb: { en: 'Guide-approved packing lists', sw: 'Orodha za vifaa zilizoidhinishwa na waongozaji' } },
+      { slug: 'rent-gear', icon: 'repeat', label: { en: 'Rent gear locally', sw: 'Kodi vifaa hapa' }, blurb: { en: 'Sleeping bags, jackets, poles, boots', sw: 'Mifuko ya kulalia, jaketi, fimbo, viatu' } },
+      { slug: 'buy-gear', icon: 'tent', label: { en: 'Buy before you fly', sw: 'Nunua kabla ya kusafiri' }, blurb: { en: 'Guide-approved packing lists', sw: 'Orodha za vifaa zilizoidhinishwa na waongozaji' } },
+      { slug: 'art', icon: 'palette', label: { en: 'Art & crafts', sw: 'Sanaa na kazi za mikono' }, blurb: { en: 'Tingatinga, Makonde carvings, beadwork', sw: 'Tingatinga, vinyago vya Makonde, shanga' } },
+      { slug: 'tanzanite', icon: 'gem', label: { en: 'Tanzanite & gems', sw: 'Tanzanite na vito' }, blurb: { en: 'Licensed dealers only, with certificates', sw: 'Wauzaji wenye leseni tu, pamoja na vyeti' } },
     ],
   },
   {
@@ -81,16 +84,26 @@ export const MENU: MenuSection[] = [
     ],
   },
   {
-    slug: 'community',
-    icon: 'messages-square',
-    label: { en: 'Community', sw: 'Jumuiya' },
-    tagline: { en: 'Where Tanzanian guides meet', sw: 'Mahali waongozaji wanakutana' },
+    slug: 'discover',
+    icon: 'book-open',
+    label: { en: 'Discover', sw: 'Gundua' },
+    tagline: { en: 'Stories, events and opportunities', sw: 'Hadithi, matukio na fursa' },
     items: [
-      { slug: 'forum', icon: 'messages-square', label: { en: 'Guide forum', sw: 'Jukwaa la waongozaji' }, blurb: { en: 'Park updates, sightings, advice', sw: 'Habari za hifadhi, wanyama, ushauri' } },
       { slug: 'stories', icon: 'book-open', label: { en: 'Guide stories', sw: 'Hadithi za waongozaji' }, blurb: { en: 'Real stories from the trail', sw: 'Hadithi halisi kutoka safarini' } },
       { slug: 'afcon-2027', icon: 'trophy', label: { en: 'AFCON 2027', sw: 'AFCON 2027' }, blurb: { en: 'Match-day transfers and city tours', sw: 'Usafiri wa mechi na ziara za mji' } },
+      { slug: 'invest', icon: 'trending-up', label: { en: 'Invest in Tanzania', sw: 'Wekeza Tanzania' }, blurb: { en: 'Tourism projects, introduced with TISEZA guidance', sw: 'Miradi ya utalii, kwa mwongozo wa TISEZA' } },
+      { slug: 'hire-crew', icon: 'briefcase', href: '/jobs/post', status: 'live', label: { en: 'Hire guides & crew', sw: 'Ajiri waongozaji na wafanyakazi' }, blurb: { en: 'For companies: post a job for guides, cooks, porters', sw: 'Kwa makampuni: tangaza kazi kwa waongozaji, wapishi, wapagazi' } },
     ],
   },
+];
+
+// The Guide Hub menu is only shown to verified guides (and admins).
+export const HUB_MENU: MenuItem[] = [
+  { slug: 'hub', icon: 'layout-dashboard', href: '/hub', status: 'live', label: { en: 'Hub home', sw: 'Mwanzo' }, blurb: { en: 'Your requests, calls and news', sw: 'Maombi, simu na habari zako' } },
+  { slug: 'forum', icon: 'messages-square', href: '/hub/forum', status: 'live', label: { en: 'Guide forum', sw: 'Jukwaa' }, blurb: { en: 'Park updates, sightings, advice', sw: 'Habari za hifadhi, wanyama, ushauri' } },
+  { slug: 'news', icon: 'newspaper', href: '/hub/news', status: 'live', label: { en: 'Field news', sw: 'Habari za uwanjani' }, blurb: { en: 'Official updates from parks and authorities', sw: 'Taarifa rasmi kutoka hifadhi na mamlaka' } },
+  { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: { en: 'Jobs', sw: 'Kazi' }, blurb: { en: 'Companies hiring guides and crew', sw: 'Makampuni yanayoajiri' } },
+  { slug: 'profile', icon: 'user-round', href: '/dashboard', status: 'live', label: { en: 'My profile', sw: 'Wasifu wangu' }, blurb: { en: 'Edit your public profile and calls', sw: 'Hariri wasifu na simu zako' } },
 ];
 
 export function findMenuItem(sectionSlug: string, itemSlug: string) {

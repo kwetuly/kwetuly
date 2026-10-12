@@ -3,9 +3,14 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getGuideBySlug } from '@/lib/guides';
+import Link from 'next/link';
+import { Video } from 'lucide-react';
+import { CALL_TOPICS } from '@rafrika/shared';
+import { getGuideBySlug, type Guide } from '@/lib/guides';
+import { getCurrentUser } from '@/lib/auth';
+import { topicName } from '@/lib/labels';
 import { GuideAvatar, languageName, specialtyName } from '@/components/guide-card';
-import { requestGuide } from './actions';
+import { requestCall, requestGuide } from './actions';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
@@ -94,6 +99,10 @@ async function Profile({
         </div>
       </div>
 
+      <div className="space-y-6">
+      {guide.call_enabled && (
+        <CallBooking guide={guide} status={status} t={t} locale={locale} />
+      )}
       <aside id="contact" className="card h-fit">
         <h2 className="text-lg font-semibold">{t.profile.contactTitle}</h2>
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
@@ -112,7 +121,68 @@ async function Profile({
           </form>
         )}
       </aside>
+      </div>
     </div>
+  );
+}
+
+async function CallBooking({
+  guide,
+  status,
+  t,
+  locale,
+}: {
+  guide: Guide;
+  status: Record<string, string | string[] | undefined>;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const user = await getCurrentUser();
+
+  return (
+    <section id="call" className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
+      <div className="bg-gradient-to-r from-sunset to-gold px-6 py-4 text-night">
+        <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide">
+          <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
+        </p>
+        <p className="mt-1 text-2xl font-extrabold">
+          {guide.call_price_usd != null ? `$${guide.call_price_usd}` : t.calls.priceTbc}
+          <span className="ml-2 text-sm font-semibold">/ {guide.call_minutes} {t.calls.minutes}</span>
+        </p>
+      </div>
+      <div className="p-6">
+        {status.callSent ? (
+          <p className="rounded-2xl bg-mint p-4 font-semibold text-forest">{t.calls.sent}</p>
+        ) : !user ? (
+          <div>
+            <p className="text-white/80">{t.calls.signInFirst}</p>
+            <div className="mt-4 flex gap-2">
+              <Link href={`/${locale}/login`} className="btn-outline border-white text-white hover:bg-white/10">{t.nav.signIn}</Link>
+              <Link href={`/${locale}/join?role=traveler`} className="btn">{t.nav.signUp}</Link>
+            </div>
+          </div>
+        ) : (
+          <form action={requestCall} className="space-y-3">
+            {status.callError && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            <input type="hidden" name="locale" value={locale} />
+            <input type="hidden" name="slug" value={guide.slug} />
+            <input type="hidden" name="guide_id" value={guide.id} />
+            <label className="block">
+              <span className="label text-white">{t.calls.topic}</span>
+              <select name="topic" required className="field text-charcoal">
+                {(guide.call_topics.length ? guide.call_topics : CALL_TOPICS.map((c) => c.id)).map((id) => (
+                  <option key={id} value={id}>{topicName(id, locale)}</option>
+                ))}
+              </select>
+            </label>
+            <textarea name="preferred_times" className="field min-h-20 text-charcoal" placeholder={t.calls.times} required maxLength={500} />
+            <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} maxLength={160} />
+            <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} maxLength={2000} />
+            <button className="btn w-full">{t.calls.book}</button>
+          </form>
+        )}
+      </div>
+    </section>
   );
 }
 

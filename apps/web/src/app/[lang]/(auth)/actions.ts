@@ -10,13 +10,17 @@ function localeFrom(formData: FormData) {
   return hasLocale(value) ? value : defaultLocale;
 }
 
-export async function signUpGuide(formData: FormData) {
+const SIGNUP_ROLES = ['traveler', 'guide', 'provider'] as const;
+
+export async function signUp(formData: FormData) {
   const locale = localeFrom(formData);
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const fullName = String(formData.get('full_name') ?? '').trim();
+  const roleValue = String(formData.get('role') ?? '');
+  const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
 
-  if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?error=1`);
+  if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?role=${role}&error=1`);
 
   const origin = (await headers()).get('origin') ?? '';
   const supabase = await createClient();
@@ -24,13 +28,13 @@ export async function signUpGuide(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName, role: 'guide', preferred_language: locale },
+      data: { full_name: fullName, role, preferred_language: locale },
       emailRedirectTo: `${origin}/auth/confirm?next=/${locale}/dashboard`,
     },
   });
 
-  if (error) redirect(`/${locale}/join?error=1`);
-  redirect(`/${locale}/join?sent=1`);
+  if (error) redirect(`/${locale}/join?role=${role}&error=1`);
+  redirect(`/${locale}/join?role=${role}&sent=1`);
 }
 
 export async function signIn(formData: FormData) {

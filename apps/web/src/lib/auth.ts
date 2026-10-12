@@ -2,9 +2,19 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { createClient } from './supabase/server';
 
-export type CurrentUser = { id: string; email: string | null; role: string; fullName: string | null };
+export type Role = 'traveler' | 'guide' | 'provider' | 'investor' | 'admin';
 
-// Returns the signed-in user with their Rafrika role, or null.
+export type CurrentUser = {
+  id: string;
+  email: string | null;
+  role: Role;
+  fullName: string | null;
+  guide: { id: string; slug: string; status: 'pending' | 'approved' | 'rejected' } | null;
+  /** Approved guides and admins may enter the Guide Hub. */
+  canUseHub: boolean;
+};
+
+// Returns the signed-in user with their Rafrika role and guide status, or null.
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = await createClient();
   const {
@@ -12,22 +22,33 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', user.id)
-    .single();
+  const [{ data: profile }, { data: guide }] = await Promise.all([
+    supabase.from('profiles').select('role, full_name').eq('id', user.id).single(),
+    supabase.from('guides').select('id, slug, verification_status').eq('owner_id', user.id).maybeSingle(),
+  ]);
+
+  const role = (profile?.role ?? 'traveler') as Role;
+  const guideInfo = guide ? { id: guide.id, slug: guide.slug, status: guide.verification_status } : null;
 
   return {
     id: user.id,
     email: user.email ?? null,
-    role: profile?.role ?? 'traveler',
+    role,
     fullName: profile?.full_name ?? null,
+    guide: guideInfo,
+    canUseHub: role === 'admin' || guideInfo?.status === 'approved',
   };
 }
 
 export async function requireUser(locale: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  return user;
+}
+
+// Guide Hub pages: verified guides and admins only. Everyone else goes to their dashboard.
+export async function requireHubAccess(locale: string): Promise<CurrentUser> {
+  const user = await requireUser(locale);
+  if (!user.canUseHub) redirect(`/${locale}/dashboard`);
   return user;
 }

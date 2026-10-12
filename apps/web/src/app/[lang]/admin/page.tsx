@@ -6,7 +6,57 @@ import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
-import { reviewGuide } from './actions';
+import { jobRoleName } from '@/lib/labels';
+import { reviewGuide, reviewJob } from './actions';
+
+type PendingJob = {
+  id: string;
+  company_name: string;
+  role_needed: string;
+  title: string;
+  location: string;
+  pay: string | null;
+  how_to_apply: string;
+  description: string | null;
+};
+
+async function PendingJobs({ t, locale }: { t: Dictionary; locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('jobs')
+    .select('id, company_name, role_needed, title, location, pay, how_to_apply, description')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+    .returns<PendingJob[]>();
+  const jobs = data ?? [];
+
+  return (
+    <section id="jobs" className="mt-12">
+      <h2 className="text-2xl font-bold">Jobs ({jobs.length})</h2>
+      {jobs.length === 0 && <p className="mt-3 text-muted">—</p>}
+      <div className="mt-4 space-y-4">
+        {jobs.map((j) => (
+          <div key={j.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-1 text-sm">
+              <p className="text-base font-semibold">{j.title} · {jobRoleName(j.role_needed, locale)}</p>
+              <p>{j.company_name} · {j.location} · {j.pay ?? '—'}</p>
+              <p className="text-muted">{j.description}</p>
+              <p>{j.how_to_apply}</p>
+            </div>
+            <form action={reviewJob} className="flex items-start gap-2">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="job_id" value={j.id} />
+              <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
+              <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
+            </form>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export const metadata: Metadata = { title: 'Admin', robots: { index: false } };
 
@@ -36,6 +86,7 @@ export default async function AdminPage() {
       <h1 className="text-3xl font-bold">{t.admin.title}</h1>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-brand bg-surface" />}>
         <PendingList t={t} locale={locale} />
+        <PendingJobs t={t} locale={locale} />
       </Suspense>
     </div>
   );

@@ -13,7 +13,7 @@ export async function AuthLinks() {
           {t.nav.signIn}
         </Link>
         <Link href={`/${locale}/join`} className="btn px-4 py-2 text-sm">
-          {t.nav.join}
+          {t.nav.signUp}
         </Link>
       </>
     );
@@ -24,6 +24,14 @@ export async function AuthLinks() {
       {user.role === 'admin' && (
         <Link href={`/${locale}/admin`} className="hidden font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
           {t.nav.admin}
+        </Link>
+      )}
+      {user.canUseHub && (
+        <Link
+          href={`/${locale}/hub`}
+          className="hidden rounded-full bg-gradient-to-r from-gold to-sunset px-4 py-2 text-sm font-bold text-night sm:inline-flex"
+        >
+          {t.nav.hub}
         </Link>
       )}
       <Link href={`/${locale}/dashboard`} className="btn-dark px-4 py-2 text-sm">

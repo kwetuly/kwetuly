@@ -1,0 +1,115 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Suspense } from 'react';
+import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
+import type { Locale } from '@/i18n/config';
+import { requireHubAccess } from '@/lib/auth';
+import { createClient } from '@/lib/supabase/server';
+import { topicName, type CallStatus } from '@/lib/labels';
+import { respondToCall } from './actions';
+
+export const metadata: Metadata = { title: 'Guide Hub', robots: { index: false } };
+
+type IncomingCall = {
+  id: string;
+  topic: string;
+  preferred_times: string | null;
+  message: string | null;
+  traveler_contact: string | null;
+  status: CallStatus;
+  scheduled_at: string | null;
+  price_usd: number | null;
+  created_at: string;
+};
+
+type Lead = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string };
+
+export default async function HubHome() {
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  return (
+    <>
+      <h1 className="text-3xl font-extrabold">{t.hub.title}</h1>
+      <p className="mt-1 text-muted">{t.hub.subtitle}</p>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-white" />}>
+        <Inbox t={t} locale={locale} />
+      </Suspense>
+    </>
+  );
+}
+
+async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
+  const user = await requireHubAccess(locale);
+  const supabase = await createClient();
+  const guideId = user.guide?.id ?? '00000000-0000-0000-0000-000000000000';
+
+  const [{ data: calls }, { data: leads }] = await Promise.all([
+    supabase
+      .from('call_requests')
+      .select('id, topic, preferred_times, message, traveler_contact, status, scheduled_at, price_usd, created_at')
+      .eq('guide_id', guideId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .returns<IncomingCall[]>(),
+    supabase
+      .from('leads')
+      .select('id, traveler_name, traveler_contact, message, created_at')
+      .eq('guide_id', guideId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .returns<Lead[]>(),
+  ]);
+
+  return (
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <section id="calls" className="card">
+        <h2 className="text-lg font-bold">{t.hub.calls}</h2>
+        {(calls ?? []).length === 0 && <p className="mt-3 text-sm text-muted">{t.hub.noRequests}</p>}
+        <ul className="mt-4 space-y-4">
+          {(calls ?? []).map((c) => (
+            <li key={c.id} className="rounded-2xl border border-line p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold">{topicName(c.topic, locale)}</span>
+                {c.price_usd != null && <span className="text-sm text-muted">${c.price_usd}</span>}
+                <span className="badge ml-auto">{t.hub.status[c.status]}</span>
+              </div>
+              {c.preferred_times && <p className="mt-2 text-sm"><strong>🕑</strong> {c.preferred_times}</p>}
+              {c.message && <p className="mt-1 text-sm text-muted">{c.message}</p>}
+              {c.traveler_contact && <p className="mt-1 text-sm">{c.traveler_contact}</p>}
+              {c.status === 'requested' && (
+                <form action={respondToCall} className="mt-3 grid gap-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="call_id" value={c.id} />
+                  <label className="text-xs font-semibold">
+                    {t.hub.scheduledAt}
+                    <input type="datetime-local" name="scheduled_at" className="field mt-1" />
+                  </label>
+                  <input name="meeting_link" className="field" placeholder={t.hub.meetingLink} />
+                  <div className="flex gap-2">
+                    <button name="decision" value="accept" className="btn px-4 py-2 text-sm">{t.hub.accept}</button>
+                    <button name="decision" value="decline" className="btn-outline px-4 py-2 text-sm">{t.hub.decline}</button>
+                  </div>
+                </form>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="card">
+        <h2 className="text-lg font-bold">{t.hub.requests}</h2>
+        {(leads ?? []).length === 0 && <p className="mt-3 text-sm text-muted">{t.hub.noRequests}</p>}
+        <ul className="mt-4 divide-y divide-line">
+          {(leads ?? []).map((l) => (
+            <li key={l.id} className="py-3 text-sm">
+              <p className="font-semibold">{l.traveler_name} · <span className="font-normal text-muted">{l.traveler_contact}</span></p>
+              <p className="mt-1">{l.message}</p>
+            </li>
+          ))}
+        </ul>
+        <Link href={`/${locale}/dashboard`} className="mt-4 inline-block text-sm font-semibold text-forest underline">
+          {t.nav.dashboard}
+        </Link>
+      </section>
+    </div>
+  );
+}
