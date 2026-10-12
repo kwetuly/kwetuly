@@ -4,7 +4,8 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Video } from 'lucide-react';
+import { MessagesSquare, Video } from 'lucide-react';
+import { startConversation } from '../../messages/actions';
 import { CALL_TOPICS } from '@rafrika/shared';
 import { getGuideBySlug, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
@@ -100,6 +101,7 @@ async function Profile({
       </div>
 
       <div className="space-y-6">
+      <MessageButton guide={guide} t={t} locale={locale} />
       {guide.call_enabled && (
         <CallBooking guide={guide} status={status} t={t} locale={locale} />
       )}
@@ -123,6 +125,28 @@ async function Profile({
       </aside>
       </div>
     </div>
+  );
+}
+
+async function MessageButton({ guide, t, locale }: { guide: Guide; t: Dictionary; locale: Locale }) {
+  const user = await getCurrentUser();
+  // Guides don't message themselves.
+  if (user?.guide?.id === guide.id) return null;
+  if (!user) {
+    return (
+      <Link href={`/${locale}/login`} className="btn-dark w-full">
+        <MessagesSquare className="size-5" aria-hidden /> {t.messages.signInToMessage}
+      </Link>
+    );
+  }
+  return (
+    <form action={startConversation}>
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="guide_id" value={guide.id} />
+      <button className="btn-dark w-full">
+        <MessagesSquare className="size-5" aria-hidden /> {t.messages.messageGuide}
+      </button>
+    </form>
   );
 }
 

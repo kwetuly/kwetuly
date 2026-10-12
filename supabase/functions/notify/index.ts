@@ -68,6 +68,10 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Kazi yako imeidhinishwa', body: `"${v('title')}" sasa inaonekana kwa waongozaji waliothibitishwa kwenye Rafrika.` }
         : { subject: 'Your job is live', body: `"${v('title')}" is now visible to verified guides on Rafrika.` };
+    case 'message_new':
+      return sw
+        ? { subject: `Ujumbe mpya kutoka kwa ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Jibu kwenye Rafrika.` }
+        : { subject: `New message from ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Reply on Rafrika.` };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':

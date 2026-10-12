@@ -114,6 +114,7 @@ export const MENU: MenuSection[] = [
 // The Guide Hub menu is only shown to verified guides (and admins).
 export const HUB_MENU: MenuItem[] = [
   { slug: 'hub', icon: 'layout-dashboard', href: '/hub', status: 'live', label: { en: 'Hub home', sw: 'Mwanzo' }, blurb: { en: 'Your requests, calls and news', sw: 'Maombi, simu na habari zako' } },
+  { slug: 'messages', icon: 'mail', href: '/messages', status: 'live', label: { en: 'Messages', sw: 'Ujumbe' }, blurb: { en: 'Chats with travellers', sw: 'Mazungumzo na wasafiri' } },
   { slug: 'forum', icon: 'messages-square', href: '/hub/forum', status: 'live', label: { en: 'Guide forum', sw: 'Jukwaa' }, blurb: { en: 'Park updates, sightings, advice', sw: 'Habari za hifadhi, wanyama, ushauri' } },
   { slug: 'news', icon: 'newspaper', href: '/hub/news', status: 'live', label: { en: 'Field news', sw: 'Habari za uwanjani' }, blurb: { en: 'Official updates from parks and authorities', sw: 'Taarifa rasmi kutoka hifadhi na mamlaka' } },
   { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: { en: 'Jobs', sw: 'Kazi' }, blurb: { en: 'Companies hiring guides and crew', sw: 'Makampuni yanayoajiri' } },
