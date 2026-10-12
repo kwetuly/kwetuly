@@ -9,7 +9,7 @@ export async function AuthLinks() {
   if (!user) {
     return (
       <>
-        <Link href={`/${locale}/login`} className="font-medium hover:text-forest">
+        <Link href={`/${locale}/login`} className="hidden font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
           {t.nav.signIn}
         </Link>
         <Link href={`/${locale}/join`} className="btn px-4 py-2 text-sm">
@@ -22,16 +22,16 @@ export async function AuthLinks() {
   return (
     <>
       {user.role === 'admin' && (
-        <Link href={`/${locale}/admin`} className="font-medium hover:text-forest">
+        <Link href={`/${locale}/admin`} className="hidden font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
           {t.nav.admin}
         </Link>
       )}
-      <Link href={`/${locale}/dashboard`} className="font-medium hover:text-forest">
+      <Link href={`/${locale}/dashboard`} className="btn-dark px-4 py-2 text-sm">
         {t.nav.dashboard}
       </Link>
-      <form action={signOut}>
+      <form action={signOut} className="hidden sm:block">
         <input type="hidden" name="locale" value={locale} />
-        <button className="font-medium text-muted hover:text-forest">{t.nav.signOut}</button>
+        <button className="font-semibold text-muted hover:text-charcoal">{t.nav.signOut}</button>
       </form>
     </>
   );
