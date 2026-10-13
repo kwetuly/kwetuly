@@ -3,7 +3,7 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { photoUrl, specialtyPhoto } from '@rafrika/shared';
+import { photoUrl, specialtyPhoto, formatUsd } from '@rafrika/shared';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
@@ -86,7 +86,7 @@ export default function GroupTripScreen() {
             {formatDateRange(g.start_date, g.end_date, locale)} · {g.region}
           </Muted>
           <Text style={{ fontSize: 26, fontWeight: '800', color: brand.forest }}>
-            ${g.price_per_person_usd} <Text style={{ fontSize: 14, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
+            {formatUsd(g.price_per_person_usd)} <Text style={{ fontSize: 14, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
           </Text>
           <SpotsBar taken={g.seats_taken} max={g.max_people} labels={g10n} />
           {g.guides ? (

@@ -14,9 +14,13 @@ type Labels = {
   tooBig: string;
   shareConsent: string;
   consentNote: string;
+  notSent: string;
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
+
+// A successful send ends in a redirect; let Next.js handle it.
+export const isRedirect = (err: unknown) => typeof (err as { digest?: unknown })?.digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT');
 
 // Message box for a group chat. Photos and videos go straight from the browser to private storage
 // (only chat members can read them); the message itself is then saved by a server action.
@@ -26,6 +30,7 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   function pick(event: React.ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0] ?? null;
@@ -64,9 +69,21 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
         form.set('media_path', path);
         form.set('media_type', file.type.startsWith('video/') ? 'video' : 'image');
       }
+      // Clear the box right away, but put the text back if the message does not go through.
+      const text = String(form.get('body') ?? '');
       formRef.current?.reset();
       clearFile();
-      await sendChatMessage(form);
+      const keep = () => {
+        if (bodyRef.current) bodyRef.current.value = text;
+        setError(labels.notSent);
+      };
+      try {
+        const result = await sendChatMessage(form);
+        if (result && result.ok === false) keep();
+      } catch (err) {
+        if (isRedirect(err)) throw err;
+        keep();
+      }
     });
   }
 
@@ -99,6 +116,7 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
           <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime,video/webm" onChange={pick} className="sr-only" />
         </label>
         <textarea
+          ref={bodyRef}
           name="body"
           maxLength={4000}
           rows={2}

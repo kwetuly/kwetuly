@@ -457,6 +457,13 @@ export const it: Dictionary = {
     contactTitle: 'Contatti',
     openChat: 'Apri la chat',
     error: 'Non ha funzionato. Controlla il modulo e riprova.',
+    fromPrice: 'da {price}',
+    ticketTitle: 'La tua prenotazione',
+    ticketGuide: 'Guida',
+    ticketDates: 'Date',
+    ticketGroup: 'Gruppo',
+    ticketTotal: 'Totale',
+    showItinerary: 'Itinerario',
   },
   offers: en.offers,
   payments: {
@@ -473,6 +480,10 @@ export const it: Dictionary = {
     checkAgain: 'Controlla di nuovo',
     back: 'Indietro',
     direct: 'Paga il resto direttamente come concordato con la guida.',
+    heldNote: 'Rafrika lo trattiene finché non paghiamo la tua guida.',
+    paidOutNote: 'Pagato alla tua guida.',
+    notPaid: 'Acconto non ancora pagato.',
+    paidOn: 'Pagato il {date}',
   },
   alerts: {
     mute: 'Silenzia avvisi',
@@ -483,6 +494,7 @@ export const it: Dictionary = {
     enable: 'Attiva le notifiche',
     enableBody: 'Ricevi avvisi per messaggi, offerte e risposte, anche con l’app chiusa.',
     denied: 'Le notifiche sono bloccate. Attivale nelle impostazioni del telefono.',
+    notSent: 'Non inviato. Il tuo messaggio è ancora qui.',
   },
   intro: {
     welcome: 'Karibu! Benvenuto su',

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CalendarDays, Gavel, Plus, Users } from 'lucide-react';
+import { formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser } from '@/lib/auth';
@@ -21,7 +22,7 @@ export default async function RequestsPage() {
     <>
       <PhotoHero photo="kiliHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <Gavel className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.requests.title}</h1>
@@ -63,6 +64,13 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   ]);
   const r = t.requests;
   const o = t.offers;
+  // Lowest live offer on each of my requests (travellers can read offers on their own requests).
+  const myIds = (mine ?? []).map((req) => req.id);
+  const { data: prices } = myIds.length
+    ? await supabase.from('trip_offers').select('request_id, price_total_usd').in('request_id', myIds).in('status', ['sent', 'accepted']).returns<{ request_id: string; price_total_usd: number }[]>()
+    : { data: [] as { request_id: string; price_total_usd: number }[] };
+  const lowest = new Map<string, number>();
+  for (const p of prices ?? []) lowest.set(p.request_id, Math.min(lowest.get(p.request_id) ?? Infinity, p.price_total_usd));
 
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-10">
@@ -72,7 +80,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
           <p className="mt-3 text-muted">{r.none}</p>
         ) : (
           <ul className="mt-4 grid gap-4 md:grid-cols-2">
-            {mine!.map((req) => <RequestRow key={req.id} req={req} t={t} locale={locale} />)}
+            {mine!.map((req) => <RequestRow key={req.id} req={req} lowest={lowest.get(req.id)} t={t} locale={locale} />)}
           </ul>
         )}
       </section>
@@ -114,7 +122,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   );
 }
 
-function RequestRow({ req, t, locale, showName }: { req: TripRequest; t: Dictionary; locale: Locale; showName?: boolean }) {
+function RequestRow({ req, lowest, t, locale, showName }: { req: TripRequest; lowest?: number; t: Dictionary; locale: Locale; showName?: boolean }) {
   const r = t.requests;
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   return (
@@ -136,6 +144,7 @@ function RequestRow({ req, t, locale, showName }: { req: TripRequest; t: Diction
           </span>
           <span className="flex items-center gap-1.5"><Users className="size-4" aria-hidden /> {req.adults + req.children} {r.people}</span>
           <span className="text-sunset-dark">{r.offersTitle}: {req.offers_count}</span>
+          {lowest != null && <span className="tabular-nums">{r.fromPrice.replace('{price}', formatUsd(lowest))}</span>}
         </div>
       </Link>
     </li>

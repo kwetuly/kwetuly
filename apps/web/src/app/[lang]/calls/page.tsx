@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Clock, Video } from 'lucide-react';
-import { CALL_TOPICS } from '@rafrika/shared';
+import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { listCallGuides } from '@/lib/guides';
@@ -22,7 +22,7 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
     <>
       <PhotoHero photo={'kiliCamp'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <Video className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{t.calls.title}</h1>
@@ -102,7 +102,7 @@ async function CallGuides({
                   <Clock className="size-4" aria-hidden /> {g.call_minutes} {t.calls.minutes}
                 </span>
                 <span className="text-lg font-extrabold text-forest">
-                  {g.call_price_usd != null ? `$${g.call_price_usd}` : t.calls.priceTbc}
+                  {g.call_price_usd != null ? formatUsd(g.call_price_usd) : t.calls.priceTbc}
                 </span>
               </div>
               <Link href={`/${locale}/guides/${g.slug}#call`} className="btn mt-4 w-full">

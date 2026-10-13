@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, CalendarDays, Check, Clock, MapPin, ShieldCheck, Sparkles, Video, X } from 'lucide-react';
-import { MONTHS, TRIP_CIRCUITS, TRIP_OPERATORS } from '@rafrika/shared';
+import { MONTHS, TRIP_CIRCUITS, TRIP_OPERATORS, formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getTripForViewer, tripSummary, tripTitle, type Trip } from '@/lib/trips';
@@ -95,7 +95,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               {trip.itinerary.map((d, i) => (
                 <li key={`${d.day}-${i}`} className="relative flex gap-4 pb-6 last:pb-0">
                   <div className="flex flex-col items-center">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sunset to-gold text-sm font-extrabold text-night">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunset text-sm font-extrabold text-night">
                       {d.day}
                     </span>
                     {i < trip.itinerary.length - 1 && <span className="w-0.5 flex-1 bg-line" />}
@@ -172,9 +172,9 @@ function EnquiryCard({ trip, status, t, locale }: { trip: Trip; status: Record<s
   const tt = t.tours;
   return (
     <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-      <div className="bg-gradient-to-r from-sunset to-gold px-6 py-5 text-night">
+      <div className="bg-sunset px-6 py-5 text-night">
         <p className="text-sm font-bold uppercase tracking-wide">{trip.price_from_usd != null ? tt.priceFrom : tt.enquireTitle}</p>
-        <p className="text-3xl font-extrabold">{trip.price_from_usd != null ? `$${trip.price_from_usd}` : tt.priceOnRequest}</p>
+        <p className="text-3xl font-extrabold tabular-nums">{trip.price_from_usd != null ? formatUsd(trip.price_from_usd) : tt.priceOnRequest}</p>
       </div>
       <div className="p-6">
         <p className="text-sm text-white/80">{tt.enquireBody}</p>

@@ -6,7 +6,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS } from '@rafrika/shared';
+import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
 import { getGuideBySlug, listReviews, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
@@ -79,13 +79,6 @@ async function Profile({
 
         <p className="mt-6 text-sm font-medium text-muted">{facts.join(' · ')}</p>
 
-        {guide.bio && (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold">{t.profile.about}</h2>
-            <p className="mt-2 whitespace-pre-line leading-relaxed">{guide.bio}</p>
-          </section>
-        )}
-
         <section className="mt-8 grid gap-6 sm:grid-cols-2">
           <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
           <Facts title={t.guides.languages} items={guide.languages.map(languageName)} />
@@ -99,6 +92,13 @@ async function Profile({
             ]}
           />
         </section>
+
+        {guide.bio && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">{t.profile.about}</h2>
+            <p className="mt-2 whitespace-pre-line leading-relaxed">{guide.bio}</p>
+          </section>
+        )}
 
         {guide.open_to_partners && (
           <Link
@@ -119,8 +119,8 @@ async function Profile({
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {expertiseOf(guide).map((e) => (
                 <li key={e.id}>
-                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl bg-mint p-3 text-forest hover:bg-forest hover:text-white">
-                    <Icon name={e.icon} className="size-5 shrink-0" />
+                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 hover:border-sunset">
+                    <Icon name={e.icon} className="size-5 shrink-0 text-sunset" />
                     <span className="text-sm font-semibold">{e.label[locale]}</span>
                   </Link>
                 </li>
@@ -207,12 +207,12 @@ async function CallBooking({
 
   return (
     <section id="call" className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-      <div className="bg-gradient-to-r from-sunset to-gold px-6 py-4 text-night">
+      <div className="bg-sunset px-6 py-4 text-night">
         <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
         </p>
         <p className="mt-1 text-2xl font-extrabold">
-          {guide.call_price_usd != null ? `$${guide.call_price_usd}` : t.calls.priceTbc}
+          {guide.call_price_usd != null ? formatUsd(guide.call_price_usd) : t.calls.priceTbc}
           <span className="ml-2 text-sm font-semibold">/ {guide.call_minutes} {t.calls.minutes}</span>
         </p>
       </div>

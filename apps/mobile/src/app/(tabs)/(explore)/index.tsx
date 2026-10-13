@@ -92,7 +92,7 @@ export default function ExploreScreen() {
       <View style={{ gap: 12, paddingHorizontal: 16 }}>
         <SectionTitle>{t.explore.title}</SectionTitle>
         {MENU.map((section) => (
-          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 8 }}>
+          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, padding: 16, gap: 8 }}>
             <Text style={{ fontWeight: '800', fontSize: 17, color: colors.label }}>{section.label[locale]}</Text>
             <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>{section.tagline[locale]}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -109,12 +109,17 @@ export default function ExploreScreen() {
       {/* Why Rafrika */}
       <View style={{ gap: 12, paddingHorizontal: 16 }}>
         <SectionTitle>{t.home.whyTitle}</SectionTitle>
-        {t.home.why.map((item) => (
-          <View key={item.title} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 4 }}>
-            <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{item.title}</Text>
-            <Text style={{ color: colors.secondaryLabel, lineHeight: 20 }}>{item.body}</Text>
-          </View>
-        ))}
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, paddingHorizontal: 16 }}>
+          {t.home.why.map((item, i) => (
+            <View key={item.title} style={{ flexDirection: 'row', gap: 12, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
+              <Text style={{ width: 18, fontWeight: '800', fontSize: 16, color: brand.sunset, fontVariant: ['tabular-nums'] }}>{i + 1}</Text>
+              <View style={{ flex: 1, gap: 4 }}>
+                <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{item.title}</Text>
+                <Text style={{ color: colors.secondaryLabel, lineHeight: 20 }}>{item.body}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
       </View>
     </ScrollView>
   );

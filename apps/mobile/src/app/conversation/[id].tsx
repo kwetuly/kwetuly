@@ -27,6 +27,7 @@ export default function ConversationScreen() {
   const view = conversation ? conversationView(conversation, userId) : null;
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
+  const [notSent, setNotSent] = useState(false);
 
   useEffect(() => {
     if (view) markConversationRead(id, view.isTraveler);
@@ -36,10 +37,14 @@ export default function ConversationScreen() {
     const text = body.trim();
     if (!text) return;
     setSending(true);
+    setNotSent(false);
     try {
       await sendMessage(id, userId, text);
       setBody('');
       await queryClient.invalidateQueries({ queryKey: ['messages', id] });
+    } catch {
+      // Keep the text in the box and say so (weak network, or the message was refused).
+      setNotSent(true);
     } finally {
       setSending(false);
     }
@@ -97,6 +102,9 @@ export default function ConversationScreen() {
           );
         }}
       />
+      {notSent && (
+        <Text selectable style={{ color: '#b42318', fontWeight: '600', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.card }}>{t.alerts.notSent}</Text>
+      )}
       <View style={{ flexDirection: 'row', gap: 8, padding: 12, borderTopWidth: 0.5, borderColor: colors.separator, backgroundColor: colors.card }}>
         <TextInput
           value={body}

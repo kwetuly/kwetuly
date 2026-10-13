@@ -148,14 +148,56 @@ export async function offerContacts(offerId: string) {
 // ---------------------------------------------------------------------------
 // Deposits through Selcom (the `payments` Edge Function). Hidden until Selcom is set up.
 // ---------------------------------------------------------------------------
-export async function paymentsEnabled(): Promise<boolean> {
+/** Whether Selcom is set up, and the shillings-per-dollar rate for "≈ TSh" prices (null until set). */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
   const { data } = await supabase.functions.invoke('payments', { body: { action: 'config' } });
-  return Boolean((data as { enabled?: boolean } | null)?.enabled);
+  const result = (data ?? {}) as { enabled?: boolean; rate?: number | null };
+  return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
 }
 
-export async function isDepositPaid(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<boolean> {
-  const { count } = await supabase.from('payments').select('id', { count: 'exact', head: true }).eq(column, id).eq('status', 'paid');
-  return (count ?? 0) > 0;
+export async function paymentsEnabled(): Promise<boolean> {
+  return (await paymentsConfig()).enabled;
+}
+
+export type DepositState = { paid: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
+
+/** Where a deposit is: not paid, held by Rafrika, or paid to the guide. */
+export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
+  const { data } = await supabase
+    .from('payments')
+    .select('paid_at, payout_done, amount_usd')
+    .eq(column, id)
+    .eq('status', 'paid')
+    .order('paid_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data
+    ? { paid: true, paidAt: data.paid_at, paidOut: data.payout_done, amountUsd: Number(data.amount_usd) }
+    : { paid: false, paidAt: null, paidOut: false, amountUsd: null };
+}
+
+/** Lowest live offer on each of the traveller's requests. */
+export async function lowestOffers(requestIds: string[]): Promise<Record<string, number>> {
+  if (!requestIds.length) return {};
+  const { data } = await supabase.from('trip_offers').select('request_id, price_total_usd').in('request_id', requestIds).in('status', ['sent', 'accepted']);
+  const lowest: Record<string, number> = {};
+  for (const row of (data ?? []) as { request_id: string; price_total_usd: number }[]) {
+    lowest[row.request_id] = Math.min(lowest[row.request_id] ?? Infinity, row.price_total_usd);
+  }
+  return lowest;
+}
+
+/** Deposits paid to this guide or company (newest first), for the Guide Hub ledger. */
+export async function listMyDeposits(userId: string) {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, description, amount_tzs, amount_usd, paid_at, payout_done')
+    .eq('payee_user_id', userId)
+    .eq('status', 'paid')
+    .order('paid_at', { ascending: false })
+    .limit(50);
+  check(error);
+  return (data ?? []) as { id: string; description: string; amount_tzs: number; amount_usd: number; paid_at: string | null; payout_done: boolean }[];
 }
 
 /** Opens the Selcom payment page; when the traveller comes back, asks Selcom for the result. */

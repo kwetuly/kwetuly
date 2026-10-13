@@ -457,6 +457,13 @@ export const de: Dictionary = {
     contactTitle: 'Kontaktdaten',
     openChat: 'Chat öffnen',
     error: 'Das hat nicht geklappt. Bitte Formular prüfen und erneut versuchen.',
+    fromPrice: 'ab {price}',
+    ticketTitle: 'Ihre Buchung',
+    ticketGuide: 'Guide',
+    ticketDates: 'Daten',
+    ticketGroup: 'Gruppe',
+    ticketTotal: 'Gesamt',
+    showItinerary: 'Reiseverlauf',
   },
   offers: en.offers,
   payments: {
@@ -473,6 +480,10 @@ export const de: Dictionary = {
     checkAgain: 'Erneut prüfen',
     back: 'Zurück',
     direct: 'Den Rest zahlen Sie wie vereinbart direkt an Ihren Guide.',
+    heldNote: 'Rafrika hält sie, bis wir Ihren Guide bezahlen.',
+    paidOutNote: 'An Ihren Guide ausgezahlt.',
+    notPaid: 'Anzahlung noch nicht bezahlt.',
+    paidOn: 'Bezahlt am {date}',
   },
   alerts: {
     mute: 'Hinweise stummschalten',
@@ -483,6 +494,7 @@ export const de: Dictionary = {
     enable: 'Mitteilungen einschalten',
     enableBody: 'Erfahren Sie von Nachrichten, Angeboten und Antworten, auch wenn die App geschlossen ist.',
     denied: 'Mitteilungen sind blockiert. Schalten Sie sie in den Telefoneinstellungen ein.',
+    notSent: 'Nicht gesendet. Ihre Nachricht ist noch da.',
   },
   intro: {
     welcome: 'Karibu! Willkommen bei',

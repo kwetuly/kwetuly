@@ -457,6 +457,13 @@ export const fr: Dictionary = {
     contactTitle: 'Coordonnées',
     openChat: 'Ouvrir la discussion',
     error: 'Cela n’a pas fonctionné. Vérifiez le formulaire et réessayez.',
+    fromPrice: 'dès {price}',
+    ticketTitle: 'Votre réservation',
+    ticketGuide: 'Guide',
+    ticketDates: 'Dates',
+    ticketGroup: 'Groupe',
+    ticketTotal: 'Total',
+    showItinerary: 'Itinéraire',
   },
   offers: en.offers,
   payments: {
@@ -473,6 +480,10 @@ export const fr: Dictionary = {
     checkAgain: 'Vérifier à nouveau',
     back: 'Retour',
     direct: 'Réglez le solde directement, comme convenu avec votre guide.',
+    heldNote: 'Rafrika le garde jusqu’au paiement de votre guide.',
+    paidOutNote: 'Versé à votre guide.',
+    notPaid: 'Acompte pas encore payé.',
+    paidOn: 'Payé le {date}',
   },
   alerts: {
     mute: 'Couper les alertes',
@@ -483,6 +494,7 @@ export const fr: Dictionary = {
     enable: 'Activer les notifications',
     enableBody: 'Soyez prévenu des messages, offres et réponses, même appli fermée.',
     denied: 'Les notifications sont bloquées. Activez-les dans les réglages du téléphone.',
+    notSent: 'Non envoyé. Votre message est toujours là.',
   },
   intro: {
     welcome: 'Karibu ! Bienvenue sur',

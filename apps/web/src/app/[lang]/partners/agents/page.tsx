@@ -22,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
     <>
       <PhotoHero photo="buffaloCar">
         <div className="mx-auto max-w-6xl px-4 pb-20 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <Handshake className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>
@@ -56,7 +56,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
             <ol className="mt-6 space-y-4">
               {p.how.map((step, i) => (
                 <li key={step} className="flex gap-4">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[15px] bg-gradient-to-br from-sunset to-gold font-extrabold text-night">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[15px] bg-sunset font-extrabold text-night">
                     {i + 1}
                   </span>
                   <p className="pt-2 font-semibold">{step}</p>

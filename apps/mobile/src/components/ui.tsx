@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { brand, colors, radius } from '@/theme/colors';
 
@@ -7,7 +8,7 @@ import { brand, colors, radius } from '@/theme/colors';
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 10, boxShadow: '0 4px 16px rgba(10,31,23,0.08)' }, style]}>
+    <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 10, borderWidth: 1, borderColor: colors.separator }, style]}>
       {children}
     </View>
   );
@@ -208,5 +209,15 @@ export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text
       {message.tone === 'ok' ? '✓ ' : ''}
       {message.text}
     </Text>
+  );
+}
+
+/** The screen's main action, pinned at the bottom where a thumb reaches it. Give the scroll view extra bottom padding. */
+export function BottomBar({ children }: { children: ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), gap: 8, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.separator }}>
+      {children}
+    </View>
   );
 }

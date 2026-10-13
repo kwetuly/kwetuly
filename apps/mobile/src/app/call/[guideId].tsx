@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS } from '@rafrika/shared';
+import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { getGuide } from '@/lib/api';
 import { requestCall } from '@/lib/api-more';
@@ -59,7 +59,7 @@ export default function CallScreen() {
       <Card>
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
         <Text style={{ fontSize: 18, fontWeight: '800', color: brand.forest }}>
-          {g.call_price_usd != null ? `$${g.call_price_usd}` : c.priceTbc} · {g.call_minutes} {c.minutes}
+          {g.call_price_usd != null ? formatUsd(g.call_price_usd) : c.priceTbc} · {g.call_minutes} {c.minutes}
         </Text>
         {c.how.map((step, i) => (
           <Muted key={step}>

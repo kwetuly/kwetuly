@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CalendarDays, Languages, MapPin, Users } from 'lucide-react';
+import { formatUsd } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { spotsLeft, type GroupTrip } from '@/lib/groups';
@@ -20,7 +21,7 @@ export function SpotsBar({ trip, t }: { trip: GroupTrip; t: Dictionary }) {
   return (
     <div>
       <div className="h-2 overflow-hidden rounded-full bg-surface">
-        <div className="h-full rounded-full bg-gradient-to-r from-sunset to-gold" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-sunset" style={{ width: `${percent}%` }} />
       </div>
       <p className={`mt-1.5 text-xs font-bold ${left === 0 ? 'text-muted' : 'text-sunset-dark'}`}>
         {left === 0 ? t.groups.full : `${left} ${t.groups.spotsLeft}`} · {trip.seats_taken}/{trip.max_people}
@@ -35,7 +36,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
   return (
     <Link
       href={`/${locale}/group-trips/${trip.id}`}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_10px_40px_-12px_rgba(10,31,23,0.12)] transition hover:-translate-y-1"
+      className="group flex flex-col overflow-hidden rounded-3xl border border-line bg-white transition hover:-translate-y-1"
     >
       <div className="relative h-44">
         <Image src={photoUrl(photo, 900)} alt={photo.alt} fill sizes="(min-width: 1024px) 33vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
@@ -43,7 +44,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
           {specialtyName(trip.specialty, locale)}
         </span>
         <span className="absolute bottom-4 right-4 rounded-[12px] bg-night px-3 py-1.5 text-sm font-extrabold text-gold">
-          ${trip.price_per_person_usd} <span className="text-xs font-semibold text-white/70">{t.groups.perPerson}</span>
+          <span className="tabular-nums">{formatUsd(trip.price_per_person_usd)}</span> <span className="text-xs font-semibold text-white/70">{t.groups.perPerson}</span>
         </span>
       </div>
       <div className="flex flex-1 flex-col p-5">

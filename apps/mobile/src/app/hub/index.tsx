@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
-import { CALL_TOPICS, HUB_MENU } from '@rafrika/shared';
+import { CALL_TOPICS, HUB_MENU, formatUsd } from '@rafrika/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Field, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, listHubInbox, respondToCall, type HubCall } from '@/lib/api-more';
+import { listMyDeposits } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors } from '@/theme/colors';
@@ -36,7 +37,7 @@ function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
       {call.preferred_times && <Muted selectable>{call.preferred_times}</Muted>}
       {call.message && <Text selectable style={{ color: colors.label }}>{call.message}</Text>}
       {call.traveler_contact && <Text selectable style={{ color: brand.forest, fontWeight: '600' }}>{call.traveler_contact}</Text>}
-      {call.price_usd != null && <Muted>${call.price_usd}</Muted>}
+      {call.price_usd != null && <Muted>{formatUsd(call.price_usd)}</Muted>}
       {call.scheduled_at && <Muted>{new Date(call.scheduled_at).toLocaleString(locale)}</Muted>}
       {call.status === 'requested' &&
         (accepting ? (
@@ -69,6 +70,7 @@ export default function HubScreen() {
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const guide = mine.data?.guide;
   const inbox = useQuery({ queryKey: ['hub-inbox', guide?.id], queryFn: () => listHubInbox(guide!.id), enabled: guide?.verification_status === 'approved' });
+  const deposits = useQuery({ queryKey: ['hub-deposits', userId], queryFn: () => listMyDeposits(userId!), enabled: !!userId && guide?.verification_status === 'approved' });
 
   if (!guide || guide.verification_status !== 'approved') {
     return (
@@ -87,6 +89,7 @@ export default function HubScreen() {
 
   const hubLabel = (slug: string) => HUB_MENU.find((i) => i.slug === slug)?.label[locale] ?? slug;
   const links: { href: Href; label: string }[] = [
+    { href: '/requests', label: h.openRequests },
     { href: '/hub/forum', label: hubLabel('forum') },
     { href: '/hub/news', label: hubLabel('news') },
     { href: '/hub/jobs', label: hubLabel('jobs') },
@@ -109,6 +112,24 @@ export default function HubScreen() {
           <Button key={l.label} title={l.label} variant="outline" onPress={() => router.push(l.href)} />
         ))}
       </View>
+
+      {/* Deposits as statement rows: date, trip, amount, where the money is. */}
+      <SectionTitle>{h.depositsTitle}</SectionTitle>
+      <Card style={{ gap: 0, paddingVertical: 4 }}>
+        {deposits.data?.length === 0 && <View style={{ paddingVertical: 12 }}><Muted>{h.noDeposits}</Muted></View>}
+        {(deposits.data ?? []).map((d, i) => (
+          <View key={d.id} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
+            <Text style={{ width: 52, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
+              {d.paid_at ? new Date(d.paid_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : ''}
+            </Text>
+            <Text numberOfLines={2} style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{d.description}</Text>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: colors.label, fontWeight: '800', fontVariant: ['tabular-nums'] }}>TSh {d.amount_tzs.toLocaleString('en-US')}</Text>
+              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
+            </View>
+          </View>
+        ))}
+      </Card>
 
       <SectionTitle>{h.calls}</SectionTitle>
       <ScreenState loading={inbox.isLoading} error={inbox.error} empty={inbox.data?.calls.length === 0} emptyText={h.noRequests} />

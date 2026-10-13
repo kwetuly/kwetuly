@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Clock } from 'lucide-react';
+import { formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -22,6 +24,8 @@ type IncomingCall = {
   created_at: string;
 };
 
+type Deposit = { id: string; description: string; amount_tzs: number; amount_usd: number; paid_at: string | null; payout_done: boolean };
+
 type Lead = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string };
 
 export default async function HubHome() {
@@ -42,7 +46,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
   const supabase = await createClient();
   const guideId = user.guide?.id ?? '00000000-0000-0000-0000-000000000000';
 
-  const [{ data: calls }, { data: leads }] = await Promise.all([
+  const [{ data: calls }, { data: leads }, { data: deposits }, { count: openCount }] = await Promise.all([
     supabase
       .from('call_requests')
       .select('id, topic, preferred_times, message, traveler_contact, status, scheduled_at, price_usd, created_at')
@@ -57,10 +61,43 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
       .order('created_at', { ascending: false })
       .limit(50)
       .returns<Lead[]>(),
+    supabase
+      .from('payments')
+      .select('id, description, amount_tzs, amount_usd, paid_at, payout_done')
+      .eq('payee_user_id', user.id)
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false })
+      .limit(50)
+      .returns<Deposit[]>(),
+    supabase.from('trip_requests').select('id', { count: 'exact', head: true }).eq('status', 'open').neq('traveler_id', user.id),
   ]);
+  const day = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' });
 
   return (
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
+      <Link href={`/${locale}/requests`} className="card flex items-center justify-between gap-4 p-5 hover:border-sunset lg:col-span-2">
+        <span className="font-bold">{t.hub.openRequests}</span>
+        <span className="text-2xl font-extrabold tabular-nums text-sunset">{openCount ?? 0}</span>
+      </Link>
+
+      {/* Deposits as statement rows: date, trip, amount, where the money is. */}
+      <section id="deposits" className="card lg:col-span-2">
+        <h2 className="text-lg font-bold">{t.hub.depositsTitle}</h2>
+        {(deposits ?? []).length === 0 && <p className="mt-3 text-sm text-muted">{t.hub.noDeposits}</p>}
+        <ul className="mt-3 divide-y divide-line text-sm">
+          {(deposits ?? []).map((d) => (
+            <li key={d.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-3 py-3">
+              <span className="tabular-nums text-muted">{d.paid_at ? day.format(new Date(d.paid_at)) : ''}</span>
+              <span className="min-w-0 truncate font-semibold">{d.description}</span>
+              <span className="text-right">
+                <span className="block font-bold tabular-nums">TSh {d.amount_tzs.toLocaleString('en-US')}</span>
+                <span className="block text-xs text-muted tabular-nums">{formatUsd(Number(d.amount_usd))} · {d.payout_done ? t.hub.depositPaidOut : t.hub.depositHeld}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section id="calls" className="card">
         <h2 className="text-lg font-bold">{t.hub.calls}</h2>
         {(calls ?? []).length === 0 && <p className="mt-3 text-sm text-muted">{t.hub.noRequests}</p>}
@@ -68,11 +105,12 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
           {(calls ?? []).map((c) => (
             <li key={c.id} className="rounded-2xl border border-line p-4">
               <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm tabular-nums text-muted">{day.format(new Date(c.created_at))}</span>
                 <span className="font-semibold">{topicName(c.topic, locale)}</span>
-                {c.price_usd != null && <span className="text-sm text-muted">${c.price_usd}</span>}
+                {c.price_usd != null && <span className="text-sm tabular-nums text-muted">{formatUsd(c.price_usd)}</span>}
                 <span className="badge ml-auto">{t.hub.status[c.status]}</span>
               </div>
-              {c.preferred_times && <p className="mt-2 text-sm"><strong>🕑</strong> {c.preferred_times}</p>}
+              {c.preferred_times && <p className="mt-2 flex items-start gap-1.5 text-sm"><Clock className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden /> {c.preferred_times}</p>}
               {c.message && <p className="mt-1 text-sm text-muted">{c.message}</p>}
               {c.traveler_contact && <p className="mt-1 text-sm">{c.traveler_contact}</p>}
               {c.status === 'requested' && (
@@ -101,7 +139,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
         <ul className="mt-4 divide-y divide-line">
           {(leads ?? []).map((l) => (
             <li key={l.id} className="py-3 text-sm">
-              <p className="font-semibold">{l.traveler_name} · <span className="font-normal text-muted">{l.traveler_contact}</span></p>
+              <p className="font-semibold"><span className="mr-2 font-normal tabular-nums text-muted">{day.format(new Date(l.created_at))}</span>{l.traveler_name} · <span className="font-normal text-muted">{l.traveler_contact}</span></p>
               <p className="mt-1">{l.message}</p>
             </li>
           ))}

@@ -2,14 +2,15 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Flag, LockKeyhole, Send, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Flag, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { CONVERSATION_COLUMNS, viewOf, type ConversationRow } from '@/lib/messages';
 import { LiveRefresh } from '@/components/live-refresh';
-import { reportMessage, sendMessage } from '../actions';
+import { reportMessage } from '../actions';
+import { MessageComposer } from '@/components/message-composer';
 
 export const metadata: Metadata = { title: 'Conversation', robots: { index: false } };
 
@@ -108,22 +109,7 @@ async function Thread({
         <li id="end" />
       </ol>
 
-      <form action={sendMessage} className="sticky bottom-3 mt-4 flex gap-2 rounded-3xl border border-line bg-white p-2 shadow-lg">
-        <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="conversation_id" value={id} />
-        <textarea
-          name="body"
-          required
-          maxLength={4000}
-          rows={2}
-          placeholder={m.placeholder}
-          className="min-h-12 flex-1 resize-none rounded-2xl px-3 py-2 text-sm outline-none"
-          aria-label={m.placeholder}
-        />
-        <button className="btn self-end px-4 py-3" aria-label={m.send}>
-          <Send className="size-4" aria-hidden />
-        </button>
-      </form>
+      <MessageComposer conversationId={id} locale={locale} labels={{ placeholder: m.placeholder, send: m.send, notSent: t.alerts.notSent }} />
     </>
   );
 }

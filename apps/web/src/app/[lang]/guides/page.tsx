@@ -68,7 +68,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
     <>
       {heading ? (
         <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold text-white shadow-lg">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-sunset text-white shadow-lg">
             <Icon name={heading.icon} className="size-7" />
           </span>
           <div>

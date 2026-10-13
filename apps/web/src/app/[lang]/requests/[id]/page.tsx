@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
-import { GUIDE_EXPERTISE } from '@rafrika/shared';
+import { ArrowLeft, BadgeCheck, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
+import { GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser, type CurrentUser } from '@/lib/auth';
-import { getRequest, listOffers, offerName, paidDeposits, today, type TripOffer, type TripRequest } from '@/lib/requests';
+import { depositState, getRequest, listOffers, offerName, paidDeposits, today, type TripOffer, type TripRequest } from '@/lib/requests';
+import { paymentsConfig } from '@/lib/payments';
+import { BookingTicket } from '@/components/booking-ticket';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
@@ -110,27 +112,52 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
   );
 }
 
-function OfferDetails({ offer, t, locale }: { offer: TripOffer; t: Dictionary; locale: Locale }) {
-  const r = t.requests;
+function datesOf(request: TripRequest, t: Dictionary, locale: Locale) {
+  if (!request.start_date) return t.requests.datesFlexible;
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  return `${date.format(new Date(request.start_date))}${request.end_date ? ` – ${date.format(new Date(request.end_date))}` : ''}`;
+}
+
+// One offer as a comparison row: who, verified, rating, price and what's included up front; the full itinerary folded away.
+function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate: number | null; t: Dictionary; locale: Locale; children?: React.ReactNode }) {
+  const r = t.requests;
+  const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const tzs = approxTzs(offer.price_total_usd, rate);
   return (
     <>
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <p className="text-3xl font-extrabold">${offer.price_total_usd.toLocaleString(locale)}</p>
-        <p className="text-sm font-semibold text-muted">{r.total}</p>
-        {offer.deposit_percent > 0 && <p className="text-sm font-semibold text-muted">· {r.deposit}: {offer.deposit_percent}%</p>}
+      <div className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-1">
+        <div className="min-w-0">
+          {offer.guides ? (
+            <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-lg font-bold hover:text-sunset">{offer.guides.display_name}</Link>
+          ) : (
+            <p className="text-lg font-bold">{offer.company_name}</p>
+          )}
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            {offer.guides && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-xs font-bold text-forest">
+                <BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}
+              </span>
+            )}
+            {offer.guides && <RatingSummary avg={offer.guides.rating_avg} count={offer.guides.rating_count} labels={t.reviews} />}
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-extrabold tabular-nums">{formatUsd(offer.price_total_usd)}</p>
+          {tzs && <p className="text-xs text-muted tabular-nums">{tzs}</p>}
+        </div>
       </div>
-      <p className="mt-3 text-sm font-bold text-muted">{r.itinerary}</p>
-      <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">{offer.itinerary}</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {offer.includes && (<div><p className="text-sm font-bold text-muted">{r.includes}</p><p className="whitespace-pre-line text-sm">{offer.includes}</p></div>)}
-        {offer.excludes && (<div><p className="text-sm font-bold text-muted">{r.excludes}</p><p className="whitespace-pre-line text-sm">{offer.excludes}</p></div>)}
-      </div>
-      {offer.valid_until && (
-        <p className={`mt-3 text-xs font-semibold ${offer.valid_until < today() ? 'text-red-700' : 'text-muted'}`}>
-          {offer.valid_until < today() ? r.expired : `${r.validUntil} ${date.format(new Date(offer.valid_until))}`}
-        </p>
-      )}
+      {offer.includes && <p className="mt-3 text-sm"><span className="font-semibold">{r.includes}:</span> {offer.includes}</p>}
+      <p className="mt-1 text-xs text-muted">
+        {offer.deposit_percent > 0 ? `${r.deposit} ${offer.deposit_percent}%` : ''}
+        {offer.deposit_percent > 0 && offer.valid_until ? ' · ' : ''}
+        {offer.valid_until && (offer.valid_until < today() ? <span className="text-red-700">{r.expired}</span> : `${r.validUntil} ${date.format(new Date(offer.valid_until))}`)}
+      </p>
+      <details className="mt-3 rounded-2xl bg-surface px-4 py-3 text-sm">
+        <summary className="cursor-pointer font-semibold">{r.showItinerary}</summary>
+        <p className="mt-2 whitespace-pre-line leading-relaxed">{offer.itinerary}</p>
+        {offer.excludes && <p className="mt-2"><span className="font-semibold">{r.excludes}:</span> {offer.excludes}</p>}
+      </details>
+      {children}
     </>
   );
 }
@@ -140,7 +167,7 @@ async function Contacts({ offer, traveller, t, locale }: { offer: TripOffer; tra
   const { data } = await supabase.rpc('offer_contacts', { p_offer: offer.id });
   const c = (data as { traveler_email: string | null; traveler_phone: string | null; offerer_email: string | null; offerer_phone: string | null }[] | null)?.[0];
   return (
-    <div className="mt-4 grid gap-3 rounded-2xl bg-mint p-4 text-forest sm:grid-cols-[1fr_auto] sm:items-center">
+    <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
       {c && (
         <div className="text-sm">
           <p className="font-bold">{t.requests.contactTitle}</p>
@@ -155,65 +182,80 @@ async function Contacts({ offer, traveller, t, locale }: { offer: TripOffer; tra
   );
 }
 
+/** The accepted offer as a ticket, for both the traveller and the guide. */
+async function AcceptedTicket({ request, offer, rate, t, locale, children, forGuide }: { request: TripRequest; offer: TripOffer; rate: number | null; t: Dictionary; locale: Locale; children?: React.ReactNode; forGuide?: boolean }) {
+  const deposit = await depositState('trip_offer_id', offer.id);
+  return (
+    <BookingTicket
+      title={request.title}
+      guide={offerName(offer)}
+      dates={datesOf(request, t, locale)}
+      people={request.adults + request.children}
+      totalUsd={offer.price_total_usd}
+      depositPercent={offer.deposit_percent}
+      deposit={deposit}
+      rate={rate}
+      t={t}
+      locale={locale}
+      forGuide={forGuide}
+    >
+      <Contacts offer={offer} traveller={request.traveler_name} t={t} locale={locale} />
+      {children}
+    </BookingTicket>
+  );
+}
+
 async function OffersForTraveller({ request, offers, status, t, locale }: { request: TripRequest; offers: TripOffer[]; status: Search; t: Dictionary; locale: Locale }) {
   const r = t.requests;
-  const paid = await paidDeposits('trip_offer_id', offers.filter((o) => o.status === 'accepted').map((o) => o.id));
+  const { rate } = await paymentsConfig();
   const payError = typeof status.payError === 'string' ? status.payError : undefined;
-  // Accepted offer first, then the rest by price.
-  const sorted = [...offers].sort((a, b) => Number(b.status === 'accepted') - Number(a.status === 'accepted') || a.price_total_usd - b.price_total_usd);
+  const accepted = offers.find((o) => o.status === 'accepted');
+  // Cheapest first, so offers compare at a glance.
+  const others = offers.filter((o) => o !== accepted).sort((a, b) => Number(a.status === 'declined') - Number(b.status === 'declined') || a.price_total_usd - b.price_total_usd);
+  const paid = accepted ? await paidDeposits('trip_offer_id', [accepted.id]) : new Set<string>();
 
   return (
-    <section id="offers" className="mt-8 scroll-mt-28">
-      <h2 className="text-2xl font-bold">{r.offersTitle} ({offers.length})</h2>
-      {offers.length === 0 && <p className="mt-3 text-muted">{r.noOffers}</p>}
-      <ul className="mt-4 space-y-4">
-        {sorted.map((offer) => (
-          <li key={offer.id} className={`card ${offer.status === 'accepted' ? 'ring-2 ring-forest' : ''} ${offer.status === 'declined' ? 'opacity-60' : ''}`}>
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold text-muted">{r.by}</p>
-                {offer.guides ? (
-                  <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-xl font-bold hover:text-sunset">{offer.guides.display_name}</Link>
-                ) : (
-                  <p className="text-xl font-bold">{offer.company_name}</p>
-                )}
-                {offer.guides && <RatingSummary avg={offer.guides.rating_avg} count={offer.guides.rating_count} labels={t.reviews} />}
-              </div>
-              <span className="rounded-full bg-surface px-3 py-1 text-xs font-bold">{r.offerStatus[offer.status]}</span>
+    <section id="offers" className="mt-8 scroll-mt-28 space-y-4">
+      {accepted && (
+        <AcceptedTicket request={request} offer={accepted} rate={rate} t={t} locale={locale}>
+          {!paid.has(accepted.id) && (
+            <div className="mt-4">
+              <PayDeposit
+                kind="offer"
+                id={accepted.id}
+                totalUsd={accepted.price_total_usd}
+                percent={accepted.deposit_percent}
+                paid={false}
+                back={`/${locale}/requests/${request.id}`}
+                error={payError}
+                t={t}
+                locale={locale}
+              />
             </div>
-            <OfferDetails offer={offer} t={t} locale={locale} />
+          )}
+        </AcceptedTicket>
+      )}
 
-            {offer.status === 'sent' && request.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
-              <form action={answerOffer} className="mt-5 space-y-2">
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="request_id" value={request.id} />
-                <input type="hidden" name="offer_id" value={offer.id} />
-                <div className="flex flex-wrap gap-2">
-                  <button name="decision" value="accept" className="btn">{r.accept}</button>
-                  <button name="decision" value="decline" className="btn-outline">{r.decline}</button>
-                </div>
-                <p className="text-xs text-muted">{r.acceptNote}</p>
-              </form>
-            )}
-
-            {offer.status === 'accepted' && (
-              <>
-                <Contacts offer={offer} traveller={request.traveler_name} t={t} locale={locale} />
-                <div className="mt-4">
-                  <PayDeposit
-                    kind="offer"
-                    id={offer.id}
-                    totalUsd={offer.price_total_usd}
-                    percent={offer.deposit_percent}
-                    paid={paid.has(offer.id)}
-                    back={`/${locale}/requests/${request.id}`}
-                    error={payError}
-                    t={t}
-                    locale={locale}
-                  />
-                </div>
-              </>
-            )}
+      <h2 className="pt-2 text-2xl font-bold">{r.offersTitle} ({offers.length})</h2>
+      {offers.length === 0 && <p className="text-muted">{r.noOffers}</p>}
+      <ul className="space-y-3">
+        {(accepted ? others.concat(accepted) : others).map((offer) => (
+          <li key={offer.id} className={`card p-5 ${offer.status === 'declined' ? 'opacity-60' : ''}`}>
+            <OfferRow offer={offer} rate={rate} t={t} locale={locale}>
+              {offer.status !== 'sent' && <p className="mt-3 text-xs font-bold uppercase tracking-wide text-muted">{r.offerStatus[offer.status]}</p>}
+              {offer.status === 'sent' && request.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
+                <form action={answerOffer} className="mt-4 space-y-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="request_id" value={request.id} />
+                  <input type="hidden" name="offer_id" value={offer.id} />
+                  <div className="flex flex-wrap gap-2">
+                    <button name="decision" value="accept" className="btn">{r.accept}</button>
+                    <button name="decision" value="decline" className="btn-outline">{r.decline}</button>
+                  </div>
+                  <p className="text-xs text-muted">{r.acceptNote}</p>
+                </form>
+              )}
+            </OfferRow>
           </li>
         ))}
       </ul>
@@ -225,7 +267,7 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
   const o = t.offers;
   const asGuide = user.guide?.status === 'approved';
   const editable = canOffer && request.status === 'open' && (!offer || offer.status === 'sent' || offer.status === 'withdrawn');
-  const paid = offer?.status === 'accepted' ? await paidDeposits('trip_offer_id', [offer.id]) : new Set<string>();
+  const { rate } = await paymentsConfig();
   const banner = offer && { accepted: o.accepted, declined: o.declined, withdrawn: o.withdrawn, sent: '' }[offer.status];
 
   return (
@@ -237,13 +279,11 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
       {banner && <p className="mt-3 rounded-2xl bg-surface p-4 font-semibold">{banner}</p>}
 
       {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
-        <div className="card mt-4">
-          <OfferDetails offer={offer} t={t} locale={locale} />
-          {offer.status === 'accepted' && (
-            <>
-              <Contacts offer={offer} traveller={request.traveler_name} t={t} locale={locale} />
-              {paid.has(offer.id) && <p className="mt-4 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {t.payments.paid}</p>}
-            </>
+        <div className="mt-4">
+          {offer.status === 'accepted' ? (
+            <AcceptedTicket request={request} offer={offer} rate={rate} t={t} locale={locale} forGuide />
+          ) : (
+            <div className="card p-5"><OfferRow offer={offer} rate={rate} t={t} locale={locale} /></div>
           )}
         </div>
       )}

@@ -4,11 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { useCanOffer } from '@/hooks/use-can-offer';
-import { listMyOffers, listMyRequests, listOpenRequests, type TripRequest } from '@/lib/api-requests';
+import { listMyOffers, listMyRequests, listOpenRequests, lowestOffers, type TripRequest } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { formatDateRange, specialtyName } from '@/lib/labels';
 import { brand, colors } from '@/theme/colors';
+import { formatUsd } from '@rafrika/shared';
 
 export default function RequestsScreen() {
   const { t, locale } = useI18n();
@@ -18,6 +19,7 @@ export default function RequestsScreen() {
   const userId = session?.user.id;
   const { canOffer } = useCanOffer();
   const mine = useQuery({ queryKey: ['my-requests', userId], queryFn: () => listMyRequests(userId!), enabled: !!userId });
+  const lowest = useQuery({ queryKey: ['my-requests-lowest', mine.data?.map((req) => req.id).join(',')], queryFn: () => lowestOffers((mine.data ?? []).map((req) => req.id)), enabled: !!mine.data?.length });
   const open = useQuery({ queryKey: ['open-requests', userId], queryFn: () => listOpenRequests(userId!), enabled: !!userId && canOffer });
   const offers = useQuery({ queryKey: ['my-offers', userId], queryFn: () => listMyOffers(userId!), enabled: !!userId && canOffer });
 
@@ -40,6 +42,7 @@ export default function RequestsScreen() {
           </Muted>
           <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>
             {r.offersTitle}: {req.offers_count}
+            {!showName && lowest.data?.[req.id] != null ? ` · ${r.fromPrice.replace('{price}', formatUsd(lowest.data[req.id]))}` : ''}
           </Text>
         </Card>
       </Pressable>
@@ -88,7 +91,7 @@ export default function RequestsScreen() {
                 <Card>
                   <Text style={{ fontWeight: '700', color: colors.label }}>{offer.trip_requests?.title}</Text>
                   <Muted>
-                    ${offer.price_total_usd.toLocaleString(locale)} · {r.offerStatus[offer.status]}
+                    {formatUsd(offer.price_total_usd)} · {r.offerStatus[offer.status]}
                   </Muted>
                 </Card>
               </Pressable>

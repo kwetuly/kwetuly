@@ -2,8 +2,8 @@ import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { photoUrl, tripPhoto } from '@rafrika/shared';
-import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { photoUrl, tripPhoto, formatUsd } from '@rafrika/shared';
+import { BottomBar, Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { listTours } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { shareLink } from '@/lib/share';
@@ -20,6 +20,7 @@ export default function TourScreen() {
   const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: 16, paddingBottom: 40 }}>
       <Stack.Title>{title}</Stack.Title>
       <Image source={{ uri: photoUrl(tripPhoto(tour.slug, tour.categories), 1200) }} style={{ height: 220 }} contentFit="cover" />
@@ -29,9 +30,8 @@ export default function TourScreen() {
           <Muted selectable>{(locale === 'sw' && tour.summary_sw) || tour.summary_en}</Muted>
           <Text style={{ color: brand.forest, fontWeight: '800', fontSize: 18 }}>
             {tour.days} {tour.days === 1 ? t.tours.day : t.tours.days}
-            {tour.price_from_usd != null ? ` · ${t.tours.priceFrom} $${tour.price_from_usd}` : ` · ${t.tours.priceOnRequest}`}
+            {tour.price_from_usd != null ? ` · ${t.tours.priceFrom} ${formatUsd(tour.price_from_usd)}` : ` · ${t.tours.priceOnRequest}`}
           </Text>
-          <Button title={t.tours.enquireTitle} onPress={() => router.push({ pathname: '/enquire/[slug]', params: { slug: tour.slug } })} />
           <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/tours/${tour.slug}`, `${t.share.shareTrip}: ${title}`)} />
         </Card>
 
@@ -67,5 +67,9 @@ export default function TourScreen() {
         </Card>
       </View>
     </ScrollView>
+    <BottomBar>
+      <Button title={t.tours.enquireTitle} onPress={() => router.push({ pathname: '/enquire/[slug]', params: { slug: tour.slug } })} />
+    </BottomBar>
+    </View>
   );
 }

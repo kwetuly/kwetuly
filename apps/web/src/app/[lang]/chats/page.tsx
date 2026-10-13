@@ -59,7 +59,7 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
           {chats.map((chat) => (
             <li key={chat.id}>
               <Link href={`/${locale}/chats/${chat.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold font-bold text-night">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sunset font-bold text-night">
                   <UsersRound className="size-5" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

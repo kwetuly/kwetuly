@@ -68,7 +68,8 @@ export default function GroupChatScreen() {
       setSharePublic(false);
       await refresh();
     } catch {
-      setError(c.uploadError);
+      // The text and the chosen photo stay in the box so nothing is lost.
+      setError(picked ? c.uploadError : t.alerts.notSent);
     } finally {
       setSending(false);
     }

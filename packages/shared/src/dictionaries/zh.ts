@@ -450,6 +450,13 @@ export const zh: Dictionary = {
     contactTitle: '联系方式',
     openChat: '打开聊天',
     error: '操作未成功，请检查表单后重试。',
+    fromPrice: '最低 {price}',
+    ticketTitle: '你的预订',
+    ticketGuide: '导游',
+    ticketDates: '日期',
+    ticketGroup: '人数',
+    ticketTotal: '总价',
+    showItinerary: '行程安排',
   },
   offers: en.offers,
   payments: {
@@ -466,6 +473,10 @@ export const zh: Dictionary = {
     checkAgain: '再次查询',
     back: '返回',
     direct: '余款按与导游的约定直接支付。',
+    heldNote: '订金由 Rafrika 保管，之后支付给你的导游。',
+    paidOutNote: '已支付给你的导游。',
+    notPaid: '订金尚未支付。',
+    paidOn: '{date} 已支付',
   },
   alerts: {
     mute: '关闭提醒',
@@ -476,6 +487,7 @@ export const zh: Dictionary = {
     enable: '开启通知',
     enableBody: '即使关闭应用，也能收到消息、报价和回复提醒。',
     denied: '通知已被阻止，请在手机设置中开启。',
+    notSent: '未发送。你的消息仍保留在这里。',
   },
   intro: {
     welcome: 'Karibu！欢迎来到',

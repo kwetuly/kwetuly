@@ -77,3 +77,21 @@ export async function paidDeposits(column: 'trip_offer_id' | 'group_member_id', 
   const { data } = await supabase.from('payments').select(column).in(column, ids).eq('status', 'paid');
   return new Set((data ?? []).map((row) => (row as Record<string, string>)[column]));
 }
+
+export type DepositState = { paid: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
+
+/** Where the deposit for one offer or group-trip spot is: not paid, held by Rafrika, or paid to the guide. */
+export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('payments')
+    .select('paid_at, payout_done, amount_usd')
+    .eq(column, id)
+    .eq('status', 'paid')
+    .order('paid_at', { ascending: false })
+    .limit(1)
+    .maybeSingle<{ paid_at: string | null; payout_done: boolean; amount_usd: number }>();
+  return data
+    ? { paid: true, paidAt: data.paid_at, paidOut: data.payout_done, amountUsd: Number(data.amount_usd) }
+    : { paid: false, paidAt: null, paidOut: false, amountUsd: null };
+}

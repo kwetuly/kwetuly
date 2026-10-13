@@ -79,7 +79,7 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
           ))}
           <Link
             href={hrefWith(locale, filters, { signature: filters.signature ? undefined : '1' })}
-            className={`rounded-[15px] px-4 py-2 text-sm font-bold ${filters.signature ? 'bg-gradient-to-r from-sunset to-gold text-night' : 'border border-sunset text-sunset'}`}
+            className={`rounded-[15px] px-4 py-2 text-sm font-bold ${filters.signature ? 'bg-sunset text-night' : 'border border-sunset text-sunset'}`}
           >
             ✦ {t.tours.signature}
           </Link>

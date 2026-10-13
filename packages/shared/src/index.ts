@@ -7,3 +7,4 @@ export * from './trips';
 export * from './dictionaries';
 export * from './photos';
 export * from './phone';
+export * from './money';

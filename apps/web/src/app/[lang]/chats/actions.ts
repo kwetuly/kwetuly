@@ -39,7 +39,8 @@ export async function joinChat(formData: FormData) {
 }
 
 // Text and/or a photo/video the browser already uploaded to this chat's folder.
-export async function sendChatMessage(formData: FormData) {
+// Returns { ok: false } when the message could not be saved, so the composer keeps the text.
+export async function sendChatMessage(formData: FormData): Promise<{ ok: false } | void> {
   const locale = localeOf(formData);
   await requireUser(locale);
   const chatId = field(formData, 'chat_id', 40);
@@ -51,7 +52,7 @@ export async function sendChatMessage(formData: FormData) {
   if (!body && !media) redirect(`/${locale}/chats/${chatId}`);
 
   const supabase = await createClient();
-  await supabase.from('group_chat_messages').insert({
+  const { error } = await supabase.from('group_chat_messages').insert({
     chat_id: chatId,
     body: body || null,
     media_path: media ? mediaPath : null,
@@ -61,6 +62,7 @@ export async function sendChatMessage(formData: FormData) {
     sender_id: (await supabase.auth.getUser()).data.user!.id,
     sender_name: 'self',
   });
+  if (error) return { ok: false };
   redirect(`/${locale}/chats/${chatId}#end`);
 }
 

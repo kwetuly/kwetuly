@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, Badge, Button, Card, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
+import { Avatar, Badge, BottomBar, Button, Card, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
 import { getGuide, listReviews, openConversation } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { brand, colors } from '@/theme/colors';
+import { formatUsd } from '@rafrika/shared';
 
 function Facts({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
@@ -52,6 +53,7 @@ export default function GuideScreen() {
   const dateFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
       <Stack.Title>{g.display_name}</Stack.Title>
 
@@ -81,9 +83,8 @@ export default function GuideScreen() {
             .filter(Boolean)
             .join(' · ')}
         </Muted>
-        {!isMe && <Button title={t.messages.messageGuide} onPress={message} loading={opening} />}
         {!isMe && g.call_enabled && (
-          <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${g.call_price_usd}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
+          <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${formatUsd(g.call_price_usd)}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
         )}
         {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } })} />}
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
@@ -124,5 +125,11 @@ export default function GuideScreen() {
         )}
       </View>
     </ScrollView>
+    {!isMe && (
+      <BottomBar>
+        <Button title={t.messages.messageGuide} onPress={message} loading={opening} />
+      </BottomBar>
+    )}
+    </View>
   );
 }

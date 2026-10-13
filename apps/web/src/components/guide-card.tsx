@@ -33,7 +33,7 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
     />
   ) : (
     <div
-      className="flex shrink-0 items-center justify-center rounded-brand bg-mint font-bold text-forest"
+      className="flex shrink-0 items-center justify-center rounded-brand bg-sand font-bold text-sunset-dark"
       style={{ width: size, height: size, fontSize: size / 2.5 }}
       aria-hidden
     >
@@ -68,7 +68,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
   return (
     <Link
       href={`/${locale}/guides/${guide.slug}`}
-      className="group flex flex-col rounded-3xl border border-line bg-white p-5 shadow-[0_10px_40px_-12px_rgba(10,31,23,0.12)] transition hover:-translate-y-1 hover:border-sunset"
+      className="group flex flex-col rounded-3xl border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-sunset"
     >
       <div className="flex gap-4">
         <GuideAvatar guide={guide} size={72} />
@@ -111,7 +111,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
       {expertise.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3" aria-label={t.profile.expertise}>
           {expertise.map((e) => (
-            <li key={e.id} className="inline-flex items-center gap-1 rounded-[10px] bg-mint px-2.5 py-1 text-xs font-semibold text-forest">
+            <li key={e.id} className="inline-flex items-center gap-1 rounded-[10px] bg-surface px-2.5 py-1 text-xs font-semibold text-charcoal">
               <Icon name={e.icon} className="size-3.5" /> {e.label[locale]}
             </li>
           ))}

@@ -14,7 +14,7 @@ type Props = {
 // Plain GET form, so search works without JavaScript and results have shareable URLs.
 export function GuideSearch({ locale, t, defaults = {}, full = false }: Props) {
   return (
-    <form action={`/${locale}/guides`} className="rounded-brand bg-white p-3 shadow-[0_4px_20px_rgba(0,0,0,0.05)]">
+    <form action={`/${locale}/guides`} className="rounded-brand bg-white p-3 border border-line">
       <div className={`grid gap-3 ${full ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-flow-col sm:auto-cols-fr'}`}>
         <label className="sr-only" htmlFor="specialty">{t.home.specialtyLabel}</label>
         <select id="specialty" name="specialty" defaultValue={defaults.specialty ?? ''} className="field">

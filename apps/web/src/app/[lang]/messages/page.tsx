@@ -55,7 +55,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
         return (
           <li key={c.id}>
             <Link href={`/${locale}/messages/${c.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-mint text-lg font-bold text-forest">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-lg font-bold text-sunset-dark">
                 {otherName.charAt(0)}
               </span>
               <span className="min-w-0 flex-1">

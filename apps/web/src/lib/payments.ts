@@ -19,15 +19,21 @@ export async function callPayments(body: Record<string, string>, accessToken?: s
   return (await res.json().catch(() => ({}))) as { enabled?: boolean; url?: string; order_id?: string; status?: string; error?: string };
 }
 
-export async function paymentsEnabled(): Promise<boolean> {
+/** Whether Selcom is set up, and the shillings-per-dollar rate (null until configured). */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
   'use cache';
   cacheTag('payments-config');
   cacheLife('minutes');
   try {
-    return Boolean((await callPayments({ action: 'config' })).enabled);
+    const result = (await callPayments({ action: 'config' })) as { enabled?: boolean; rate?: number | null };
+    return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
   } catch {
-    return false;
+    return { enabled: false, rate: null };
   }
+}
+
+export async function paymentsEnabled(): Promise<boolean> {
+  return (await paymentsConfig()).enabled;
 }
 
 /** Deposit in US dollars, as the Edge Function computes it (it converts to shillings). */

@@ -36,7 +36,8 @@ export async function startConversation(formData: FormData) {
   redirect(`/${locale}/messages/${created.id}`);
 }
 
-export async function sendMessage(formData: FormData) {
+// Returns { ok: false } when the message could not be saved, so the composer keeps the text.
+export async function sendMessage(formData: FormData): Promise<{ ok: false } | void> {
   const locale = localeFrom(formData);
   const conversationId = String(formData.get('conversation_id') ?? '');
   const body = String(formData.get('body') ?? '').trim().slice(0, 4000);
@@ -50,7 +51,8 @@ export async function sendMessage(formData: FormData) {
   if (!user) redirect(`/${locale}/login`);
 
   // The database hides contact details and alerts the other person.
-  await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, body });
+  const { error } = await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, body });
+  if (error) return { ok: false };
   redirect(`${back}#end`);
 }
 

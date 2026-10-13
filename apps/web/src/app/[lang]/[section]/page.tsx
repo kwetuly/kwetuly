@@ -42,7 +42,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
     <>
       <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <Icon name={section.icon} className="size-7" />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{section.label[locale]}</h1>
@@ -56,7 +56,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
             href={itemHref(locale, section, item)}
             className="card group flex items-start gap-4 transition hover:-translate-y-1 hover:border-sunset/40"
           >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-sunset transition group-hover:bg-gradient-to-br group-hover:from-sunset group-hover:to-gold group-hover:text-white">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-sunset transition group-hover:bg-sunset group-hover:text-white">
               <Icon name={item.icon} className="size-6" />
             </span>
             <span className="flex-1">

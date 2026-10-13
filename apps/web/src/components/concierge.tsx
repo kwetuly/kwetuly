@@ -216,7 +216,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           // Some browsers load their voice list lazily; asking early makes the first reply use the right voice.
           if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
         }}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[15px] bg-gradient-to-r from-sunset to-gold px-5 py-3.5 font-bold text-night shadow-[0_12px_32px_-8px_rgba(255,106,43,0.7)] transition hover:-translate-y-0.5"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[15px] bg-sunset px-5 py-3.5 font-bold text-night shadow-[0_8px_24px_-8px_rgba(10,31,23,0.35)] transition hover:bg-sunset-dark"
       >
         <Sparkles className="size-5" aria-hidden />
         <span className="hidden sm:inline">{labels.open}</span>

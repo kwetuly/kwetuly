@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@/components/ui';
-import { isDepositPaid, payDeposit, paymentsEnabled } from '@/lib/api-requests';
+import { depositState, payDeposit, paymentsEnabled } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';
 import { brand } from '@/theme/colors';
 
@@ -15,13 +15,17 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const queryClient = useQueryClient();
   const column = kind === 'offer' ? 'trip_offer_id' : 'group_member_id';
   const enabled = useQuery({ queryKey: ['payments-enabled'], queryFn: paymentsEnabled, staleTime: 10 * 60_000 });
-  const paid = useQuery({ queryKey: ['deposit-paid', id], queryFn: () => isDepositPaid(column, id) });
+  const paid = useQuery({ queryKey: ['deposit-state', id], queryFn: () => depositState(column, id) });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
   if (percent <= 0) return null;
-  if (paid.data) {
-    return <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {p.paid}</Text>;
+  if (paid.data?.paid) {
+    return (
+      <Text style={{ color: brand.forest, fontWeight: '700' }}>
+        ✓ {p.paid} · <Text style={{ fontWeight: '400' }}>{paid.data.paidOut ? p.paidOutNote : p.heldNote}</Text>
+      </Text>
+    );
   }
   if (!enabled.data) return null;
 
@@ -30,7 +34,7 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
     setNote('');
     const result = await payDeposit(kind, id, locale);
     setBusy(false);
-    if (result === 'paid') queryClient.invalidateQueries({ queryKey: ['deposit-paid', id] });
+    if (result === 'paid') queryClient.invalidateQueries({ queryKey: ['deposit-state', id] });
     else setNote(result === 'pending' ? p.pending : result === 'failed' ? p.failed : result === 'phone_required' ? p.phoneRequired : p.error);
   }
 

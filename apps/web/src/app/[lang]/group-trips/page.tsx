@@ -20,7 +20,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
     <>
       <PhotoHero photo="kiliHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <UsersRound className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.groups.title}</h1>

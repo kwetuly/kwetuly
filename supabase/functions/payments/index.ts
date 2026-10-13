@@ -1,6 +1,6 @@
 // Deposits through Selcom Checkout (M-Pesa, Tigo Pesa, Airtel Money, Halopesa and cards).
 //
-//   POST { action: "config" }                          → { enabled }   (anyone; used to show the Pay button)
+//   POST { action: "config" }                          → { enabled, rate } (anyone; Pay button and ≈ TSh prices)
 //   POST { action: "checkout", kind: "offer"|"group", id } + user token → { url, order_id }
 //   POST { action: "status", order_id } + user token   → { status }    (asks Selcom, updates the row)
 //   POST from Selcom (webhook, has order_id)           → re-checks the order with Selcom, never trusts the body
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
   const body = (await req.json().catch(() => ({}))) as Record<string, string>;
 
-  if (body.action === 'config') return json({ enabled: enabled() });
+  if (body.action === 'config') return json({ enabled: enabled(), rate: RATE > 0 ? RATE : null });
   if (!enabled()) return json({ error: 'not_configured' }, 503);
   const db = admin();
 

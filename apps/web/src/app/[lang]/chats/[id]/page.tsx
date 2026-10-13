@@ -186,6 +186,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
           tooBig: c.tooBig,
           shareConsent: c.shareConsent,
           consentNote: c.consentNote,
+          notSent: t.alerts.notSent,
         }}
       />
     </>

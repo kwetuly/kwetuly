@@ -1,14 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, BadgeCheck, Languages, Star } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { MENU } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { GuideSearch } from '@/components/guide-search';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
-
-const whyIcons = [BadgeCheck, Star, Languages];
 
 // Home cards stay even: long sections show their first links and a "See all" link.
 const HOME_CARD_LINKS = 5;
@@ -37,7 +35,7 @@ export default async function HomePage() {
             <GuideSearch locale={locale} t={t} />
           </div>
         </div>
-        <svg className="absolute -bottom-px left-0 w-full text-white" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden>
+        <svg className="absolute -bottom-px left-0 w-full text-surface" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden>
           <path fill="currentColor" d="M0,64 C240,16 480,0 720,24 C960,48 1200,80 1440,40 L1440,80 L0,80 Z" />
         </svg>
       </section>
@@ -62,7 +60,7 @@ export default async function HomePage() {
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/60 to-night/10" />
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-sunset">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
@@ -97,21 +95,21 @@ export default async function HomePage() {
       </section>
 
       {/* Why Rafrika */}
-      <section className="bg-sand">
-        <div className="mx-auto max-w-7xl px-4 py-16">
+      {/* Plain text, no icon cards: a short list reads faster. */}
+      <section className="border-y border-line bg-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1fr_2fr]">
           <h2 className="text-3xl font-extrabold tracking-tight">{t.home.whyTitle}</h2>
-          <div className="mt-8 grid gap-5 sm:grid-cols-3">
-            {t.home.why.map((item, i) => {
-              const WhyIcon = whyIcons[i] ?? BadgeCheck;
-              return (
-                <div key={item.title} className="card">
-                  <WhyIcon className="size-8 text-sunset" aria-hidden />
-                  <h3 className="mt-4 text-lg font-bold">{item.title}</h3>
-                  <p className="mt-2 text-muted">{item.body}</p>
+          <ol className="divide-y divide-line">
+            {t.home.why.map((item, i) => (
+              <li key={item.title} className="grid grid-cols-[2rem_1fr] gap-3 py-5 first:pt-0 last:pb-0">
+                <span className="text-lg font-extrabold tabular-nums text-sunset">{i + 1}</span>
+                <div>
+                  <h3 className="text-lg font-bold">{item.title}</h3>
+                  <p className="mt-1 text-muted">{item.body}</p>
                 </div>
-              );
-            })}
-          </div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
@@ -128,11 +126,8 @@ export default async function HomePage() {
         </div>
         <Link
           href={`/${locale}/discover/afcon-2027`}
-          className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-gold via-[#ff9a3d] to-sunset p-8 text-night sm:p-10"
+          className="group relative overflow-hidden rounded-3xl bg-gold p-8 text-night sm:p-10"
         >
-          <div className="absolute right-6 top-6 text-7xl opacity-90 transition group-hover:rotate-12 group-hover:scale-110" aria-hidden>
-            ⚽
-          </div>
           <p className="text-sm font-bold uppercase tracking-widest">{t.home.afconDates}</p>
           <h2 className="mt-3 max-w-sm text-3xl font-extrabold">{t.home.afconTitle}</h2>
           <p className="mt-3 max-w-md font-medium text-night/80">{t.home.afconBody}</p>

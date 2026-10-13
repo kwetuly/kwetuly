@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { approxTzs, formatUsd, type Dictionary, type Locale } from '@rafrika/shared';
+import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
+import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Badge, Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import {
   answerOffer,
+  depositState,
   getMyOffer,
   getRequest,
   listOffers,
   offerContacts,
   offerName,
+  paymentsConfig,
   sendOffer,
   setRequestOpen,
   today,
@@ -32,6 +37,7 @@ export default function RequestScreen() {
   const request = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id), enabled: !!userId });
   const offers = useQuery({ queryKey: ['offers', id], queryFn: () => listOffers(id), enabled: !!userId });
 
+  if (!userId) return <SignInPrompt />;
   if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} empty emptyText={t.requests.error} />;
   const req = request.data;
   const isOwner = req.traveler_id === userId;
@@ -97,21 +103,59 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
   );
 }
 
-function OfferBody({ offer }: { offer: TripOffer }) {
-  const { t, locale } = useI18n();
+function useRate() {
+  return useQuery({ queryKey: ['payments-config'], queryFn: paymentsConfig, staleTime: 10 * 60_000 }).data?.rate ?? null;
+}
+
+function datesOf(req: TripRequest, t: Dictionary, locale: Locale) {
+  return req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : t.requests.datesFlexible;
+}
+
+// One offer as a comparison row: who, verified, rating, price and what's included up front; the itinerary folds open.
+function OfferRow({ offer }: { offer: TripOffer }) {
+  const { t } = useI18n();
   const r = t.requests;
+  const rate = useRate();
+  const [open, setOpen] = useState(false);
   const expired = !!offer.valid_until && offer.valid_until < today();
+  const tzs = approxTzs(offer.price_total_usd, rate);
+  const meta = [offer.deposit_percent > 0 ? `${r.deposit} ${offer.deposit_percent}%` : null, offer.valid_until ? (expired ? r.expired : `${r.validUntil} ${offer.valid_until}`) : null].filter(Boolean).join(' · ');
+
   return (
     <>
-      <Text style={{ fontSize: 26, fontWeight: '800', color: brand.forest }}>
-        ${offer.price_total_usd.toLocaleString(locale)} <Text style={{ fontSize: 14, color: colors.secondaryLabel }}>{r.total}</Text>
-      </Text>
-      {offer.deposit_percent > 0 && <Muted>{r.deposit}: {offer.deposit_percent}%</Muted>}
-      <Text style={{ fontWeight: '700', color: colors.label }}>{r.itinerary}</Text>
-      <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{offer.itinerary}</Text>
-      {offer.includes && <Muted>{r.includes}: {offer.includes}</Muted>}
-      {offer.excludes && <Muted>{r.excludes}: {offer.excludes}</Muted>}
-      {offer.valid_until && <Muted>{expired ? r.expired : `${r.validUntil} ${offer.valid_until}`}</Muted>}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+        <View style={{ flex: 1, gap: 4 }}>
+          {offer.guides ? (
+            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: 17, fontWeight: '800', color: colors.label }}>{offer.guides.display_name} ›</Link>
+          ) : (
+            <Text style={{ fontSize: 17, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
+          )}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+            {offer.guides && <Badge label={`✓ ${t.guides.verified}`} />}
+            {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
+          </View>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}>{formatUsd(offer.price_total_usd)}</Text>
+          {tzs && <Text style={{ fontSize: 12, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>{tzs}</Text>}
+        </View>
+      </View>
+      {offer.includes && (
+        <Text style={{ color: colors.label }}>
+          <Text style={{ fontWeight: '700' }}>{r.includes}: </Text>
+          {offer.includes}
+        </Text>
+      )}
+      {meta ? <Text style={{ color: expired ? '#b42318' : colors.secondaryLabel, fontSize: 13 }}>{meta}</Text> : null}
+      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: 12, padding: 12, gap: 6 }}>
+        <Text style={{ fontWeight: '700', color: colors.label }}>{open ? '▾' : '▸'} {r.showItinerary}</Text>
+        {open && (
+          <>
+            <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{offer.itinerary}</Text>
+            {offer.excludes && <Muted>{r.excludes}: {offer.excludes}</Muted>}
+          </>
+        )}
+      </Pressable>
     </>
   );
 }
@@ -121,16 +165,39 @@ function Contacts({ offer, traveller }: { offer: TripOffer; traveller: string })
   const contacts = useQuery({ queryKey: ['offer-contacts', offer.id], queryFn: () => offerContacts(offer.id) });
   const c = contacts.data;
   return (
-    <View style={{ gap: 6, backgroundColor: brand.mint, borderRadius: 15, padding: 12 }}>
-      <Text style={{ fontWeight: '800', color: brand.forest }}>{t.requests.contactTitle}</Text>
+    <View style={{ gap: 6 }}>
+      <Text style={{ fontWeight: '800', color: colors.label }}>{t.requests.contactTitle}</Text>
       {c && (
         <>
-          <Text selectable style={{ color: brand.forest }}>{offerName(offer)}: {[c.offerer_phone, c.offerer_email].filter(Boolean).join(' · ')}</Text>
-          <Text selectable style={{ color: brand.forest }}>{traveller}: {[c.traveler_phone, c.traveler_email].filter(Boolean).join(' · ')}</Text>
+          <Text selectable style={{ color: colors.label }}>{offerName(offer)}: {[c.offerer_phone, c.offerer_email].filter(Boolean).join(' · ')}</Text>
+          <Text selectable style={{ color: colors.label }}>{traveller}: {[c.traveler_phone, c.traveler_email].filter(Boolean).join(' · ')}</Text>
         </>
       )}
       {offer.chat_id && <Button title={t.requests.openChat} onPress={() => router.push(`/chat/${offer.chat_id}`)} />}
     </View>
+  );
+}
+
+/** The accepted offer as a ticket, for both the traveller and the guide. */
+function AcceptedTicket({ req, offer, children, forGuide }: { req: TripRequest; offer: TripOffer; children?: React.ReactNode; forGuide?: boolean }) {
+  const { t, locale } = useI18n();
+  const rate = useRate();
+  const deposit = useQuery({ queryKey: ['deposit-state', offer.id], queryFn: () => depositState('trip_offer_id', offer.id) });
+  return (
+    <BookingTicket
+      title={req.title}
+      guide={offerName(offer)}
+      dates={datesOf(req, t, locale)}
+      people={req.adults + req.children}
+      totalUsd={offer.price_total_usd}
+      depositPercent={offer.deposit_percent}
+      deposit={deposit.data}
+      rate={rate}
+      forGuide={forGuide}
+    >
+      <Contacts offer={offer} traveller={req.traveler_name} />
+      {children}
+    </BookingTicket>
   );
 }
 
@@ -140,7 +207,11 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const sorted = [...offers].sort((a, b) => Number(b.status === 'accepted') - Number(a.status === 'accepted') || a.price_total_usd - b.price_total_usd);
+  const accepted = offers.find((o) => o.status === 'accepted');
+  // Cheapest first, so offers compare at a glance; declined ones go last.
+  const others = offers
+    .filter((o) => o !== accepted)
+    .sort((a, b) => Number(a.status === 'declined') - Number(b.status === 'declined') || a.price_total_usd - b.price_total_usd);
 
   async function answer(offer: TripOffer, accept: boolean) {
     setBusy(offer.id + accept);
@@ -161,35 +232,23 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
 
   return (
     <View style={{ gap: 12 }}>
+      {accepted && (
+        <AcceptedTicket req={req} offer={accepted}>
+          <PayDeposit kind="offer" id={accepted.id} totalUsd={accepted.price_total_usd} percent={accepted.deposit_percent} />
+        </AcceptedTicket>
+      )}
       <SectionTitle>{r.offersTitle} ({offers.length})</SectionTitle>
       {offers.length === 0 && <Muted>{r.noOffers}</Muted>}
       {error ? <Text selectable style={{ color: '#b42318' }}>{error}</Text> : null}
-      {sorted.map((offer) => (
-        <Card key={offer.id} style={offer.status === 'accepted' ? { borderWidth: 2, borderColor: brand.forest } : offer.status === 'declined' ? { opacity: 0.6 } : undefined}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Muted>{r.by}</Muted>
-              {offer.guides ? (
-                <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: 18, fontWeight: '800', color: brand.forest }}>{offer.guides.display_name} ›</Link>
-              ) : (
-                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
-              )}
-              {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
-            </View>
-            <Badge label={r.offerStatus[offer.status]} tone={offer.status === 'accepted' ? 'mint' : 'sand'} />
-          </View>
-          <OfferBody offer={offer} />
+      {(accepted ? [...others, accepted] : others).map((offer) => (
+        <Card key={offer.id} style={offer.status === 'declined' ? { opacity: 0.6 } : undefined}>
+          <OfferRow offer={offer} />
+          {offer.status !== 'sent' && <Muted>{r.offerStatus[offer.status]}</Muted>}
           {offer.status === 'sent' && req.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
             <>
               <Button title={r.accept} onPress={() => answer(offer, true)} loading={busy === offer.id + 'true'} />
               <Button title={r.decline} variant="outline" onPress={() => answer(offer, false)} loading={busy === offer.id + 'false'} />
               <Muted>{r.acceptNote}</Muted>
-            </>
-          )}
-          {offer.status === 'accepted' && (
-            <>
-              <Contacts offer={offer} traveller={req.traveler_name} />
-              <PayDeposit kind="offer" id={offer.id} totalUsd={offer.price_total_usd} percent={offer.deposit_percent} />
             </>
           )}
         </Card>
@@ -283,10 +342,10 @@ function MyOffer({ req }: { req: TripRequest }) {
       <Muted>{o.competing}: {req.offers_count}</Muted>
       {banner ? <Text style={{ fontWeight: '700', color: colors.label }}>{banner}</Text> : null}
 
-      {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
+      {offer?.status === 'accepted' && <AcceptedTicket req={req} offer={offer} forGuide />}
+      {offer?.status === 'declined' && (
         <Card>
-          <OfferBody offer={offer} />
-          {offer.status === 'accepted' && <Contacts offer={offer} traveller={req.traveler_name} />}
+          <OfferRow offer={offer} />
         </Card>
       )}
 

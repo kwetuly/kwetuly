@@ -457,6 +457,13 @@ export const pl: Dictionary = {
     contactTitle: 'Dane kontaktowe',
     openChat: 'Otwórz czat',
     error: 'Nie udało się. Sprawdź formularz i spróbuj ponownie.',
+    fromPrice: 'od {price}',
+    ticketTitle: 'Twoja rezerwacja',
+    ticketGuide: 'Przewodnik',
+    ticketDates: 'Daty',
+    ticketGroup: 'Grupa',
+    ticketTotal: 'Razem',
+    showItinerary: 'Plan wyprawy',
   },
   offers: en.offers,
   payments: {
@@ -473,6 +480,10 @@ export const pl: Dictionary = {
     checkAgain: 'Sprawdź ponownie',
     back: 'Wróć',
     direct: 'Resztę zapłać bezpośrednio, jak ustalono z przewodnikiem.',
+    heldNote: 'Rafrika przechowuje ją, dopóki nie zapłacimy przewodnikowi.',
+    paidOutNote: 'Przekazano przewodnikowi.',
+    notPaid: 'Zaliczka jeszcze nie zapłacona.',
+    paidOn: 'Zapłacono {date}',
   },
   alerts: {
     mute: 'Wycisz powiadomienia',
@@ -483,6 +494,7 @@ export const pl: Dictionary = {
     enable: 'Włącz powiadomienia',
     enableBody: 'Dowiaduj się o wiadomościach, ofertach i odpowiedziach, nawet gdy aplikacja jest zamknięta.',
     denied: 'Powiadomienia są zablokowane. Włącz je w ustawieniach telefonu.',
+    notSent: 'Nie wysłano. Twoja wiadomość wciąż tu jest.',
   },
   intro: {
     welcome: 'Karibu! Witaj w',

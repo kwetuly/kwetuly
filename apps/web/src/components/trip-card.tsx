@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { photoUrl, tripPhoto } from '@/lib/photos';
 import { Clock, MapPin, Sparkles } from 'lucide-react';
-import { TRIP_CATEGORIES, TRIP_KINDS } from '@rafrika/shared';
+import { TRIP_CATEGORIES, TRIP_KINDS, formatUsd } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import { tripSummary, tripTitle, type Trip } from '@/lib/trips';
 import { Icon } from './icon';
@@ -36,7 +36,7 @@ export function TripCover({ trip, className = '', sizes = '(min-width: 1024px) 3
 
 export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale; labels: { days: string; day: string; signature: string; draft: string } }) {
   return (
-    <Link href={`/${locale}/tours/${trip.slug}`} className="group overflow-hidden rounded-3xl border border-line bg-white shadow-[0_10px_40px_-12px_rgba(10,31,23,0.12)] transition hover:-translate-y-1">
+    <Link href={`/${locale}/tours/${trip.slug}`} className="group overflow-hidden rounded-3xl border border-line bg-white transition hover:-translate-y-1">
       <div className="relative">
         <TripCover trip={trip} className="h-52" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
@@ -57,7 +57,7 @@ export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale;
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted">
           <span className="flex items-center gap-1"><Clock className="size-3.5" aria-hidden /> {trip.days} {trip.days === 1 ? labels.day : labels.days}</span>
           {trip.start_from && <span className="flex items-center gap-1"><MapPin className="size-3.5" aria-hidden /> {trip.start_from}</span>}
-          {trip.price_from_usd != null && <span className="ml-auto text-base font-extrabold text-forest">${trip.price_from_usd}</span>}
+          {trip.price_from_usd != null && <span className="ml-auto text-base font-extrabold tabular-nums text-forest">{formatUsd(trip.price_from_usd)}</span>}
         </div>
       </div>
     </Link>

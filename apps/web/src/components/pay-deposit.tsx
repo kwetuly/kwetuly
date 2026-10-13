@@ -10,6 +10,8 @@ type Props = {
   totalUsd: number;
   percent: number;
   paid: boolean;
+  /** Set when paid: whether Rafrika still holds the deposit or has paid the guide. */
+  paidOut?: boolean;
   /** Page to come back to if starting the payment fails. */
   back: string;
   error?: string;
@@ -21,11 +23,16 @@ type Props = {
 const ERRORS = new Set(['phone_required']);
 
 // Deposit box for an accepted offer or group-trip spot. Hidden until Selcom is set up.
-export async function PayDeposit({ kind, id, totalUsd, percent, paid, back, error, t, locale, dark }: Props) {
+export async function PayDeposit({ kind, id, totalUsd, percent, paid, paidOut, back, error, t, locale, dark }: Props) {
   const p = t.payments;
   if (percent <= 0) return null;
   if (paid) {
-    return <p className="rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {p.paid}</p>;
+    return (
+      <div className="rounded-2xl bg-mint p-4 text-forest">
+        <p className="font-semibold">✓ {p.paid}</p>
+        <p className="mt-1 text-sm">{paidOut ? p.paidOutNote : p.heldNote}</p>
+      </div>
+    );
   }
   if (!(await paymentsEnabled())) return null;
 

@@ -49,7 +49,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
             <ArrowLeft className="size-4" aria-hidden /> {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
+            <span className="flex size-16 items-center justify-center rounded-2xl bg-sunset">
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>

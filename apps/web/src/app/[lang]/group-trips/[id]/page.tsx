@@ -15,7 +15,9 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { paidDeposits } from '@/lib/requests';
+import { approxTzs, formatUsd } from '@rafrika/shared';
+import { paymentsConfig } from '@/lib/payments';
+import { depositState } from '@/lib/requests';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
 
 type Search = Record<string, string | string[] | undefined>;
@@ -48,6 +50,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
   const g = t.groups;
   const photo = specialtyPhoto(trip.specialty);
   const isOrganizer = user?.id === trip.organizer_id;
+  const { rate } = await paymentsConfig();
   // The trip chat is only visible to its members (organiser and accepted travellers).
   const tripChat = user
     ? (await (await createClient()).from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle()).data
@@ -101,8 +104,9 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
           <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-            <div className="bg-gradient-to-r from-sunset to-gold px-6 py-5 text-night">
-              <p className="text-3xl font-extrabold">${trip.price_per_person_usd}</p>
+            <div className="bg-sunset px-6 py-5 text-night">
+              <p className="text-3xl font-extrabold tabular-nums">{formatUsd(trip.price_per_person_usd)}</p>
+              {approxTzs(trip.price_per_person_usd, rate) && <p className="text-xs font-semibold tabular-nums">{approxTzs(trip.price_per_person_usd, rate)}</p>}
               <p className="text-sm font-bold">{g.perPerson}</p>
             </div>
             <div className="space-y-4 p-6">
@@ -178,7 +182,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
   if (mine?.status === 'accepted') {
     const [{ data: contact }, paid] = await Promise.all([
       supabase.from('group_trip_private').select('contact').eq('group_trip_id', trip.id).maybeSingle(),
-      paidDeposits('group_member_id', [mine.id]),
+      depositState('group_member_id', mine.id),
     ]);
     return (
       <div className="space-y-3">
@@ -191,7 +195,8 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
           id={mine.id}
           totalUsd={trip.price_per_person_usd * mine.seats}
           percent={trip.deposit_percent}
-          paid={paid.has(mine.id)}
+          paid={paid.paid}
+          paidOut={paid.paidOut}
           back={`/${locale}/group-trips/${trip.id}`}
           error={typeof status.payError === 'string' ? status.payError : undefined}
           t={t}
