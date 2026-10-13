@@ -193,8 +193,8 @@ async function GuideEditor({
         <fieldset className="card space-y-4">
           <legend className="px-1 text-lg font-semibold">{d.privateSection}</legend>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={d.phone}><input className="field" name="phone" type="tel" defaultValue={details?.phone ?? ''} /></Field>
-            <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? ''} /></Field>
+            <Field label={d.phone}><input className="field" name="phone" type="tel" defaultValue={details?.phone ?? user.phone ?? ''} /></Field>
+            <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? user.phone ?? ''} /></Field>
             <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
             <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
           </div>

@@ -5,6 +5,7 @@ import { Briefcase, Compass, Plane } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { signUp } from '../actions';
+import { SocialSignIn } from '@/components/social-sign-in';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).join.title };
@@ -51,8 +52,10 @@ async function JoinForm({
   }
 
   return (
-    <form action={signUp} className="card mt-8 space-y-5">
-      {params.error && <p className="rounded-2xl bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+    <div className="card mt-8 space-y-5">
+    <SocialSignIn locale={locale} t={t} role={selected} />
+    <form action={signUp} className="space-y-5">
+      {params.error && <p className="rounded-2xl bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <fieldset className="grid gap-3 sm:grid-cols-3">
         {roles.map(({ id, Icon }) => (
@@ -71,6 +74,11 @@ async function JoinForm({
         <input className="field" id="full_name" name="full_name" required autoComplete="name" />
       </div>
       <div>
+        <label className="label" htmlFor="phone">{t.auth.phone}</label>
+        <input className="field" id="phone" name="phone" type="tel" required autoComplete="tel" inputMode="tel" placeholder="+255 712 345 678" aria-describedby="phone-hint" />
+        <p id="phone-hint" className="mt-1 text-xs text-muted">{t.auth.phoneHint}</p>
+      </div>
+      <div>
         <label className="label" htmlFor="email">{t.auth.email}</label>
         <input className="field" id="email" name="email" type="email" required autoComplete="email" />
       </div>
@@ -80,5 +88,6 @@ async function JoinForm({
       </div>
       <button className="btn w-full">{t.auth.createAccount}</button>
     </form>
+    </div>
   );
 }

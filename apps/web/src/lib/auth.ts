@@ -9,6 +9,9 @@ export type CurrentUser = {
   email: string | null;
   role: Role;
   fullName: string | null;
+  phone: string | null;
+  /** False until a social sign-up has picked an account type and added a phone number. */
+  onboarded: boolean;
   guide: { id: string; slug: string; status: 'pending' | 'approved' | 'rejected' } | null;
   /** Approved guides and admins may enter the Guide Hub. */
   canUseHub: boolean;
@@ -23,7 +26,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   if (!user) return null;
 
   const [{ data: profile }, { data: guide }] = await Promise.all([
-    supabase.from('profiles').select('role, full_name').eq('id', user.id).single(),
+    supabase.from('profiles').select('role, full_name, phone, onboarded_at').eq('id', user.id).single(),
     supabase.from('guides').select('id, slug, verification_status').eq('owner_id', user.id).maybeSingle(),
   ]);
 
@@ -35,6 +38,8 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     email: user.email ?? null,
     role,
     fullName: profile?.full_name ?? null,
+    phone: profile?.phone ?? null,
+    onboarded: Boolean(profile?.onboarded_at),
     guide: guideInfo,
     canUseHub: role === 'admin' || guideInfo?.status === 'approved',
   };
@@ -43,6 +48,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function requireUser(locale: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  if (!user.onboarded) redirect(`/${locale}/welcome`);
   return user;
 }
 

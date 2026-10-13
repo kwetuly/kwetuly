@@ -20,6 +20,14 @@ export async function AuthLinks() {
     );
   }
 
+  if (!user.onboarded) {
+    return (
+      <Link href={`/${locale}/welcome`} className="btn whitespace-nowrap px-4 py-2 text-sm">
+        {t.auth.finishSetup}
+      </Link>
+    );
+  }
+
   return (
     <>
       {user.role === 'admin' && (

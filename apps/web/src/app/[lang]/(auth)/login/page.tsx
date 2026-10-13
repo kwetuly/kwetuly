@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { signIn } from '../actions';
+import { SocialSignIn } from '@/components/social-sign-in';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.signInTitle };
@@ -19,7 +20,9 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
         <ErrorNote searchParams={searchParams} message={t.auth.error} />
       </Suspense>
 
-      <form action={signIn} className="card mt-6 space-y-4">
+      <div className="card mt-6 space-y-4">
+      <SocialSignIn locale={locale} t={t} />
+      <form action={signIn} className="space-y-4">
         <input type="hidden" name="locale" value={locale} />
         <div>
           <label className="label" htmlFor="email">{t.auth.email}</label>
@@ -31,6 +34,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
         </div>
         <button className="btn w-full">{t.auth.signIn}</button>
       </form>
+      </div>
 
       <p className="mt-4 text-sm text-muted">
         {t.auth.noAccount}{' '}
