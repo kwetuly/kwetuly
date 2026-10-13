@@ -4,10 +4,12 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { MENU } from '@rafrika/shared';
-import { locales } from '@/i18n/config';
+import { defaultLocale, hasLocale, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
+import { PhotoHero } from '@/components/photo-hero';
+import { SECTION_PHOTOS } from '@/lib/photos';
 
 const sections = MENU;
 
@@ -18,7 +20,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<'/[lang]/[section]'>): Promise<Metadata> {
   const { lang, section: slug } = await params;
   const section = sections.find((s) => s.slug === slug);
-  const locale = lang === 'sw' ? 'sw' : 'en';
+  const locale = hasLocale(lang) ? lang : defaultLocale;
   return section ? { title: section.label[locale], description: section.tagline[locale] } : {};
 }
 
@@ -38,7 +40,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
 
   return (
     <>
-      <section className="pattern-kanga text-white">
+      <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
             <Icon name={section.icon} className="size-7" />
@@ -46,7 +48,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{section.label[locale]}</h1>
           <p className="mt-3 max-w-xl text-lg text-white/80">{section.tagline[locale]}</p>
         </div>
-      </section>
+      </PhotoHero>
       <section className="mx-auto grid max-w-6xl gap-5 px-4 py-12 sm:grid-cols-2">
         {section.items.map((item) => (
           <Link

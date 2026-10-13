@@ -4,11 +4,13 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, Bell, Store } from 'lucide-react';
 import { MENU, findMenuItem } from '@rafrika/shared';
-import { locales, type Locale } from '@/i18n/config';
+import { defaultLocale, hasLocale, locales, type Locale } from '@/i18n/config';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { registerInterest } from '../actions';
+import { PhotoHero } from '@/components/photo-hero';
+import { SECTION_PHOTOS } from '@/lib/photos';
 
 export async function generateStaticParams() {
   return locales.flatMap((lang) =>
@@ -19,7 +21,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<'/[lang]/[section]/[item]'>): Promise<Metadata> {
   const { lang, section, item } = await params;
   const found = findMenuItem(section, item);
-  const locale = lang === 'sw' ? 'sw' : 'en';
+  const locale = hasLocale(lang) ? lang : defaultLocale;
   return found ? { title: found.item.label[locale], description: found.item.blurb[locale] } : {};
 }
 
@@ -41,7 +43,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
 
   return (
     <>
-      <section className="pattern-kanga text-white">
+      <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 pb-24 pt-10">
           <Link href={`/${locale}/${section.slug}`} className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
             <ArrowLeft className="size-4" aria-hidden /> {t.explore.back} {section.label[locale]}
@@ -57,7 +59,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
           </div>
           <p className="mt-4 max-w-xl text-lg text-white/80">{item.blurb[locale]}</p>
         </div>
-      </section>
+      </PhotoHero>
 
       <section className="mx-auto -mt-16 grid max-w-6xl gap-6 px-4 pb-16 lg:grid-cols-2">
         <Suspense fallback={<div className="card h-80 animate-pulse" />}>

@@ -8,18 +8,19 @@ import type { Locale } from '@/i18n/config';
 import { listCallGuides } from '@/lib/guides';
 import { GuideAvatar } from '@/components/guide-card';
 import { topicName } from '@/lib/labels';
+import { PhotoHero } from '@/components/photo-hero';
 
-export const metadata: Metadata = {
-  title: '1-on-1 prep calls',
-  description: 'Book a video call with an experienced Tanzanian guide before your Kilimanjaro climb, safari or Zanzibar trip.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.calls.title, description: t.calls.subtitle };
+}
 
 export default async function CallsPage({ searchParams }: PageProps<'/[lang]/calls'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
 
   return (
     <>
-      <section className="pattern-kanga text-white">
+      <PhotoHero photo={'kiliCamp'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
             <Video className="size-7" aria-hidden />
@@ -35,7 +36,7 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
             ))}
           </ol>
         </div>
-      </section>
+      </PhotoHero>
       <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
         <CallGuides searchParams={searchParams} t={t} locale={locale} />
       </Suspense>

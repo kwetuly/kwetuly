@@ -1,14 +1,16 @@
+import { L } from './locales';
+
 // Guide classification. Keep these in sync with the `guide_specialty` enum in Supabase.
 
 export const GUIDE_SPECIALTIES = [
-  { id: 'mountain', en: 'Mountain & trekking', sw: 'Mlima na matembezi' },
-  { id: 'safari', en: 'Safari & wildlife', sw: 'Safari na wanyamapori' },
-  { id: 'cultural', en: 'Cultural & village', sw: 'Utamaduni na vijiji' },
-  { id: 'city', en: 'City & town tours', sw: 'Ziara za mjini' },
-  { id: 'birding', en: 'Birding', sw: 'Kutazama ndege' },
-  { id: 'marine', en: 'Zanzibar & marine', sw: 'Zanzibar na bahari' },
-  { id: 'photography', en: 'Photography', sw: 'Upigaji picha' },
-  { id: 'day_trips', en: 'Day trips', sw: 'Safari za siku moja' },
+  { id: 'mountain', ...L('Mountain & trekking', 'Mlima na matembezi', 'Montagne & trekking', 'Montagna e trekking', 'Berge & Trekking', 'Góry i trekking', '登山与徒步') },
+  { id: 'safari', ...L('Safari & wildlife', 'Safari na wanyamapori', 'Safari & faune', 'Safari e fauna', 'Safari & Tierwelt', 'Safari i dzika przyroda', '游猎与野生动物') },
+  { id: 'cultural', ...L('Cultural & village', 'Utamaduni na vijiji', 'Culture & villages', 'Cultura e villaggi', 'Kultur & Dörfer', 'Kultura i wioski', '文化与村落') },
+  { id: 'city', ...L('City & town tours', 'Ziara za mjini', 'Visites de ville', 'Tour in città', 'Stadtführungen', 'Zwiedzanie miast', '城市观光') },
+  { id: 'birding', ...L('Birding', 'Kutazama ndege', 'Ornithologie', 'Birdwatching', 'Vogelbeobachtung', 'Obserwacja ptaków', '观鸟') },
+  { id: 'marine', ...L('Zanzibar & marine', 'Zanzibar na bahari', 'Zanzibar & mer', 'Zanzibar e mare', 'Sansibar & Meer', 'Zanzibar i morze', '桑给巴尔与海洋') },
+  { id: 'photography', ...L('Photography', 'Upigaji picha', 'Photographie', 'Fotografia', 'Fotografie', 'Fotografia', '摄影') },
+  { id: 'day_trips', ...L('Day trips', 'Safari za siku moja', 'Excursions d’une journée', 'Escursioni giornaliere', 'Tagesausflüge', 'Wycieczki jednodniowe', '一日游') },
 ] as const;
 
 export type GuideSpecialty = (typeof GUIDE_SPECIALTIES)[number]['id'];
@@ -49,29 +51,29 @@ export const REGIONS = [
 ] as const;
 
 export const GROUP_SIZES = [
-  { max: 4, en: 'Up to 4 people', sw: 'Hadi watu 4' },
-  { max: 8, en: 'Up to 8 people', sw: 'Hadi watu 8' },
-  { max: 16, en: 'Up to 16 people', sw: 'Hadi watu 16' },
-  { max: 30, en: 'Large groups', sw: 'Makundi makubwa' },
+  { max: 4, ...L('Up to 4 people', 'Hadi watu 4', 'Jusqu’à 4 personnes', 'Fino a 4 persone', 'Bis zu 4 Personen', 'Do 4 osób', '最多 4 人') },
+  { max: 8, ...L('Up to 8 people', 'Hadi watu 8', 'Jusqu’à 8 personnes', 'Fino a 8 persone', 'Bis zu 8 Personen', 'Do 8 osób', '最多 8 人') },
+  { max: 16, ...L('Up to 16 people', 'Hadi watu 16', 'Jusqu’à 16 personnes', 'Fino a 16 persone', 'Bis zu 16 Personen', 'Do 16 osób', '最多 16 人') },
+  { max: 30, ...L('Large groups', 'Makundi makubwa', 'Grands groupes', 'Gruppi numerosi', 'Große Gruppen', 'Duże grupy', '大型团体') },
 ] as const;
 
 // Topics a guide can offer 1-on-1 prep calls on.
 export const CALL_TOPICS = [
-  { id: 'kilimanjaro', en: 'Kilimanjaro prep', sw: 'Maandalizi ya Kilimanjaro' },
-  { id: 'safari', en: 'Safari planning', sw: 'Kupanga safari' },
-  { id: 'zanzibar', en: 'Zanzibar & coast', sw: 'Zanzibar na pwani' },
-  { id: 'culture', en: 'Culture & etiquette', sw: 'Utamaduni na adabu' },
-  { id: 'meru', en: 'Mount Meru & other climbs', sw: 'Mlima Meru na mingine' },
-  { id: 'itinerary', en: 'Full trip itinerary', sw: 'Ratiba kamili ya safari' },
+  { id: 'kilimanjaro', ...L('Kilimanjaro prep', 'Maandalizi ya Kilimanjaro', 'Préparer le Kilimandjaro', 'Preparazione Kilimangiaro', 'Kilimandscharo-Vorbereitung', 'Przygotowanie do Kilimandżaro', '乞力马扎罗准备') },
+  { id: 'safari', ...L('Safari planning', 'Kupanga safari', 'Organiser un safari', 'Pianificare il safari', 'Safari-Planung', 'Planowanie safari', '游猎规划') },
+  { id: 'zanzibar', ...L('Zanzibar & coast', 'Zanzibar na pwani', 'Zanzibar & côte', 'Zanzibar e costa', 'Sansibar & Küste', 'Zanzibar i wybrzeże', '桑给巴尔与海岸') },
+  { id: 'culture', ...L('Culture & etiquette', 'Utamaduni na adabu', 'Culture & usages', 'Cultura e galateo', 'Kultur & Umgangsformen', 'Kultura i savoir-vivre', '文化与礼仪') },
+  { id: 'meru', ...L('Mount Meru & other climbs', 'Mlima Meru na mingine', 'Mont Meru & autres ascensions', 'Monte Meru e altre salite', 'Mount Meru & andere Gipfel', 'Góra Meru i inne szczyty', '梅鲁山及其他登山') },
+  { id: 'itinerary', ...L('Full trip itinerary', 'Ratiba kamili ya safari', 'Itinéraire complet', 'Itinerario completo', 'Komplette Reiseroute', 'Pełny plan podróży', '完整行程规划') },
 ] as const;
 
 export const JOB_ROLES = [
-  { id: 'guide', en: 'Guide', sw: 'Mwongozaji' },
-  { id: 'assistant_guide', en: 'Assistant guide', sw: 'Msaidizi wa mwongozaji' },
-  { id: 'cook', en: 'Cook', sw: 'Mpishi' },
-  { id: 'porter', en: 'Porter', sw: 'Mpagazi' },
-  { id: 'driver', en: 'Driver', sw: 'Dereva' },
-  { id: 'other', en: 'Other crew', sw: 'Wengine' },
+  { id: 'guide', ...L('Guide', 'Mwongozaji', 'Guide', 'Guida', 'Guide', 'Przewodnik', '导游') },
+  { id: 'assistant_guide', ...L('Assistant guide', 'Msaidizi wa mwongozaji', 'Guide assistant', 'Guida assistente', 'Assistenz-Guide', 'Asystent przewodnika', '助理导游') },
+  { id: 'cook', ...L('Cook', 'Mpishi', 'Cuisinier', 'Cuoco', 'Koch', 'Kucharz', '厨师') },
+  { id: 'porter', ...L('Porter', 'Mpagazi', 'Porteur', 'Portatore', 'Träger', 'Tragarz', '背夫') },
+  { id: 'driver', ...L('Driver', 'Dereva', 'Chauffeur', 'Autista', 'Fahrer', 'Kierowca', '司机') },
+  { id: 'other', ...L('Other crew', 'Wengine', 'Autre équipe', 'Altro staff', 'Weitere Crew', 'Inna ekipa', '其他人员') },
 ] as const;
 
 export const PLANS = {

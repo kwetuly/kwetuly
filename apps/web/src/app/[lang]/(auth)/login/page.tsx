@@ -4,7 +4,9 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { signIn } from '../actions';
 
-export const metadata: Metadata = { title: 'Sign in' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).auth.signInTitle };
+}
 
 export default async function LoginPage({ searchParams }: PageProps<'/[lang]/login'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);

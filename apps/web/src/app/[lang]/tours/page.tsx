@@ -6,11 +6,12 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { listTrips, type TripFilters } from '@/lib/trips';
 import { TripCard } from '@/components/trip-card';
+import { PhotoHero } from '@/components/photo-hero';
 
-export const metadata: Metadata = {
-  title: 'Safaris & tours in Tanzania',
-  description: 'Safaris, Kilimanjaro climbs, cultural day trips, Zanzibar and combo trips across every Tanzanian circuit, with local guides.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.tours.title, description: t.tours.subtitle };
+}
 
 type Params = Record<string, string | string[] | undefined>;
 
@@ -42,12 +43,12 @@ export default async function ToursPage({ searchParams }: PageProps<'/[lang]/tou
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <>
-      <section className="pattern-kanga text-white">
+      <PhotoHero photo={'serengetiHerd'}>
         <div className="mx-auto max-w-7xl px-4 py-16">
           <h1 className="max-w-3xl text-4xl font-extrabold sm:text-6xl">{t.tours.title}</h1>
           <p className="mt-4 max-w-2xl text-lg text-white/80">{t.tours.subtitle}</p>
         </div>
-      </section>
+      </PhotoHero>
       <Suspense fallback={<div className="mx-auto mt-10 h-96 max-w-7xl animate-pulse rounded-3xl bg-surface" />}>
         <Catalogue searchParams={searchParams} t={t} locale={locale} />
       </Suspense>

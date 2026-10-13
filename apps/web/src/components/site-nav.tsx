@@ -17,12 +17,12 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
 
   return (
     <>
-      <ul className="hidden items-center gap-1 lg:flex">
+      <ul className="hidden items-center gap-0.5 xl:flex">
         {MENU.map((section) => (
           <li key={section.slug} className="group relative">
             <button
               type="button"
-              className="flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
+              className="flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
               aria-haspopup="true"
             >
               {section.label[locale]}
@@ -67,7 +67,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center rounded-full border border-line lg:hidden"
+        className="flex size-10 items-center justify-center rounded-full border border-line xl:hidden"
         aria-label="Open menu"
       >
         <Menu className="size-5" />
@@ -76,7 +76,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       {/* Portal to <body>: the header's backdrop blur would otherwise trap a fixed overlay inside it. */}
       {open &&
         createPortal(
-        <div className="fixed inset-0 z-50 flex flex-col bg-night text-white lg:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-50 flex flex-col bg-night text-white xl:hidden" role="dialog" aria-modal="true">
           <div className="flex items-center justify-between px-4 py-4">
             <Logo tone="light" className="text-2xl" />
             <button

@@ -6,7 +6,9 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { signUp } from '../actions';
 
-export const metadata: Metadata = { title: 'Join Rafrika' };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).join.title };
+}
 
 const roles = [
   { id: 'traveler', Icon: Plane },

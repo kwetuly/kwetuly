@@ -7,7 +7,10 @@ import { GuideSearch } from '@/components/guide-search';
 import { GuideCard } from '@/components/guide-card';
 import { listGuides, type GuideFilters } from '@/lib/guides';
 
-export const metadata: Metadata = { title: 'Find a guide' };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.guides.title };
+}
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

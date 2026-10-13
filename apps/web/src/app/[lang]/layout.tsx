@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import '../globals.css';
 import { MENU } from '@rafrika/shared';
-import { locales } from '@/i18n/config';
+import { LOCALE_TAGS, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -13,31 +13,35 @@ import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
 import { itemHref } from '@/lib/menu';
 
-const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin'] });
+const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'latin-ext'] });
 
 export async function generateStaticParams() {
   return locales.map((lang) => ({ lang }));
 }
 
-export const metadata: Metadata = {
-  title: { default: 'Rafrika — Tanzanian guides, stays & transport', template: '%s · Rafrika' },
-  description:
-    'Find verified Tanzanian guides for Kilimanjaro, safari, culture, Zanzibar and day trips, plus stays, transport, gear and local life.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return {
+    title: { default: `Rafrika — ${t.home.title}`, template: '%s · Rafrika' },
+    description: t.home.subtitle,
+    // Tell search engines about every language version of the site.
+    alternates: { languages: Object.fromEntries(locales.map((l) => [LOCALE_TAGS[l], `/${l}`])) },
+  };
+}
 
 export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const locale = await getLocale();
   const t = await getDictionary();
 
   return (
-    <html lang={locale} className={`${jakarta.variable} h-full antialiased`}>
+    <html lang={LOCALE_TAGS[locale]} className={`${jakarta.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-xl">
           <nav className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
             <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
               <Logo className="text-[28px]" />
             </Link>
-            <div className="ml-2 hidden lg:block">
+            <div className="ml-2 hidden xl:block">
               <SiteNav locale={locale} soonLabel={t.nav.soon} />
             </div>
             <div className="ml-auto flex items-center gap-3 text-sm">
@@ -47,7 +51,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               <Suspense fallback={null}>
                 <LanguageSwitcher current={locale} />
               </Suspense>
-              <div className="lg:hidden">
+              <div className="xl:hidden">
                 <SiteNav locale={locale} soonLabel={t.nav.soon} />
               </div>
             </div>

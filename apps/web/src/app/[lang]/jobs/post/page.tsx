@@ -7,6 +7,7 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser } from '@/lib/auth';
 import { postJob } from './actions';
+import { PhotoHero } from '@/components/photo-hero';
 
 export const metadata: Metadata = {
   title: 'Hire guides & crew',
@@ -17,7 +18,7 @@ export default async function PostJobPage({ searchParams }: PageProps<'/[lang]/j
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <>
-      <section className="pattern-kanga text-white">
+      <PhotoHero photo={'kiliHikers'}>
         <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sunset to-gold shadow-lg">
             <Briefcase className="size-7" aria-hidden />
@@ -25,7 +26,7 @@ export default async function PostJobPage({ searchParams }: PageProps<'/[lang]/j
           <h1 className="mt-5 text-4xl font-extrabold">{t.jobs.postTitle}</h1>
           <p className="mt-3 max-w-2xl text-lg text-white/80">{t.jobs.postSubtitle}</p>
         </div>
-      </section>
+      </PhotoHero>
       <div className="mx-auto -mt-16 max-w-4xl px-4 pb-16">
         <Suspense fallback={<div className="card h-96 animate-pulse" />}>
           <JobForm searchParams={searchParams} t={t} locale={locale} />

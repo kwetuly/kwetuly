@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { ArrowLeft, CalendarDays, Check, Clock, MapPin, ShieldCheck, Sparkles, Video, X } from 'lucide-react';
 import { MONTHS, TRIP_CIRCUITS, TRIP_OPERATORS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
-import type { Locale } from '@/i18n/config';
+import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getTripForViewer, tripSummary, tripTitle, type Trip } from '@/lib/trips';
 import { TripCover } from '@/components/trip-card';
 import { enquireTrip } from './actions';
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/tours/[slu
   const { slug, lang } = await params;
   const trip = await getTripForViewer(slug);
   if (!trip) return { title: 'Trip not found' };
-  const locale = lang === 'sw' ? 'sw' : 'en';
+  const locale = hasLocale(lang) ? lang : defaultLocale;
   return {
     title: tripTitle(trip, locale),
     description: tripSummary(trip, locale),

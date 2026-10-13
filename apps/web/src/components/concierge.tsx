@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Send, Sparkles, X } from 'lucide-react';
+import { locales } from '@/i18n/config';
+
+const langs = locales.join('|');
+const pathSplit = new RegExp(`(/(?:${langs})/[a-z0-9_/?=&-]*)`, 'g');
+const isPath = new RegExp(`^/(?:${langs})/`);
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -19,11 +24,11 @@ type Labels = {
 
 // Turns site paths like /en/calls in the AI's reply into links.
 function Linkified({ text }: { text: string }) {
-  const parts = text.split(/(\/(?:en|sw)\/[a-z0-9\-/]*)/g);
+  const parts = text.split(pathSplit);
   return (
     <>
       {parts.map((part, i) =>
-        /^\/(en|sw)\//.test(part) ? (
+        isPath.test(part) ? (
           <Link key={i} href={part} className="font-semibold text-sunset underline">
             {part}
           </Link>
