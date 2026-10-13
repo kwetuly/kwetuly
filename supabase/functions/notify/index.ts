@@ -92,7 +92,7 @@ function emailHtml(text: Text, link: string, locale: string) {
     <tr><td style="padding:28px">
       <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(text.subject)}</h1>
       <p style="font-size:15px;line-height:1.6;margin:0 0 24px">${escapeHtml(text.body)}</p>
-      <a href="${link}" style="display:inline-block;background:#ff6a2b;color:#fff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:999px">${button}</a>
+      <a href="${link}" style="display:inline-block;background:#ff6a2b;color:#fff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:15px">${button}</a>
     </td></tr>
     <tr><td style="padding:16px 28px;font-size:12px;color:#5f6b66;border-top:1px solid #e7e5e0">Rafrika: the home of Tanzanian guides.</td></tr>
   </table></td></tr></table></body></html>`;
