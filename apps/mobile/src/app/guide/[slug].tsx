@@ -82,6 +82,10 @@ export default function GuideScreen() {
             .join(' · ')}
         </Muted>
         {!isMe && <Button title={t.messages.messageGuide} onPress={message} loading={opening} />}
+        {!isMe && g.call_enabled && (
+          <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${g.call_price_usd}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
+        )}
+        {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } })} />}
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>
 
@@ -113,7 +117,11 @@ export default function GuideScreen() {
             <Text style={{ fontWeight: '700', color: colors.label }}>— {r.author_name}</Text>
           </Card>
         ))}
-        <Text style={{ color: brand.forest, fontSize: 13 }}>{t.reviews.onlyAfter}</Text>
+        {session && !isMe ? (
+          <Button title={t.reviews.write} variant="outline" onPress={() => router.push({ pathname: '/review/[guideId]', params: { guideId: g.id, name: g.display_name } })} />
+        ) : (
+          <Text style={{ color: brand.forest, fontSize: 13 }}>{t.reviews.onlyAfter}</Text>
+        )}
       </View>
     </ScrollView>
   );

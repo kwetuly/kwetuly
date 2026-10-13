@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { photoUrl, specialtyPhoto } from '@rafrika/shared';
 import { SpotsBar } from '@/components/cards';
+import { TripRequests } from '@/components/trip-requests';
 import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
@@ -134,6 +135,13 @@ export default function GroupTripScreen() {
           {chat.data && <Button title={t.chats.openChat} variant="dark" onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
           <Muted>{g10n.payNote}</Muted>
         </Card>
+
+        {isOrganizer && (
+          <>
+            {g.status === 'pending' && <Muted>{g10n.statusPending}</Muted>}
+            <TripRequests tripId={g.id} cancelled={g.cancelled} />
+          </>
+        )}
 
         {g.status === 'approved' && !g.cancelled && (
           <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/group-trips/${g.id}`, `${t.share.shareGroup}: ${g.title}`)} />

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { normalizePhone } from '@rafrika/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { SITE_URL, supabase } from '@/lib/supabase';
+import { enabledProviders, signInWithProvider, type SocialProvider } from '@/lib/social';
 import { colors, radius } from '@/theme/colors';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
@@ -31,6 +32,20 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'error' | 'ok'; text: string } | null>(null);
+  const [providers, setProviders] = useState<SocialProvider[]>([]);
+
+  useEffect(() => {
+    enabledProviders().then(setProviders);
+  }, []);
+
+  async function social(provider: SocialProvider) {
+    setMessage(null);
+    const ok = await signInWithProvider(provider);
+    if (!ok) return setMessage({ tone: 'error', text: t.auth.error });
+    // New social accounts still need an account type and phone number.
+    const { data } = await supabase.from('profiles').select('onboarded_at').single();
+    router.replace(data?.onboarded_at ? '/' : '/welcome');
+  }
 
   async function submit() {
     setMessage(null);
@@ -73,6 +88,15 @@ export default function SignInScreen() {
           <Text selectable style={{ color: message.tone === 'error' ? '#b42318' : '#0e6b4f', fontWeight: '600' }}>
             {message.text}
           </Text>
+        )}
+
+        {providers.length > 0 && (
+          <Card>
+            {providers.map((p) => (
+              <Button key={p} title={`${t.auth.continueWith} ${p === 'google' ? 'Google' : p === 'facebook' ? 'Facebook' : 'Apple'}`} variant="outline" onPress={() => social(p)} />
+            ))}
+            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: 12, fontWeight: '700' }}>{t.auth.orEmail.toUpperCase()}</Text>
+          </Card>
         )}
 
         <Card>

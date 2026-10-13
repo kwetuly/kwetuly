@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { brand, colors, radius } from '@/theme/colors';
 
@@ -119,4 +119,94 @@ export function ScreenState({ loading, error, empty, emptyText, onRetry, retryLa
   }
   if (empty && emptyText) return <Text style={{ padding: 24, color: colors.secondaryLabel, fontSize: 15 }}>{emptyText}</Text>;
   return null;
+}
+
+const fieldInput = {
+  backgroundColor: colors.background,
+  borderRadius: radius.button,
+  borderCurve: 'continuous' as const,
+  paddingHorizontal: 14,
+  paddingVertical: 12,
+  fontSize: 16,
+  color: colors.label,
+};
+
+/** Labelled text input used by every form. */
+export function Field({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  keyboardType,
+  autoCapitalize,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: TextInputProps['keyboardType'];
+  autoCapitalize?: TextInputProps['autoCapitalize'];
+  hint?: string;
+}) {
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={{ fontWeight: '600', color: colors.label, fontSize: 14 }}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.secondaryLabel}
+        multiline={multiline}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        accessibilityLabel={label}
+        style={[fieldInput, multiline ? { minHeight: 100, textAlignVertical: 'top' } : null]}
+      />
+      {hint ? <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+/** Pick one or several options shown as chips. */
+export function ChipSelect<T extends string>({
+  label,
+  options,
+  selected,
+  onChange,
+  multiple = true,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  selected: T[];
+  onChange: (selected: T[]) => void;
+  multiple?: boolean;
+}) {
+  const toggle = (value: T) => {
+    if (!multiple) return onChange([value]);
+    onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
+  };
+  return (
+    <View style={{ gap: 6 }}>
+      <Text style={{ fontWeight: '600', color: colors.label, fontSize: 14 }}>{label}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {options.map((o) => (
+          <Chip key={o.value} label={o.label} active={selected.includes(o.value)} onPress={() => toggle(o.value)} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** Success or error line under a form. */
+export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text: string } | null }) {
+  if (!message) return null;
+  return (
+    <Text selectable style={{ color: message.tone === 'ok' ? brand.forest : '#b42318', fontWeight: '600' }}>
+      {message.tone === 'ok' ? '✓ ' : ''}
+      {message.text}
+    </Text>
+  );
 }

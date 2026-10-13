@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { GroupTripCard, TourCard } from '@/components/cards';
 import { Chip, ScreenState } from '@/components/ui';
@@ -13,7 +13,8 @@ type Item = { kind: 'group'; trip: GroupTrip } | { kind: 'tour'; tour: Tour };
 // Group trips with open spots, and the tour catalogue.
 export default function TripsScreen() {
   const { t } = useI18n();
-  const [view, setView] = useState<'groups' | 'tours'>('groups');
+  const params = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<'groups' | 'tours'>(params.view === 'tours' ? 'tours' : 'groups');
   const groups = useQuery({ queryKey: ['group-trips'], queryFn: listGroupTrips });
   const tours = useQuery({ queryKey: ['tours'], queryFn: listTours, enabled: view === 'tours' });
   const active = view === 'groups' ? groups : tours;

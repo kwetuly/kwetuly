@@ -2,11 +2,12 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, PHOTOS, photoUrl } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS, photoUrl } from '@rafrika/shared';
 import { GroupTripCard } from '@/components/cards';
 import { Chip, SectionTitle } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { appHref } from '@/lib/menu';
 import { brand, colors, radius } from '@/theme/colors';
 
 export default function ExploreScreen() {
@@ -31,6 +32,17 @@ export default function ExploreScreen() {
           </Link>
         </View>
       </View>
+
+      {/* AI concierge: shown once EXPO_PUBLIC_AI_ENABLED=1 (after the API key is set on the website). */}
+      {process.env.EXPO_PUBLIC_AI_ENABLED === '1' && (
+        <View style={{ paddingHorizontal: 16 }}>
+          <Link href="/assistant" asChild>
+            <Pressable style={{ backgroundColor: brand.gold, borderRadius: radius.button, borderCurve: 'continuous', padding: 16 }}>
+              <Text style={{ color: brand.night, fontWeight: '800', fontSize: 16 }}>✦ {t.concierge.open}</Text>
+            </Pressable>
+          </Link>
+        </View>
+      )}
 
       {/* What do you want to do? */}
       <View style={{ gap: 12, paddingHorizontal: 16 }}>
@@ -74,6 +86,24 @@ export default function ExploreScreen() {
         ) : (
           groups.data!.slice(0, 3).map((trip) => <GroupTripCard key={trip.id} trip={trip} />)
         )}
+      </View>
+
+      {/* Everything on Rafrika: the same sections as the website menu */}
+      <View style={{ gap: 12, paddingHorizontal: 16 }}>
+        <SectionTitle>{t.explore.title}</SectionTitle>
+        {MENU.map((section) => (
+          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 8 }}>
+            <Text style={{ fontWeight: '800', fontSize: 17, color: colors.label }}>{section.label[locale]}</Text>
+            <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>{section.tagline[locale]}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {section.items.map((item) => (
+                <Link key={item.slug} href={appHref(section, item)} asChild>
+                  <Chip label={item.status === 'live' ? item.label[locale] : `${item.label[locale]} · ${t.nav.soon}`} />
+                </Link>
+              ))}
+            </View>
+          </View>
+        ))}
       </View>
 
       {/* Why Rafrika */}

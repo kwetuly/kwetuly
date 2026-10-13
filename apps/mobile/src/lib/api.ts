@@ -27,10 +27,14 @@ export type Guide = {
   association: string | null;
   plan: 'msingi' | 'pro';
   verification_status: 'pending' | 'approved' | 'rejected';
+  call_enabled: boolean;
+  call_price_usd: number | null;
+  call_minutes: number;
+  call_topics: string[];
 };
 
 const GUIDE_COLUMNS =
-  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status';
+  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, call_enabled, call_price_usd, call_minutes, call_topics';
 
 export type GuideFilters = { specialty?: string; language?: string; expertise?: string; female?: boolean; partners?: boolean };
 
@@ -339,4 +343,11 @@ export async function joinGroupChat(codeOrLink: string): Promise<string> {
 
 export async function markChatRead(chatId: string, userId: string) {
   await supabase.from('group_chat_members').update({ last_read_at: new Date().toISOString() }).eq('chat_id', chatId).eq('user_id', userId);
+}
+
+/** Approved, public guides who offer 1-on-1 prep calls, optionally for one topic. */
+export async function listCallGuides(topic?: string): Promise<Guide[]> {
+  let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('plan', { ascending: false }).limit(60);
+  if (topic) query = query.contains('call_topics', [topic]);
+  return must(await query) as unknown as Guide[];
 }

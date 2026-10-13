@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScreenState } from '@/components/ui';
@@ -7,6 +7,7 @@ import { conversationView, listConversations, listMessages, markConversationRead
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useLive } from '@/hooks/use-live';
+import { reportMessage } from '@/lib/api-more';
 import { brand, colors, radius } from '@/theme/colors';
 
 // One-to-one chat with a guide. Phone numbers and emails stay hidden until a booking is confirmed (done by the database).
@@ -65,7 +66,17 @@ export default function ConversationScreen() {
         renderItem={({ item }) => {
           const mine = item.sender_id === userId;
           return (
-            <View style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: 2 }}>
+            <Pressable
+              onLongPress={() =>
+                !mine &&
+                Alert.alert(t.messages.report, item.body.slice(0, 120), [
+                  { text: t.app.clear, style: 'cancel' },
+                  { text: t.messages.report, style: 'destructive', onPress: () => reportMessage(item.id, userId).then(() => Alert.alert(t.messages.reported)) },
+                ])
+              }
+              delayLongPress={300}
+              style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: 2 }}
+            >
               <Text
                 selectable
                 style={{
@@ -82,7 +93,7 @@ export default function ConversationScreen() {
                 {item.body}
               </Text>
               <Text style={{ fontSize: 11, color: colors.secondaryLabel }}>{time.format(new Date(item.created_at))}</Text>
-            </View>
+            </Pressable>
           );
         }}
       />

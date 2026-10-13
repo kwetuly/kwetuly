@@ -13,6 +13,8 @@ export const supabase = createClient(url, key, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE is required for Google / Facebook / Apple sign-in in a native app.
+    flowType: 'pkce',
   },
 });
 

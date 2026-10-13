@@ -1,40 +1,104 @@
 import { ScrollView, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { LOCALES, LOCALE_NAMES } from '@rafrika/shared';
+import { useQuery } from '@tanstack/react-query';
+import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@rafrika/shared';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Button, Card, Chip, Muted, SectionTitle } from '@/components/ui';
+import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui';
+import { getMyGuide, listMyCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { SITE_URL, supabase } from '@/lib/supabase';
-import { colors } from '@/theme/colors';
+import { brand, colors } from '@/theme/colors';
 
 export default function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
   const { session } = useSession();
+  const userId = session?.user.id;
   const profile = useProfile();
   const role = profile.data?.role;
+  const guide = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
+  const calls = useQuery({ queryKey: ['my-calls', userId], queryFn: () => listMyCalls(userId!), enabled: !!userId });
+  const myGuide = guide.data?.guide;
+  const isBusiness = role === 'provider' || role === 'admin';
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}>
       <Stack.Title large>{t.app.tabAccount}</Stack.Title>
 
       {session ? (
-        <Card>
-          <Muted>{t.app.signedInAs}</Muted>
-          <Text selectable style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>
-            {profile.data?.full_name ?? session.user.email}
-          </Text>
-          <Text selectable style={{ color: colors.secondaryLabel }}>{session.user.email}</Text>
-          {profile.data?.phone && <Text selectable style={{ color: colors.secondaryLabel }}>{profile.data.phone}</Text>}
-          {role && role !== 'traveler' && (
-            <>
-              <Muted>{t.app.editOnWeb}</Muted>
-              <Button title={t.nav.dashboard} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/dashboard`)} />
-            </>
+        <>
+          <Card>
+            <Muted>{t.app.signedInAs}</Muted>
+            <Text selectable style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>
+              {profile.data?.full_name ?? session.user.email}
+            </Text>
+            <Text selectable style={{ color: colors.secondaryLabel }}>{session.user.email}</Text>
+            {profile.data?.phone && <Text selectable style={{ color: colors.secondaryLabel }}>{profile.data.phone}</Text>}
+            {profile.data && !profile.data.onboarded_at && <Button title={t.auth.finishSetup} onPress={() => router.push('/welcome')} />}
+          </Card>
+
+          {/* Guides */}
+          {(myGuide || role === 'guide') && (
+            <Card>
+              <SectionTitle>{t.nav.hub}</SectionTitle>
+              {myGuide && (
+                <Badge
+                  label={myGuide.verification_status === 'approved' ? t.dashboard.statusApproved : myGuide.verification_status === 'rejected' ? t.dashboard.statusRejected : t.dashboard.statusPending}
+                  tone={myGuide.verification_status === 'approved' ? 'mint' : 'sand'}
+                />
+              )}
+              {myGuide?.verification_status === 'approved' && <Button title={t.nav.hub} onPress={() => router.push('/hub' as Href)} />}
+              <Button title={t.dashboard.title} variant="outline" onPress={() => router.push('/profile-edit')} />
+              {myGuide?.verification_status === 'approved' && (
+                <Button title={t.dashboard.viewProfile} variant="outline" onPress={() => router.push({ pathname: '/guide/[slug]', params: { slug: myGuide.slug } })} />
+              )}
+            </Card>
           )}
+
+          {/* Businesses */}
+          {isBusiness && (
+            <Card>
+              <SectionTitle>{t.join.provider.title}</SectionTitle>
+              <Button title={t.jobs.postNew} onPress={() => router.push('/jobs-post')} />
+              <Button title={t.jobs.handoverTab} variant="dark" onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
+              <Button title={t.groups.start} variant="outline" onPress={() => router.push('/group-trip/new')} />
+              <Button title={t.partners.applyTitle} variant="outline" onPress={() => router.push('/partners')} />
+            </Card>
+          )}
+
+          {/* Everyone: trips and prep calls */}
+          <Card>
+            <SectionTitle>{t.traveler.title}</SectionTitle>
+            <Button title={t.groups.mine} variant="outline" onPress={() => router.push('/my-group-trips')} />
+            <Text style={{ fontWeight: '700', color: colors.label }}>{t.traveler.calls}</Text>
+            {calls.data?.length === 0 && <Muted>{t.traveler.noCalls}</Muted>}
+            {(calls.data ?? []).map((c) => (
+              <View key={c.id} style={{ gap: 2, paddingVertical: 4 }}>
+                <Text style={{ fontWeight: '700', color: colors.label }}>
+                  {CALL_TOPICS.find((x) => x.id === c.topic)?.[locale] ?? c.topic} · {c.guides?.display_name}
+                </Text>
+                <Muted>
+                  {t.hub.status[c.status as keyof typeof t.hub.status] ?? c.status}
+                  {c.scheduled_at ? ` · ${new Date(c.scheduled_at).toLocaleString(locale)}` : ''}
+                </Muted>
+                {c.status === 'accepted' && c.meeting_link && (
+                  <Text style={{ color: brand.sunset, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(c.meeting_link!)}>
+                    {t.traveler.joinCall} ›
+                  </Text>
+                )}
+              </View>
+            ))}
+            <Button title={t.traveler.findCall} variant="outline" onPress={() => router.push('/calls')} />
+            {!myGuide && role !== 'guide' && (
+              <Text style={{ color: brand.forest, fontWeight: '700' }} onPress={() => router.push('/profile-edit')}>
+                {t.traveler.becomeGuide}
+              </Text>
+            )}
+          </Card>
+
           <Button title={t.nav.signOut} variant="dark" onPress={() => supabase.auth.signOut()} />
-        </Card>
+        </>
       ) : (
         <View style={{ marginHorizontal: -16 }}>
           <SignInPrompt />
@@ -51,9 +115,9 @@ export default function AccountScreen() {
       </View>
 
       <View style={{ gap: 10 }}>
+        <Button title={t.moments.title} variant="outline" onPress={() => router.push('/moments')} />
+        <Button title={t.partners.title} variant="outline" onPress={() => router.push('/partners')} />
         <Button title={t.app.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}`)} />
-        <Button title={t.moments.title} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/moments`)} />
-        <Button title={t.partners.title} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/partners/agents`)} />
       </View>
     </ScrollView>
   );

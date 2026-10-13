@@ -1,14 +1,12 @@
 import { ScrollView, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import { useQuery } from '@tanstack/react-query';
 import { photoUrl, tripPhoto } from '@rafrika/shared';
 import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { listTours } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { shareLink } from '@/lib/share';
-import { SITE_URL } from '@/lib/supabase';
 import { brand, colors } from '@/theme/colors';
 
 export default function TourScreen() {
@@ -33,7 +31,7 @@ export default function TourScreen() {
             {tour.days} {tour.days === 1 ? t.tours.day : t.tours.days}
             {tour.price_from_usd != null ? ` · ${t.tours.priceFrom} $${tour.price_from_usd}` : ` · ${t.tours.priceOnRequest}`}
           </Text>
-          <Button title={t.tours.enquireTitle} onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/tours/${tour.slug}#enquire`)} />
+          <Button title={t.tours.enquireTitle} onPress={() => router.push({ pathname: '/enquire/[slug]', params: { slug: tour.slug } })} />
           <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/tours/${tour.slug}`, `${t.share.shareTrip}: ${title}`)} />
         </Card>
 
