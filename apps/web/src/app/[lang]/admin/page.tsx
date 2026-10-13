@@ -9,7 +9,7 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
-import { reviewGroupTrip, reviewGuide, reviewJob, setReviewHidden } from './actions';
+import { reviewGroupTrip, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from './actions';
 
 type PendingJob = {
   id: string;
@@ -98,6 +98,8 @@ export default async function AdminPage() {
         <PendingList t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
         <PendingGroupTrips t={t} locale={locale} />
+        <Payments t={t} locale={locale} />
+        <LatestRequests t={t} locale={locale} />
         <Inbox locale={locale} />
         <RecentReviews locale={locale} />
       </Suspense>
@@ -313,5 +315,107 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
         );
       })}
     </div>
+  );
+}
+
+type PaymentRow = {
+  id: string;
+  user_id: string;
+  payee_user_id: string | null;
+  description: string;
+  amount_tzs: number;
+  amount_usd: number;
+  status: string;
+  provider_reference: string | null;
+  provider_channel: string | null;
+  payout_done: boolean;
+  created_at: string;
+};
+
+// Deposits paid through Selcom. Rafrika pays them out to the guide or company, then ticks them here.
+async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('payments')
+    .select('id, user_id, payee_user_id, description, amount_tzs, amount_usd, status, provider_reference, provider_channel, payout_done, created_at')
+    .neq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(50)
+    .returns<PaymentRow[]>();
+  const rows = data ?? [];
+  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id]).filter(Boolean) as string[])];
+  const { data: people } = ids.length
+    ? await supabase.from('profiles').select('id, full_name, phone').in('id', ids).returns<{ id: string; full_name: string | null; phone: string | null }[]>()
+    : { data: [] };
+  const who = (id: string | null) => {
+    const person = people?.find((p) => p.id === id);
+    return person ? [person.full_name, person.phone].filter(Boolean).join(' · ') : '—';
+  };
+  const a = t.admin;
+
+  return (
+    <section id="payments" className="mt-12 scroll-mt-24">
+      <h2 className="text-2xl font-bold">{a.paymentsTitle} ({rows.length})</h2>
+      {rows.length === 0 && <p className="mt-3 text-muted">{a.noPayments}</p>}
+      <ul className="mt-4 space-y-3">
+        {rows.map((p) => (
+          <li key={p.id} className="card grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="text-sm">
+              <p className="font-bold">
+                {p.description} · TZS {p.amount_tzs.toLocaleString('en')} (${p.amount_usd})
+                <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold ${p.status === 'paid' ? 'bg-mint text-forest' : 'bg-red-50 text-red-800'}`}>{p.status}</span>
+              </p>
+              <p className="text-muted">
+                {new Date(p.created_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {p.provider_channel ?? ''} {p.provider_reference ?? ''}
+              </p>
+              <p>From: {who(p.user_id)}</p>
+              <p className="font-semibold">{a.payee}: {who(p.payee_user_id)}</p>
+            </div>
+            {p.status === 'paid' && (
+              <form action={setPaidOut}>
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="payment_id" value={p.id} />
+                <input type="hidden" name="done" value={p.payout_done ? 'false' : 'true'} />
+                <button className={p.payout_done ? 'btn-outline px-4 py-2 text-sm' : 'btn px-4 py-2 text-sm'}>
+                  {p.payout_done ? `✓ ${a.paidOut}` : a.markPaidOut}
+                </button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+async function LatestRequests({ t, locale }: { t: Dictionary; locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('trip_requests')
+    .select('id, title, traveler_name, status, offers_count, created_at')
+    .order('created_at', { ascending: false })
+    .limit(15)
+    .returns<{ id: string; title: string; traveler_name: string; status: string; offers_count: number; created_at: string }[]>();
+  const rows = data ?? [];
+
+  return (
+    <section id="requests" className="mt-12 scroll-mt-24">
+      <h2 className="text-2xl font-bold">{t.admin.requestsTitle} ({rows.length})</h2>
+      {rows.length === 0 && <p className="mt-3 text-muted">—</p>}
+      <ul className="mt-4 divide-y divide-line rounded-3xl border border-line bg-white">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Link href={`/${locale}/requests/${r.id}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm hover:bg-surface">
+              <span className="font-semibold">{r.title} · {r.traveler_name}</span>
+              <span className="text-muted">{r.status} · {r.offers_count} offers · {new Date(r.created_at).toLocaleDateString('en-GB')}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

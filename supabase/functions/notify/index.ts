@@ -8,13 +8,16 @@
 //   WHATSAPP_PHONE_NUMBER_ID  the sending number's ID from WhatsApp Manager
 //   WHATSAPP_TEMPLATE         approved template name (default "rafrika_alert": body "{{1}} {{2}}")
 //   SITE_URL                  e.g. "https://rafrika.com" (default)
+//   EXPO_ACCESS_TOKEN         optional; only needed if push security is turned on in Expo
+//
+// Push alerts go to every phone the person has signed in on with the Rafrika app (push_tokens).
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 type Outbox = {
   id: string;
   event: string;
-  channel: 'email' | 'whatsapp';
+  channel: 'email' | 'whatsapp' | 'push';
   recipient: string;
   locale: string;
   payload: Record<string, string | null>;
@@ -94,6 +97,34 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Ombi halikukubaliwa: ${v('title')}`, body: `Mwandaaji hakuweza kukupokea safari hii. Tazama safari nyingine za makundi kwenye Rafrika.` }
         : { subject: `Request not accepted: ${v('title')}`, body: `The organiser could not take you this time. See other group trips on Rafrika.` };
+    case 'group_chat_message':
+      return sw
+        ? { subject: `${v('chat')}: ujumbe mpya`, body: `${v('sender')}: ${v('preview')}` }
+        : { subject: `${v('chat')}: new message`, body: `${v('sender')}: ${v('preview')}` };
+    case 'request_new':
+      return sw
+        ? { subject: `Ombi jipya la safari: ${v('title')}`, body: `${v('name')} anatafuta mwongozaji kwa watu ${v('people')}${p.when ? ` kuanzia ${v('when')}` : ''}. Tuma ofa yako kwenye Rafrika.` }
+        : { subject: `New trip request: ${v('title')}`, body: `${v('name')} is looking for a guide for ${v('people')} people${p.when ? ` from ${v('when')}` : ''}. Send your offer on Rafrika.` };
+    case 'offer_new':
+      return sw
+        ? { subject: `Ofa mpya kwa "${v('title')}"`, body: `${v('from')} amekutumia ofa ya USD ${v('price')}. Linganisha ofa na uchague kwenye Rafrika.` }
+        : { subject: `New offer for "${v('title')}"`, body: `${v('from')} sent you an offer of USD ${v('price')}. Compare offers and choose on Rafrika.` };
+    case 'offer_accepted':
+      return sw
+        ? { subject: `Ofa yako imekubaliwa: ${v('title')}`, body: `${v('name')} amechagua ofa yako. Mazungumzo yamefunguliwa kwenye Rafrika na sasa mnaona mawasiliano ya kila mmoja.` }
+        : { subject: `Your offer was accepted: ${v('title')}`, body: `${v('name')} chose your offer. A chat is open on Rafrika and you can now see each other's contact details.` };
+    case 'offer_declined':
+      return sw
+        ? { subject: `Ofa haikuchaguliwa: ${v('title')}`, body: 'Msafiri amechagua ofa nyingine. Tazama maombi mengine ya safari kwenye Rafrika.' }
+        : { subject: `Offer not chosen: ${v('title')}`, body: 'The traveller chose another offer. See other open trip requests on Rafrika.' };
+    case 'payment_received':
+      return sw
+        ? { subject: `Amana imepokelewa: TZS ${v('amount')}`, body: `Amana ya "${v('what')}" imelipwa kupitia Selcom. Timu ya Rafrika itakulipa.` }
+        : { subject: `Deposit received: TZS ${v('amount')}`, body: `The deposit for "${v('what')}" was paid through Selcom. The Rafrika team will pay it out to you.` };
+    case 'payment_receipt':
+      return sw
+        ? { subject: `Asante! TZS ${v('amount')} zimepokelewa`, body: `Tumepokea amana yako ya "${v('what')}". Mwongozaji wako amearifiwa.` }
+        : { subject: `Thank you! TZS ${v('amount')} received`, body: `We received your deposit for "${v('what')}". Your guide has been told.` };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':
@@ -174,6 +205,30 @@ async function sendWhatsApp(to: string, text: Text, link: string, locale: string
   if (!res.ok) throw new Error(`WhatsApp ${res.status}: ${(await res.text()).slice(0, 300)}`);
 }
 
+// Expo push: one row per person, sent to each of their phones. Phones that removed the app are forgotten.
+type Supabase = ReturnType<typeof createClient>;
+
+async function sendPush(supabase: Supabase, userId: string, text: Text, path: string) {
+  const { data: tokens, error } = await supabase.from('push_tokens').select('token').eq('user_id', userId);
+  if (error) throw new Error(error.message);
+  if (!tokens?.length) throw new NotConfigured('No phones registered');
+  const headers: Record<string, string> = { Accept: 'application/json', 'Content-Type': 'application/json' };
+  const accessToken = env('EXPO_ACCESS_TOKEN');
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  const res = await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(
+      tokens.map(({ token }) => ({ to: token, title: text.subject, body: text.body.slice(0, 300), data: { path }, sound: 'default' })),
+    ),
+  });
+  if (!res.ok) throw new Error(`Expo push ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const { data: tickets } = (await res.json()) as { data?: { status: string; details?: { error?: string } }[] };
+  const gone = tokens.filter((_, i) => tickets?.[i]?.details?.error === 'DeviceNotRegistered').map((t) => t.token);
+  if (gone.length) await supabase.from('push_tokens').delete().in('token', gone);
+  if (!tickets?.some((t) => t.status === 'ok')) throw new Error(`Expo push refused: ${JSON.stringify(tickets).slice(0, 300)}`);
+}
+
 // ---------------------------------------------------------------------------
 // Worker
 // ---------------------------------------------------------------------------
@@ -189,6 +244,7 @@ Deno.serve(async () => {
     const link = `${SITE_URL}/${locale}${row.payload?.link ?? ''}`;
     try {
       if (row.channel === 'email') await sendEmail(row.recipient, text, link, locale);
+      else if (row.channel === 'push') await sendPush(supabase, row.recipient, text, row.payload?.link ?? '/');
       else await sendWhatsApp(row.recipient, text, link, locale);
       await supabase.from('notification_outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       results.sent++;

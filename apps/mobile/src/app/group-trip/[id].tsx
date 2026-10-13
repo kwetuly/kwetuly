@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { photoUrl, specialtyPhoto } from '@rafrika/shared';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
+import { PayDeposit } from '@/components/pay-deposit';
 import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
@@ -112,6 +113,7 @@ export default function GroupTripScreen() {
             <>
               <Text style={{ fontWeight: '700', color: brand.forest }}>✓ {g10n.accepted}</Text>
               {contact.data && <Text selectable style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
+              <PayDeposit kind="group" id={mine.data.id} totalUsd={g.price_per_person_usd * mine.data.seats} percent={g.deposit_percent} />
             </>
           ) : mine.data?.status === 'requested' ? (
             <>

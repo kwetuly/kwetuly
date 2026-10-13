@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -8,7 +9,8 @@ import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui'
 import { getMyGuide, listMyCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { SITE_URL, supabase } from '@/lib/supabase';
+import { registerForPush, signOut, type PushState } from '@/lib/push';
+import { SITE_URL } from '@/lib/supabase';
 import { brand, colors } from '@/theme/colors';
 
 export default function AccountScreen() {
@@ -21,6 +23,12 @@ export default function AccountScreen() {
   const calls = useQuery({ queryKey: ['my-calls', userId], queryFn: () => listMyCalls(userId!), enabled: !!userId });
   const myGuide = guide.data?.guide;
   const isBusiness = role === 'provider' || role === 'admin';
+  const canOffer = isBusiness || myGuide?.verification_status === 'approved';
+  const [push, setPush] = useState<PushState | null>(null);
+
+  useEffect(() => {
+    if (userId) registerForPush(false).then(setPush);
+  }, [userId]);
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}>
@@ -67,6 +75,28 @@ export default function AccountScreen() {
             </Card>
           )}
 
+          {/* Trip requests: travellers post them; guides and companies answer with offers. */}
+          <Card>
+            <SectionTitle>{t.requests.title}</SectionTitle>
+            <Button title={t.requests.post} onPress={() => router.push('/request/new')} />
+            <Button title={canOffer ? `${t.requests.mine} · ${t.offers.boardTitle}` : t.requests.mine} variant="outline" onPress={() => router.push('/requests')} />
+          </Card>
+
+          {/* Phone alerts */}
+          {push !== 'unavailable' && push !== null && (
+            <Card>
+              <SectionTitle>{t.alerts.notifications}</SectionTitle>
+              {push === 'on' ? (
+                <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {t.alerts.notificationsOn}</Text>
+              ) : (
+                <>
+                  <Muted>{push === 'denied' ? t.alerts.denied : t.alerts.enableBody}</Muted>
+                  {push === 'off' && <Button title={t.alerts.enable} onPress={() => registerForPush(true).then(setPush)} />}
+                </>
+              )}
+            </Card>
+          )}
+
           {/* Everyone: trips and prep calls */}
           <Card>
             <SectionTitle>{t.traveler.title}</SectionTitle>
@@ -97,7 +127,7 @@ export default function AccountScreen() {
             )}
           </Card>
 
-          <Button title={t.nav.signOut} variant="dark" onPress={() => supabase.auth.signOut()} />
+          <Button title={t.nav.signOut} variant="dark" onPress={signOut} />
         </>
       ) : (
         <View style={{ marginHorizontal: -16 }}>

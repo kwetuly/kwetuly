@@ -36,7 +36,7 @@ export default function EnquireScreen() {
     try {
       await enquireTour({ tripId: tour!.id, tripTitle: tour!.title_en, userId: session?.user.id, name, contact, dates, people, message: note });
       setMessage({ tone: 'ok', text: tt.sent });
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {

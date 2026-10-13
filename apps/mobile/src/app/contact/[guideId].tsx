@@ -26,7 +26,7 @@ export default function ContactGuideScreen() {
     try {
       await contactGuide({ guideId, userId: session?.user.id, name: fullName, contact, message: text });
       setMessage({ tone: 'ok', text: p.sent });
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {

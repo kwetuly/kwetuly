@@ -21,7 +21,7 @@ export default function ExploreScreen() {
 
       {/* Hero */}
       <View style={{ marginHorizontal: 16, height: 260, borderRadius: 28, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
-        <Image source={{ uri: photoUrl(hero, 1200) }} style={{ position: 'absolute', inset: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
+        <Image source={{ uri: photoUrl(hero, 1200) }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
         <View style={{ flex: 1, justifyContent: 'flex-end', padding: 20, gap: 8, experimental_backgroundImage: 'linear-gradient(to top, rgba(10,31,23,0.95), rgba(10,31,23,0.1))' }}>
           <Text style={{ color: brand.gold, fontWeight: '800', fontSize: 12, letterSpacing: 2 }}>{t.home.eyebrow.toUpperCase()}</Text>
           <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 28, lineHeight: 32 }}>{t.home.title}</Text>

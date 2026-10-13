@@ -22,6 +22,10 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
       return { pathname: '/jobs-post', params };
     case '/partners/agents':
       return '/partners';
+    case '/requests/new':
+      return '/request/new';
+    case '/requests':
+      return '/requests';
     case '/moments':
       return '/moments';
     case '/join':

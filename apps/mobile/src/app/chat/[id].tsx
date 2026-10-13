@@ -10,6 +10,7 @@ import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { shareLink, shareMediaFile } from '@/lib/share';
 import { useLive } from '@/hooks/use-live';
+import { getChatMuted, setChatMuted } from '@/lib/api-requests';
 import { brand, colors, radius } from '@/theme/colors';
 
 const MAX_BYTES = 50 * 1024 * 1024;
@@ -28,6 +29,11 @@ export default function GroupChatScreen() {
   const chat = useQuery({ queryKey: ['group-chat', id], queryFn: () => getGroupChat(id), enabled: !!userId });
   const messages = useQuery({ queryKey: ['chat-messages', id], queryFn: () => listChatMessages(id), enabled: !!userId });
   useLive('group_chat_messages', `chat_id=eq.${id}`, ['chat-messages', id]);
+  const muted = useQuery({ queryKey: ['chat-muted', id, userId], queryFn: () => getChatMuted(id, userId), enabled: !!userId });
+  async function toggleMuted() {
+    await setChatMuted(id, userId, !muted.data);
+    muted.refetch();
+  }
 
   const [body, setBody] = useState('');
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -113,6 +119,9 @@ export default function GroupChatScreen() {
                 <Text style={{ color: brand.forest, fontWeight: '700' }}>+ {c.invite}</Text>
               </Pressable>
             )}
+            <Pressable onPress={toggleMuted} accessibilityRole="button" style={{ borderWidth: 1, borderColor: colors.separator, borderRadius: radius.button, paddingHorizontal: 14, paddingVertical: 6 }}>
+              <Text style={{ color: colors.label, fontWeight: '600', fontSize: 13 }}>{muted.data ? `🔕 ${t.alerts.unmute}` : `🔔 ${t.alerts.mute}`}</Text>
+            </Pressable>
           </View>
         }
         ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} />}

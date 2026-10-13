@@ -1,0 +1,318 @@
+import { useEffect, useState } from 'react';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { PayDeposit } from '@/components/pay-deposit';
+import { Badge, Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
+import { useCanOffer } from '@/hooks/use-can-offer';
+import {
+  answerOffer,
+  getMyOffer,
+  getRequest,
+  listOffers,
+  offerContacts,
+  offerName,
+  sendOffer,
+  setRequestOpen,
+  today,
+  withdrawOffer,
+  type TripOffer,
+  type TripRequest,
+} from '@/lib/api-requests';
+import { useSession } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
+import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
+import { brand, colors } from '@/theme/colors';
+
+export default function RequestScreen() {
+  const { id, posted } = useLocalSearchParams<{ id: string; posted?: string }>();
+  const { t } = useI18n();
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const request = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id), enabled: !!userId });
+  const offers = useQuery({ queryKey: ['offers', id], queryFn: () => listOffers(id), enabled: !!userId });
+
+  if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} empty emptyText={t.requests.error} />;
+  const req = request.data;
+  const isOwner = req.traveler_id === userId;
+
+  return (
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+      style={{ backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
+      refreshControl={<RefreshControl refreshing={request.isRefetching} onRefresh={() => { request.refetch(); offers.refetch(); }} tintColor={brand.sunset} />}
+    >
+      <Stack.Title>{req.title}</Stack.Title>
+      {posted && <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {t.requests.posted}</Text>}
+      <Summary req={req} isOwner={isOwner} />
+      {isOwner ? <TravellerOffers req={req} offers={offers.data ?? []} /> : <MyOffer req={req} />}
+    </ScrollView>
+  );
+}
+
+function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
+  const { t, locale } = useI18n();
+  const r = t.requests;
+  const queryClient = useQueryClient();
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+        <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>{specialtyName(req.specialty, locale)}</Text>
+        <Badge label={r.status[req.status]} tone={req.status === 'open' ? 'mint' : 'sand'} />
+      </View>
+      <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{req.title}</Text>
+      {!isOwner && <Muted>{t.offers.from} {req.traveler_name}</Muted>}
+      <Muted>
+        {req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : r.datesFlexible}
+        {req.start_date && req.flexible_dates ? ` (${r.datesFlexible})` : ''}
+      </Muted>
+      <Muted>
+        {req.adults} {r.adults}
+        {req.children ? ` · ${req.children} ${r.children}` : ''}
+        {req.regions.length ? ` · ${req.regions.join(', ')}` : ''}
+      </Muted>
+      {req.budget_per_person_usd ? <Muted>{r.budgetLabel}: ${req.budget_per_person_usd.toLocaleString(locale)} {r.perPerson}</Muted> : null}
+      {req.languages.length > 0 && <Muted>{req.languages.map(languageName).join(' · ')}</Muted>}
+      <Text selectable style={{ color: colors.label, lineHeight: 22 }}>{req.details}</Text>
+      {(req.female_guide || req.expertise.length > 0) && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {req.female_guide && <Badge label={r.femaleGuide} tone="sand" />}
+          {expertiseOf(req.expertise).map((e) => <Badge key={e.id} label={e.label[locale]} tone="sand" />)}
+        </View>
+      )}
+      {isOwner && req.status !== 'booked' && (
+        <Button
+          title={req.status === 'open' ? r.close : r.reopen}
+          variant="outline"
+          onPress={async () => {
+            await setRequestOpen(req.id, req.status !== 'open');
+            queryClient.invalidateQueries({ queryKey: ['request', req.id] });
+            queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+          }}
+        />
+      )}
+    </Card>
+  );
+}
+
+function OfferBody({ offer }: { offer: TripOffer }) {
+  const { t, locale } = useI18n();
+  const r = t.requests;
+  const expired = !!offer.valid_until && offer.valid_until < today();
+  return (
+    <>
+      <Text style={{ fontSize: 26, fontWeight: '800', color: brand.forest }}>
+        ${offer.price_total_usd.toLocaleString(locale)} <Text style={{ fontSize: 14, color: colors.secondaryLabel }}>{r.total}</Text>
+      </Text>
+      {offer.deposit_percent > 0 && <Muted>{r.deposit}: {offer.deposit_percent}%</Muted>}
+      <Text style={{ fontWeight: '700', color: colors.label }}>{r.itinerary}</Text>
+      <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{offer.itinerary}</Text>
+      {offer.includes && <Muted>{r.includes}: {offer.includes}</Muted>}
+      {offer.excludes && <Muted>{r.excludes}: {offer.excludes}</Muted>}
+      {offer.valid_until && <Muted>{expired ? r.expired : `${r.validUntil} ${offer.valid_until}`}</Muted>}
+    </>
+  );
+}
+
+function Contacts({ offer, traveller }: { offer: TripOffer; traveller: string }) {
+  const { t } = useI18n();
+  const contacts = useQuery({ queryKey: ['offer-contacts', offer.id], queryFn: () => offerContacts(offer.id) });
+  const c = contacts.data;
+  return (
+    <View style={{ gap: 6, backgroundColor: brand.mint, borderRadius: 15, padding: 12 }}>
+      <Text style={{ fontWeight: '800', color: brand.forest }}>{t.requests.contactTitle}</Text>
+      {c && (
+        <>
+          <Text selectable style={{ color: brand.forest }}>{offerName(offer)}: {[c.offerer_phone, c.offerer_email].filter(Boolean).join(' · ')}</Text>
+          <Text selectable style={{ color: brand.forest }}>{traveller}: {[c.traveler_phone, c.traveler_email].filter(Boolean).join(' · ')}</Text>
+        </>
+      )}
+      {offer.chat_id && <Button title={t.requests.openChat} onPress={() => router.push(`/chat/${offer.chat_id}`)} />}
+    </View>
+  );
+}
+
+function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[] }) {
+  const { t } = useI18n();
+  const r = t.requests;
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const sorted = [...offers].sort((a, b) => Number(b.status === 'accepted') - Number(a.status === 'accepted') || a.price_total_usd - b.price_total_usd);
+
+  async function answer(offer: TripOffer, accept: boolean) {
+    setBusy(offer.id + accept);
+    setError('');
+    try {
+      await answerOffer(offer.id, accept);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['offers', req.id] }),
+        queryClient.invalidateQueries({ queryKey: ['request', req.id] }),
+        queryClient.invalidateQueries({ queryKey: ['my-requests'] }),
+      ]);
+    } catch {
+      setError(r.error);
+    } finally {
+      setBusy('');
+    }
+  }
+
+  return (
+    <View style={{ gap: 12 }}>
+      <SectionTitle>{r.offersTitle} ({offers.length})</SectionTitle>
+      {offers.length === 0 && <Muted>{r.noOffers}</Muted>}
+      {error ? <Text selectable style={{ color: '#b42318' }}>{error}</Text> : null}
+      {sorted.map((offer) => (
+        <Card key={offer.id} style={offer.status === 'accepted' ? { borderWidth: 2, borderColor: brand.forest } : offer.status === 'declined' ? { opacity: 0.6 } : undefined}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Muted>{r.by}</Muted>
+              {offer.guides ? (
+                <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: 18, fontWeight: '800', color: brand.forest }}>{offer.guides.display_name} ›</Link>
+              ) : (
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
+              )}
+              {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
+            </View>
+            <Badge label={r.offerStatus[offer.status]} tone={offer.status === 'accepted' ? 'mint' : 'sand'} />
+          </View>
+          <OfferBody offer={offer} />
+          {offer.status === 'sent' && req.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
+            <>
+              <Button title={r.accept} onPress={() => answer(offer, true)} loading={busy === offer.id + 'true'} />
+              <Button title={r.decline} variant="outline" onPress={() => answer(offer, false)} loading={busy === offer.id + 'false'} />
+              <Muted>{r.acceptNote}</Muted>
+            </>
+          )}
+          {offer.status === 'accepted' && (
+            <>
+              <Contacts offer={offer} traveller={req.traveler_name} />
+              <PayDeposit kind="offer" id={offer.id} totalUsd={offer.price_total_usd} percent={offer.deposit_percent} />
+            </>
+          )}
+        </Card>
+      ))}
+    </View>
+  );
+}
+
+function MyOffer({ req }: { req: TripRequest }) {
+  const { t } = useI18n();
+  const o = t.offers;
+  const { session } = useSession();
+  const userId = session!.user.id;
+  const queryClient = useQueryClient();
+  const { canOffer, guideId, loading } = useCanOffer();
+  const mine = useQuery({ queryKey: ['my-offer', req.id, userId], queryFn: () => getMyOffer(req.id, userId) });
+  const offer = mine.data ?? null;
+
+  const [f, setF] = useState({ company: '', price: '', deposit: '30', itinerary: '', includes: '', excludes: '', validUntil: '' });
+  const set = <K extends keyof typeof f>(key: K) => (value: string) => setF((current) => ({ ...current, [key]: value }));
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+
+  // Fill the form with the offer already sent, so it can be edited.
+  useEffect(() => {
+    if (!offer) return;
+    setF({
+      company: offer.company_name ?? '',
+      price: String(offer.price_total_usd),
+      deposit: String(offer.deposit_percent),
+      itinerary: offer.itinerary,
+      includes: offer.includes ?? '',
+      excludes: offer.excludes ?? '',
+      validUntil: offer.valid_until ?? '',
+    });
+  }, [offer]);
+
+  if (loading || mine.isLoading) return <ScreenState loading />;
+  if (!canOffer && !offer) return <Muted>{o.whoCan}</Muted>;
+
+  const editable = canOffer && req.status === 'open' && (!offer || offer.status === 'sent' || offer.status === 'withdrawn');
+  const banner = offer ? { accepted: o.accepted, declined: o.declined, withdrawn: o.withdrawn, sent: '' }[offer.status] : '';
+
+  const refresh = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['my-offer', req.id] }),
+      queryClient.invalidateQueries({ queryKey: ['request', req.id] }),
+      queryClient.invalidateQueries({ queryKey: ['my-offers'] }),
+    ]);
+
+  async function submit() {
+    const price = parseInt(f.price, 10);
+    const deposit = parseInt(f.deposit, 10);
+    const validUntil = f.validUntil.trim() || null;
+    const valid =
+      price >= 1 &&
+      f.itinerary.trim().length >= 20 &&
+      (guideId || f.company.trim()) &&
+      (!validUntil || (/^\d{4}-\d{2}-\d{2}$/.test(validUntil) && validUntil >= today()));
+    if (!valid) return setMessage({ tone: 'error', text: t.requests.error });
+    setBusy(true);
+    setMessage(null);
+    try {
+      await sendOffer(
+        req.id,
+        userId,
+        guideId,
+        {
+          price_total_usd: price,
+          deposit_percent: Number.isFinite(deposit) ? Math.min(Math.max(deposit, 0), 100) : 30,
+          itinerary: f.itinerary.trim(),
+          includes: f.includes.trim() || null,
+          excludes: f.excludes.trim() || null,
+          valid_until: validUntil,
+          company_name: guideId ? null : f.company.trim(),
+        },
+        offer?.id,
+      );
+      await refresh();
+      setMessage({ tone: 'ok', text: o.sent });
+    } catch {
+      setMessage({ tone: 'error', text: t.requests.error });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <View style={{ gap: 12 }}>
+      <SectionTitle>{offer ? o.yourOffer : o.makeOffer}</SectionTitle>
+      <Muted>{req.offers_count} {o.competing}</Muted>
+      {banner ? <Text style={{ fontWeight: '700', color: colors.label }}>{banner}</Text> : null}
+
+      {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
+        <Card>
+          <OfferBody offer={offer} />
+          {offer.status === 'accepted' && <Contacts offer={offer} traveller={req.traveler_name} />}
+        </Card>
+      )}
+
+      {editable && (
+        <Card>
+          {!guideId && <Field label={o.companyName} value={f.company} onChangeText={set('company')} />}
+          <Field label={o.price} value={f.price} onChangeText={set('price')} keyboardType="number-pad" />
+          <Field label={o.deposit} value={f.deposit} onChangeText={set('deposit')} keyboardType="number-pad" hint={o.depositHint} />
+          <Field label={o.itinerary} value={f.itinerary} onChangeText={set('itinerary')} placeholder={o.itineraryPlaceholder} multiline />
+          <Field label={o.includes} value={f.includes} onChangeText={set('includes')} multiline />
+          <Field label={o.excludes} value={f.excludes} onChangeText={set('excludes')} multiline />
+          <Field label={o.validUntil} value={f.validUntil} onChangeText={set('validUntil')} placeholder="2027-01-31" />
+          <FormMessage message={message} />
+          <Button title={offer && offer.status === 'sent' ? o.update : o.send} onPress={submit} loading={busy} />
+          {offer?.status === 'sent' && (
+            <Button
+              title={o.withdraw}
+              variant="outline"
+              onPress={async () => {
+                await withdrawOffer(offer.id);
+                await refresh();
+              }}
+            />
+          )}
+        </Card>
+      )}
+    </View>
+  );
+}

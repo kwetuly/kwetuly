@@ -14,6 +14,8 @@ import { languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
+import { PayDeposit } from '@/components/pay-deposit';
+import { paidDeposits } from '@/lib/requests';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
 
 type Search = Record<string, string | string[] | undefined>;
@@ -168,17 +170,34 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
   const supabase = await createClient();
   const { data: mine } = await supabase
     .from('group_trip_members')
-    .select('status, seats')
+    .select('id, status, seats')
     .eq('group_trip_id', trip.id)
     .eq('traveler_id', user.id)
-    .maybeSingle<{ status: GroupMember['status']; seats: number }>();
+    .maybeSingle<{ id: string; status: GroupMember['status']; seats: number }>();
 
   if (mine?.status === 'accepted') {
-    const { data: contact } = await supabase.from('group_trip_private').select('contact').eq('group_trip_id', trip.id).maybeSingle();
+    const [{ data: contact }, paid] = await Promise.all([
+      supabase.from('group_trip_private').select('contact').eq('group_trip_id', trip.id).maybeSingle(),
+      paidDeposits('group_member_id', [mine.id]),
+    ]);
     return (
-      <div className="rounded-2xl bg-mint p-4 text-forest">
-        <p className="font-semibold">✓ {g.accepted}</p>
-        {contact && <p className="mt-2 text-lg font-extrabold">{contact.contact}</p>}
+      <div className="space-y-3">
+        <div className="rounded-2xl bg-mint p-4 text-forest">
+          <p className="font-semibold">✓ {g.accepted}</p>
+          {contact && <p className="mt-2 text-lg font-extrabold">{contact.contact}</p>}
+        </div>
+        <PayDeposit
+          kind="group"
+          id={mine.id}
+          totalUsd={trip.price_per_person_usd * mine.seats}
+          percent={trip.deposit_percent}
+          paid={paid.has(mine.id)}
+          back={`/${locale}/group-trips/${trip.id}`}
+          error={typeof status.payError === 'string' ? status.payError : undefined}
+          t={t}
+          locale={locale}
+          dark
+        />
       </div>
     );
   }

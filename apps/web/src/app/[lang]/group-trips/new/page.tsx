@@ -99,6 +99,11 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
         <input name="price" type="number" min={0} className="field" required />
       </label>
       <label className="block">
+        <span className="label">{t.offers.deposit}</span>
+        <input name="deposit" type="number" min={0} max={100} defaultValue={30} className="field" />
+        <span className="mt-1 block text-xs text-muted">{t.offers.depositHint}</span>
+      </label>
+      <label className="block">
         <span className="label">{g.meetingPoint}</span>
         <input name="meeting_point" className="field" maxLength={200} />
       </label>

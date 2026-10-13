@@ -49,7 +49,7 @@ export default function ReviewScreen() {
       await queryClient.invalidateQueries({ queryKey: ['reviews'] });
       await queryClient.invalidateQueries({ queryKey: ['guide'] });
       setMessage({ tone: 'ok', text: r.thanks });
-      setTimeout(() => router.back(), 900);
+      setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 900);
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {

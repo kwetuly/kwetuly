@@ -45,6 +45,7 @@ export async function createGroupTrip(formData: FormData) {
     max_people: int(formData, 'max_people'),
     languages: formData.getAll('languages').map(String).filter((code) => GUIDE_LANGUAGES.some((l) => l.code === code)),
     includes: field(formData, 'includes', 1000) || null,
+    deposit_percent: Math.min(Math.max(Number.isFinite(int(formData, 'deposit')) ? int(formData, 'deposit') : 30, 0), 100),
   };
   const contact = field(formData, 'contact', 160);
   const valid =

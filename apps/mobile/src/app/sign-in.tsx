@@ -54,7 +54,8 @@ export default function SignInScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       setBusy(false);
       if (error) setMessage({ tone: 'error', text: t.auth.error });
-      else router.back();
+      else if (router.canGoBack()) router.back();
+      else router.replace('/');
       return;
     }
 

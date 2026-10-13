@@ -1,0 +1,132 @@
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { router } from 'expo-router';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LOCALES, PHOTOS, photoUrl } from '@rafrika/shared';
+import { useI18n } from '@/lib/i18n';
+import { markIntroSeen } from '@/lib/intro';
+import { brand, radius } from '@/theme/colors';
+
+const SHORT: Record<string, string> = { en: 'EN', sw: 'SW', fr: 'FR', it: 'IT', de: 'DE', pl: 'PL', zh: '中文' };
+
+// First-launch welcome: three photo slides, a language choice, and the way in.
+export default function IntroScreen() {
+  const { t, locale, setLocale } = useI18n();
+  const i = t.intro;
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const scroller = useRef<ScrollView>(null);
+  const [page, setPage] = useState(0);
+
+  const slides = [
+    { photo: PHOTOS.kiliHikers, title: i.s1Title, body: i.s1Body },
+    { photo: PHOTOS.lions, title: i.s2Title, body: i.s2Body },
+    { photo: PHOTOS.dhowSunset, title: i.s3Title, body: i.s3Body },
+  ];
+  const last = page === slides.length - 1;
+
+  function finish(next?: 'join' | 'signIn') {
+    markIntroSeen();
+    router.replace('/');
+    if (next) router.push({ pathname: '/sign-in', params: next === 'join' ? { mode: 'join' } : {} });
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: brand.night }}>
+      <StatusBar style="light" />
+      <ScrollView
+        ref={scroller}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
+      >
+        {slides.map((slide, index) => (
+          <View key={slide.photo.id} style={{ width, height }}>
+            <Image source={{ uri: photoUrl(slide.photo, 1200) }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
+            <LinearGradient
+              colors={['rgba(10,31,23,0.15)', 'rgba(10,31,23,0.6)', brand.night, brand.night]}
+              locations={[0, 0.35, 0.62, 1]}
+              style={{
+                flex: 1,
+                justifyContent: 'flex-end',
+                paddingHorizontal: 24,
+                paddingBottom: insets.bottom + 230,
+                gap: 12,
+              }}
+            >
+              {index === 0 && (
+                <View style={{ gap: 4, marginBottom: 8 }}>
+                  <Text style={{ color: brand.gold, fontWeight: '800', fontSize: 13, letterSpacing: 2 }}>{i.welcome.toUpperCase()}</Text>
+                  <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>Rafrika</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16 }}>{i.tagline}</Text>
+                </View>
+              )}
+              <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 28, lineHeight: 33 }}>{slide.title}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, lineHeight: 23 }}>{slide.body}</Text>
+            </LinearGradient>
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Language choice, always reachable at the top. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ position: 'absolute', top: insets.top + 12, left: 0, right: 0, flexGrow: 0 }}
+        contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}
+        accessibilityLabel={i.language}
+      >
+        {LOCALES.map((l) => (
+          <Pressable
+            key={l}
+            onPress={() => setLocale(l)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: l === locale }}
+            style={{
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 999,
+              backgroundColor: l === locale ? brand.gold : 'rgba(10,31,23,0.45)',
+              borderWidth: 1,
+              borderColor: l === locale ? brand.gold : 'rgba(255,255,255,0.35)',
+            }}
+          >
+            <Text style={{ color: l === locale ? brand.night : '#ffffff', fontWeight: '800', fontSize: 12 }}>{SHORT[l] ?? l}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {/* Dots and the way in. */}
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 24, paddingBottom: insets.bottom + 20, gap: 12 }}>
+        <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', marginBottom: 8 }}>
+          {slides.map((slide, index) => (
+            <View key={slide.photo.id} style={{ height: 6, width: index === page ? 22 : 6, borderRadius: 3, backgroundColor: index === page ? brand.gold : 'rgba(255,255,255,0.4)' }} />
+          ))}
+        </View>
+        {last ? (
+          <Pressable onPress={() => finish('join')} accessibilityRole="button" style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 16, alignItems: 'center' }}>
+            <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 16 }}>{i.getStarted}</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => scroller.current?.scrollTo({ x: (page + 1) * width, animated: true })}
+            accessibilityRole="button"
+            style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 16, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 16 }}>{i.next}</Text>
+          </Pressable>
+        )}
+        <Pressable onPress={() => finish('signIn')} accessibilityRole="button" style={{ borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)' }}>
+          <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>{i.haveAccount}</Text>
+        </Pressable>
+        <Pressable onPress={() => finish()} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 6 }}>
+          <Text style={{ color: brand.gold, fontWeight: '700' }}>{i.explore}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}

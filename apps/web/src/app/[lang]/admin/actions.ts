@@ -91,3 +91,18 @@ export async function reviewJob(formData: FormData) {
     .eq('id', String(formData.get('job_id') ?? ''));
   redirect(`/${locale}/admin#jobs`);
 }
+
+// Record that a deposit has been paid out to the guide or company (Rafrika pays out by hand for now).
+export async function setPaidOut(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const supabase = await createClient();
+  await supabase
+    .from('payments')
+    .update({ payout_done: formData.get('done') === 'true' })
+    .eq('id', String(formData.get('payment_id') ?? ''));
+  redirect(`/${locale}/admin#payments`);
+}

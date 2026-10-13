@@ -1,5 +1,5 @@
-// Gives supabase-js a persistent localStorage on iOS/Android (backed by SQLite), so people stay signed in.
-import 'expo-sqlite/localStorage/install';
+// Persistent localStorage (SQLite on phones), so people stay signed in.
+import './local-storage';
 import { createClient } from '@supabase/supabase-js';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -9,7 +9,8 @@ if (!url || !key) throw new Error('EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPA
 // Same project and the same row-level security as the website: the app can only see what the user may see.
 export const supabase = createClient(url, key, {
   auth: {
-    storage: localStorage,
+    // (No localStorage while the web preview is rendered on the server.)
+    storage: globalThis.localStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,

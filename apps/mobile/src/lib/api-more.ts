@@ -345,7 +345,7 @@ export async function cancelGroupTrip(tripId: string) {
 export async function createGroupTrip(
   userId: string,
   guideId: string | null,
-  trip: { company_name: string | null; title: string; description: string; specialty: string; region: string; meeting_point: string | null; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; languages: string[]; includes: string | null },
+  trip: { company_name: string | null; title: string; description: string; specialty: string; region: string; meeting_point: string | null; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; languages: string[]; includes: string | null; deposit_percent: number },
   contact: string,
 ) {
   const { data, error } = await supabase.from('group_trips').insert({ ...trip, organizer_id: userId, guide_id: guideId }).select('id').single();

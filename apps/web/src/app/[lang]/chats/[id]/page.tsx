@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Globe, ShieldOff, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, Globe, ShieldOff, Sparkles, UserPlus } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -12,7 +12,7 @@ import { ChatComposer } from '@/components/chat-composer';
 import { LiveChatRefresh } from '@/components/live-chat-refresh';
 import { ShareButtons } from '@/components/share-buttons';
 import { ShareMedia } from '@/components/share-media';
-import { deleteChatMessage, leaveChat, setObjection, setShareConsent } from '../actions';
+import { deleteChatMessage, leaveChat, setMuted, setObjection, setShareConsent } from '../actions';
 
 export const metadata: Metadata = { title: 'Group chat', robots: { index: false } };
 
@@ -35,7 +35,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
   const supabase = await createClient();
   const [{ data: chat }, { data: members }, { data: rows }] = await Promise.all([
     supabase.from('group_chats').select('id, name, created_by, group_trip_id, invite_code, last_message_at').eq('id', id).maybeSingle<GroupChat>(),
-    supabase.from('group_chat_members').select('user_id, display_name, role').eq('chat_id', id).order('joined_at').returns<{ user_id: string; display_name: string; role: string }[]>(),
+    supabase.from('group_chat_members').select('user_id, display_name, role, muted').eq('chat_id', id).order('joined_at').returns<{ user_id: string; display_name: string; role: string; muted: boolean }[]>(),
     supabase
       .from('group_chat_messages')
       .select('id, sender_id, sender_name, body, media_path, media_type, share_public, featured, created_at')
@@ -61,6 +61,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
     objected.get(o.message_id)!.add(o.user_id);
   }
   const c = t.chats;
+  const muted = members.find((m) => m.user_id === user.id)?.muted ?? false;
   const time = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' });
 
   return (
@@ -70,7 +71,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
         <Link href={`/${locale}/chats`} className="flex size-10 items-center justify-center rounded-[15px] border border-line hover:border-sunset" aria-label={c.title}>
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-extrabold">{chat.name}</h1>
           <p className="truncate text-xs text-muted">
             {c.members}: {members.length} · {members.map((m) => m.display_name.split(' ')[0]).join(', ')}
@@ -78,7 +79,16 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
         </div>
       </div>
 
-      <details className="card mt-4 p-4">
+      <form action={setMuted} className="mt-2 flex justify-end">
+        <input type="hidden" name="locale" value={locale} />
+        <input type="hidden" name="chat_id" value={id} />
+        <input type="hidden" name="muted" value={muted ? 'false' : 'true'} />
+        <button className="inline-flex items-center gap-1.5 rounded-[15px] border border-line px-3 py-1.5 text-xs font-semibold hover:border-sunset" title={muted ? t.alerts.muted : undefined}>
+          {muted ? <BellOff className="size-4" aria-hidden /> : <Bell className="size-4" aria-hidden />} {muted ? t.alerts.unmute : t.alerts.mute}
+        </button>
+      </form>
+
+      <details className="card mt-2 p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-bold [&::-webkit-details-marker]:hidden">
           <UserPlus className="size-5 text-sunset" aria-hidden /> {c.invite}
         </summary>

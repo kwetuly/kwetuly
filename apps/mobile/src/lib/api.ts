@@ -119,6 +119,7 @@ export type GroupTrip = {
   start_date: string;
   end_date: string;
   price_per_person_usd: number;
+  deposit_percent: number;
   min_people: number;
   max_people: number;
   languages: string[];
@@ -130,7 +131,7 @@ export type GroupTrip = {
 };
 
 const GROUP_COLUMNS =
-  'id, organizer_id, company_name, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, status, cancelled, guides(display_name, slug, photo_url)';
+  'id, organizer_id, company_name, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url)';
 
 export async function listGroupTrips(): Promise<GroupTrip[]> {
   const today = new Date().toISOString().slice(0, 10);
@@ -143,10 +144,10 @@ export async function getGroupTrip(id: string): Promise<GroupTrip | null> {
   return must(await supabase.from('group_trips').select(GROUP_COLUMNS).eq('id', id).maybeSingle()) as unknown as GroupTrip | null;
 }
 
-export type MyGroupRequest = { status: 'requested' | 'accepted' | 'declined' | 'cancelled'; seats: number } | null;
+export type MyGroupRequest = { id: string; status: 'requested' | 'accepted' | 'declined' | 'cancelled'; seats: number } | null;
 
 export async function getMyGroupRequest(tripId: string, userId: string): Promise<MyGroupRequest> {
-  return must(await supabase.from('group_trip_members').select('status, seats').eq('group_trip_id', tripId).eq('traveler_id', userId).maybeSingle()) as MyGroupRequest;
+  return must(await supabase.from('group_trip_members').select('id, status, seats').eq('group_trip_id', tripId).eq('traveler_id', userId).maybeSingle()) as MyGroupRequest;
 }
 
 /** The organiser's contact; the database only returns it to accepted travellers. */

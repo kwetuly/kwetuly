@@ -122,3 +122,14 @@ export async function deleteChatMessage(formData: FormData) {
   updateTag('moments');
   redirect(`/${locale}/chats/${chatId}`);
 }
+
+// Turn chat alerts (push and email) off or on for yourself.
+export async function setMuted(formData: FormData) {
+  const locale = localeOf(formData);
+  const user = await requireUser(locale);
+  const chatId = field(formData, 'chat_id', 40);
+  if (!isId(chatId)) redirect(`/${locale}/chats`);
+  const supabase = await createClient();
+  await supabase.from('group_chat_members').update({ muted: formData.get('muted') === 'true' }).eq('chat_id', chatId).eq('user_id', user.id);
+  redirect(`/${locale}/chats/${chatId}`);
+}

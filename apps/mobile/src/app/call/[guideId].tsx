@@ -45,7 +45,7 @@ export default function CallScreen() {
     try {
       await requestCall({ guideId, userId: session!.user.id, topic: topic[0], times, message: note, contact: contact || profile.data?.phone || session!.user.email || '' });
       setMessage({ tone: 'ok', text: c.sent });
-      setTimeout(() => router.back(), 1200);
+      setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {

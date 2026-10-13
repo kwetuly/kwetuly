@@ -21,6 +21,7 @@ export type GroupTrip = {
   languages: string[];
   includes: string | null;
   seats_taken: number;
+  deposit_percent: number;
   status: 'pending' | 'approved' | 'rejected';
   cancelled: boolean;
   guides: { display_name: string; slug: string; photo_url: string | null; rating_avg: number | null; rating_count: number } | null;
@@ -38,7 +39,7 @@ export type GroupMember = {
 };
 
 const COLUMNS =
-  'id, organizer_id, guide_id, company_name, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, status, cancelled, guides(display_name, slug, photo_url, rating_avg, rating_count)';
+  'id, organizer_id, guide_id, company_name, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url, rating_avg, rating_count)';
 
 export const spotsLeft = (trip: GroupTrip) => Math.max(trip.max_people - trip.seats_taken, 0);
 

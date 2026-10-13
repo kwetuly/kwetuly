@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--workspace", "@rafrika/web"],
       "port": 3000
+    },
+    {
+      "name": "app-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "web", "--workspace", "@rafrika/mobile", "--", "--port", "8082"],
+      "port": 8082
     }
   ]
 }
