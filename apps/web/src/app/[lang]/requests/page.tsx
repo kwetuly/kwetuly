@@ -135,7 +135,7 @@ function RequestRow({ req, t, locale, showName }: { req: TripRequest; t: Diction
             {req.start_date ? date.format(new Date(req.start_date)) : r.datesFlexible}
           </span>
           <span className="flex items-center gap-1.5"><Users className="size-4" aria-hidden /> {req.adults + req.children} {r.people}</span>
-          <span className="text-sunset-dark">{req.offers_count} {r.offers}</span>
+          <span className="text-sunset-dark">{r.offersTitle}: {req.offers_count}</span>
         </div>
       </Link>
     </li>

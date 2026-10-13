@@ -70,6 +70,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
         <h2 className="text-xl font-bold">{g.joined}</h2>
         {(joined.data?.length ?? 0) === 0 ? (
           <p className="mt-3 text-muted">
+            {g.noneJoined}{" "}
             <Link href={`/${locale}/group-trips`} className="font-semibold text-forest underline">{g.title}</Link>
           </p>
         ) : (

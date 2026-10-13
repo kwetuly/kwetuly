@@ -39,7 +39,7 @@ export default function RequestsScreen() {
             {req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : r.datesFlexible} · {req.adults + req.children} {r.people}
           </Muted>
           <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>
-            {req.offers_count} {r.offers}
+            {r.offersTitle}: {req.offers_count}
           </Text>
         </Card>
       </Pressable>

@@ -62,7 +62,7 @@ export default function MyGroupTripsScreen() {
       )}
       <View style={{ gap: 10 }}>
         <SectionTitle>{g.joined}</SectionTitle>
-        {joined.data?.length === 0 && <Muted>{g.none}</Muted>}
+        {joined.data?.length === 0 && <Muted>{g.noneJoined}</Muted>}
         {(joined.data ?? []).map((j) => row(j.group_trips!, state(j.group_trips!) ?? requestLabel[j.status] ?? null))}
       </View>
       {canOrganise && <Button title={g.start} onPress={() => router.push('/group-trip/new')} />}

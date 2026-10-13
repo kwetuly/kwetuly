@@ -231,7 +231,7 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
   return (
     <section id="offer" className="mt-8 scroll-mt-28">
       <h2 className="text-2xl font-bold">{offer ? o.yourOffer : o.makeOffer}</h2>
-      <p className="mt-1 text-sm text-muted">{request.offers_count} {o.competing}</p>
+      <p className="mt-1 text-sm text-muted">{o.competing}: {request.offers_count}</p>
       {status.offerSent && <p className="mt-3 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {o.sent}</p>}
       {status.offerError && <p className="mt-3 rounded-2xl bg-red-50 p-4 text-red-800">{t.requests.error}</p>}
       {banner && <p className="mt-3 rounded-2xl bg-surface p-4 font-semibold">{banner}</p>}

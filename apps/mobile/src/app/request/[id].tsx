@@ -280,7 +280,7 @@ function MyOffer({ req }: { req: TripRequest }) {
   return (
     <View style={{ gap: 12 }}>
       <SectionTitle>{offer ? o.yourOffer : o.makeOffer}</SectionTitle>
-      <Muted>{req.offers_count} {o.competing}</Muted>
+      <Muted>{o.competing}: {req.offers_count}</Muted>
       {banner ? <Text style={{ fontWeight: '700', color: colors.label }}>{banner}</Text> : null}
 
       {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
