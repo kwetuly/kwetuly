@@ -16,6 +16,13 @@ export default async function MessagesPage() {
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
         <MessagesSquare className="size-7 text-sunset" aria-hidden /> {t.messages.title}
       </h1>
+      <Link href={`/${locale}/chats`} className="card mt-6 flex items-center justify-between gap-3 p-4 hover:border-sunset">
+        <span>
+          <span className="block font-bold">{t.chats.title}</span>
+          <span className="text-sm text-muted">{t.chats.subtitle}</span>
+        </span>
+        <span className="btn shrink-0 px-4 py-2 text-sm">{t.chats.title} →</span>
+      </Link>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
         <Inbox t={t} locale={locale} />
       </Suspense>

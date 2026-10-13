@@ -91,7 +91,9 @@ export async function signIn(formData: FormData) {
   });
 
   if (error) redirect(`/${locale}/login?error=1`);
-  redirect(`/${locale}/dashboard`);
+  // Return to where the person was going (e.g. a group chat invite), but only within this site.
+  const next = String(formData.get('next') ?? '');
+  redirect(next.startsWith(`/${locale}/`) && !next.startsWith('//') ? next : `/${locale}/dashboard`);
 }
 
 export async function signOut(formData: FormData) {

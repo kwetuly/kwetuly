@@ -8,6 +8,8 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getTripForViewer, tripSummary, tripTitle, type Trip } from '@/lib/trips';
 import { TripCover } from '@/components/trip-card';
+import { ShareButtons } from '@/components/share-buttons';
+import { photoUrl, tripPhoto } from '@/lib/photos';
 import { enquireTrip } from './actions';
 
 type Params = Promise<{ slug: string }>;
@@ -21,6 +23,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/tours/[slu
   return {
     title: tripTitle(trip, locale),
     description: tripSummary(trip, locale),
+    openGraph: { images: [photoUrl(tripPhoto(trip.slug, trip.categories), 1200)] },
     robots: trip.status === 'published' ? undefined : { index: false },
   };
 }
@@ -148,6 +151,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               </ul>
             </div>
           </section>
+
+          <ShareButtons path={`/${locale}/tours/${trip.slug}`} title={tripTitle(trip, locale)} text={`${t.share.shareTrip}: ${tripTitle(trip, locale)}`} labels={t.share} />
 
           <p className="text-xs text-muted">{tt.ttbNote} {tt.operatorNote}</p>
         </div>

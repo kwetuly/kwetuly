@@ -29,6 +29,8 @@ Where to send people on the site (use these paths; replace {lang} with the trave
 - 1-on-1 prep call with a guide they choose (Kilimanjaro, safari, Zanzibar, culture): /{lang}/calls
 - Safaris, climbs, day trips and combo trips: /{lang}/tours (the catalogue is still being finalised; if it looks empty, suggest finding a guide or a prep call instead)
 - Group trips: travellers can join small groups organised by verified guides or licensed companies and split the cost: /{lang}/group-trips. Guides and companies start one at /{lang}/group-trips/new. Travellers pay the organiser directly.
+- Group chats: people travelling together can start a group chat, invite friends with a link and share photos and videos: /{lang}/chats. Each approved group trip has its own chat. A traveller can tick "Rafrika may use this publicly" on what they share; featured items appear at /{lang}/moments.
+- Sharing: trips, guides, group trips and reviews have share buttons for WhatsApp, Facebook, X, Telegram, email and the phone share menu.
 - Reviews: travellers can review a guide on the guide's profile after a confirmed call or booking.
 - Opening soon (these pages let travellers register interest and businesses ask to be listed; do not present them as bookable yet): trip requests with offers from guides /{lang}/trips/trip-requests, stays /{lang}/stay, transport and airport transfers /{lang}/transport, gear, art and Tanzanite /{lang}/shop, local life /{lang}/local, guide stories /{lang}/discover/stories, AFCON 2027 /{lang}/discover/afcon-2027
 - Investing in Tanzanian tourism: /{lang}/discover/invest (also opening soon)

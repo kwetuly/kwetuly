@@ -90,7 +90,8 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="text-3xl font-bold">{t.admin.title}</h1>
-        <Link href={`/${locale}/admin/messages`} className="btn-outline ml-auto px-4 py-2 text-sm">Message safety →</Link>
+        <Link href={`/${locale}/admin/media`} className="btn-outline ml-auto px-4 py-2 text-sm">Shared media →</Link>
+        <Link href={`/${locale}/admin/messages`} className="btn-outline px-4 py-2 text-sm">Message safety →</Link>
         <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Trips catalogue →</Link>
       </div>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-brand bg-surface" />}>

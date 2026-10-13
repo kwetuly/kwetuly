@@ -24,6 +24,9 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
       <SocialSignIn locale={locale} t={t} />
       <form action={signIn} className="space-y-4">
         <input type="hidden" name="locale" value={locale} />
+        <Suspense fallback={null}>
+          <NextField searchParams={searchParams} />
+        </Suspense>
         <div>
           <label className="label" htmlFor="email">{t.auth.email}</label>
           <input className="field" id="email" name="email" type="email" required autoComplete="email" />
@@ -53,4 +56,9 @@ async function ErrorNote({
 }) {
   const params = await searchParams;
   return params.error ? <p className="mt-6 rounded-brand bg-red-50 p-4 text-red-800">{message}</p> : null;
+}
+
+async function NextField({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const next = (await searchParams).next;
+  return typeof next === 'string' ? <input type="hidden" name="next" value={next} /> : null;
 }

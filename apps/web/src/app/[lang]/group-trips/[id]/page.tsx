@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
+import { ShareButtons } from '@/components/share-buttons';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
 
 type Search = Record<string, string | string[] | undefined>;
@@ -21,7 +22,12 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/group-trip
   const { id } = await params;
   const trip = await getGroupTripForViewer(id);
   if (!trip) notFound();
-  return { title: trip.title, description: trip.description.slice(0, 160), robots: trip.status === 'approved' ? undefined : { index: false } };
+  return {
+    title: trip.title,
+    description: trip.description.slice(0, 160),
+    robots: trip.status === 'approved' ? undefined : { index: false },
+    openGraph: { images: [photoUrl(specialtyPhoto(trip.specialty), 1200)] },
+  };
 }
 
 export default async function GroupTripPage({ params, searchParams }: PageProps<'/[lang]/group-trips/[id]'>) {
@@ -40,6 +46,10 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
   const g = t.groups;
   const photo = specialtyPhoto(trip.specialty);
   const isOrganizer = user?.id === trip.organizer_id;
+  // The trip chat is only visible to its members (organiser and accepted travellers).
+  const tripChat = user
+    ? (await (await createClient()).from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle()).data
+    : null;
 
   return (
     <>
@@ -80,6 +90,10 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
           <Organizer trip={trip} t={t} locale={locale} />
 
+          {trip.status === 'approved' && !trip.cancelled && (
+            <ShareButtons path={`/${locale}/group-trips/${trip.id}`} title={trip.title} text={`${t.share.shareGroup}: ${trip.title}`} labels={t.share} />
+          )}
+
           {isOrganizer && <Requests trip={trip} status={status} t={t} locale={locale} />}
         </div>
 
@@ -95,6 +109,9 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
                 <OrganizerTools trip={trip} t={t} locale={locale} />
               ) : (
                 <JoinBox trip={trip} user={user} status={status} t={t} locale={locale} />
+              )}
+              {tripChat && (
+                <Link href={`/${locale}/chats/${tripChat.id}`} className="btn w-full">{t.chats.openChat}</Link>
               )}
               <p className="text-xs text-white/70">{g.payNote}</p>
             </div>

@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser } from '@/lib/auth';
@@ -44,6 +44,23 @@ export async function setReviewHidden(formData: FormData) {
     .eq('id', String(formData.get('review_id') ?? ''));
   revalidateTag('guides', 'max');
   redirect(`/${locale}/admin#reviews`);
+}
+
+// Feature (or un-feature) a traveller's shared photo, video or tip in the public gallery.
+export async function setFeatured(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const supabase = await createClient();
+  await supabase
+    .from('group_chat_messages')
+    .update({ featured: formData.get('featured') === 'true' })
+    .eq('id', String(formData.get('message_id') ?? ''))
+    .eq('share_public', true);
+  updateTag('moments');
+  redirect(`/${locale}/admin/media`);
 }
 
 export async function reviewGroupTrip(formData: FormData) {

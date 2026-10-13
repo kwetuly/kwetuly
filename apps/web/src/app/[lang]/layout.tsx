@@ -11,6 +11,8 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
+import { SITE_URL } from '@/lib/site';
+import { PHOTOS, photoUrl } from '@/lib/photos';
 import { itemHref } from '@/lib/menu';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'latin-ext'] });
@@ -26,6 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
     description: t.home.subtitle,
     // Tell search engines about every language version of the site.
     alternates: { languages: Object.fromEntries(locales.map((l) => [LOCALE_TAGS[l], `/${l}`])) },
+    // Preview shown when a Rafrika link is shared on WhatsApp, Facebook, X and others.
+    metadataBase: new URL(SITE_URL),
+    openGraph: { siteName: 'Rafrika', type: 'website', images: [{ url: photoUrl(PHOTOS.safariSunset, 1200), width: 1200, height: 800 }] },
+    twitter: { card: 'summary_large_image' },
   };
 }
 

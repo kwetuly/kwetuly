@@ -14,6 +14,7 @@ import { GuideAvatar, GuideBadges, expertiseOf, languageName, specialtyName } fr
 import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
+import { ShareButtons } from '@/components/share-buttons';
 import { requestCall, requestGuide, submitReview } from './actions';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[sl
   return {
     title: `${guide.display_name} — ${guide.base_region} guide`,
     description: guide.headline ?? undefined,
+    openGraph: guide.photo_url ? { images: [guide.photo_url] } : undefined,
     robots: guide.visibility === 'link_only' ? { index: false } : undefined,
   };
 }
@@ -131,6 +133,10 @@ async function Profile({
           {guide.instagram_url && <a className="text-forest underline" href={guide.instagram_url} rel="nofollow noopener" target="_blank">Instagram</a>}
           {guide.facebook_url && <a className="text-forest underline" href={guide.facebook_url} rel="nofollow noopener" target="_blank">Facebook</a>}
           {guide.tiktok_url && <a className="text-forest underline" href={guide.tiktok_url} rel="nofollow noopener" target="_blank">TikTok</a>}
+        </div>
+
+        <div className="mt-6">
+          <ShareButtons path={`/${locale}/guides/${guide.slug}`} title={guide.display_name} text={`${t.share.shareGuide}: ${guide.display_name}`} labels={t.share} />
         </div>
 
         <Reviews guide={guide} status={status} t={t} locale={locale} />
@@ -274,13 +280,16 @@ async function Reviews({
       ) : (
         <ul className="mt-4 space-y-3">
           {reviews.map((review) => (
-            <li key={review.id} className="card p-5">
+            <li key={review.id} id={`review-${review.id}`} className="card scroll-mt-28 p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Stars value={review.rating} label={`${review.rating} / 5 ${r.stars}`} />
                 <span className="text-xs text-muted">{dateFormat.format(new Date(review.created_at))}</span>
               </div>
               <p className="mt-2 whitespace-pre-line">{review.body}</p>
-              <p className="mt-2 text-sm font-semibold">— {review.author_name}</p>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold">— {review.author_name}</p>
+                <ShareButtons compact path={`/${locale}/guides/${guide.slug}#review-${review.id}`} title={guide.display_name} text={`${t.share.shareReview}: ${"★".repeat(review.rating)} ${guide.display_name}`} labels={t.share} />
+              </div>
             </li>
           ))}
         </ul>

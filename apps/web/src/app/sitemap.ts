@@ -10,7 +10,7 @@ import { SITE_URL } from '@/lib/site';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [guides, trips, groups] = await Promise.all([listGuides({}), listTrips({}), listGroupTrips()]);
 
-  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/join']);
+  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/moments', '/join']);
   for (const section of MENU) {
     paths.add(`/${section.slug}`);
     for (const item of section.items) {

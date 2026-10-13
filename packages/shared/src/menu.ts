@@ -336,6 +336,11 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Real stories from the trail', 'Hadithi halisi kutoka safarini', 'De vraies histoires du terrain', 'Storie vere dal sentiero', 'Echte Geschichten vom Weg', 'Prawdziwe historie ze szlaku', '来自旅途的真实故事'),
       },
       {
+        slug: 'moments', icon: 'camera', href: '/moments', status: 'live',
+        label: L('Traveller moments', 'Matukio ya wasafiri', 'Moments de voyageurs', 'Momenti dei viaggiatori', 'Reisemomente', 'Chwile podróżników', '旅行者瞬间'),
+        blurb: L('Photos and tips shared by travellers', 'Picha na vidokezo kutoka kwa wasafiri', 'Photos et conseils partagés par des voyageurs', 'Foto e consigli condivisi dai viaggiatori', 'Fotos und Tipps von Reisenden', 'Zdjęcia i wskazówki od podróżników', '旅行者分享的照片和小贴士'),
+      },
+      {
         slug: 'afcon-2027', icon: 'trophy',
         label: L('AFCON 2027', 'AFCON 2027', 'CAN 2027', 'Coppa d’Africa 2027', 'Afrika-Cup 2027', 'Puchar Narodów Afryki 2027', '2027 非洲国家杯'),
         blurb: L('Match-day transfers and city tours', 'Usafiri wa mechi na ziara za mji', 'Transferts les jours de match et visites de ville', 'Transfer nei giorni di gara e tour in città', 'Transfers an Spieltagen und Stadttouren', 'Transfery w dni meczów i zwiedzanie miast', '比赛日接送与城市游览'),
@@ -408,6 +413,7 @@ export const HUB_MENU: MenuItem[] = [
   { slug: 'messages', icon: 'mail', href: '/messages', status: 'live', label: hub('Messages', 'Ujumbe'), blurb: hub('Chats with travellers', 'Mazungumzo na wasafiri') },
   { slug: 'forum', icon: 'messages-square', href: '/hub/forum', status: 'live', label: hub('Guide forum', 'Jukwaa'), blurb: hub('Park updates, sightings, advice', 'Habari za hifadhi, wanyama, ushauri') },
   { slug: 'news', icon: 'newspaper', href: '/hub/news', status: 'live', label: hub('Field news', 'Habari za uwanjani'), blurb: hub('Official updates from parks and authorities', 'Taarifa rasmi kutoka hifadhi na mamlaka') },
+  { slug: 'chats', icon: 'users-round', href: '/chats', status: 'live', label: hub('Group chats', 'Mazungumzo ya kikundi'), blurb: hub('Chats with your groups, photos and videos', 'Mazungumzo na vikundi vyako, picha na video') },
   { slug: 'groups', icon: 'users-round', href: '/group-trips/mine', status: 'live', label: hub('Group trips', 'Safari za makundi'), blurb: hub('Trips you organise and their requests', 'Safari unazoandaa na maombi yake') },
   { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: hub('Jobs', 'Kazi'), blurb: hub('Companies hiring guides and crew', 'Makampuni yanayoajiri') },
   { slug: 'profile', icon: 'user-round', href: '/dashboard', status: 'live', label: hub('My profile', 'Wasifu wangu'), blurb: hub('Edit your public profile and calls', 'Hariri wasifu na simu zako') },
