@@ -357,6 +357,7 @@ export const pl: Dictionary = {
     openChat: 'Otwórz czat grupowy',
     shareToApps: 'Udostępnij',
     download: 'Pobierz',
+    uploaded: 'Przesłano. Naciśnij Zapisz, aby zachować.',
   },
   moments: {
     title: 'Chwile podróżników',

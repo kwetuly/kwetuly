@@ -357,6 +357,7 @@ export const de: Dictionary = {
     openChat: 'Gruppenchat öffnen',
     shareToApps: 'Teilen',
     download: 'Herunterladen',
+    uploaded: 'Hochgeladen. Zum Übernehmen auf Speichern tippen.',
   },
   moments: {
     title: 'Reisemomente',

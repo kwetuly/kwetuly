@@ -13,7 +13,8 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    // Guide photos and ID scans are uploaded through Server Actions.
+    // Files (guide photos, ID scans, chat media) upload straight from the browser to Supabase
+    // Storage; forms only send text, so this limit is just a safety margin.
     serverActions: { bodySizeLimit: "6mb" },
   },
   turbopack: {

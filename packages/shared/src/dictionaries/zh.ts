@@ -350,6 +350,7 @@ export const zh: Dictionary = {
     openChat: '打开群聊',
     shareToApps: '分享',
     download: '下载',
+    uploaded: '已上传。点击保存即可生效。',
   },
   moments: {
     title: '旅行者瞬间',

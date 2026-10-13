@@ -9,6 +9,7 @@ import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
+import { DirectUpload } from '@/components/direct-upload';
 
 export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
 
@@ -73,6 +74,7 @@ async function GuideEditor({
         ? d.statusRejected
         : d.statusPending;
 
+  const uploadLabels = { uploading: t.chats.uploading, uploaded: t.chats.uploaded, error: t.chats.uploadError };
   return (
     <>
       <h1 className="text-3xl font-bold">{d.title}</h1>
@@ -106,7 +108,7 @@ async function GuideEditor({
             <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
           </Field>
           <Field label={d.photo}>
-            <input className="field" name="photo" type="file" accept="image/jpeg,image/png,image/webp" />
+            <DirectUpload name="photo_path" bucket="avatars" userId={user.id} prefix="avatar" accept="image/jpeg,image/png,image/webp" labels={uploadLabels} />
           </Field>
           <Field label={d.headline}>
             <input className="field" name="headline" maxLength={140} defaultValue={guide?.headline ?? ''} placeholder={d.headlineHint} />
@@ -199,7 +201,7 @@ async function GuideEditor({
             <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
           </div>
           <Field label={`${d.idDocument}${details?.id_document_path ? ' ✓' : ''}`}>
-            <input className="field" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" />
+            <DirectUpload name="id_document_path" bucket="verification" userId={user.id} prefix="guide-id" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
           </Field>
         </fieldset>
 

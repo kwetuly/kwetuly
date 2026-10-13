@@ -479,6 +479,7 @@ export const en = {
     openChat: 'Open group chat',
     shareToApps: 'Share',
     download: 'Download',
+    uploaded: 'Uploaded. Press Save to keep it.',
   },
   moments: {
     title: 'Traveller moments',

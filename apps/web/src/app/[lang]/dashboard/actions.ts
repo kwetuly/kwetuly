@@ -6,9 +6,12 @@ import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIO
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
-const IMAGE_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const DOC_TYPES: Record<string, string> = { ...IMAGE_TYPES, 'application/pdf': 'pdf' };
+/** A path the browser uploaded into this user's own storage folder, e.g. "<user id>/avatar-1791234567890.jpg". */
+function ownPath(formData: FormData, key: string, userId: string, prefix: string, extensions: string[]) {
+  const value = String(formData.get(key) ?? '');
+  const match = value.match(/^([0-9a-f-]{36})\/([a-z-]+)-\d{10,16}\.([a-z]+)$/);
+  return match && match[1] === userId && match[2] === prefix && extensions.includes(match[3]) ? value : null;
+}
 
 const text = (formData: FormData, key: string, max = 500) => {
   const value = String(formData.get(key) ?? '').trim().slice(0, max);
@@ -89,16 +92,10 @@ export async function saveGuideProfile(formData: FormData) {
     call_topics: allowed(formData.getAll('call_topics'), CALL_TOPICS.map((c) => c.id)),
   };
 
-  // Profile photo goes to the public avatars bucket, in a folder named after the user.
-  const photo = formData.get('photo');
-  if (photo instanceof File && photo.size > 0) {
-    const ext = IMAGE_TYPES[photo.type];
-    if (!ext || photo.size > MAX_UPLOAD_BYTES) redirect(`${back}?error=photo`);
-    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, photo, { contentType: photo.type });
-    if (error) redirect(`${back}?error=photo`);
-    Object.assign(guide, { photo_url: supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl });
-  }
+  // The browser uploads the photo straight into the user's folder in the avatars bucket and sends
+  // only its path here (phone photos are too big to pass through a Server Action).
+  const photoPath = ownPath(formData, 'photo_path', user.id, 'avatar', ['jpg', 'png', 'webp']);
+  if (photoPath) Object.assign(guide, { photo_url: supabase.storage.from('avatars').getPublicUrl(photoPath).data.publicUrl });
 
   const { data: saved, error } = await supabase
     .from('guides')
@@ -115,17 +112,9 @@ export async function saveGuideProfile(formData: FormData) {
     registration_number: text(formData, 'registration_number', 60),
     kinapa_tanapa_id: text(formData, 'kinapa_tanapa_id', 60),
   };
-  const idDocument = formData.get('id_document');
-  if (idDocument instanceof File && idDocument.size > 0) {
-    const ext = DOC_TYPES[idDocument.type];
-    if (!ext || idDocument.size > MAX_UPLOAD_BYTES) redirect(`${back}?error=document`);
-    const path = `${user.id}/guide-id-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from('verification')
-      .upload(path, idDocument, { contentType: idDocument.type });
-    if (uploadError) redirect(`${back}?error=document`);
-    privateData.id_document_path = path;
-  }
+  // Same for the ID document, in the private verification bucket.
+  const idPath = ownPath(formData, 'id_document_path', user.id, 'guide-id', ['jpg', 'png', 'webp', 'pdf']);
+  if (idPath) privateData.id_document_path = idPath;
 
   const { error: privateError } = await supabase.from('guide_private').upsert(privateData);
   if (privateError) redirect(`${back}?error=save`);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
@@ -21,12 +22,21 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
   );
 }
 
-// Profile photos are cropped square; ID card photos are kept as taken.
+// Profile photos are cropped square; ID card photos are kept as taken. Both are shrunk to at most
+// 1600px (phone photos are often 8–12 MB, too slow on mobile data and over the storage limit).
 async function pickImage(square: boolean): Promise<Upload | null> {
-  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8, allowsEditing: square, aspect: square ? [1, 1] : undefined });
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsEditing: square, aspect: square ? [1, 1] : undefined });
   if (result.canceled) return null;
   const asset = result.assets[0];
-  return { uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' };
+  try {
+    const context = ImageManipulator.manipulate(asset.uri);
+    if (Math.max(asset.width, asset.height) > 1600) context.resize(asset.width >= asset.height ? { width: 1600 } : { height: 1600 });
+    const image = await context.renderAsync();
+    const saved = await image.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
+    return { uri: saved.uri, mimeType: 'image/jpeg' };
+  } catch {
+    return { uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' };
+  }
 }
 
 // Create or edit the guide profile, the same fields and rules as the website editor.

@@ -481,6 +481,7 @@ export const sw: Dictionary = {
     openChat: 'Fungua mazungumzo ya kikundi',
     shareToApps: 'Shiriki',
     download: 'Pakua',
+    uploaded: 'Imepakiwa. Bonyeza Hifadhi ili kuiweka.',
   },
   moments: {
     title: 'Matukio ya wasafiri',
