@@ -499,7 +499,6 @@ export const pl: Dictionary = {
     next: 'Dalej',
     language: 'Język',
   },
-  market: en.market,
   footer: {
     tagline: 'Dom tanzańskich przewodników.',
     rights: 'Wszelkie prawa zastrzeżone.',

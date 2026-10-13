@@ -499,7 +499,6 @@ export const de: Dictionary = {
     next: 'Weiter',
     language: 'Sprache',
   },
-  market: en.market,
   footer: {
     tagline: 'Das Zuhause tansanischer Guides.',
     rights: 'Alle Rechte vorbehalten.',

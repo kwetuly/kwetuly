@@ -645,18 +645,6 @@ export const sw: Dictionary = {
     next: 'Endelea',
     language: 'Lugha',
   },
-  market: {
-    verified: 'Imethibitishwa',
-    tier: { regular: 'Kawaida', premium: 'Premium', vip: 'VIP' },
-    bids: 'zabuni',
-    oneBid: 'Zabuni 1',
-    noBids: 'Bado hakuna zabuni',
-    best: 'bei ya chini',
-    people: 'watu',
-    status: { held: 'Imeshikiliwa', released: 'Imelipwa', refunded: 'Imerudishwa' },
-    releases: 'Inatolewa {date} kama hakuna malalamiko.',
-    plate: 'Namba',
-  },
   footer: {
     tagline: 'Nyumbani kwa waongozaji wa Tanzania.',
     rights: 'Haki zote zimehifadhiwa.',

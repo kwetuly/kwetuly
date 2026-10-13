@@ -643,18 +643,6 @@ export const en = {
     next: 'Next',
     language: 'Language',
   },
-  market: {
-    verified: 'Verified',
-    tier: { regular: 'Regular', premium: 'Premium', vip: 'VIP' },
-    bids: 'bids',
-    oneBid: '1 bid',
-    noBids: 'No bids yet',
-    best: 'best',
-    people: 'people',
-    status: { held: 'Held', released: 'Released', refunded: 'Refunded' },
-    releases: 'Releases {date} if not disputed.',
-    plate: 'Plate',
-  },
   footer: {
     tagline: 'The home of Tanzanian guides.',
     rights: 'All rights reserved.',
