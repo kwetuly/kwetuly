@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
 
       <p className="mt-4 text-sm text-muted">
         {t.auth.noAccount}{' '}
-        <Link href={`/${locale}/join`} className="font-semibold text-forest">{t.nav.join}</Link>
+        <Link href={`/${locale}/join`} className="font-semibold text-forest">{t.nav.signUp}</Link>
       </p>
     </div>
   );

@@ -16,7 +16,7 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 export async function generateMetadata({ params }: PageProps<'/[lang]/tours/[slug]'>): Promise<Metadata> {
   const { slug, lang } = await params;
   const trip = await getTripForViewer(slug);
-  if (!trip) return { title: 'Trip not found' };
+  if (!trip) notFound();
   const locale = hasLocale(lang) ? lang : defaultLocale;
   return {
     title: tripTitle(trip, locale),

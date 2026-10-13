@@ -9,7 +9,7 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
-import { reviewGuide, reviewJob } from './actions';
+import { reviewGuide, reviewJob, setReviewHidden } from './actions';
 
 type PendingJob = {
   id: string;
@@ -96,8 +96,109 @@ export default async function AdminPage() {
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-brand bg-surface" />}>
         <PendingList t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
+        <Inbox locale={locale} />
+        <RecentReviews locale={locale} />
       </Suspense>
     </div>
+  );
+}
+
+const when = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam', dateStyle: 'medium', timeStyle: 'short' });
+
+// Trip enquiries (not addressed to a single guide) and sign-ups from partner and coming-soon pages.
+async function Inbox({ locale }: { locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const [leads, signups] = await Promise.all([
+    supabase
+      .from('leads')
+      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en)')
+      .is('guide_id', null)
+      .order('created_at', { ascending: false })
+      .limit(30)
+      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null }[]>(),
+    supabase
+      .from('interest_signups')
+      .select('id, section, item, kind, name, contact, business_name, message, locale, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .returns<{ id: string; section: string; item: string; kind: string; name: string; contact: string; business_name: string | null; message: string | null; locale: string; created_at: string }[]>(),
+  ]);
+
+  return (
+    <section id="inbox" className="mt-12 grid gap-8 lg:grid-cols-2">
+      <div>
+        <h2 className="text-2xl font-bold">Trip enquiries ({leads.data?.length ?? 0})</h2>
+        <ul className="mt-4 space-y-3">
+          {(leads.data ?? []).map((l) => (
+            <li key={l.id} className="card p-4 text-sm">
+              <p className="font-semibold">{l.trips?.title_en ?? 'General enquiry'}</p>
+              <p>{l.traveler_name} · {l.traveler_contact}</p>
+              {l.message && <p className="mt-1 whitespace-pre-line text-muted">{l.message}</p>}
+              <p className="mt-1 text-xs text-muted">{when(l.created_at)}</p>
+            </li>
+          ))}
+          {!leads.data?.length && <li className="text-muted">—</li>}
+        </ul>
+      </div>
+      <div>
+        <h2 className="text-2xl font-bold">Sign-ups & partner applications ({signups.data?.length ?? 0})</h2>
+        <ul className="mt-4 space-y-3">
+          {(signups.data ?? []).map((s) => (
+            <li key={s.id} className={`card p-4 text-sm ${s.section === 'partners' ? 'border-sunset' : ''}`}>
+              <p className="font-semibold">
+                {s.section === 'partners' ? 'Travel agent application' : `${s.kind === 'business' ? 'Business listing' : 'Traveller interest'}: ${s.section} / ${s.item}`}
+              </p>
+              <p>{s.business_name ? `${s.business_name} · ` : ''}{s.name} · {s.contact} · {s.locale.toUpperCase()}</p>
+              {s.message && <p className="mt-1 whitespace-pre-line text-muted">{s.message}</p>}
+              <p className="mt-1 text-xs text-muted">{when(s.created_at)}</p>
+            </li>
+          ))}
+          {!signups.data?.length && <li className="text-muted">—</li>}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+async function RecentReviews({ locale }: { locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('guide_reviews')
+    .select('id, author_name, rating, body, hidden, created_at, guides(display_name, slug)')
+    .order('created_at', { ascending: false })
+    .limit(30)
+    .returns<{ id: string; author_name: string; rating: number; body: string; hidden: boolean; created_at: string; guides: { display_name: string; slug: string } | null }[]>();
+
+  return (
+    <section id="reviews" className="mt-12">
+      <h2 className="text-2xl font-bold">Latest reviews</h2>
+      <ul className="mt-4 space-y-3">
+        {(data ?? []).map((r) => (
+          <li key={r.id} className={`card grid gap-3 p-4 text-sm sm:grid-cols-[1fr_auto] ${r.hidden ? 'opacity-60' : ''}`}>
+            <div>
+              <p className="font-semibold">
+                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)} · {r.guides?.display_name} · by {r.author_name}
+                {r.hidden && ' · HIDDEN'}
+              </p>
+              <p className="mt-1 whitespace-pre-line">{r.body}</p>
+              <p className="mt-1 text-xs text-muted">{when(r.created_at)}</p>
+            </div>
+            <form action={setReviewHidden}>
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="review_id" value={r.id} />
+              <input type="hidden" name="hidden" value={r.hidden ? 'false' : 'true'} />
+              <button className="btn-outline px-4 py-2 text-sm">{r.hidden ? 'Show' : 'Hide'}</button>
+            </form>
+          </li>
+        ))}
+        {!data?.length && <li className="text-muted">—</li>}
+      </ul>
+    </section>
   );
 }
 

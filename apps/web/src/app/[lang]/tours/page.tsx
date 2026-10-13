@@ -93,7 +93,13 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
       </div>
 
       {trips.length === 0 ? (
-        <p className="mt-12 text-lg text-muted">{t.tours.empty}</p>
+        <div className="mt-12">
+          <p className="text-lg text-muted">{t.tours.empty}</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link href={`/${locale}/guides`} className="btn">{t.nav.guides}</Link>
+            <Link href={`/${locale}/calls`} className="btn-outline">{t.traveler.findCall}</Link>
+          </div>
+        </div>
       ) : (
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {trips.map((trip) => (

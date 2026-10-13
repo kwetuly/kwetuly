@@ -7,17 +7,19 @@ import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
 import { CALL_TOPICS } from '@rafrika/shared';
-import { getGuideBySlug, type Guide } from '@/lib/guides';
+import { getGuideBySlug, listReviews, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
 import { GuideAvatar, GuideBadges, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
 import { Icon } from '@/components/icon';
-import { requestCall, requestGuide } from './actions';
+import { RatingSummary, Stars } from '@/components/stars';
+import { createClient } from '@/lib/supabase/server';
+import { requestCall, requestGuide, submitReview } from './actions';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
   const guide = await getGuideBySlug(slug);
-  if (!guide) return { title: 'Guide not found' };
+  if (!guide) notFound();
   return {
     title: `${guide.display_name} — ${guide.base_region} guide`,
     description: guide.headline ?? undefined,
@@ -64,6 +66,9 @@ async function Profile({
           <div>
             <h1 className="text-3xl font-bold">{guide.display_name}</h1>
             {guide.headline && <p className="mt-1 text-muted">{guide.headline}</p>}
+            <a href="#reviews" className="mt-2 inline-block">
+              <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
+            </a>
             <div className="mt-3">
               <GuideBadges guide={guide} t={t} />
             </div>
@@ -127,6 +132,8 @@ async function Profile({
           {guide.facebook_url && <a className="text-forest underline" href={guide.facebook_url} rel="nofollow noopener" target="_blank">Facebook</a>}
           {guide.tiktok_url && <a className="text-forest underline" href={guide.tiktok_url} rel="nofollow noopener" target="_blank">TikTok</a>}
         </div>
+
+        <Reviews guide={guide} status={status} t={t} locale={locale} />
       </div>
 
       <div className="space-y-6">
@@ -232,10 +239,116 @@ async function CallBooking({
             <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} maxLength={160} />
             <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} maxLength={2000} />
             <button className="btn w-full">{t.calls.book}</button>
+            <p className="text-xs text-white/70">{t.calls.payNote}</p>
           </form>
         )}
       </div>
     </section>
+  );
+}
+
+async function Reviews({
+  guide,
+  status,
+  t,
+  locale,
+}: {
+  guide: Guide;
+  status: Record<string, string | string[] | undefined>;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const r = t.reviews;
+  const reviews = await listReviews(guide.id);
+  const dateFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
+
+  return (
+    <section id="reviews" className="mt-10 scroll-mt-28">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-bold">{r.title}</h2>
+        <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={r} />
+      </div>
+
+      {reviews.length === 0 ? (
+        <p className="mt-3 text-muted">{r.none}</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {reviews.map((review) => (
+            <li key={review.id} className="card p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Stars value={review.rating} label={`${review.rating} / 5 ${r.stars}`} />
+                <span className="text-xs text-muted">{dateFormat.format(new Date(review.created_at))}</span>
+              </div>
+              <p className="mt-2 whitespace-pre-line">{review.body}</p>
+              <p className="mt-2 text-sm font-semibold">— {review.author_name}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <ReviewForm guide={guide} status={status} t={t} locale={locale} />
+    </section>
+  );
+}
+
+// Shown to signed-in travellers who had a confirmed call or booking with this guide.
+async function ReviewForm({
+  guide,
+  status,
+  t,
+  locale,
+}: {
+  guide: Guide;
+  status: Record<string, string | string[] | undefined>;
+  t: Dictionary;
+  locale: Locale;
+}) {
+  const r = t.reviews;
+  const user = await getCurrentUser();
+  if (user?.guide?.id === guide.id) return null;
+  if (!user) {
+    return (
+      <Link href={`/${locale}/login`} className="btn-outline mt-5">
+        {r.signIn}
+      </Link>
+    );
+  }
+
+  const supabase = await createClient();
+  const [calls, conversations, own] = await Promise.all([
+    supabase.from('call_requests').select('id', { count: 'exact', head: true })
+      .eq('guide_id', guide.id).eq('traveler_id', user.id).in('status', ['accepted', 'completed']),
+    supabase.from('conversations').select('id', { count: 'exact', head: true })
+      .eq('guide_id', guide.id).eq('traveler_id', user.id).eq('contact_unlocked', true),
+    supabase.from('guide_reviews').select('rating, body').eq('guide_id', guide.id).eq('author_id', user.id).maybeSingle(),
+  ]);
+  const eligible = (calls.count ?? 0) > 0 || (conversations.count ?? 0) > 0;
+
+  if (status.reviewSent) return <p className="mt-5 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {r.thanks}</p>;
+  if (!eligible) return <p className="mt-5 rounded-2xl bg-surface p-4 text-sm text-muted">{r.onlyAfter}</p>;
+
+  return (
+    <form action={submitReview} className="card mt-5 space-y-3">
+      <h3 className="text-lg font-bold">{own.data ? r.edit : r.write}</h3>
+      {status.reviewError && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="slug" value={guide.slug} />
+      <input type="hidden" name="guide_id" value={guide.id} />
+      <fieldset>
+        <legend className="label">{r.rating}</legend>
+        {/* Star picker without JavaScript: radios shown as stars, highest first so CSS can fill to the left. */}
+        <div className="flex flex-row-reverse justify-end gap-1">
+          {[5, 4, 3, 2, 1].map((n) => (
+            <label key={n} className="cursor-pointer rounded text-3xl leading-none text-line transition hover:text-gold has-[:checked]:text-gold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-forest [label:has(:checked)~&]:text-gold [label:hover~&]:text-gold">
+              <input type="radio" name="rating" value={n} required defaultChecked={own.data?.rating === n} className="sr-only" />
+              <span aria-label={`${n} / 5 ${r.stars}`}>★</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <textarea name="body" className="field min-h-28" placeholder={r.body} required minLength={10} maxLength={2000} defaultValue={own.data?.body ?? ''} />
+      <button className="btn">{r.submit}</button>
+    </form>
   );
 }
 

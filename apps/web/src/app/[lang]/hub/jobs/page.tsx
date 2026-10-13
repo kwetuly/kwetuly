@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { ArrowRightLeft, Briefcase, CalendarDays, Languages, MapPin, Users } from 'lucide-react';
+import { hubLabel } from '@/lib/menu';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -53,7 +54,7 @@ async function Jobs({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <section>
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <Briefcase className="size-7 text-sunset" aria-hidden /> Jobs
+        <Briefcase className="size-7 text-sunset" aria-hidden /> {hubLabel('jobs', locale)}
       </h1>
       {jobs.length === 0 && <p className="mt-6 text-muted">{t.hub.noJobs}</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

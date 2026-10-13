@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { hubLabel } from '@/lib/menu';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -47,7 +48,7 @@ async function ThreadView({ params, t, locale }: { params: Promise<{ id: string 
   return (
     <article className="mx-auto max-w-3xl">
       <Link href={`/${locale}/hub/forum`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-charcoal">
-        <ArrowLeft className="size-4" aria-hidden /> Forum
+        <ArrowLeft className="size-4" aria-hidden /> {hubLabel('forum', locale)}
       </Link>
       <div className="card mt-4">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted">

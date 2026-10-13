@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Newspaper } from 'lucide-react';
 import { REGIONS } from '@rafrika/shared';
+import { hubLabel } from '@/lib/menu';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -37,7 +38,7 @@ async function News({ t, locale }: { t: Dictionary; locale: Locale }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
         <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-          <Newspaper className="size-7 text-sunset" aria-hidden /> Field news
+          <Newspaper className="size-7 text-sunset" aria-hidden /> {hubLabel('news', locale)}
         </h1>
         {news.length === 0 && <p className="mt-6 text-muted">{t.hub.noNews}</p>}
         <ul className="mt-6 space-y-4">

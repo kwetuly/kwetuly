@@ -10,6 +10,9 @@ import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
 
 const whyIcons = [BadgeCheck, Star, Languages];
 
+// Home cards stay even: long sections show their first links and a "See all" link.
+const HOME_CARD_LINKS = 5;
+
 export default async function HomePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const hero = PHOTOS.safariSunset;
@@ -65,7 +68,7 @@ export default async function HomePage() {
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
                 <p className="mt-1 text-sm text-white/80">{section.tagline[locale]}</p>
                 <ul className="mt-4 flex flex-wrap gap-2">
-                  {section.items.map((item) => (
+                  {section.items.slice(0, HOME_CARD_LINKS).map((item) => (
                     <li key={item.slug}>
                       <Link
                         href={itemHref(locale, section, item)}
@@ -76,6 +79,16 @@ export default async function HomePage() {
                       </Link>
                     </li>
                   ))}
+                  {section.items.length > HOME_CARD_LINKS && (
+                    <li>
+                      <Link
+                        href={`/${locale}/${section.slug}`}
+                        className="inline-flex items-center gap-1 rounded-[15px] bg-gold px-3 py-1.5 text-sm font-bold text-night"
+                      >
+                        {t.explore.more} ({section.items.length}) <ArrowRight className="size-4" aria-hidden />
+                      </Link>
+                    </li>
+                  )}
                 </ul>
               </div>
             );
@@ -120,7 +133,7 @@ export default async function HomePage() {
           <div className="absolute right-6 top-6 text-7xl opacity-90 transition group-hover:rotate-12 group-hover:scale-110" aria-hidden>
             ⚽
           </div>
-          <p className="text-sm font-bold uppercase tracking-widest">19 June – 17 July 2027</p>
+          <p className="text-sm font-bold uppercase tracking-widest">{t.home.afconDates}</p>
           <h2 className="mt-3 max-w-sm text-3xl font-extrabold">{t.home.afconTitle}</h2>
           <p className="mt-3 max-w-md font-medium text-night/80">{t.home.afconBody}</p>
           <span className="btn-dark mt-8">

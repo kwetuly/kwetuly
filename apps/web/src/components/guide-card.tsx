@@ -5,6 +5,7 @@ import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Guide } from '@/lib/guides';
 import { Icon } from './icon';
+import { RatingSummary } from './stars';
 
 export function specialtyName(id: string, locale: Locale) {
   const s = GUIDE_SPECIALTIES.find((x) => x.id === id);
@@ -74,6 +75,9 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
         <div className="min-w-0">
           <h3 className="text-lg font-bold leading-tight group-hover:text-sunset">{guide.display_name}</h3>
           {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
+          <div className="mt-1">
+            <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
+          </div>
           <p className="mt-1 flex items-center gap-1 text-xs text-muted">
             <MapPin className="size-3.5" aria-hidden /> {guide.base_region}
             {guide.years_experience ? ` · ${guide.years_experience} ${t.guides.years}` : ''}

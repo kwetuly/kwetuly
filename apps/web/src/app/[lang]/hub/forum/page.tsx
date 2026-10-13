@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { MessagesSquare, TriangleAlert } from 'lucide-react';
 import { REGIONS } from '@rafrika/shared';
+import { hubLabel } from '@/lib/menu';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -65,7 +66,7 @@ async function Threads({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <section>
-      <h1 className="text-3xl font-extrabold">{t.hub.title}: Forum</h1>
+      <h1 className="text-3xl font-extrabold">{hubLabel('forum', locale)}</h1>
       {posts.length === 0 ? (
         <p className="mt-6 text-muted">{t.hub.noPosts}</p>
       ) : (

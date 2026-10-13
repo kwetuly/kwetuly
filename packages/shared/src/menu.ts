@@ -53,53 +53,6 @@ function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
 
 const SECTIONS: MenuSection[] = [
   {
-    // Trip catalogue lives at /tours; this section only groups the menu links.
-    slug: 'safaris',
-    icon: 'mountain',
-    label: L('Safaris & Tours', 'Safari na Ziara', 'Safaris', 'Safari e tour', 'Safaris & Touren', 'Safari i wycieczki', '游猎与行程'),
-    tagline: L(
-      'Every circuit of Tanzania, with trusted local operators',
-      'Kila kanda ya Tanzania, na waendeshaji wa ndani wanaoaminika',
-      'Tous les circuits de Tanzanie, avec des opérateurs locaux de confiance',
-      'Tutti i circuiti della Tanzania, con operatori locali affidabili',
-      'Alle Regionen Tansanias, mit vertrauenswürdigen lokalen Anbietern',
-      'Wszystkie szlaki Tanzanii z zaufanymi lokalnymi organizatorami',
-      '坦桑尼亚所有线路，由可信赖的本地运营商提供',
-    ),
-    items: [
-      {
-        slug: 'all', icon: 'map', href: '/tours', status: 'live',
-        label: L('All tours', 'Ziara zote', 'Tous les circuits', 'Tutti i tour', 'Alle Touren', 'Wszystkie wycieczki', '全部行程'),
-        blurb: L('Northern, southern, western and coast', 'Kaskazini, kusini, magharibi na pwani', 'Nord, sud, ouest et côte', 'Nord, sud, ovest e costa', 'Norden, Süden, Westen und Küste', 'Północ, południe, zachód i wybrzeże', '北部、南部、西部与海岸'),
-      },
-      {
-        slug: 'safari', icon: 'binoculars', href: '/tours?category=safari', status: 'live',
-        label: L('Safaris', 'Safari za wanyama', 'Safaris', 'Safari', 'Safaris', 'Safari', '野生动物游猎'),
-        blurb: L('Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', '塞伦盖蒂、恩戈罗恩戈罗、鲁阿哈、尼雷尔'),
-      },
-      {
-        slug: 'climbs', icon: 'mountain', href: '/tours?category=mountain', status: 'live',
-        label: L('Kilimanjaro & climbs', 'Kilimanjaro na milima', 'Kilimandjaro & ascensions', 'Kilimangiaro e scalate', 'Kilimandscharo & Besteigungen', 'Kilimandżaro i wejścia', '乞力马扎罗与登山'),
-        blurb: L('Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame、Lemosho、Marangu、梅鲁山、伦盖火山'),
-      },
-      {
-        slug: 'day-trips', icon: 'sun', href: '/tours?kind=day_trip', status: 'live',
-        label: L('Day trips', 'Safari za siku moja', 'Excursions d’une journée', 'Escursioni giornaliere', 'Tagesausflüge', 'Wycieczki jednodniowe', '一日游'),
-        blurb: L('Waterfalls, coffee farms, hot springs', 'Maporomoko, mashamba ya kahawa, chemchemi', 'Cascades, plantations de café, sources chaudes', 'Cascate, piantagioni di caffè, sorgenti calde', 'Wasserfälle, Kaffeefarmen, heiße Quellen', 'Wodospady, plantacje kawy, gorące źródła', '瀑布、咖啡农场、温泉'),
-      },
-      {
-        slug: 'combos', icon: 'route', href: '/tours?kind=combo', status: 'live',
-        label: L('Combo trips', 'Safari mchanganyiko', 'Voyages combinés', 'Viaggi combinati', 'Kombi-Reisen', 'Wycieczki łączone', '组合行程'),
-        blurb: L('Kili + safari + Zanzibar and more', 'Kili + safari + Zanzibar na zaidi', 'Kili + safari + Zanzibar et plus', 'Kili + safari + Zanzibar e altro', 'Kili + Safari + Sansibar und mehr', 'Kili + safari + Zanzibar i więcej', '乞力马扎罗 + 游猎 + 桑给巴尔等'),
-      },
-      {
-        slug: 'signature', icon: 'sparkles', href: '/tours?signature=1', status: 'live',
-        label: L('Rafrika signature trips', 'Safari maalum za Rafrika', 'Voyages signature Rafrika', 'Viaggi firmati Rafrika', 'Rafrika Signature-Reisen', 'Autorskie wyprawy Rafrika', 'Rafrika 特色行程'),
-        blurb: L('Unique trips designed by our guides', 'Safari za kipekee zilizobuniwa na waongozaji wetu', 'Des voyages uniques conçus par nos guides', 'Viaggi unici ideati dalle nostre guide', 'Einzigartige Reisen, von unseren Guides entworfen', 'Wyjątkowe wyprawy zaprojektowane przez naszych przewodników', '由我们的导游设计的独特行程'),
-      },
-    ],
-  },
-  {
     // URL slug is "trips" because /guides/[slug] is used for guide profiles.
     slug: 'trips',
     icon: 'compass',
@@ -170,6 +123,53 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Guides who know light, angles and animal behaviour', 'Waongozaji wanaojua mwanga, pembe na tabia za wanyama', 'Des guides qui connaissent la lumière et les animaux', 'Guide esperte di luce, inquadrature e animali', 'Guides, die Licht, Perspektiven und Tierverhalten kennen', 'Przewodnicy znający światło, kadry i zachowania zwierząt', '懂光线、角度和动物习性的导游'),
       },
       ...GUIDE_EXPERTISE.slice(4).map(expertiseItem),
+    ],
+  },
+  {
+    // Trip catalogue lives at /tours; this section only groups the menu links.
+    slug: 'safaris',
+    icon: 'mountain',
+    label: L('Safaris & Tours', 'Safari na Ziara', 'Safaris', 'Safari e tour', 'Safaris & Touren', 'Safari i wycieczki', '游猎与行程'),
+    tagline: L(
+      'Every circuit of Tanzania, with trusted local operators',
+      'Kila kanda ya Tanzania, na waendeshaji wa ndani wanaoaminika',
+      'Tous les circuits de Tanzanie, avec des opérateurs locaux de confiance',
+      'Tutti i circuiti della Tanzania, con operatori locali affidabili',
+      'Alle Regionen Tansanias, mit vertrauenswürdigen lokalen Anbietern',
+      'Wszystkie szlaki Tanzanii z zaufanymi lokalnymi organizatorami',
+      '坦桑尼亚所有线路，由可信赖的本地运营商提供',
+    ),
+    items: [
+      {
+        slug: 'all', icon: 'map', href: '/tours', status: 'live',
+        label: L('All tours', 'Ziara zote', 'Tous les circuits', 'Tutti i tour', 'Alle Touren', 'Wszystkie wycieczki', '全部行程'),
+        blurb: L('Northern, southern, western and coast', 'Kaskazini, kusini, magharibi na pwani', 'Nord, sud, ouest et côte', 'Nord, sud, ovest e costa', 'Norden, Süden, Westen und Küste', 'Północ, południe, zachód i wybrzeże', '北部、南部、西部与海岸'),
+      },
+      {
+        slug: 'safari', icon: 'binoculars', href: '/tours?category=safari', status: 'live',
+        label: L('Safaris', 'Safari za wanyama', 'Safaris', 'Safari', 'Safaris', 'Safari', '野生动物游猎'),
+        blurb: L('Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', 'Serengeti, Ngorongoro, Ruaha, Nyerere', '塞伦盖蒂、恩戈罗恩戈罗、鲁阿哈、尼雷尔'),
+      },
+      {
+        slug: 'climbs', icon: 'mountain', href: '/tours?category=mountain', status: 'live',
+        label: L('Kilimanjaro & climbs', 'Kilimanjaro na milima', 'Kilimandjaro & ascensions', 'Kilimangiaro e scalate', 'Kilimandscharo & Besteigungen', 'Kilimandżaro i wejścia', '乞力马扎罗与登山'),
+        blurb: L('Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame, Lemosho, Marangu, Meru, Lengai', 'Machame、Lemosho、Marangu、梅鲁山、伦盖火山'),
+      },
+      {
+        slug: 'day-trips', icon: 'sun', href: '/tours?kind=day_trip', status: 'live',
+        label: L('Day trips', 'Safari za siku moja', 'Excursions d’une journée', 'Escursioni giornaliere', 'Tagesausflüge', 'Wycieczki jednodniowe', '一日游'),
+        blurb: L('Waterfalls, coffee farms, hot springs', 'Maporomoko, mashamba ya kahawa, chemchemi', 'Cascades, plantations de café, sources chaudes', 'Cascate, piantagioni di caffè, sorgenti calde', 'Wasserfälle, Kaffeefarmen, heiße Quellen', 'Wodospady, plantacje kawy, gorące źródła', '瀑布、咖啡农场、温泉'),
+      },
+      {
+        slug: 'combos', icon: 'route', href: '/tours?kind=combo', status: 'live',
+        label: L('Combo trips', 'Safari mchanganyiko', 'Voyages combinés', 'Viaggi combinati', 'Kombi-Reisen', 'Wycieczki łączone', '组合行程'),
+        blurb: L('Kili + safari + Zanzibar and more', 'Kili + safari + Zanzibar na zaidi', 'Kili + safari + Zanzibar et plus', 'Kili + safari + Zanzibar e altro', 'Kili + Safari + Sansibar und mehr', 'Kili + safari + Zanzibar i więcej', '乞力马扎罗 + 游猎 + 桑给巴尔等'),
+      },
+      {
+        slug: 'signature', icon: 'sparkles', href: '/tours?signature=1', status: 'live',
+        label: L('Rafrika signature trips', 'Safari maalum za Rafrika', 'Voyages signature Rafrika', 'Viaggi firmati Rafrika', 'Rafrika Signature-Reisen', 'Autorskie wyprawy Rafrika', 'Rafrika 特色行程'),
+        blurb: L('Unique trips designed by our guides', 'Safari za kipekee zilizobuniwa na waongozaji wetu', 'Des voyages uniques conçus par nos guides', 'Viaggi unici ideati dalle nostre guide', 'Einzigartige Reisen, von unseren Guides entworfen', 'Wyjątkowe wyprawy zaprojektowane przez naszych przewodników', '由我们的导游设计的独特行程'),
+      },
     ],
   },
   {

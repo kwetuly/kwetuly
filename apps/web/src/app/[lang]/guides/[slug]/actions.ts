@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { CALL_TOPICS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
@@ -61,4 +62,38 @@ export async function requestGuide(formData: FormData) {
   });
 
   redirect(`${back}?${error ? 'error' : 'sent'}=1#contact`);
+}
+
+// Post or update the signed-in traveller's review. The database only accepts it from travellers
+// with a confirmed call or booking with this guide, and keeps one review per traveller per guide.
+export async function submitReview(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const slug = String(formData.get('slug') ?? '');
+  const back = `/${locale}/guides/${encodeURIComponent(slug)}`;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
+
+  const rating = Number.parseInt(String(formData.get('rating') ?? ''), 10);
+  const body = String(formData.get('body') ?? '').trim().slice(0, 2000);
+  const guideId = String(formData.get('guide_id') ?? '').slice(0, 40);
+  if (!(rating >= 1 && rating <= 5) || body.length < 10) redirect(`${back}?reviewError=1#reviews`);
+
+  // Show first name and initial only, e.g. "Anna K.", to protect travellers' privacy.
+  const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', user.id).single();
+  const parts = (profile?.full_name ?? '').trim().split(/\s+/).filter(Boolean);
+  const authorName = parts.length ? `${parts[0]}${parts[1] ? ` ${parts[1][0]}.` : ''}` : 'Traveller';
+
+  const { error } = await supabase
+    .from('guide_reviews')
+    .upsert(
+      { guide_id: guideId, author_id: user.id, author_name: authorName.slice(0, 80), rating, body },
+      { onConflict: 'guide_id,author_id' },
+    );
+  if (!error) revalidateTag('guides', 'max');
+  redirect(`${back}?${error ? 'reviewError' : 'reviewSent'}=1#reviews`);
 }

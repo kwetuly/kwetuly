@@ -21,6 +21,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const firstSegment = pathname.split('/')[1] ?? '';
 
+  // Icons, robots.txt and sitemap.xml are excluded by the matcher below so they are never redirected.
   // Pages live under /en/..., /sw/..., /fr/... and so on; send everything else to the visitor's language.
   if (!hasLocale(firstSegment) && !pathname.startsWith('/auth/')) {
     const url = request.nextUrl.clone();
@@ -36,5 +37,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|api/|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt|xml)$).*)'],
+  matcher: ['/((?!_next/|api/|icon|apple-icon|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt|xml)$).*)'],
 };

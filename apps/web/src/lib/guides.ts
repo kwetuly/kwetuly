@@ -15,6 +15,8 @@ export type Guide = {
   expertise: string[];
   female_guide: boolean;
   open_to_partners: boolean;
+  rating_avg: number | null;
+  rating_count: number;
   languages: string[];
   max_group_size: number;
   years_experience: number | null;
@@ -35,7 +37,7 @@ export type Guide = {
 };
 
 export const GUIDE_COLUMNS =
-  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics';
+  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics';
 
 // Approved, public guides who offer 1-on-1 prep calls, optionally for one topic.
 export async function listCallGuides(topic?: string): Promise<Guide[]> {
@@ -105,4 +107,21 @@ export async function getGuideBySlug(slug: string): Promise<Guide | null> {
     .eq('verification_status', 'approved')
     .maybeSingle();
   return (data as Guide | null) ?? null;
+}
+
+export type Review = { id: string; author_name: string; rating: number; body: string; created_at: string };
+
+// Visible reviews for one guide, newest first. Tagged 'guides' so a new review refreshes the profile.
+export async function listReviews(guideId: string): Promise<Review[]> {
+  'use cache';
+  cacheTag('guides', `reviews:${guideId}`);
+  cacheLife('minutes');
+
+  const { data } = await publicClient()
+    .from('guide_reviews')
+    .select('id, author_name, rating, body, created_at')
+    .eq('guide_id', guideId)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  return (data ?? []) as Review[];
 }

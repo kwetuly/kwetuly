@@ -72,6 +72,10 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Ujumbe mpya kutoka kwa ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Jibu kwenye Rafrika.` }
         : { subject: `New message from ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Reply on Rafrika.` };
+    case 'review_new':
+      return sw
+        ? { subject: `Maoni mapya: nyota ${v('rating')} kutoka kwa ${v('author')}`, body: `${v('author')} ameandika: "${v('preview')}". Tazama wasifu wako kwenye Rafrika.` }
+        : { subject: `New ${v('rating')}-star review from ${v('author')}`, body: `${v('author')} wrote: "${v('preview')}". See it on your Rafrika profile.` };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':

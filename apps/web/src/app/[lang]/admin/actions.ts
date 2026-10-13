@@ -30,6 +30,22 @@ export async function reviewGuide(formData: FormData) {
   redirect(`/${locale}/admin`);
 }
 
+// Hide or show a traveller review (e.g. abusive or off-topic). Ratings update automatically.
+export async function setReviewHidden(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const supabase = await createClient();
+  await supabase
+    .from('guide_reviews')
+    .update({ hidden: formData.get('hidden') === 'true' })
+    .eq('id', String(formData.get('review_id') ?? ''));
+  revalidateTag('guides', 'max');
+  redirect(`/${locale}/admin#reviews`);
+}
+
 export async function reviewJob(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;

@@ -35,6 +35,7 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
               </li>
             ))}
           </ol>
+          <p className="mt-4 max-w-3xl text-sm text-white/75">{t.calls.payNote}</p>
         </div>
       </PhotoHero>
       <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
