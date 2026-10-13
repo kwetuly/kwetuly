@@ -17,7 +17,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
 
   return (
     <>
-      <ul className="hidden items-center gap-0.5 xl:flex">
+      <ul className="hidden items-center gap-0.5 whitespace-nowrap xl:flex">
         {MENU.map((section) => (
           <li key={section.slug} className="group relative">
             <button
@@ -28,12 +28,12 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
               {section.label[locale]}
               <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
             </button>
-            <div className="invisible absolute left-1/2 top-full z-30 w-[22rem] -translate-x-1/2 translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+            <div className={`invisible absolute top-full z-30 ${section.items.length > 6 ? 'left-0 w-[42rem]' : 'left-1/2 w-[22rem] -translate-x-1/2'} translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}>
               <div className="overflow-hidden rounded-3xl border border-line bg-white shadow-[0_24px_60px_-12px_rgba(10,31,23,0.25)]">
                 <p className="bg-gradient-to-r from-night to-forest px-5 py-3 text-xs font-medium text-mint">
                   {section.tagline[locale]}
                 </p>
-                <ul className="p-2">
+                <ul className={`p-2 ${section.items.length > 6 ? 'grid grid-cols-2' : ''}`}>
                   {section.items.map((item) => (
                     <li key={item.slug}>
                       <Link

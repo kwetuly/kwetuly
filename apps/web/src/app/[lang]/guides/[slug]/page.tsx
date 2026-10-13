@@ -10,7 +10,8 @@ import { CALL_TOPICS } from '@rafrika/shared';
 import { getGuideBySlug, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
-import { GuideAvatar, languageName, specialtyName } from '@/components/guide-card';
+import { GuideAvatar, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
+import { Icon } from '@/components/icon';
 import { requestCall, requestGuide } from './actions';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
@@ -66,6 +67,7 @@ async function Profile({
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="badge">✓ {t.guides.verified}</span>
               {guide.plan === 'pro' && <span className="badge">{t.guides.pro}</span>}
+              {guide.female_guide && <span className="badge bg-sand text-sunset-dark">{t.guides.female}</span>}
             </div>
           </div>
         </div>
@@ -76,6 +78,22 @@ async function Profile({
           <section className="mt-8">
             <h2 className="text-lg font-semibold">{t.profile.about}</h2>
             <p className="mt-2 whitespace-pre-line leading-relaxed">{guide.bio}</p>
+          </section>
+        )}
+
+        {guide.expertise.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">{t.profile.expertise}</h2>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {expertiseOf(guide).map((e) => (
+                <li key={e.id}>
+                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl bg-mint p-3 text-forest hover:bg-forest hover:text-white">
+                    <Icon name={e.icon} className="size-5 shrink-0" />
+                    <span className="text-sm font-semibold">{e.label[locale]}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 

@@ -143,6 +143,12 @@ export const zh: Dictionary = {
     afconBody: '比赛日接送、城市游览以及本地导游带领的一日游。即将推出。',
   },
   guides: {
+    expertise: '特色主题游',
+    anyExpertise: '全部主题',
+    femaleOnly: '仅看女性导游',
+    female: '女性导游',
+    byLanguage: '找一位说你语言的导游',
+    clear: '清除筛选',
     title: '坦桑尼亚导游',
     filters: '筛选',
     region: '地区',
@@ -157,6 +163,7 @@ export const zh: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: '特色主题游',
     about: '简介',
     specialties: '体验',
     regions: '服务地区',

@@ -10,10 +10,10 @@ export async function AuthLinks() {
   if (!user) {
     return (
       <>
-        <Link href={`/${locale}/login`} className="hidden font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
+        <Link href={`/${locale}/login`} className="hidden whitespace-nowrap font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
           {t.nav.signIn}
         </Link>
-        <Link href={`/${locale}/join`} className="btn px-4 py-2 text-sm">
+        <Link href={`/${locale}/join`} className="btn whitespace-nowrap px-4 py-2 text-sm">
           {t.nav.signUp}
         </Link>
       </>
@@ -23,14 +23,14 @@ export async function AuthLinks() {
   return (
     <>
       {user.role === 'admin' && (
-        <Link href={`/${locale}/admin`} className="hidden font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
+        <Link href={`/${locale}/admin`} className="hidden whitespace-nowrap font-semibold text-charcoal/80 hover:text-charcoal sm:inline">
           {t.nav.admin}
         </Link>
       )}
       {user.canUseHub && (
         <Link
           href={`/${locale}/hub`}
-          className="hidden rounded-[15px] bg-gradient-to-r from-gold to-sunset px-4 py-2 text-sm font-bold text-night sm:inline-flex"
+          className="hidden rounded-[15px] bg-gradient-to-r from-gold to-sunset px-4 py-2 text-sm font-bold text-night whitespace-nowrap sm:inline-flex"
         >
           {t.nav.hub}
         </Link>
@@ -43,7 +43,7 @@ export async function AuthLinks() {
       >
         <MessagesSquare className="size-5" aria-hidden />
       </Link>
-      <Link href={`/${locale}/dashboard`} className="btn-dark px-4 py-2 text-sm">
+      <Link href={`/${locale}/dashboard`} className="btn-dark whitespace-nowrap px-4 py-2 text-sm">
         {t.nav.dashboard}
       </Link>
       <form action={signOut} className="hidden sm:block">

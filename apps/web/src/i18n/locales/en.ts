@@ -196,6 +196,12 @@ export const en = {
     afconBody: 'Match-day transfers, city tours and day trips with local guides. Coming soon.',
   },
   guides: {
+    expertise: 'Special trips',
+    anyExpertise: 'Any special trip',
+    femaleOnly: 'Female guides only',
+    female: 'Female guide',
+    byLanguage: 'Find a guide who speaks your language',
+    clear: 'Clear filters',
     title: 'Tanzanian guides',
     filters: 'Filter',
     region: 'Region',
@@ -210,6 +216,7 @@ export const en = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Special trips',
     about: 'About',
     specialties: 'Experiences',
     regions: 'Works in',
@@ -239,6 +246,9 @@ export const en = {
     error: 'Something went wrong. Please check your details and try again.',
   },
   dashboard: {
+    expertise: 'Special trips you are trained for',
+    expertiseHint: 'Only tick what you have real experience or training in. Rafrika may ask for proof, such as a certificate or a past client’s reference.',
+    femaleGuide: 'I am a woman and want to be listed under Female guides',
     title: 'Your guide profile',
     statusPending: 'Waiting for verification. We will review your details and approve your profile.',
     statusApproved: 'Your profile is live.',

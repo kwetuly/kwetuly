@@ -150,6 +150,12 @@ export const pl: Dictionary = {
     afconBody: 'Transfery w dni meczów, zwiedzanie miast i wycieczki z lokalnymi przewodnikami. Już wkrótce.',
   },
   guides: {
+    expertise: 'Wyprawy specjalne',
+    anyExpertise: 'Dowolna wyprawa specjalna',
+    femaleOnly: 'Tylko przewodniczki',
+    female: 'Przewodniczka',
+    byLanguage: 'Znajdź przewodnika mówiącego w Twoim języku',
+    clear: 'Wyczyść filtry',
     title: 'Przewodnicy z Tanzanii',
     filters: 'Filtry',
     region: 'Region',
@@ -164,6 +170,7 @@ export const pl: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Wyprawy specjalne',
     about: 'O mnie',
     specialties: 'Doświadczenia',
     regions: 'Działa w',

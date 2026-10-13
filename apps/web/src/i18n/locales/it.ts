@@ -150,6 +150,12 @@ export const it: Dictionary = {
     afconBody: 'Transfer nei giorni delle partite, tour in città ed escursioni con guide locali. Presto disponibile.',
   },
   guides: {
+    expertise: 'Viaggi speciali',
+    anyExpertise: 'Qualsiasi viaggio speciale',
+    femaleOnly: 'Solo guide donne',
+    female: 'Guida donna',
+    byLanguage: 'Trova una guida che parla la tua lingua',
+    clear: 'Azzera filtri',
     title: 'Guide tanzaniane',
     filters: 'Filtra',
     region: 'Regione',
@@ -164,6 +170,7 @@ export const it: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Viaggi speciali',
     about: 'Chi sono',
     specialties: 'Esperienze',
     regions: 'Lavora a',

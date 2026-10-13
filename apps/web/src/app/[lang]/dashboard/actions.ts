@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { CALL_TOPICS, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 
@@ -66,6 +66,8 @@ export async function saveGuideProfile(formData: FormData) {
     regions: allowed(formData.getAll('regions'), REGIONS),
     specialties: allowed(formData.getAll('specialties'), GUIDE_SPECIALTIES.map((s) => s.id)),
     languages: allowed(formData.getAll('languages'), GUIDE_LANGUAGES.map((l) => l.code)),
+    expertise: allowed(formData.getAll('expertise'), GUIDE_EXPERTISE.map((e) => e.id)),
+    female_guide: formData.get('female_guide') === 'on',
     max_group_size: Math.min(Math.max(int(formData, 'max_group_size') ?? 8, 1), 60),
     years_experience: int(formData, 'years_experience'),
     summits: int(formData, 'summits'),

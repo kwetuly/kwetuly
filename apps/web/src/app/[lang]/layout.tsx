@@ -41,9 +41,6 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
               <Logo className="text-[28px]" />
             </Link>
-            <div className="ml-2 hidden xl:block">
-              <SiteNav locale={locale} soonLabel={t.nav.soon} />
-            </div>
             <div className="ml-auto flex items-center gap-3 text-sm">
               <Suspense fallback={null}>
                 <AuthLinks />
@@ -56,6 +53,12 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               </div>
             </div>
           </nav>
+          {/* Desktop: the section menu gets its own row so it never collides with the account buttons. */}
+          <div className="hidden border-t border-line/60 xl:block">
+            <div className="mx-auto max-w-7xl px-2 py-1">
+              <SiteNav locale={locale} soonLabel={t.nav.soon} />
+            </div>
+          </div>
         </header>
 
         <main className="flex-1">{children}</main>

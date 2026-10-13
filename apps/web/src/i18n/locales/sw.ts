@@ -198,6 +198,12 @@ export const sw: Dictionary = {
     afconBody: 'Usafiri wa siku za mechi, ziara za mji na safari za siku moja na waongozaji wa ndani. Inakuja hivi karibuni.',
   },
   guides: {
+    expertise: 'Safari maalum',
+    anyExpertise: 'Safari maalum yoyote',
+    femaleOnly: 'Waongozaji wanawake tu',
+    female: 'Mwongozaji mwanamke',
+    byLanguage: 'Tafuta mwongozaji anayeongea lugha yako',
+    clear: 'Futa vichujio',
     title: 'Waongozaji wa Tanzania',
     filters: 'Chuja',
     region: 'Mkoa',
@@ -212,6 +218,7 @@ export const sw: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Safari maalum',
     about: 'Kuhusu',
     specialties: 'Uzoefu',
     regions: 'Anafanya kazi',
@@ -241,6 +248,9 @@ export const sw: Dictionary = {
     error: 'Kuna tatizo. Tafadhali angalia taarifa zako na ujaribu tena.',
   },
   dashboard: {
+    expertise: 'Safari maalum ulizopata mafunzo',
+    expertiseHint: 'Chagua tu zile ambazo una uzoefu au mafunzo halisi. Rafrika inaweza kuomba ushahidi, kama cheti au maoni ya mteja wa zamani.',
+    femaleGuide: 'Mimi ni mwanamke na nataka kuonekana kwenye Waongozaji wanawake',
     title: 'Wasifu wako wa mwongozaji',
     statusPending: 'Inasubiri uthibitisho. Tutakagua taarifa zako na kuidhinisha wasifu wako.',
     statusApproved: 'Wasifu wako uko hewani.',

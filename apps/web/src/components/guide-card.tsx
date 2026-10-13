@@ -1,12 +1,17 @@
 import Link from 'next/link';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Guide } from '@/lib/guides';
+import { Icon } from './icon';
 
 export function specialtyName(id: string, locale: Locale) {
   const s = GUIDE_SPECIALTIES.find((x) => x.id === id);
   return s ? s[locale] : id;
+}
+
+export function expertiseOf(guide: Guide) {
+  return GUIDE_EXPERTISE.filter((e) => guide.expertise.includes(e.id));
 }
 
 export function languageName(code: string) {
@@ -43,6 +48,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="font-semibold">{guide.display_name}</h3>
           {guide.plan === 'pro' && <span className="badge">{t.guides.pro}</span>}
+          {guide.female_guide && <span className="badge bg-sand text-sunset-dark">{t.guides.female}</span>}
         </div>
         {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
         <p className="mt-2 text-xs text-muted">
@@ -52,6 +58,11 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
           {guide.specialties.slice(0, 3).map((s) => (
             <span key={s} className="rounded-full bg-surface px-2 py-0.5 text-xs">
               {specialtyName(s, locale)}
+            </span>
+          ))}
+          {expertiseOf(guide).map((e) => (
+            <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-xs text-forest" title={e.label[locale]}>
+              <Icon name={e.icon} className="size-3" /> {e.label[locale]}
             </span>
           ))}
         </div>

@@ -2,6 +2,7 @@
 // `status: 'soon'` items show a "coming soon" page that collects interest and listings.
 // Labels are in the order en, sw, fr, it, de, pl, zh (see locales.ts).
 
+import { GUIDE_EXPERTISE } from './expertise';
 import { L, type Label } from './locales';
 
 export type MenuItem = {
@@ -90,6 +91,16 @@ export const MENU: MenuSection[] = [
         blurb: L('Filter by language, region and experience', 'Chuja kwa lugha, mkoa na uzoefu', 'Filtrer par langue, région et expérience', 'Filtra per lingua, regione ed esperienza', 'Nach Sprache, Region und Erfahrung filtern', 'Filtruj według języka, regionu i doświadczenia', '按语言、地区和经验筛选'),
       },
       {
+        slug: 'female', icon: 'venus', href: '/guides?female=1', status: 'live',
+        label: L('Female guides', 'Waongozaji wanawake', 'Guides femmes', 'Guide donne', 'Weibliche Guides', 'Przewodniczki', '女性导游'),
+        blurb: L('Women who lead climbs, safaris and city tours', 'Wanawake wanaoongoza milima, safari na ziara za mji', 'Des femmes qui mènent ascensions, safaris et visites', 'Donne che guidano scalate, safari e tour in città', 'Frauen, die Besteigungen, Safaris und Stadttouren leiten', 'Kobiety prowadzące wejścia, safari i zwiedzanie', '带领登山、游猎和城市游的女性导游'),
+      },
+      {
+        slug: 'by-language', icon: 'languages', href: '/guides#languages', status: 'live',
+        label: L('Guides by language', 'Waongozaji kwa lugha', 'Guides par langue', 'Guide per lingua', 'Guides nach Sprache', 'Przewodnicy według języka', '按语言找导游'),
+        blurb: L('French, Italian, German, Polish, Chinese and more', 'Kifaransa, Kiitaliano, Kijerumani, Kipolandi, Kichina na zaidi', 'Français, italien, allemand, polonais, chinois et plus', 'Francese, italiano, tedesco, polacco, cinese e altre', 'Französisch, Italienisch, Deutsch, Polnisch, Chinesisch und mehr', 'Francuski, włoski, niemiecki, polski, chiński i inne', '法语、意大利语、德语、波兰语、中文等'),
+      },
+      {
         slug: 'calls', icon: 'video', href: '/calls', status: 'live',
         label: L('1-on-1 prep calls', 'Simu za maandalizi', 'Appels de préparation 1-à-1', 'Chiamate di preparazione 1:1', '1:1-Vorbereitungsgespräche', 'Rozmowy przygotowawcze 1:1', '一对一行前咨询'),
         blurb: L('Kili, safari or Zanzibar advice from a guide you choose', 'Ushauri wa Kili, safari au Zanzibar kutoka kwa mwongozaji unayemchagua', 'Conseils Kili, safari ou Zanzibar par le guide de votre choix', 'Consigli su Kili, safari o Zanzibar dalla guida che scegli', 'Tipps zu Kili, Safari oder Sansibar von einem Guide Ihrer Wahl', 'Porady o Kili, safari lub Zanzibarze od wybranego przewodnika', '由你选择的导游提供乞力马扎罗、游猎或桑给巴尔建议'),
@@ -104,6 +115,30 @@ export const MENU: MenuSection[] = [
         label: L('Post a trip request', 'Weka ombi la safari', 'Publier une demande de voyage', 'Pubblica una richiesta di viaggio', 'Reiseanfrage stellen', 'Dodaj zapytanie o wyprawę', '发布行程需求'),
         blurb: L('Guides send you Regular, Premium and VIP offers', 'Waongozaji wanakutumia ofa za kawaida, premium na VIP', 'Les guides vous envoient des offres Standard, Premium et VIP', 'Le guide ti inviano offerte Standard, Premium e VIP', 'Guides senden Ihnen Standard-, Premium- und VIP-Angebote', 'Przewodnicy przysyłają oferty Standard, Premium i VIP', '导游为你提供标准、高级和 VIP 方案'),
       },
+    ],
+  },
+  {
+    // Special trips: each item opens the guide list filtered by that expertise.
+    slug: 'special',
+    icon: 'heart-handshake',
+    label: L('Special trips', 'Safari maalum', 'Voyages spéciaux', 'Viaggi speciali', 'Spezialreisen', 'Wyprawy specjalne', '特色主题游'),
+    tagline: L(
+      'Guides with the skills your trip needs',
+      'Waongozaji wenye ujuzi ambao safari yako inahitaji',
+      'Des guides aux compétences adaptées à votre voyage',
+      'Guide con le competenze che servono al tuo viaggio',
+      'Guides mit genau den Fähigkeiten, die Ihre Reise braucht',
+      'Przewodnicy z umiejętnościami, jakich wymaga Twoja podróż',
+      '具备你的旅程所需专长的导游',
+    ),
+    items: [
+      ...GUIDE_EXPERTISE.slice(0, 4).map(expertiseItem),
+      {
+        slug: 'photography', icon: 'camera', href: '/guides?specialty=photography', status: 'live',
+        label: L('Photography safaris', 'Safari za upigaji picha', 'Safaris photo', 'Safari fotografici', 'Fotosafaris', 'Safari fotograficzne', '摄影游猎'),
+        blurb: L('Guides who know light, angles and animal behaviour', 'Waongozaji wanaojua mwanga, pembe na tabia za wanyama', 'Des guides qui connaissent la lumière et les animaux', 'Guide esperte di luce, inquadrature e animali', 'Guides, die Licht, Perspektiven und Tierverhalten kennen', 'Przewodnicy znający światło, kadry i zachowania zwierząt', '懂光线、角度和动物习性的导游'),
+      },
+      ...GUIDE_EXPERTISE.slice(4).map(expertiseItem),
     ],
   },
   {
@@ -300,6 +335,10 @@ export const HUB_MENU: MenuItem[] = [
   { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: hub('Jobs', 'Kazi'), blurb: hub('Companies hiring guides and crew', 'Makampuni yanayoajiri') },
   { slug: 'profile', icon: 'user-round', href: '/dashboard', status: 'live', label: hub('My profile', 'Wasifu wangu'), blurb: hub('Edit your public profile and calls', 'Hariri wasifu na simu zako') },
 ];
+
+function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
+  return { slug: e.id.replace(/_/g, '-'), icon: e.icon, href: `/guides?expertise=${e.id}`, status: 'live', label: e.label, blurb: e.blurb };
+}
 
 export function findMenuItem(sectionSlug: string, itemSlug: string) {
   const section = MENU.find((s) => s.slug === sectionSlug);

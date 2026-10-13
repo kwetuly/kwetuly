@@ -150,6 +150,12 @@ export const de: Dictionary = {
     afconBody: 'Transfers an Spieltagen, Stadttouren und Tagesausflüge mit lokalen Guides. Demnächst verfügbar.',
   },
   guides: {
+    expertise: 'Spezialreisen',
+    anyExpertise: 'Alle Spezialreisen',
+    femaleOnly: 'Nur weibliche Guides',
+    female: 'Weiblicher Guide',
+    byLanguage: 'Finden Sie einen Guide, der Ihre Sprache spricht',
+    clear: 'Filter zurücksetzen',
     title: 'Tansanische Guides',
     filters: 'Filtern',
     region: 'Region',
@@ -164,6 +170,7 @@ export const de: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Spezialreisen',
     about: 'Über mich',
     specialties: 'Erlebnisse',
     regions: 'Unterwegs in',

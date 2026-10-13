@@ -150,6 +150,12 @@ export const fr: Dictionary = {
     afconBody: 'Transferts les jours de match, visites de ville et excursions avec des guides locaux. Bientôt disponible.',
   },
   guides: {
+    expertise: 'Voyages spéciaux',
+    anyExpertise: 'Tous les voyages spéciaux',
+    femaleOnly: 'Guides femmes uniquement',
+    female: 'Guide femme',
+    byLanguage: 'Trouvez un guide qui parle votre langue',
+    clear: 'Effacer les filtres',
     title: 'Guides tanzaniens',
     filters: 'Filtrer',
     region: 'Région',
@@ -164,6 +170,7 @@ export const fr: Dictionary = {
     pro: 'Pro',
   },
   profile: {
+    expertise: 'Voyages spéciaux',
     about: 'À propos',
     specialties: 'Expériences',
     regions: 'Zones d’activité',

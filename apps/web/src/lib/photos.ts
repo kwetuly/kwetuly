@@ -38,6 +38,7 @@ export function photoUrl(photo: Photo, width = 1600) {
 export const SECTION_PHOTOS: Record<string, PhotoKey> = {
   safaris: 'migration',
   trips: 'kiliHikers',
+  special: 'elephantsBalloon',
   stay: 'zanzibarBeach',
   transport: 'buffaloCar',
   shop: 'stoneTownDoor',

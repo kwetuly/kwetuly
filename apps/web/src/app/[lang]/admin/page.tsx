@@ -1,3 +1,4 @@
+import { GUIDE_EXPERTISE } from '@rafrika/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -69,6 +70,8 @@ type PendingGuide = {
   base_region: string;
   specialties: string[];
   languages: string[];
+  expertise: string[];
+  female_guide: boolean;
   association: string | null;
   created_at: string;
   guide_private: {
@@ -105,7 +108,7 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
   const { data } = await supabase
     .from('guides')
     .select(
-      'id, slug, display_name, headline, base_region, specialties, languages, association, created_at, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path)',
+      'id, slug, display_name, headline, base_region, specialties, languages, expertise, female_guide, association, created_at, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path)',
     )
     .eq('verification_status', 'pending')
     .order('created_at', { ascending: true })
@@ -139,6 +142,12 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
               {g.headline && <p className="text-muted">{g.headline}</p>}
               <p>{g.base_region} · {g.specialties.map((s) => specialtyName(s, locale)).join(', ')}</p>
               <p>{g.languages.map(languageName).join(', ')}</p>
+              {(g.expertise.length > 0 || g.female_guide) && (
+                <p className="font-semibold text-sunset-dark">
+                  {/* Special skills are self-declared: ask for proof before approving. */}
+                  Check proof: {[...(g.female_guide ? ['Female guide'] : []), ...GUIDE_EXPERTISE.filter((e) => g.expertise.includes(e.id)).map((e) => e.label.en)].join(', ')}
+                </p>
+              )}
               <p>Registration: <strong>{p?.registration_number ?? '—'}</strong> · KINAPA/TANAPA: {p?.kinapa_tanapa_id ?? '—'}</p>
               <p>Phone: {p?.phone ?? '—'} · WhatsApp: {p?.whatsapp_number ?? '—'} · {g.association ?? ''}</p>
               {docLinks.get(g.id) && (
