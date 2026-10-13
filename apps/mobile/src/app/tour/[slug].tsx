@@ -1,0 +1,73 @@
+import { ScrollView, Text, View } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
+import { useQuery } from '@tanstack/react-query';
+import { photoUrl, tripPhoto } from '@rafrika/shared';
+import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { listTours } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { shareLink } from '@/lib/share';
+import { SITE_URL } from '@/lib/supabase';
+import { brand, colors } from '@/theme/colors';
+
+export default function TourScreen() {
+  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { t, locale } = useI18n();
+  // Reuses the cached catalogue from the Trips tab.
+  const tours = useQuery({ queryKey: ['tours'], queryFn: listTours });
+  const tour = tours.data?.find((x) => x.slug === slug);
+
+  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} empty emptyText={t.tours.empty} />;
+  const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
+
+  return (
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: 16, paddingBottom: 40 }}>
+      <Stack.Title>{title}</Stack.Title>
+      <Image source={{ uri: photoUrl(tripPhoto(tour.slug, tour.categories), 1200) }} style={{ height: 220 }} contentFit="cover" />
+      <View style={{ paddingHorizontal: 16, gap: 16 }}>
+        <Card>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{title}</Text>
+          <Muted selectable>{(locale === 'sw' && tour.summary_sw) || tour.summary_en}</Muted>
+          <Text style={{ color: brand.forest, fontWeight: '800', fontSize: 18 }}>
+            {tour.days} {tour.days === 1 ? t.tours.day : t.tours.days}
+            {tour.price_from_usd != null ? ` · ${t.tours.priceFrom} $${tour.price_from_usd}` : ` · ${t.tours.priceOnRequest}`}
+          </Text>
+          <Button title={t.tours.enquireTitle} onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/tours/${tour.slug}#enquire`)} />
+          <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/tours/${tour.slug}`, `${t.share.shareTrip}: ${title}`)} />
+        </Card>
+
+        {tour.highlights.length > 0 && (
+          <Card>
+            <SectionTitle>{t.tours.highlights}</SectionTitle>
+            {tour.highlights.map((h) => (
+              <Text key={h} style={{ color: colors.label, lineHeight: 21 }}>✦ {h}</Text>
+            ))}
+          </Card>
+        )}
+
+        <Card>
+          <SectionTitle>{t.tours.itinerary}</SectionTitle>
+          {tour.itinerary.map((day, i) => (
+            <View key={`${day.day}-${i}`} style={{ gap: 2 }}>
+              <Text style={{ fontWeight: '800', color: brand.sunsetDark }}>{day.day}</Text>
+              <Text style={{ fontWeight: '700', color: colors.label }}>{day.title}</Text>
+              <Muted>{day.body}</Muted>
+            </View>
+          ))}
+        </Card>
+
+        <Card>
+          <SectionTitle>{t.tours.includes}</SectionTitle>
+          {tour.includes.map((x) => (
+            <Text key={x} style={{ color: colors.label }}>✓ {x}</Text>
+          ))}
+          <SectionTitle>{t.tours.excludes}</SectionTitle>
+          {tour.excludes.map((x) => (
+            <Text key={x} style={{ color: colors.secondaryLabel }}>✕ {x}</Text>
+          ))}
+        </Card>
+      </View>
+    </ScrollView>
+  );
+}

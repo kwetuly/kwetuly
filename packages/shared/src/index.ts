@@ -4,3 +4,6 @@ export * from './guides';
 export * from './expertise';
 export * from './menu';
 export * from './trips';
+export * from './dictionaries';
+export * from './photos';
+export * from './phone';
