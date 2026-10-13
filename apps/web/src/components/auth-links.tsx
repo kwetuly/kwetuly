@@ -30,7 +30,7 @@ export async function AuthLinks() {
       {user.canUseHub && (
         <Link
           href={`/${locale}/hub`}
-          className="hidden rounded-full bg-gradient-to-r from-gold to-sunset px-4 py-2 text-sm font-bold text-night sm:inline-flex"
+          className="hidden rounded-[15px] bg-gradient-to-r from-gold to-sunset px-4 py-2 text-sm font-bold text-night sm:inline-flex"
         >
           {t.nav.hub}
         </Link>

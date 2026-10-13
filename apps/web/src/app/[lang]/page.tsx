@@ -69,7 +69,7 @@ export default async function HomePage() {
                     <li key={item.slug}>
                       <Link
                         href={itemHref(locale, section, item)}
-                        className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
+                        className="inline-flex items-center gap-1.5 rounded-[15px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
                       >
                         <Icon name={item.icon} className="size-4" />
                         {item.label[locale]}

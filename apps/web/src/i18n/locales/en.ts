@@ -94,6 +94,10 @@ export const en = {
     send: 'Send',
     error: 'Sorry, I could not answer just now. Please try again.',
     disclaimer: 'AI answers can be wrong. Confirm details with your guide.',
+    talk: 'Talk instead of typing',
+    listening: 'Listening… speak now',
+    speakOn: 'Read answers aloud',
+    speakOff: 'Stop reading aloud',
   },
   hub: {
     title: 'Guide Hub',

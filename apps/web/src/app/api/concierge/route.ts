@@ -2,6 +2,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CONCIERGE_SYSTEM_PROMPT } from '@/lib/concierge-prompt';
 
 const MAX_MESSAGES = 20;
+
+const VOICE_INSTRUCTIONS =
+  'The traveller is talking to you by voice and your reply will be read aloud. Answer in two to four short, friendly spoken sentences. No lists, headings, emojis or markdown. If a page on the site helps, mention at most one path, at the very end.';
 const MAX_CHARS = 2000;
 const WINDOW_MS = 10 * 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 20;
@@ -37,7 +40,9 @@ export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   if (rateLimited(ip)) return new Response('Too many requests', { status: 429 });
 
-  const messages = parseMessages(await request.json().catch(() => null));
+  const body = await request.json().catch(() => null);
+  const messages = parseMessages(body);
+  const voice = (body as { voice?: unknown } | null)?.voice === true;
   if (!messages) return new Response('Bad request', { status: 400 });
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -50,7 +55,11 @@ export async function POST(request: Request) {
     max_tokens: 4000,
     // Chat is latency-sensitive and simple, so low effort keeps replies fast and cheap.
     output_config: { effort: 'low' },
-    system: [{ type: 'text', text: CONCIERGE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+    system: [
+      { type: 'text', text: CONCIERGE_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+      // Spoken conversations get short, plain answers that sound natural when read aloud.
+      ...(voice ? [{ type: 'text' as const, text: VOICE_INSTRUCTIONS }] : []),
+    ],
     messages,
     // If a safety classifier declines, the API retries on the recommended fallback model.
     betas: ['server-side-fallback-2026-07-01'],
@@ -58,7 +67,7 @@ export async function POST(request: Request) {
   });
 
   const encoder = new TextEncoder();
-  const body = new ReadableStream<Uint8Array>({
+  const replyStream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
         for await (const event of stream) {
@@ -82,7 +91,7 @@ export async function POST(request: Request) {
     },
   });
 
-  return new Response(body, {
+  return new Response(replyStream, {
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
   });
 }

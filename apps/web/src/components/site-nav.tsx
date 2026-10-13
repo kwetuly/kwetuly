@@ -22,7 +22,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
           <li key={section.slug} className="group relative">
             <button
               type="button"
-              className="flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
+              className="flex items-center gap-1 whitespace-nowrap rounded-[15px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
               aria-haspopup="true"
             >
               {section.label[locale]}
@@ -67,7 +67,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center rounded-full border border-line xl:hidden"
+        className="flex size-10 items-center justify-center rounded-[15px] border border-line xl:hidden"
         aria-label="Open menu"
       >
         <Menu className="size-5" />
@@ -82,7 +82,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="flex size-10 items-center justify-center rounded-full bg-white/10"
+              className="flex size-10 items-center justify-center rounded-[15px] bg-white/10"
               aria-label="Close menu"
             >
               <X className="size-5" />

@@ -61,7 +61,7 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
   const trips = await listTrips(filters);
 
   const chip = (active: boolean) =>
-    `rounded-full px-4 py-2 text-sm font-semibold transition ${active ? 'bg-night text-white' : 'border border-line bg-white hover:border-sunset'}`;
+    `rounded-[15px] px-4 py-2 text-sm font-semibold transition ${active ? 'bg-night text-white' : 'border border-line bg-white hover:border-sunset'}`;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
@@ -79,7 +79,7 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
           ))}
           <Link
             href={hrefWith(locale, filters, { signature: filters.signature ? undefined : '1' })}
-            className={`rounded-full px-4 py-2 text-sm font-bold ${filters.signature ? 'bg-gradient-to-r from-sunset to-gold text-night' : 'border border-sunset text-sunset'}`}
+            className={`rounded-[15px] px-4 py-2 text-sm font-bold ${filters.signature ? 'bg-gradient-to-r from-sunset to-gold text-night' : 'border border-sunset text-sunset'}`}
           >
             ✦ {t.tours.signature}
           </Link>

@@ -23,7 +23,7 @@ export default async function HubLayout({ children }: LayoutProps<'/[lang]/hub'>
               <Link
                 key={item.slug}
                 href={`/${locale}${item.href}`}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+                className="flex items-center gap-1.5 rounded-[15px] px-3 py-1.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
               >
                 <Icon name={item.icon} className="size-4" />
                 {item.label[locale]}

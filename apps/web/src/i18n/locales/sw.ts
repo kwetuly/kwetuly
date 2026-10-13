@@ -96,6 +96,10 @@ export const sw: Dictionary = {
     send: 'Tuma',
     error: 'Samahani, sikuweza kujibu sasa hivi. Tafadhali jaribu tena.',
     disclaimer: 'Majibu ya AI yanaweza kukosea. Thibitisha na mwongozaji wako.',
+    talk: 'Ongea badala ya kuandika',
+    listening: 'Ninasikiliza… ongea sasa',
+    speakOn: 'Nisomee majibu kwa sauti',
+    speakOff: 'Acha kusoma kwa sauti',
   },
   hub: {
     title: 'Kituo cha Waongozaji',

@@ -321,7 +321,7 @@ function Checkboxes({
         {options.map((o) => (
           <label key={o.value} className="cursor-pointer">
             <input type="checkbox" name={name} value={o.value} defaultChecked={checked.includes(o.value)} className="peer sr-only" />
-            <span className="inline-block rounded-full border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
+            <span className="inline-block rounded-[15px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
               {o.label}
             </span>
           </label>

@@ -62,7 +62,7 @@ async function CallGuides({
       <div className="flex flex-wrap gap-2">
         <Link
           href={`/${locale}/calls`}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${!topic ? 'bg-night text-white' : 'border border-line bg-white'}`}
+          className={`rounded-[15px] px-4 py-2 text-sm font-semibold ${!topic ? 'bg-night text-white' : 'border border-line bg-white'}`}
         >
           {t.calls.allTopics}
         </Link>
@@ -70,7 +70,7 @@ async function CallGuides({
           <Link
             key={c.id}
             href={`/${locale}/calls?topic=${c.id}`}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${topic === c.id ? 'bg-night text-white' : 'border border-line bg-white hover:border-sunset'}`}
+            className={`rounded-[15px] px-4 py-2 text-sm font-semibold ${topic === c.id ? 'bg-night text-white' : 'border border-line bg-white hover:border-sunset'}`}
           >
             {c[locale]}
           </Link>
