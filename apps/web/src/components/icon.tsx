@@ -52,6 +52,13 @@ import {
   Heart,
   MoonStar,
   GraduationCap,
+  Handshake,
+  Plane,
+  ArrowRightLeft,
+  BadgeCheck,
+  Store,
+  Bird,
+  Sailboat,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -110,6 +117,13 @@ const icons: Record<string, LucideIcon> = {
   heart: Heart,
   'moon-star': MoonStar,
   'graduation-cap': GraduationCap,
+  handshake: Handshake,
+  plane: Plane,
+  'arrow-right-left': ArrowRightLeft,
+  'badge-check': BadgeCheck,
+  store: Store,
+  bird: Bird,
+  sailboat: Sailboat,
 };
 
 export function Icon({ name, className }: { name: string; className?: string }) {

@@ -61,7 +61,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
         </div>
       </PhotoHero>
 
-      <section className="mx-auto -mt-16 grid max-w-6xl gap-6 px-4 pb-16 lg:grid-cols-2">
+      <section className="relative mx-auto -mt-16 grid max-w-6xl gap-6 px-4 pb-16 lg:grid-cols-2">
         <Suspense fallback={<div className="card h-80 animate-pulse" />}>
           <InterestForm
             kind="traveler"

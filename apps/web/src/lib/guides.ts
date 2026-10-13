@@ -14,6 +14,7 @@ export type Guide = {
   specialties: string[];
   expertise: string[];
   female_guide: boolean;
+  open_to_partners: boolean;
   languages: string[];
   max_group_size: number;
   years_experience: number | null;
@@ -34,7 +35,7 @@ export type Guide = {
 };
 
 export const GUIDE_COLUMNS =
-  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics';
+  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics';
 
 // Approved, public guides who offer 1-on-1 prep calls, optionally for one topic.
 export async function listCallGuides(topic?: string): Promise<Guide[]> {
@@ -65,7 +66,7 @@ function publicClient() {
   );
 }
 
-export type GuideFilters = { specialty?: string; language?: string; region?: string; expertise?: string; female?: boolean };
+export type GuideFilters = { specialty?: string; language?: string; region?: string; expertise?: string; female?: boolean; partners?: boolean };
 
 export async function listGuides(filters: GuideFilters): Promise<Guide[]> {
   'use cache';
@@ -85,6 +86,7 @@ export async function listGuides(filters: GuideFilters): Promise<Guide[]> {
   if (filters.language) query = query.contains('languages', [filters.language]);
   if (filters.expertise) query = query.contains('expertise', [filters.expertise]);
   if (filters.female) query = query.eq('female_guide', true);
+  if (filters.partners) query = query.eq('open_to_partners', true);
   if (filters.region) query = query.or(`base_region.eq.${filters.region},regions.cs.{"${filters.region}"}`);
 
   const { data } = await query;

@@ -3,6 +3,7 @@
 // Labels are in the order en, sw, fr, it, de, pl, zh (see locales.ts).
 
 import { GUIDE_EXPERTISE } from './expertise';
+import { GUIDE_SPECIALTIES } from './guides';
 import { L, type Label } from './locales';
 
 export type MenuItem = {
@@ -22,7 +23,35 @@ export type MenuSection = {
   items: MenuItem[];
 };
 
-export const MENU: MenuSection[] = [
+function specialtyItem(s: (typeof GUIDE_SPECIALTIES)[number]): MenuItem {
+  const { id, en, sw, fr, it, de, pl, zh } = s;
+  return {
+    slug: `${id.replace(/_/g, '-')}-guides`,
+    icon: SPECIALTY_ICONS[id] ?? 'compass',
+    href: `/guides?specialty=${id}`,
+    status: 'live',
+    label: { en, sw, fr, it, de, pl, zh },
+    blurb: GUIDE_SPECIALTY_BLURB,
+  };
+}
+
+const SPECIALTY_ICONS: Record<string, string> = {
+  mountain: 'mountain',
+  safari: 'binoculars',
+  cultural: 'users',
+  city: 'building-2',
+  birding: 'bird',
+  marine: 'sailboat',
+  day_trips: 'sun',
+};
+
+const GUIDE_SPECIALTY_BLURB = L('Verified guides who specialise in this', 'Waongozaji waliobobea katika hili', 'Guides vérifiés spécialisés dans ce domaine', 'Guide verificate specializzate in questo', 'Geprüfte Guides mit diesem Schwerpunkt', 'Sprawdzeni przewodnicy z tą specjalizacją', '专精此领域的认证导游');
+
+function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
+  return { slug: e.id.replace(/_/g, '-'), icon: e.icon, href: `/guides?expertise=${e.id}`, status: 'live', label: e.label, blurb: e.blurb };
+}
+
+const SECTIONS: MenuSection[] = [
   {
     // Trip catalogue lives at /tours; this section only groups the menu links.
     slug: 'safaris',
@@ -100,6 +129,8 @@ export const MENU: MenuSection[] = [
         label: L('Guides by language', 'Waongozaji kwa lugha', 'Guides par langue', 'Guide per lingua', 'Guides nach Sprache', 'Przewodnicy według języka', '按语言找导游'),
         blurb: L('French, Italian, German, Polish, Chinese and more', 'Kifaransa, Kiitaliano, Kijerumani, Kipolandi, Kichina na zaidi', 'Français, italien, allemand, polonais, chinois et plus', 'Francese, italiano, tedesco, polacco, cinese e altre', 'Französisch, Italienisch, Deutsch, Polnisch, Chinesisch und mehr', 'Francuski, włoski, niemiecki, polski, chiński i inne', '法语、意大利语、德语、波兰语、中文等'),
       },
+      // One link per kind of work, except photography which sits under Special trips.
+      ...GUIDE_SPECIALTIES.filter((s) => s.id !== 'photography').map(specialtyItem),
       {
         slug: 'calls', icon: 'video', href: '/calls', status: 'live',
         label: L('1-on-1 prep calls', 'Simu za maandalizi', 'Appels de préparation 1-à-1', 'Chiamate di preparazione 1:1', '1:1-Vorbereitungsgespräche', 'Rozmowy przygotowawcze 1:1', '一对一行前咨询'),
@@ -314,14 +345,54 @@ export const MENU: MenuSection[] = [
         label: L('Invest in Tanzania', 'Wekeza Tanzania', 'Investir en Tanzanie', 'Investire in Tanzania', 'In Tansania investieren', 'Inwestuj w Tanzanii', '投资坦桑尼亚'),
         blurb: L('Tourism projects, introduced with TISEZA guidance', 'Miradi ya utalii, kwa mwongozo wa TISEZA', 'Projets touristiques, présentés avec l’appui de la TISEZA', 'Progetti turistici, presentati con il supporto di TISEZA', 'Tourismusprojekte, vorgestellt mit Unterstützung der TISEZA', 'Projekty turystyczne we współpracy z TISEZA', '旅游项目，在 TISEZA 指导下对接'),
       },
-      {
-        slug: 'hire-crew', icon: 'briefcase', href: '/jobs/post', status: 'live',
-        label: L('Hire guides & crew', 'Ajiri waongozaji na wafanyakazi', 'Recruter guides & équipe', 'Assumi guide e staff', 'Guides & Crew einstellen', 'Zatrudnij przewodników i ekipę', '招聘导游与团队'),
-        blurb: L('For companies: post a job for guides, cooks, porters', 'Kwa makampuni: tangaza kazi kwa waongozaji, wapishi, wapagazi', 'Entreprises : publiez une offre pour guides, cuisiniers, porteurs', 'Per aziende: pubblica un annuncio per guide, cuochi, portatori', 'Für Firmen: Jobs für Guides, Köche und Träger ausschreiben', 'Dla firm: ogłoszenia dla przewodników, kucharzy, tragarzy', '企业专用：发布导游、厨师、背夫招聘'),
-      },
     ],
   },
 ];
+
+// Placed last in MENU so the traveller sections come first.
+const PARTNERS: MenuSection = {
+  slug: 'partners',
+  icon: 'handshake',
+  label: L('For business', 'Kwa biashara', 'Professionnels', 'Per aziende', 'Für Unternehmen', 'Dla firm', '企业合作'),
+  tagline: L(
+    'Travel agents and tour companies: work with our verified guides',
+    'Mawakala wa safari na kampuni za utalii: fanyeni kazi na waongozaji wetu waliothibitishwa',
+    'Agences de voyages et tour-opérateurs : travaillez avec nos guides vérifiés',
+    'Agenzie di viaggio e tour operator: lavorate con le nostre guide verificate',
+    'Reisebüros und Veranstalter: arbeiten Sie mit unseren geprüften Guides',
+    'Biura podróży i touroperatorzy: współpracujcie z naszymi sprawdzonymi przewodnikami',
+    '旅行社与地接公司：与我们的认证导游合作',
+  ),
+  items: [
+    {
+      slug: 'travel-agents', icon: 'plane', href: '/partners/agents', status: 'live',
+      label: L('For travel agents', 'Kwa mawakala wa safari', 'Pour les agences de voyages', 'Per le agenzie di viaggio', 'Für Reisebüros', 'Dla biur podróży', '旅行社合作'),
+      blurb: L('Book verified guides for your clients, in their language', 'Pata waongozaji waliothibitishwa kwa wateja wako, kwa lugha yao', 'Réservez des guides vérifiés pour vos clients, dans leur langue', 'Prenota guide verificate per i tuoi clienti, nella loro lingua', 'Buchen Sie geprüfte Guides für Ihre Kunden, in deren Sprache', 'Rezerwuj sprawdzonych przewodników dla klientów, w ich języku', '为你的客户预订说其母语的认证导游'),
+    },
+    {
+      slug: 'handover', icon: 'arrow-right-left', href: '/jobs/post?kind=handover', status: 'live',
+      label: L('Hand over extra clients', 'Kabidhi wateja wa ziada', 'Confier des clients en surplus', 'Affida i clienti in eccesso', 'Überzählige Kunden weitergeben', 'Przekaż nadmiarowych klientów', '转交超额客户'),
+      blurb: L('Fully booked? Verified guides take the trip for you', 'Mmejaa? Waongozaji waliothibitishwa wanachukua safari', 'Complet ? Des guides vérifiés prennent le voyage en charge', 'Al completo? Le guide verificate prendono il viaggio', 'Ausgebucht? Geprüfte Guides übernehmen die Reise', 'Brak miejsc? Sprawdzeni przewodnicy przejmą wyprawę', '满员了？认证导游帮你接团'),
+    },
+    {
+      slug: 'partner-guides', icon: 'badge-check', href: '/guides?partners=1', status: 'live',
+      label: L('Guides who work with agencies', 'Waongozaji wanaofanya kazi na mawakala', 'Guides qui travaillent avec les agences', 'Guide che lavorano con le agenzie', 'Guides für Agenturen', 'Przewodnicy współpracujący z biurami', '与旅行社合作的导游'),
+      blurb: L('Freelance guides ready to lead under your brand', 'Waongozaji huru tayari kuongoza kwa jina lako', 'Des guides indépendants prêts à guider sous votre marque', 'Guide freelance pronte a lavorare con il tuo marchio', 'Freie Guides, die unter Ihrer Marke führen', 'Niezależni przewodnicy gotowi pracować pod Twoją marką', '可以以你的品牌带团的自由导游'),
+    },
+    {
+      slug: 'hire-crew', icon: 'briefcase', href: '/jobs/post', status: 'live',
+      label: L('Hire guides & crew', 'Ajiri waongozaji na wafanyakazi', 'Recruter guides & équipe', 'Assumi guide e staff', 'Guides & Crew einstellen', 'Zatrudnij przewodników i ekipę', '招聘导游与团队'),
+      blurb: L('For companies: post a job for guides, cooks, porters', 'Kwa makampuni: tangaza kazi kwa waongozaji, wapishi, wapagazi', 'Entreprises : publiez une offre pour guides, cuisiniers, porteurs', 'Per aziende: pubblica un annuncio per guide, cuochi, portatori', 'Für Firmen: Jobs für Guides, Köche und Träger ausschreiben', 'Dla firm: ogłoszenia dla przewodników, kucharzy, tragarzy', '企业专用：发布导游、厨师、背夫招聘'),
+    },
+    {
+      slug: 'list-business', icon: 'store', href: '/join?role=provider', status: 'live',
+      label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Rafrika'),
+      blurb: L('Hotels, drivers, shops and tour companies', 'Hoteli, madereva, maduka na kampuni za utalii', 'Hôtels, chauffeurs, boutiques et agences', 'Hotel, autisti, negozi e tour operator', 'Hotels, Fahrer, Shops und Veranstalter', 'Hotele, kierowcy, sklepy i biura', '酒店、司机、商店和旅行社'),
+    },
+  ],
+};
+
+export const MENU: MenuSection[] = [...SECTIONS, PARTNERS];
 
 // The Guide Hub menu is only shown to verified guides (and admins).
 // Guides work in Kiswahili or English, so other languages reuse the English wording.
@@ -335,10 +406,6 @@ export const HUB_MENU: MenuItem[] = [
   { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: hub('Jobs', 'Kazi'), blurb: hub('Companies hiring guides and crew', 'Makampuni yanayoajiri') },
   { slug: 'profile', icon: 'user-round', href: '/dashboard', status: 'live', label: hub('My profile', 'Wasifu wangu'), blurb: hub('Edit your public profile and calls', 'Hariri wasifu na simu zako') },
 ];
-
-function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
-  return { slug: e.id.replace(/_/g, '-'), icon: e.icon, href: `/guides?expertise=${e.id}`, status: 'live', label: e.label, blurb: e.blurb };
-}
 
 export function findMenuItem(sectionSlug: string, itemSlug: string) {
   const section = MENU.find((s) => s.slug === sectionSlug);

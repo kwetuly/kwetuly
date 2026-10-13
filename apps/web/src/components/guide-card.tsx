@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BadgeCheck, Handshake, Languages, MapPin, Venus } from 'lucide-react';
 import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
@@ -40,33 +41,78 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
   );
 }
 
-export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; t: Dictionary }) {
+// Badges for who the guide is: verified, Pro, female guide, works with agencies.
+const pill = 'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold';
+
+export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
   return (
-    <Link href={`/${locale}/guides/${guide.slug}`} className="card flex gap-4 transition hover:border-forest">
-      <GuideAvatar guide={guide} size={72} />
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-semibold">{guide.display_name}</h3>
-          {guide.plan === 'pro' && <span className="badge">{t.guides.pro}</span>}
-          {guide.female_guide && <span className="badge bg-sand text-sunset-dark">{t.guides.female}</span>}
-        </div>
-        {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
-        <p className="mt-2 text-xs text-muted">
-          {guide.base_region} · {guide.languages.map(languageName).join(', ')}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1">
-          {guide.specialties.slice(0, 3).map((s) => (
-            <span key={s} className="rounded-full bg-surface px-2 py-0.5 text-xs">
-              {specialtyName(s, locale)}
-            </span>
-          ))}
-          {expertiseOf(guide).map((e) => (
-            <span key={e.id} className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-xs text-forest" title={e.label[locale]}>
-              <Icon name={e.icon} className="size-3" /> {e.label[locale]}
-            </span>
-          ))}
+    <div className="flex flex-wrap gap-1.5">
+      {guide.verification_status === 'approved' && (
+        <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
+      )}
+      {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-night`}>{t.guides.pro}</span>}
+      {guide.female_guide && (
+        <span className={`${pill} bg-sand text-sunset-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
+      )}
+      {guide.open_to_partners && (
+        <span className={`${pill} bg-night text-white`}><Handshake className="size-3.5" aria-hidden /> {t.guides.partners}</span>
+      )}
+    </div>
+  );
+}
+
+// A guide at a glance: who they are, what they do, which languages they speak and their special trips.
+export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; t: Dictionary }) {
+  const expertise = expertiseOf(guide);
+  return (
+    <Link
+      href={`/${locale}/guides/${guide.slug}`}
+      className="group flex flex-col rounded-3xl border border-line bg-white p-5 shadow-[0_10px_40px_-12px_rgba(10,31,23,0.12)] transition hover:-translate-y-1 hover:border-sunset"
+    >
+      <div className="flex gap-4">
+        <GuideAvatar guide={guide} size={72} />
+        <div className="min-w-0">
+          <h3 className="text-lg font-bold leading-tight group-hover:text-sunset">{guide.display_name}</h3>
+          {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+            <MapPin className="size-3.5" aria-hidden /> {guide.base_region}
+            {guide.years_experience ? ` · ${guide.years_experience} ${t.guides.years}` : ''}
+            {guide.summits ? ` · ${guide.summits} ${t.guides.summits}` : ''}
+          </p>
         </div>
       </div>
+
+      <div className="mt-3">
+        <GuideBadges guide={guide} t={t} />
+      </div>
+
+      {/* What they do */}
+      {guide.specialties.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={t.profile.specialties}>
+          {guide.specialties.map((s) => (
+            <li key={s} className="rounded-[10px] bg-surface px-2.5 py-1 text-xs font-semibold">
+              {specialtyName(s, locale)}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Languages */}
+      <p className="mt-3 flex items-start gap-1.5 text-sm">
+        <Languages className="mt-0.5 size-4 shrink-0 text-forest" aria-label={t.guides.languages} />
+        <span className="font-medium">{guide.languages.map(languageName).join(' · ')}</span>
+      </p>
+
+      {/* Special trips */}
+      {expertise.length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3" aria-label={t.profile.expertise}>
+          {expertise.map((e) => (
+            <li key={e.id} className="inline-flex items-center gap-1 rounded-[10px] bg-mint px-2.5 py-1 text-xs font-semibold text-forest">
+              <Icon name={e.icon} className="size-3.5" /> {e.label[locale]}
+            </li>
+          ))}
+        </ul>
+      )}
     </Link>
   );
 }

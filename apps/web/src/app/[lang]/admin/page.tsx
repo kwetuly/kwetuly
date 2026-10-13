@@ -16,6 +16,7 @@ type PendingJob = {
   company_name: string;
   role_needed: string;
   title: string;
+  kind: 'crew' | 'handover';
   location: string;
   pay: string | null;
   how_to_apply: string;
@@ -28,7 +29,7 @@ async function PendingJobs({ t, locale }: { t: Dictionary; locale: Locale }) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('jobs')
-    .select('id, company_name, role_needed, title, location, pay, how_to_apply, description')
+    .select('id, company_name, role_needed, title, location, pay, how_to_apply, description, kind')
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
     .returns<PendingJob[]>();
@@ -42,7 +43,7 @@ async function PendingJobs({ t, locale }: { t: Dictionary; locale: Locale }) {
         {jobs.map((j) => (
           <div key={j.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
             <div className="space-y-1 text-sm">
-              <p className="text-base font-semibold">{j.title} · {jobRoleName(j.role_needed, locale)}</p>
+              <p className="text-base font-semibold">{j.title} · {j.kind === 'handover' ? 'Client handover' : jobRoleName(j.role_needed, locale)}</p>
               <p>{j.company_name} · {j.location} · {j.pay ?? '—'}</p>
               <p className="text-muted">{j.description}</p>
               <p>{j.how_to_apply}</p>

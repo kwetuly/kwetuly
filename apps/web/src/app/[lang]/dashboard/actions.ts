@@ -68,6 +68,7 @@ export async function saveGuideProfile(formData: FormData) {
     languages: allowed(formData.getAll('languages'), GUIDE_LANGUAGES.map((l) => l.code)),
     expertise: allowed(formData.getAll('expertise'), GUIDE_EXPERTISE.map((e) => e.id)),
     female_guide: formData.get('female_guide') === 'on',
+    open_to_partners: formData.get('open_to_partners') === 'on',
     max_group_size: Math.min(Math.max(int(formData, 'max_group_size') ?? 8, 1), 60),
     years_experience: int(formData, 'years_experience'),
     summits: int(formData, 'summits'),

@@ -57,10 +57,16 @@ export function GuideSearch({ locale, t, defaults = {}, full = false }: Props) {
 
       {full && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-            <input type="checkbox" name="female" value="1" defaultChecked={defaults.female} className="size-5 accent-sunset" />
-            {t.guides.femaleOnly}
-          </label>
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" name="female" value="1" defaultChecked={defaults.female} className="size-5 accent-sunset" />
+              {t.guides.femaleOnly}
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input type="checkbox" name="partners" value="1" defaultChecked={defaults.partners} className="size-5 accent-sunset" />
+              {t.guides.partnersOnly}
+            </label>
+          </div>
           <button className="btn">{t.guides.apply}</button>
         </div>
       )}

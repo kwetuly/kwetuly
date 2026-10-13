@@ -10,7 +10,7 @@ import { CALL_TOPICS } from '@rafrika/shared';
 import { getGuideBySlug, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
-import { GuideAvatar, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
+import { GuideAvatar, GuideBadges, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
 import { Icon } from '@/components/icon';
 import { requestCall, requestGuide } from './actions';
 
@@ -64,10 +64,8 @@ async function Profile({
           <div>
             <h1 className="text-3xl font-bold">{guide.display_name}</h1>
             {guide.headline && <p className="mt-1 text-muted">{guide.headline}</p>}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="badge">✓ {t.guides.verified}</span>
-              {guide.plan === 'pro' && <span className="badge">{t.guides.pro}</span>}
-              {guide.female_guide && <span className="badge bg-sand text-sunset-dark">{t.guides.female}</span>}
+            <div className="mt-3">
+              <GuideBadges guide={guide} t={t} />
             </div>
           </div>
         </div>
@@ -79,6 +77,33 @@ async function Profile({
             <h2 className="text-lg font-semibold">{t.profile.about}</h2>
             <p className="mt-2 whitespace-pre-line leading-relaxed">{guide.bio}</p>
           </section>
+        )}
+
+        <section className="mt-8 grid gap-6 sm:grid-cols-2">
+          <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
+          <Facts title={t.guides.languages} items={guide.languages.map(languageName)} />
+          <Facts title={t.profile.regions} items={[guide.base_region, ...guide.regions.filter((r) => r !== guide.base_region)]} />
+          <Facts
+            title={t.profile.certifications}
+            items={[
+              ...guide.certifications,
+              ...(guide.association ? [`${t.profile.association}: ${guide.association}`] : []),
+              ...(guide.has_vehicle ? [t.profile.vehicle] : []),
+            ]}
+          />
+        </section>
+
+        {guide.open_to_partners && (
+          <Link
+            href={`/${locale}/partners/agents`}
+            className="mt-6 flex items-center gap-3 rounded-2xl bg-night p-4 text-sm text-white hover:bg-forest"
+          >
+            <Icon name="handshake" className="size-6 shrink-0 text-gold" />
+            <span>
+              <strong className="block">{t.guides.partners}</strong>
+              {t.partners.applyTitle} →
+            </span>
+          </Link>
         )}
 
         {guide.expertise.length > 0 && (
@@ -96,20 +121,6 @@ async function Profile({
             </ul>
           </section>
         )}
-
-        <section className="mt-8 grid gap-6 sm:grid-cols-2">
-          <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
-          <Facts title={t.guides.languages} items={guide.languages.map(languageName)} />
-          <Facts title={t.profile.regions} items={[guide.base_region, ...guide.regions.filter((r) => r !== guide.base_region)]} />
-          <Facts
-            title={t.profile.certifications}
-            items={[
-              ...guide.certifications,
-              ...(guide.association ? [`${t.profile.association}: ${guide.association}`] : []),
-              ...(guide.has_vehicle ? [t.profile.vehicle] : []),
-            ]}
-          />
-        </section>
 
         <div className="mt-8 flex gap-4 text-sm">
           {guide.instagram_url && <a className="text-forest underline" href={guide.instagram_url} rel="nofollow noopener" target="_blank">Instagram</a>}

@@ -128,6 +128,10 @@ async function GuideEditor({
             <input type="checkbox" name="female_guide" defaultChecked={guide?.female_guide ?? false} className="size-4 accent-forest" />
             {d.femaleGuide}
           </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" name="open_to_partners" defaultChecked={guide?.open_to_partners ?? false} className="size-4 accent-forest" />
+            {d.openToPartners}
+          </label>
           <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label={d.maxGroup}>

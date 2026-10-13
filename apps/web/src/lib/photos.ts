@@ -39,6 +39,7 @@ export const SECTION_PHOTOS: Record<string, PhotoKey> = {
   safaris: 'migration',
   trips: 'kiliHikers',
   special: 'elephantsBalloon',
+  partners: 'safariSunset',
   stay: 'zanzibarBeach',
   transport: 'buffaloCar',
   shop: 'stoneTownDoor',

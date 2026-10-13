@@ -30,20 +30,20 @@ function readFilters(params: Awaited<SearchParams>): GuideFilters {
     region: (REGIONS as readonly string[]).includes(region ?? '') ? region : undefined,
     expertise: GUIDE_EXPERTISE.some((e) => e.id === expertise) ? expertise : undefined,
     female: pick('female') === '1' || undefined,
+    partners: pick('partners') === '1' || undefined,
   };
 }
 
 // When the visitor came from a menu item (e.g. Special trips → VIP), show that item as the page heading.
 function menuHeading(filters: GuideFilters) {
+  const candidates = [
+    filters.expertise && `/guides?expertise=${filters.expertise}`,
+    filters.female && '/guides?female=1',
+    filters.partners && '/guides?partners=1',
+    filters.specialty && `/guides?specialty=${filters.specialty}`,
+  ].filter(Boolean);
   const items = MENU.flatMap((s) => s.items);
-  const href = filters.expertise
-    ? `/guides?expertise=${filters.expertise}`
-    : filters.female
-      ? '/guides?female=1'
-      : filters.specialty === 'photography'
-        ? '/guides?specialty=photography'
-        : null;
-  return href ? items.find((i) => i.href === href) : undefined;
+  return candidates.map((href) => items.find((i) => i.href === href)).find(Boolean);
 }
 
 export default async function GuidesPage({ searchParams }: PageProps<'/[lang]/guides'>) {
