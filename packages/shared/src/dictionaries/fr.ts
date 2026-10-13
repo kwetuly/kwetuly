@@ -499,6 +499,7 @@ export const fr: Dictionary = {
     next: 'Suivant',
     language: 'Langue',
   },
+  market: en.market,
   footer: {
     tagline: 'La maison des guides tanzaniens.',
     rights: 'Tous droits réservés.',

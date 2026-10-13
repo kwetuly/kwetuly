@@ -492,6 +492,7 @@ export const zh: Dictionary = {
     next: '下一步',
     language: '语言',
   },
+  market: en.market,
   footer: {
     tagline: '坦桑尼亚导游之家。',
     rights: '版权所有。',

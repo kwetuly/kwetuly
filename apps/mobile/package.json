@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/atkinson-hyperlegible": "^0.4.1",
+    "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo/ui": "~57.0.23",
     "@rafrika/shared": "*",
     "@supabase/supabase-js": "^2.117.3",
