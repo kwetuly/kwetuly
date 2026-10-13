@@ -9,7 +9,7 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
-import { reviewGuide, reviewJob, setReviewHidden } from './actions';
+import { reviewGroupTrip, reviewGuide, reviewJob, setReviewHidden } from './actions';
 
 type PendingJob = {
   id: string;
@@ -96,10 +96,54 @@ export default async function AdminPage() {
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-brand bg-surface" />}>
         <PendingList t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
+        <PendingGroupTrips t={t} locale={locale} />
         <Inbox locale={locale} />
         <RecentReviews locale={locale} />
       </Suspense>
     </div>
+  );
+}
+
+// Group trips wait here until approved. Check the organiser, dates, price and what is included.
+async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale }) {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('group_trips')
+    .select('id, title, description, company_name, region, start_date, end_date, price_per_person_usd, min_people, max_people, includes, guides(display_name, slug)')
+    .eq('status', 'pending')
+    .eq('cancelled', false)
+    .order('created_at', { ascending: true })
+    .returns<{ id: string; title: string; description: string; company_name: string | null; region: string; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; includes: string | null; guides: { display_name: string; slug: string } | null }[]>();
+  const trips = data ?? [];
+
+  return (
+    <section id="groups" className="mt-12">
+      <h2 className="text-2xl font-bold">Group trips ({trips.length})</h2>
+      {trips.length === 0 && <p className="mt-3 text-muted">—</p>}
+      <div className="mt-4 space-y-4">
+        {trips.map((g) => (
+          <div key={g.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-1 text-sm">
+              <Link href={`/${locale}/group-trips/${g.id}`} className="text-base font-semibold underline">{g.title}</Link>
+              <p>
+                {g.guides ? `Guide: ${g.guides.display_name}` : `Company: ${g.company_name}`} · {g.region} · {g.start_date} → {g.end_date}
+              </p>
+              <p>${g.price_per_person_usd} per person · {g.min_people}–{g.max_people} people</p>
+              <p className="whitespace-pre-line text-muted">{g.description}</p>
+              {g.includes && <p className="text-muted">Includes: {g.includes}</p>}
+            </div>
+            <form action={reviewGroupTrip} className="flex items-start gap-2">
+              <input type="hidden" name="locale" value={locale} />
+              <input type="hidden" name="group_trip_id" value={g.id} />
+              <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
+              <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
+            </form>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

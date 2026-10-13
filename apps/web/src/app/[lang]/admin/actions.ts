@@ -46,6 +46,21 @@ export async function setReviewHidden(formData: FormData) {
   redirect(`/${locale}/admin#reviews`);
 }
 
+export async function reviewGroupTrip(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const supabase = await createClient();
+  await supabase
+    .from('group_trips')
+    .update({ status: formData.get('decision') === 'approve' ? 'approved' : 'rejected' })
+    .eq('id', String(formData.get('group_trip_id') ?? ''));
+  revalidateTag('groups', 'max');
+  redirect(`/${locale}/admin#groups`);
+}
+
 export async function reviewJob(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;

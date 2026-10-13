@@ -92,3 +92,19 @@ const CATEGORY_PHOTOS: Record<string, PhotoKey> = {
 export function tripPhoto(slug: string, categories: string[]): Photo {
   return PHOTOS[TRIP_PHOTOS[slug] ?? CATEGORY_PHOTOS[categories[0] ?? 'safari'] ?? 'safariSunset'];
 }
+
+// Cover photo for a group trip, chosen by the kind of trip (guide specialty).
+const SPECIALTY_PHOTOS: Record<string, PhotoKey> = {
+  mountain: 'kiliHikers',
+  safari: 'serengetiHerd',
+  cultural: 'maasai',
+  city: 'stoneTownStreet',
+  birding: 'flamingos',
+  marine: 'dhowSunset',
+  photography: 'lions',
+  day_trips: 'kiliCamp',
+};
+
+export function specialtyPhoto(specialty: string): Photo {
+  return PHOTOS[SPECIALTY_PHOTOS[specialty] ?? 'safariSunset'];
+}

@@ -90,7 +90,7 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Kili, safari or Zanzibar advice from a guide you choose', 'Ushauri wa Kili, safari au Zanzibar kutoka kwa mwongozaji unayemchagua', 'Conseils Kili, safari ou Zanzibar par le guide de votre choix', 'Consigli su Kili, safari o Zanzibar dalla guida che scegli', 'Tipps zu Kili, Safari oder Sansibar von einem Guide Ihrer Wahl', 'Porady o Kili, safari lub Zanzibarze od wybranego przewodnika', '由你选择的导游提供乞力马扎罗、游猎或桑给巴尔建议'),
       },
       {
-        slug: 'group-trips', icon: 'users-round',
+        slug: 'group-trips', icon: 'users-round', href: '/group-trips', status: 'live',
         label: L('Join a group trip', 'Jiunge na kundi', 'Rejoindre un groupe', 'Unisciti a un gruppo', 'Gruppenreise beitreten', 'Dołącz do grupy', '加入拼团行程'),
         blurb: L('Share a trip, split the cost', 'Shiriki safari, gawana gharama', 'Partagez un voyage, divisez les frais', 'Condividi il viaggio, dividi i costi', 'Reise teilen, Kosten teilen', 'Wspólna wyprawa, wspólne koszty', '同行出游，分摊费用'),
       },
@@ -385,6 +385,11 @@ const PARTNERS: MenuSection = {
       blurb: L('For companies: post a job for guides, cooks, porters', 'Kwa makampuni: tangaza kazi kwa waongozaji, wapishi, wapagazi', 'Entreprises : publiez une offre pour guides, cuisiniers, porteurs', 'Per aziende: pubblica un annuncio per guide, cuochi, portatori', 'Für Firmen: Jobs für Guides, Köche und Träger ausschreiben', 'Dla firm: ogłoszenia dla przewodników, kucharzy, tragarzy', '企业专用：发布导游、厨师、背夫招聘'),
     },
     {
+      slug: 'start-group', icon: 'users-round', href: '/group-trips/new', status: 'live',
+      label: L('Start a group trip', 'Anzisha safari ya kundi', 'Créer un voyage de groupe', 'Crea un viaggio di gruppo', 'Gruppenreise starten', 'Zorganizuj wyprawę grupową', '发起拼团'),
+      blurb: L('Fill empty seats on your departures', 'Jaza nafasi wazi kwenye safari zako', 'Remplissez les places libres de vos départs', 'Riempi i posti liberi delle tue partenze', 'Freie Plätze Ihrer Termine füllen', 'Zapełnij wolne miejsca w swoich terminach', '填满你团期的空位'),
+    },
+    {
       slug: 'list-business', icon: 'store', href: '/join?role=provider', status: 'live',
       label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Rafrika'),
       blurb: L('Hotels, drivers, shops and tour companies', 'Hoteli, madereva, maduka na kampuni za utalii', 'Hôtels, chauffeurs, boutiques et agences', 'Hotel, autisti, negozi e tour operator', 'Hotels, Fahrer, Shops und Veranstalter', 'Hotele, kierowcy, sklepy i biura', '酒店、司机、商店和旅行社'),
@@ -403,6 +408,7 @@ export const HUB_MENU: MenuItem[] = [
   { slug: 'messages', icon: 'mail', href: '/messages', status: 'live', label: hub('Messages', 'Ujumbe'), blurb: hub('Chats with travellers', 'Mazungumzo na wasafiri') },
   { slug: 'forum', icon: 'messages-square', href: '/hub/forum', status: 'live', label: hub('Guide forum', 'Jukwaa'), blurb: hub('Park updates, sightings, advice', 'Habari za hifadhi, wanyama, ushauri') },
   { slug: 'news', icon: 'newspaper', href: '/hub/news', status: 'live', label: hub('Field news', 'Habari za uwanjani'), blurb: hub('Official updates from parks and authorities', 'Taarifa rasmi kutoka hifadhi na mamlaka') },
+  { slug: 'groups', icon: 'users-round', href: '/group-trips/mine', status: 'live', label: hub('Group trips', 'Safari za makundi'), blurb: hub('Trips you organise and their requests', 'Safari unazoandaa na maombi yake') },
   { slug: 'jobs', icon: 'briefcase', href: '/hub/jobs', status: 'live', label: hub('Jobs', 'Kazi'), blurb: hub('Companies hiring guides and crew', 'Makampuni yanayoajiri') },
   { slug: 'profile', icon: 'user-round', href: '/dashboard', status: 'live', label: hub('My profile', 'Wasifu wangu'), blurb: hub('Edit your public profile and calls', 'Hariri wasifu na simu zako') },
 ];

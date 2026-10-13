@@ -28,8 +28,9 @@ Where to send people on the site (use these paths; replace {lang} with the trave
 - Special trips, each a filtered guide list: /{lang}/special, or directly /{lang}/guides?expertise=X where X is blind (blind and low-vision travellers), mobility (wheelchair users), deaf, vip (VIP and luxury), record_climbs (Kilimanjaro speed and record attempts), charity_climbs, solo_women, families, seniors, honeymoon, muslim_friendly or students. Photography safaris: /{lang}/guides?specialty=photography
 - 1-on-1 prep call with a guide they choose (Kilimanjaro, safari, Zanzibar, culture): /{lang}/calls
 - Safaris, climbs, day trips and combo trips: /{lang}/tours (the catalogue is still being finalised; if it looks empty, suggest finding a guide or a prep call instead)
+- Group trips: travellers can join small groups organised by verified guides or licensed companies and split the cost: /{lang}/group-trips. Guides and companies start one at /{lang}/group-trips/new. Travellers pay the organiser directly.
 - Reviews: travellers can review a guide on the guide's profile after a confirmed call or booking.
-- Opening soon (these pages let travellers register interest and businesses ask to be listed; do not present them as bookable yet): trip requests with offers from guides /{lang}/trips/trip-requests, group trips /{lang}/trips/group-trips, stays /{lang}/stay, transport and airport transfers /{lang}/transport, gear, art and Tanzanite /{lang}/shop, local life /{lang}/local, guide stories /{lang}/discover/stories, AFCON 2027 /{lang}/discover/afcon-2027
+- Opening soon (these pages let travellers register interest and businesses ask to be listed; do not present them as bookable yet): trip requests with offers from guides /{lang}/trips/trip-requests, stays /{lang}/stay, transport and airport transfers /{lang}/transport, gear, art and Tanzanite /{lang}/shop, local life /{lang}/local, guide stories /{lang}/discover/stories, AFCON 2027 /{lang}/discover/afcon-2027
 - Investing in Tanzanian tourism: /{lang}/discover/invest (also opening soon)
 - Guides who want to join: /{lang}/join
 

@@ -76,6 +76,24 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Maoni mapya: nyota ${v('rating')} kutoka kwa ${v('author')}`, body: `${v('author')} ameandika: "${v('preview')}". Tazama wasifu wako kwenye Rafrika.` }
         : { subject: `New ${v('rating')}-star review from ${v('author')}`, body: `${v('author')} wrote: "${v('preview')}". See it on your Rafrika profile.` };
+    case 'group_pending':
+      return { subject: `Group trip waiting for review: ${v('title')}`, body: `"${v('title')}" by ${v('organizer')} needs approval. Check dates, price and what is included.` };
+    case 'group_approved':
+      return sw
+        ? { subject: 'Safari yako ya kundi iko hewani', body: `"${v('title')}" sasa inaonekana kwa wasafiri. Utapata taarifa wakiomba kujiunga.` }
+        : { subject: 'Your group trip is live', body: `"${v('title')}" is now visible to travellers. We will tell you when someone asks to join.` };
+    case 'group_join_requested':
+      return sw
+        ? { subject: `${v('name')} anataka kujiunga: ${v('title')}`, body: `${v('name')} ameomba nafasi ${v('seats')}. ${v('message')} Kubali au kataa kwenye Rafrika.` }
+        : { subject: `${v('name')} wants to join ${v('title')}`, body: `${v('name')} asked for ${v('seats')} spot(s). ${v('message')} Accept or decline on Rafrika.` };
+    case 'group_join_accepted':
+      return sw
+        ? { subject: `Umekubaliwa: ${v('title')}`, body: `Mwandaaji amekubali ombi lako. Fungua Rafrika uone mawasiliano yake na upange malipo.` }
+        : { subject: `You're in: ${v('title')}`, body: `The organiser accepted your request. Open Rafrika to see their contact and arrange payment.` };
+    case 'group_join_declined':
+      return sw
+        ? { subject: `Ombi halikukubaliwa: ${v('title')}`, body: `Mwandaaji hakuweza kukupokea safari hii. Tazama safari nyingine za makundi kwenye Rafrika.` }
+        : { subject: `Request not accepted: ${v('title')}`, body: `The organiser could not take you this time. See other group trips on Rafrika.` };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':

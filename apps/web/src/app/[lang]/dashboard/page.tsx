@@ -267,6 +267,13 @@ async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: L
           </ul>
         )}
       </section>
+      <section className="card mt-6 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">{t.groups.title}</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${locale}/group-trips/mine`} className="btn-outline px-4 py-2 text-sm">{t.groups.mine}</Link>
+          <Link href={`/${locale}/group-trips`} className="btn px-4 py-2 text-sm">{t.groups.joinTitle}</Link>
+        </div>
+      </section>
       <Link href={`/${locale}/dashboard?as=guide`} className="mt-6 inline-block text-sm font-semibold text-forest underline">
         {t.traveler.becomeGuide}
       </Link>
@@ -289,7 +296,11 @@ async function BusinessDashboard({ t, locale, user }: { t: Dictionary; locale: L
   return (
     <>
       <h1 className="text-3xl font-bold">{t.jobs.postTitle}</h1>
-      <Link href={`/${locale}/jobs/post`} className="btn mt-6">{t.jobs.postNew}</Link>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Link href={`/${locale}/jobs/post`} className="btn">{t.jobs.postNew}</Link>
+        <Link href={`/${locale}/group-trips/new`} className="btn-dark">{t.groups.start}</Link>
+        <Link href={`/${locale}/group-trips/mine`} className="btn-outline">{t.groups.mine}</Link>
+      </div>
       <ul className="card mt-6 divide-y divide-line">
         {jobs.length === 0 && <li className="py-2 text-muted">—</li>}
         {jobs.map((j) => (

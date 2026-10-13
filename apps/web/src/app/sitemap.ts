@@ -3,13 +3,14 @@ import { MENU } from '@rafrika/shared';
 import { locales } from '@/i18n/config';
 import { listGuides } from '@/lib/guides';
 import { listTrips } from '@/lib/trips';
+import { listGroupTrips } from '@/lib/groups';
 import { SITE_URL } from '@/lib/site';
 
 // Every public page in every language: home, sections, menu pages, published trips and public guides.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [guides, trips] = await Promise.all([listGuides({}), listTrips({})]);
+  const [guides, trips, groups] = await Promise.all([listGuides({}), listTrips({}), listGroupTrips()]);
 
-  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/join']);
+  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/join']);
   for (const section of MENU) {
     paths.add(`/${section.slug}`);
     for (const item of section.items) {
@@ -18,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
   for (const trip of trips) paths.add(`/tours/${trip.slug}`);
+  for (const group of groups) paths.add(`/group-trips/${group.id}`);
   for (const guide of guides) paths.add(`/guides/${guide.slug}`);
 
   return [...paths].flatMap((path) =>
