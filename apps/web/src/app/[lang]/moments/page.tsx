@@ -21,14 +21,14 @@ export default async function MomentsPage() {
     <>
       <PhotoHero photo="elephantsBalloon">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <Camera className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.moments.title}</h1>
           <p className="mt-3 max-w-2xl text-lg text-white/85">{t.moments.subtitle}</p>
         </div>
       </PhotoHero>
-      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-[5px] bg-surface" />}>
         <Gallery t={t} locale={locale} />
       </Suspense>
     </>
@@ -49,7 +49,7 @@ async function Gallery({ t, locale }: { t: Dictionary; locale: Locale }) {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="columns-1 gap-5 sm:columns-2 lg:columns-3">
         {moments.map((m) => (
-          <figure key={m.id} className="mb-5 break-inside-avoid overflow-hidden rounded-3xl border border-line bg-white shadow-sm">
+          <figure key={m.id} className="mb-5 break-inside-avoid overflow-hidden rounded-[5px] border border-line bg-white shadow-sm">
             {m.media_url && m.media_type === 'image' && (
               // eslint-disable-next-line @next/next/no-img-element -- signed link to a consented, featured file
               <img src={m.media_url} alt={m.body ?? t.moments.title} className="w-full object-cover" loading="lazy" />

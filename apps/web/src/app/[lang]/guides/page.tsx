@@ -51,7 +51,7 @@ export default async function GuidesPage({ searchParams }: PageProps<'/[lang]/gu
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <Suspense fallback={<div className="mt-6 h-40 animate-pulse rounded-brand bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-40 animate-pulse rounded-[5px] bg-surface" />}>
         <Results searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </div>
@@ -68,7 +68,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
     <>
       {heading ? (
         <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-leaf text-white shadow-lg">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-[5px] bg-leaf text-white shadow-lg">
             <Icon name={heading.icon} className="size-7" />
           </span>
           <div>

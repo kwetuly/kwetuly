@@ -32,10 +32,10 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
       : p.notPaid;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-line bg-white">
+    <div className="overflow-hidden rounded-[5px] border border-line bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-dashed border-line px-5 py-3">
         <p className="text-sm font-bold text-muted">{r.ticketTitle}</p>
-        <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-forest">{r.offerStatus.accepted}</span>
+        <span className="rounded-[5px] bg-mint px-3 py-1 text-xs font-bold text-forest">{r.offerStatus.accepted}</span>
       </div>
       <div className="px-5 py-4">
         <p className="text-xl font-extrabold">{title}</p>

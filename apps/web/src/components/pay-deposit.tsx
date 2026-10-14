@@ -28,7 +28,7 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, paidOut, b
   if (percent <= 0) return null;
   if (paid) {
     return (
-      <div className="rounded-2xl bg-mint p-4 text-forest">
+      <div className="rounded-[5px] bg-mint p-4 text-forest">
         <p className="font-semibold">✓ {p.paid}</p>
         <p className="mt-1 text-sm">{paidOut ? p.paidOutNote : p.heldNote}</p>
       </div>
@@ -37,7 +37,7 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, paidOut, b
   if (!(await paymentsEnabled())) return null;
 
   return (
-    <form id="pay" action={startPayment} className={`scroll-mt-28 space-y-3 rounded-2xl p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
+    <form id="pay" action={startPayment} className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="id" value={id} />
@@ -48,7 +48,7 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, paidOut, b
       </p>
       <p className="text-sm opacity-80">{p.body}</p>
       {error && (
-        <p className="rounded-xl bg-red-50 p-2 text-sm text-red-800">{ERRORS.has(error) ? p.phoneRequired : p.error}</p>
+        <p className="rounded-[5px] bg-red-50 p-2 text-sm text-red-800">{ERRORS.has(error) ? p.phoneRequired : p.error}</p>
       )}
       <button className="btn w-full">{p.cta}</button>
       <p className="text-xs opacity-70">{p.direct}</p>

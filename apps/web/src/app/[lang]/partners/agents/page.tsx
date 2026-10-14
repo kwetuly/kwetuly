@@ -22,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
     <>
       <PhotoHero photo="buffaloCar">
         <div className="mx-auto max-w-6xl px-4 pb-20 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <Handshake className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>
@@ -64,7 +64,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
               ))}
             </ol>
 
-            <div className="mt-10 rounded-3xl bg-night p-6 text-white">
+            <div className="mt-10 rounded-[5px] bg-night p-6 text-white">
               <ArrowRightLeft className="size-7 text-gold" aria-hidden />
               <h3 className="mt-3 text-xl font-extrabold">{p.overflowTitle}</h3>
               <p className="mt-2 text-white/80">{p.overflowBody}</p>
@@ -102,10 +102,10 @@ async function ApplyForm({
       <h2 className="text-2xl font-extrabold">{p.applyTitle}</h2>
       <p className="mt-1 text-sm text-muted">{p.applyBody}</p>
       {status.sent ? (
-        <p className="mt-5 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {p.sent}</p>
+        <p className="mt-5 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {p.sent}</p>
       ) : (
         <form action={applyAsAgency} className="mt-5 space-y-3">
-          {status.error && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+          {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
           <input type="hidden" name="locale" value={locale} />
           <input name="agency" className="field" placeholder={p.agency} required maxLength={120} />
           <div className="grid gap-3 sm:grid-cols-2">

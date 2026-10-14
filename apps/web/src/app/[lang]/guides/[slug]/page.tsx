@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[sl
 export default async function GuideProfilePage({ params, searchParams }: PageProps<'/[lang]/guides/[slug]'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-4xl animate-pulse rounded-brand bg-surface" />}>
+    <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-4xl animate-pulse rounded-[5px] bg-surface" />}>
       <Profile params={params} searchParams={searchParams} t={t} locale={locale} />
     </Suspense>
   );
@@ -108,7 +108,7 @@ async function Profile({
         {guide.open_to_partners && (
           <Link
             href={`/${locale}/partners/agents`}
-            className="mt-6 flex items-center gap-3 rounded-2xl bg-night p-4 text-sm text-white hover:bg-forest"
+            className="mt-6 flex items-center gap-3 rounded-[5px] bg-night p-4 text-sm text-white hover:bg-forest"
           >
             <Icon name="handshake" className="size-6 shrink-0 text-gold" />
             <span>
@@ -124,7 +124,7 @@ async function Profile({
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {expertiseOf(guide).map((e) => (
                 <li key={e.id}>
-                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 hover:border-leaf">
+                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-[5px] border border-line bg-white p-3 hover:border-leaf">
                     <Icon name={e.icon} className="size-5 shrink-0 text-leaf" />
                     <span className="text-sm font-semibold">{e.label[locale]}</span>
                   </Link>
@@ -156,10 +156,10 @@ async function Profile({
         <h2 className="text-lg font-semibold">{t.profile.contactTitle}</h2>
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
         {status.sent ? (
-          <p className="mt-4 rounded-brand bg-mint p-4 text-forest">{t.profile.sent}</p>
+          <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{t.profile.sent}</p>
         ) : (
           <form action={requestGuide} className="mt-4 space-y-3">
-            {status.error && <p className="rounded-brand bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={guide.slug} />
             <input type="hidden" name="guide_id" value={guide.id} />
@@ -232,7 +232,7 @@ async function CallBooking({
   const user = await getCurrentUser();
 
   return (
-    <section id="call" className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
+    <section id="call" className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
       <div className="bg-leaf px-6 py-4 text-white">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
@@ -244,7 +244,7 @@ async function CallBooking({
       </div>
       <div className="p-6">
         {status.callSent ? (
-          <p className="rounded-2xl bg-mint p-4 font-semibold text-forest">{t.calls.sent}</p>
+          <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">{t.calls.sent}</p>
         ) : !user ? (
           <div>
             <p className="text-white/80">{t.calls.signInFirst}</p>
@@ -255,7 +255,7 @@ async function CallBooking({
           </div>
         ) : (
           <form action={requestCall} className="space-y-3">
-            {status.callError && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            {status.callError && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={guide.slug} />
             <input type="hidden" name="guide_id" value={guide.id} />
@@ -359,13 +359,13 @@ async function ReviewForm({
   ]);
   const eligible = (calls.count ?? 0) > 0 || (conversations.count ?? 0) > 0;
 
-  if (status.reviewSent) return <p className="mt-5 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {r.thanks}</p>;
-  if (!eligible) return <p className="mt-5 rounded-2xl bg-surface p-4 text-sm text-muted">{r.onlyAfter}</p>;
+  if (status.reviewSent) return <p className="mt-5 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.thanks}</p>;
+  if (!eligible) return <p className="mt-5 rounded-[5px] bg-surface p-4 text-sm text-muted">{r.onlyAfter}</p>;
 
   return (
     <form action={submitReview} className="card mt-5 space-y-3">
       <h3 className="text-lg font-bold">{own.data ? r.edit : r.write}</h3>
-      {status.reviewError && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+      {status.reviewError && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="slug" value={guide.slug} />
       <input type="hidden" name="guide_id" value={guide.id} />
@@ -374,7 +374,7 @@ async function ReviewForm({
         {/* Star picker without JavaScript: radios shown as stars, highest first so CSS can fill to the left. */}
         <div className="flex flex-row-reverse justify-end gap-1">
           {[5, 4, 3, 2, 1].map((n) => (
-            <label key={n} className="cursor-pointer rounded text-3xl leading-none text-line transition hover:text-gold has-[:checked]:text-gold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-forest [label:has(:checked)~&]:text-gold [label:hover~&]:text-gold">
+            <label key={n} className="cursor-pointer rounded-[5px] text-3xl leading-none text-line transition hover:text-gold has-[:checked]:text-gold has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-forest [label:has(:checked)~&]:text-gold [label:hover~&]:text-gold">
               <input type="radio" name="rating" value={n} required defaultChecked={own.data?.rating === n} className="sr-only" />
               <span aria-label={`${n} / 5 ${r.stars}`}>★</span>
             </label>
@@ -394,7 +394,7 @@ function Facts({ title, items }: { title: string; items: string[] }) {
       <h3 className="text-sm font-semibold text-muted">{title}</h3>
       <ul className="mt-2 flex flex-wrap gap-2">
         {items.map((item) => (
-          <li key={item} className="rounded-full bg-surface px-3 py-1 text-sm">{item}</li>
+          <li key={item} className="rounded-[5px] bg-surface px-3 py-1 text-sm">{item}</li>
         ))}
       </ul>
     </div>

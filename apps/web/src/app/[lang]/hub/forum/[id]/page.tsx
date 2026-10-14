@@ -25,7 +25,7 @@ type Thread = {
 export default async function ThreadPage({ params }: PageProps<'/[lang]/hub/forum/[id]'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white" />}>
+    <Suspense fallback={<div className="h-64 animate-pulse rounded-[5px] bg-white" />}>
       <ThreadView params={params} t={t} locale={locale} />
     </Suspense>
   );
@@ -65,7 +65,7 @@ async function ThreadView({ params, t, locale }: { params: Promise<{ id: string 
           {post.hub_replies.length} {t.hub.replies}
         </h2>
         {post.hub_replies.map((r) => (
-          <div key={r.id} className="rounded-2xl border border-line bg-white p-4">
+          <div key={r.id} className="rounded-[5px] border border-line bg-white p-4">
             <p className="text-xs text-muted">
               <span className="font-semibold text-charcoal">{r.author_name}</span> · {new Date(r.created_at).toLocaleString(locale)}
             </p>

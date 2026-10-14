@@ -22,14 +22,14 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
     <>
       <PhotoHero photo={'kiliCamp'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <Video className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{t.calls.title}</h1>
           <p className="mt-4 max-w-2xl text-lg text-white/80">{t.calls.subtitle}</p>
           <ol className="mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
             {t.calls.how.map((step, i) => (
-              <li key={step} className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm backdrop-blur">
+              <li key={step} className="rounded-[5px] border border-white/15 bg-white/10 p-4 text-sm backdrop-blur">
                 <span className="text-2xl font-extrabold text-gold">{i + 1}</span>
                 <p className="mt-1">{step}</p>
               </li>
@@ -38,7 +38,7 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
           <p className="mt-4 max-w-3xl text-sm text-white/75">{t.calls.payNote}</p>
         </div>
       </PhotoHero>
-      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-[5px] bg-surface" />}>
         <CallGuides searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </>
@@ -94,7 +94,7 @@ async function CallGuides({
               {g.headline && <p className="mt-3 text-sm">{g.headline}</p>}
               <ul className="mt-3 flex flex-wrap gap-1.5">
                 {g.call_topics.map((c) => (
-                  <li key={c} className="rounded-full bg-sand px-2.5 py-1 text-xs font-semibold">{topicName(c, locale)}</li>
+                  <li key={c} className="rounded-[5px] bg-sand px-2.5 py-1 text-xs font-semibold">{topicName(c, locale)}</li>
                 ))}
               </ul>
               <div className="mt-auto flex items-center justify-between pt-5">

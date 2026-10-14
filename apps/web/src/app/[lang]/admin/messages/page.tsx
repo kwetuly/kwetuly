@@ -35,7 +35,7 @@ export default async function AdminMessagesPage() {
       <p className="mt-2 text-sm text-muted">
         Reported messages, and messages where contact details were hidden. Unlock a conversation only once a booking is confirmed.
       </p>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Moderation locale={locale} />
       </Suspense>
     </div>

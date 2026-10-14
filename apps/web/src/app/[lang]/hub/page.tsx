@@ -34,7 +34,7 @@ export default async function HubHome() {
     <>
       <h1 className="text-3xl font-extrabold">{t.hub.title}</h1>
       <p className="mt-1 text-muted">{t.hub.subtitle}</p>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-white" />}>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-white" />}>
         <Inbox t={t} locale={locale} />
       </Suspense>
     </>
@@ -103,7 +103,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
         {(calls ?? []).length === 0 && <p className="mt-3 text-sm text-muted">{t.hub.noRequests}</p>}
         <ul className="mt-4 space-y-4">
           {(calls ?? []).map((c) => (
-            <li key={c.id} className="rounded-2xl border border-line p-4">
+            <li key={c.id} className="rounded-[5px] border border-line p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm tabular-nums text-muted">{day.format(new Date(c.created_at))}</span>
                 <span className="font-semibold">{topicName(c.topic, locale)}</span>

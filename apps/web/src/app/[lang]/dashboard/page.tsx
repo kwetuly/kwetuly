@@ -27,7 +27,7 @@ export default async function DashboardPage({ searchParams }: PageProps<'/[lang]
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-brand bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <DashboardForRole t={t} locale={locale} searchParams={searchParams} />
       </Suspense>
     </div>
@@ -79,7 +79,7 @@ async function GuideEditor({
     <>
       <h1 className="text-3xl font-bold">{d.title}</h1>
       {guide && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-brand bg-mint p-4 text-forest">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[5px] bg-mint p-4 text-forest">
           <span>{statusText}</span>
           {guide.verification_status === 'approved' && (
             <>
@@ -93,8 +93,8 @@ async function GuideEditor({
           )}
         </div>
       )}
-      {status.saved && <p className="mt-4 rounded-brand bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
-      {status.error && <p className="mt-4 rounded-brand bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+      {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
+      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
 
       <form action={saveGuideProfile} className="mt-6 space-y-8">
         <input type="hidden" name="locale" value={locale} />

@@ -90,7 +90,7 @@ export default function IntroScreen() {
             style={{
               paddingHorizontal: space.md,
               paddingVertical: space.sm,
-              borderRadius: radius.full,
+              borderRadius: radius.button,
               backgroundColor: l === locale ? brand.gold : 'rgba(10,31,23,0.45)',
               borderWidth: 1,
               borderColor: l === locale ? brand.gold : 'rgba(255,255,255,0.35)',

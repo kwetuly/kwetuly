@@ -28,7 +28,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
       >
         <Globe className="size-4" aria-hidden /> {current}
       </summary>
-      <ul className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl border border-line bg-white p-1.5 shadow-[0_24px_60px_-12px_rgba(10,31,23,0.25)]">
+      <ul className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-[5px] border border-line bg-white p-1.5 shadow-[0_24px_60px_-12px_rgba(10,31,23,0.25)]">
         {locales.map((locale) => (
           <li key={locale}>
             <Link
@@ -36,7 +36,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
               hrefLang={locale}
               lang={locale}
               onClick={() => ref.current && (ref.current.open = false)}
-              className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold hover:bg-sand ${locale === current ? 'text-forest' : 'text-charcoal'}`}
+              className={`flex items-center justify-between rounded-[5px] px-3 py-2 text-sm font-semibold hover:bg-sand ${locale === current ? 'text-forest' : 'text-charcoal'}`}
             >
               {LOCALE_NAMES[locale]}
               {locale === current && <Check className="size-4" aria-hidden />}

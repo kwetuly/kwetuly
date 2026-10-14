@@ -83,7 +83,7 @@ async function JobForm({
 
   return (
     <form action={postJob} className="card grid gap-4 sm:grid-cols-2">
-      {params.error && <p className="rounded-2xl bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
+      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="kind" value={handover ? 'handover' : 'crew'} />
       <label className="block">

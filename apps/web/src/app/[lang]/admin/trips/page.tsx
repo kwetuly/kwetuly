@@ -38,7 +38,7 @@ export default async function AdminTripsPage() {
         Review each trip, set a price (or leave it empty for “price on request”), record the licensed partner that runs it, then publish.
         Switch “Operated by” to Rafrika once the company holds its own licence.
       </p>
-      <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <TripList locale={locale} />
       </Suspense>
     </div>

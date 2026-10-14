@@ -49,7 +49,7 @@ export default async function ToursPage({ searchParams }: PageProps<'/[lang]/tou
           <p className="mt-4 max-w-2xl text-lg text-white/80">{t.tours.subtitle}</p>
         </div>
       </PhotoHero>
-      <Suspense fallback={<div className="mx-auto mt-10 h-96 max-w-7xl animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-96 max-w-7xl animate-pulse rounded-[5px] bg-surface" />}>
         <Catalogue searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </>

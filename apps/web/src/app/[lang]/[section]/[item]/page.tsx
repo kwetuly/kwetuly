@@ -49,7 +49,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
             <ArrowLeft className="size-4" aria-hidden /> {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-2xl bg-leaf">
+            <span className="flex size-16 items-center justify-center rounded-[5px] bg-leaf">
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>
@@ -134,16 +134,16 @@ async function InterestForm({
 
   return (
     <div id={kind} className={`card ${isBusiness ? 'bg-sand' : ''}`}>
-      <span className={`flex size-11 items-center justify-center rounded-xl ${isBusiness ? 'bg-night text-gold' : 'bg-mint text-forest'}`}>
+      <span className={`flex size-11 items-center justify-center rounded-[5px] ${isBusiness ? 'bg-night text-gold' : 'bg-mint text-forest'}`}>
         {isBusiness ? <Store className="size-5" aria-hidden /> : <Bell className="size-5" aria-hidden />}
       </span>
       <h2 className="mt-4 text-2xl font-bold">{title}</h2>
       <p className="mt-2 text-muted">{body}</p>
       {sent ? (
-        <p className="mt-6 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {t.explore.thanks}</p>
+        <p className="mt-6 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {t.explore.thanks}</p>
       ) : (
         <form action={registerInterest} className="mt-6 space-y-3">
-          {failed && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+          {failed && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="section" value={section} />
           <input type="hidden" name="item" value={item} />

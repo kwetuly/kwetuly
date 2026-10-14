@@ -28,12 +28,12 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
       alt={guide.display_name}
       width={size}
       height={size}
-      className="shrink-0 rounded-brand object-cover"
+      className="shrink-0 rounded-[5px] object-cover"
       style={{ width: size, height: size }}
     />
   ) : (
     <div
-      className="flex shrink-0 items-center justify-center rounded-brand bg-sand font-bold text-leaf-dark"
+      className="flex shrink-0 items-center justify-center rounded-[5px] bg-sand font-bold text-leaf-dark"
       style={{ width: size, height: size, fontSize: size / 2.5 }}
       aria-hidden
     >
@@ -43,7 +43,7 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
 }
 
 // Badges for who the guide is: verified, Pro, female guide, works with agencies.
-const pill = 'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold';
+const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs font-bold';
 
 export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
   return (
@@ -68,7 +68,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
   return (
     <Link
       href={`/${locale}/guides/${guide.slug}`}
-      className="group flex flex-col rounded-3xl border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-leaf"
+      className="group flex flex-col rounded-[5px] border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-leaf"
     >
       <div className="flex gap-4">
         <GuideAvatar guide={guide} size={72} />
@@ -94,7 +94,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
       {guide.specialties.length > 0 && (
         <ul className="mt-4 flex flex-wrap gap-1.5" aria-label={t.profile.specialties}>
           {guide.specialties.map((s) => (
-            <li key={s} className="rounded-[10px] bg-surface px-2.5 py-1 text-xs font-semibold">
+            <li key={s} className="rounded-[5px] bg-surface px-2.5 py-1 text-xs font-semibold">
               {specialtyName(s, locale)}
             </li>
           ))}
@@ -111,7 +111,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
       {expertise.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3" aria-label={t.profile.expertise}>
           {expertise.map((e) => (
-            <li key={e.id} className="inline-flex items-center gap-1 rounded-[10px] bg-surface px-2.5 py-1 text-xs font-semibold text-charcoal">
+            <li key={e.id} className="inline-flex items-center gap-1 rounded-[5px] bg-surface px-2.5 py-1 text-xs font-semibold text-charcoal">
               <Icon name={e.icon} className="size-3.5" /> {e.label[locale]}
             </li>
           ))}

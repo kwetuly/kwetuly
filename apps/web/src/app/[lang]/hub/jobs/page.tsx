@@ -31,7 +31,7 @@ type Job = {
 export default async function HubJobsPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white" />}>
+    <Suspense fallback={<div className="h-64 animate-pulse rounded-[5px] bg-white" />}>
       <Jobs t={t} locale={locale} />
     </Suspense>
   );
@@ -61,7 +61,7 @@ async function Jobs({ t, locale }: { t: Dictionary; locale: Locale }) {
         {jobs.map((j) => (
           <div key={j.id} className={`card ${j.kind === 'handover' ? 'border-leaf' : ''}`}>
             {j.kind === 'handover' ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-leaf px-3 py-1 text-xs font-bold text-white"><ArrowRightLeft className="size-3.5" aria-hidden /> {t.jobs.handoverBadge}</span>
+              <span className="inline-flex items-center gap-1 rounded-[5px] bg-leaf px-3 py-1 text-xs font-bold text-white"><ArrowRightLeft className="size-3.5" aria-hidden /> {t.jobs.handoverBadge}</span>
             ) : (
               <span className="badge">{jobRoleName(j.role_needed, locale)}</span>
             )}
@@ -84,7 +84,7 @@ async function Jobs({ t, locale }: { t: Dictionary; locale: Locale }) {
             </div>
             {j.description && <p className="mt-3 whitespace-pre-line text-sm">{j.description}</p>}
             {j.pay && <p className="mt-3 text-sm"><strong>{t.hub.pay}:</strong> {j.pay}</p>}
-            <p className="mt-3 rounded-2xl bg-sand p-3 text-sm"><strong>{t.hub.apply}:</strong> {j.how_to_apply}</p>
+            <p className="mt-3 rounded-[5px] bg-sand p-3 text-sm"><strong>{t.hub.apply}:</strong> {j.how_to_apply}</p>
           </div>
         ))}
       </div>

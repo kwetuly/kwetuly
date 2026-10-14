@@ -14,7 +14,7 @@
   --color-muted: #5f6b66;
   --color-line: #e7e5e0;
   --color-surface: #f7f6f3;
-  --radius-brand: 16px;
+  --radius-brand: 5px;
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -45,11 +45,11 @@ body {
 }
 
 .card {
-  @apply rounded-3xl border border-line bg-white p-6;
+  @apply rounded-[5px] border border-line bg-white p-6;
 }
 
 .badge {
-  @apply inline-flex items-center gap-1 rounded-full bg-mint px-3 py-1 text-xs font-bold text-forest;
+  @apply inline-flex items-center gap-1 rounded-[5px] bg-mint px-3 py-1 text-xs font-bold text-forest;
 }
 
 /* Kanga-inspired pattern for dark hero sections */

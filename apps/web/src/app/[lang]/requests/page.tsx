@@ -22,7 +22,7 @@ export default async function RequestsPage() {
     <>
       <PhotoHero photo="kiliHeather">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <Gavel className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.requests.title}</h1>
@@ -30,7 +30,7 @@ export default async function RequestsPage() {
           <Link href={`/${locale}/requests/new`} className="btn mt-8"><Plus className="size-4" aria-hidden /> {t.requests.post}</Link>
         </div>
       </PhotoHero>
-      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-[5px] bg-surface" />}>
         <Lists t={t} locale={locale} />
       </Suspense>
     </>
@@ -105,7 +105,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
           {(myOffers ?? []).length === 0 ? (
             <p className="mt-3 text-muted">{o.noOffers}</p>
           ) : (
-            <ul className="mt-4 divide-y divide-line rounded-3xl border border-line bg-white">
+            <ul className="mt-4 divide-y divide-line rounded-[5px] border border-line bg-white">
               {myOffers!.map((offer) => (
                 <li key={offer.id}>
                   <Link href={`/${locale}/requests/${offer.request_id}`} className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-surface">
@@ -130,7 +130,7 @@ function RequestRow({ req, lowest, t, locale, showName }: { req: TripRequest; lo
       <Link href={`/${locale}/requests/${req.id}`} className="card block h-full p-5 transition hover:-translate-y-0.5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-lg font-bold">{req.title}</p>
-          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${req.status === 'open' ? 'bg-mint text-forest' : 'bg-surface text-muted'}`}>
+          <span className={`shrink-0 rounded-[5px] px-2.5 py-0.5 text-xs font-bold ${req.status === 'open' ? 'bg-mint text-forest' : 'bg-surface text-muted'}`}>
             {r.status[req.status]}
           </span>
         </div>

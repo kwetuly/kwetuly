@@ -23,7 +23,7 @@ export default async function MessagesPage() {
         </span>
         <span className="btn shrink-0 px-4 py-2 text-sm">{t.chats.title} →</span>
       </Link>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Inbox t={t} locale={locale} />
       </Suspense>
     </div>
@@ -49,13 +49,13 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
   }
 
   return (
-    <ul className="mt-6 divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white">
+    <ul className="mt-6 divide-y divide-line overflow-hidden rounded-[5px] border border-line bg-white">
       {conversations.map((c) => {
         const { otherName, unread } = viewOf(c, user);
         return (
           <li key={c.id}>
             <Link href={`/${locale}/messages/${c.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-lg font-bold text-leaf-dark">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-[5px] bg-sand text-lg font-bold text-leaf-dark">
                 {otherName.charAt(0)}
               </span>
               <span className="min-w-0 flex-1">

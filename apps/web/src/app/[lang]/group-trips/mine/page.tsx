@@ -15,7 +15,7 @@ export default async function MyGroupTripsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <h1 className="text-3xl font-extrabold">{t.groups.mine}</h1>
-      <Suspense fallback={<div className="mt-6 h-40 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-40 animate-pulse rounded-[5px] bg-surface" />}>
         <Lists t={t} locale={locale} />
       </Suspense>
     </div>
@@ -53,7 +53,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
           <span className="block font-bold">{trip.title}</span>
           <span className="text-sm text-muted">{formatDates(trip as GroupTrip, locale)} · {trip.seats_taken}/{trip.max_people}</span>
         </span>
-        {note && <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
+        {note && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
       </Link>
     </li>
   );

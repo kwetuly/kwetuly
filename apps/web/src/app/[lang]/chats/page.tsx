@@ -18,7 +18,7 @@ export default async function ChatsPage({ searchParams }: PageProps<'/[lang]/cha
         <UsersRound className="size-7 text-leaf" aria-hidden /> {t.chats.title}
       </h1>
       <p className="mt-2 text-muted">{t.chats.subtitle}</p>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Chats searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </div>
@@ -35,7 +35,7 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <form action={createChat} className="card space-y-3">
           <h2 className="font-bold">{c.newChat}</h2>
-          {params.error && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+          {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
           <input type="hidden" name="locale" value={locale} />
           <label className="block">
             <span className="label">{c.chatName}</span>
@@ -45,7 +45,7 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
         </form>
         <form action={joinChat} className="card space-y-3">
           <h2 className="font-bold">{c.joinWithCode}</h2>
-          {params.joinError && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{c.joinError}</p>}
+          {params.joinError && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{c.joinError}</p>}
           <input type="hidden" name="locale" value={locale} />
           <input name="code" className="field" required maxLength={300} placeholder={c.codePlaceholder} aria-label={c.codePlaceholder} />
           <button className="btn-outline w-full">{c.join}</button>
@@ -55,11 +55,11 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
       {chats.length === 0 ? (
         <p className="mt-8 text-muted">{c.none}</p>
       ) : (
-        <ul className="mt-8 divide-y divide-line overflow-hidden rounded-3xl border border-line bg-white">
+        <ul className="mt-8 divide-y divide-line overflow-hidden rounded-[5px] border border-line bg-white">
           {chats.map((chat) => (
             <li key={chat.id}>
               <Link href={`/${locale}/chats/${chat.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-leaf font-bold text-white">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-[5px] bg-leaf font-bold text-white">
                   <UsersRound className="size-5" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

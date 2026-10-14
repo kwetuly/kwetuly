@@ -25,7 +25,7 @@ export default async function AdminMediaPage() {
         Only items whose sender ticked “Rafrika may use this publicly”. If anyone in the chat objects, or the sender stops
         sharing, the item disappears from the site automatically.
       </p>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Library locale={locale} />
       </Suspense>
     </div>
@@ -57,7 +57,7 @@ async function Library({ locale }: { locale: Locale }) {
   return (
     <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((m) => (
-        <figure key={m.id} className={`overflow-hidden rounded-3xl border bg-white ${m.featured ? 'border-forest' : 'border-line'} ${blocked.has(m.id) ? 'opacity-60' : ''}`}>
+        <figure key={m.id} className={`overflow-hidden rounded-[5px] border bg-white ${m.featured ? 'border-forest' : 'border-line'} ${blocked.has(m.id) ? 'opacity-60' : ''}`}>
           {m.media_url && m.media_type === 'image' && (
             // eslint-disable-next-line @next/next/no-img-element -- signed link to a private file
             <img src={m.media_url} alt="" className="h-56 w-full object-cover" loading="lazy" />

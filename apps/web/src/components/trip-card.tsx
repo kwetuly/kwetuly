@@ -36,17 +36,17 @@ export function TripCover({ trip, className = '', sizes = '(min-width: 1024px) 3
 
 export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale; labels: { days: string; day: string; signature: string; draft: string } }) {
   return (
-    <Link href={`/${locale}/tours/${trip.slug}`} className="group overflow-hidden rounded-3xl border border-line bg-white transition hover:-translate-y-1">
+    <Link href={`/${locale}/tours/${trip.slug}`} className="group overflow-hidden rounded-[5px] border border-line bg-white transition hover:-translate-y-1">
       <div className="relative">
         <TripCover trip={trip} className="h-52" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           {trip.is_signature && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-night px-3 py-1 text-xs font-bold text-gold">
+            <span className="inline-flex items-center gap-1 rounded-[5px] bg-night px-3 py-1 text-xs font-bold text-gold">
               <Sparkles className="size-3" aria-hidden /> {labels.signature}
             </span>
           )}
-          {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-leaf">{labels.draft}</span>}
-          <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-night">
+          {trip.status !== 'published' && <span className="rounded-[5px] bg-white px-3 py-1 text-xs font-bold text-leaf">{labels.draft}</span>}
+          <span className="rounded-[5px] bg-white/90 px-3 py-1 text-xs font-bold text-night">
             {TRIP_KINDS.find((k) => k.id === trip.kind)?.[locale]}
           </span>
         </div>

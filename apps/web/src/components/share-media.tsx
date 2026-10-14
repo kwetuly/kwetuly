@@ -31,10 +31,10 @@ export function ShareMedia({ url, name, labels }: { url: string; name: string; l
 
   return (
     <span className="inline-flex gap-1">
-      <button type="button" onClick={share} disabled={busy} className="inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-semibold hover:bg-surface">
+      <button type="button" onClick={share} disabled={busy} className="inline-flex items-center gap-1 rounded-[5px] px-2 py-1 text-xs font-semibold hover:bg-surface">
         {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Share2 className="size-3.5" aria-hidden />} {labels.share}
       </button>
-      <a href={url} download={name} target="_blank" rel="noopener" className="inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-semibold hover:bg-surface">
+      <a href={url} download={name} target="_blank" rel="noopener" className="inline-flex items-center gap-1 rounded-[5px] px-2 py-1 text-xs font-semibold hover:bg-surface">
         <Download className="size-3.5" aria-hidden /> {labels.download}
       </a>
     </span>

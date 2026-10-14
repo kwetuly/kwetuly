@@ -20,7 +20,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
     <>
       <PhotoHero photo="saddleHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <UsersRound className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.groups.title}</h1>
@@ -31,7 +31,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
           </div>
         </div>
       </PhotoHero>
-      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-[5px] bg-surface" />}>
         <List searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </>

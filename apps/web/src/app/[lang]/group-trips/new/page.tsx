@@ -20,7 +20,7 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
     <>
       <PhotoHero photo="giraffesBalloon">
         <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
             <Plus className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold">{t.groups.newTitle}</h1>
@@ -58,7 +58,7 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
   const today = new Date().toISOString().slice(0, 10);
   return (
     <form action={createGroupTrip} className="card grid gap-4 sm:grid-cols-2">
-      {params.error && <p className="rounded-2xl bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
+      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       {!asGuide && (
         <label className="block sm:col-span-2">

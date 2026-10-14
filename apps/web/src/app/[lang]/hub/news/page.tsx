@@ -16,7 +16,7 @@ type NewsItem = { id: string; title: string; body: string; region: string | null
 export default async function NewsPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
-    <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-white" />}>
+    <Suspense fallback={<div className="h-64 animate-pulse rounded-[5px] bg-white" />}>
       <News t={t} locale={locale} />
     </Suspense>
   );

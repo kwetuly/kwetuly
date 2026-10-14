@@ -227,7 +227,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           <div
             role="dialog"
             aria-label={labels.title}
-            className="fixed inset-x-3 bottom-3 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-[0_30px_80px_-20px_rgba(10,31,23,0.45)] sm:inset-x-auto sm:right-5 sm:w-[400px]"
+            className="fixed inset-x-3 bottom-3 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_30px_80px_-20px_rgba(10,31,23,0.45)] sm:inset-x-auto sm:right-5 sm:w-[400px]"
           >
             <div className="pattern-kanga flex items-center justify-between gap-2 px-5 py-4 text-white">
               <p className="flex items-center gap-2 font-extrabold">
@@ -241,7 +241,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
                       if (readAloud) stopSpeaking();
                       setReadAloud(!readAloud);
                     }}
-                    className={`rounded-[10px] p-1.5 ${readAloud ? 'bg-gold text-night' : 'bg-white/10'}`}
+                    className={`rounded-[5px] p-1.5 ${readAloud ? 'bg-gold text-night' : 'bg-white/10'}`}
                     aria-label={readAloud ? labels.speakOff : labels.speakOn}
                     aria-pressed={readAloud}
                     title={readAloud ? labels.speakOff : labels.speakOn}
@@ -249,19 +249,19 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
                     {readAloud ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
                   </button>
                 )}
-                <button type="button" onClick={close} className="rounded-[10px] bg-white/10 p-1.5" aria-label="Close">
+                <button type="button" onClick={close} className="rounded-[5px] bg-white/10 p-1.5" aria-label="Close">
                   <X className="size-4" />
                 </button>
               </div>
             </div>
 
             <div className="flex-1 space-y-3 overflow-y-auto bg-surface p-4 text-sm" aria-live="polite">
-              <p className="max-w-[85%] rounded-2xl rounded-tl-sm bg-white p-3 shadow-sm">{labels.intro}</p>
+              <p className="max-w-[85%] rounded-[5px] bg-white p-3 shadow-sm">{labels.intro}</p>
               {messages.map((m, i) => (
                 <p
                   key={i}
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl p-3 shadow-sm ${
-                    m.role === 'user' ? 'ml-auto rounded-tr-sm bg-night text-white' : 'rounded-tl-sm bg-white'
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-[5px] p-3 shadow-sm ${
+                    m.role === 'user' ? 'ml-auto bg-night text-white' : 'bg-white'
                   }`}
                 >
                   {m.content ? <Linkified text={m.content} /> : <span className="animate-pulse">…</span>}

@@ -69,7 +69,7 @@ export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' |
     gold: { backgroundColor: brand.goldSoft, color: brand.night },
   }[tone];
   return (
-    <View style={{ backgroundColor: styles.backgroundColor, borderRadius: radius.full, paddingHorizontal: space.md, paddingVertical: space.xs, alignSelf: 'flex-start' }}>
+    <View style={{ backgroundColor: styles.backgroundColor, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.xs, alignSelf: 'flex-start' }}>
       <Text style={{ color: styles.color, fontSize: textSize.caption, fontWeight: '700' }}>{label}</Text>
     </View>
   );
@@ -77,10 +77,10 @@ export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' |
 
 export function Avatar({ name, uri, size = 56 }: { name: string; uri?: string | null; size?: number }) {
   if (uri) {
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size * 0.3 }} contentFit="cover" accessibilityLabel={name} />;
+    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip }} contentFit="cover" accessibilityLabel={name} />;
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.3, backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: brand.forest, fontWeight: '800', fontSize: size / 2.5 }}>{name.charAt(0)}</Text>
     </View>
   );

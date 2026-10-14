@@ -88,15 +88,15 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} className="sticky bottom-3 mt-4 space-y-2 rounded-3xl border border-line bg-white p-2 shadow-lg">
+    <form ref={formRef} onSubmit={submit} className="sticky bottom-3 mt-4 space-y-2 rounded-[5px] border border-line bg-white p-2 shadow-lg">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="chat_id" value={chatId} />
-      {error && <p className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+      {error && <p className="rounded-[5px] bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
       {file && (
-        <div className="rounded-2xl bg-surface p-3 text-sm">
+        <div className="rounded-[5px] bg-surface p-3 text-sm">
           <div className="flex items-center justify-between gap-2">
             <span className="truncate font-semibold">{file.name}</span>
-            <button type="button" onClick={clearFile} className="rounded-full p-1 hover:bg-white" aria-label="Remove">
+            <button type="button" onClick={clearFile} className="rounded-[5px] p-1 hover:bg-white" aria-label="Remove">
               <X className="size-4" aria-hidden />
             </button>
           </div>
@@ -121,7 +121,7 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
           maxLength={4000}
           rows={2}
           placeholder={labels.placeholder}
-          className="min-h-11 flex-1 resize-none rounded-2xl px-3 py-2 text-sm outline-none"
+          className="min-h-11 flex-1 resize-none rounded-[5px] px-3 py-2 text-sm outline-none"
           aria-label={labels.placeholder}
         />
         <button disabled={pending} className="btn self-end px-4 py-3" aria-label={labels.send}>

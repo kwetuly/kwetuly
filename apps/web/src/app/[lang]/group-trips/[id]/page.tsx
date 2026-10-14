@@ -65,7 +65,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           <Link href={`/${locale}/group-trips`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4" aria-hidden /> {g.title}
           </Link>
-          <p className="mt-16 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{specialtyName(trip.specialty, locale)}</p>
+          <p className="mt-16 inline-block rounded-[5px] bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{specialtyName(trip.specialty, locale)}</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-extrabold sm:text-5xl">{trip.title}</h1>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
             <span className="flex items-center gap-1.5"><CalendarDays className="size-4" aria-hidden /> {formatDates(trip, locale)}</span>
@@ -77,10 +77,10 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1fr_380px]">
         <div className="space-y-8">
-          {status.created && <p className="rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
-          {trip.cancelled && <p className="rounded-2xl bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
-          {!trip.cancelled && trip.status === 'pending' && <p className="rounded-2xl bg-sand p-4 font-semibold text-leaf-dark">{g.statusPending}</p>}
-          {trip.status === 'rejected' && <p className="rounded-2xl bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
+          {status.created && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
+          {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
+          {!trip.cancelled && trip.status === 'pending' && <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">{g.statusPending}</p>}
+          {trip.status === 'rejected' && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
 
           <p className="whitespace-pre-line text-lg leading-relaxed">{trip.description}</p>
 
@@ -103,14 +103,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         </div>
 
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
-          <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
+          <div className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
             <div className="bg-leaf px-6 py-5 text-white">
               <p className="text-3xl font-extrabold tabular-nums">{formatUsd(trip.price_per_person_usd)}</p>
               {approxTzs(trip.price_per_person_usd, rate) && <p className="text-xs font-semibold tabular-nums">{approxTzs(trip.price_per_person_usd, rate)}</p>}
               <p className="text-sm font-bold">{g.perPerson}</p>
             </div>
             <div className="space-y-4 p-6">
-              <div className="rounded-2xl bg-white p-3 text-charcoal"><SpotsBar trip={trip} t={t} /></div>
+              <div className="rounded-[5px] bg-white p-3 text-charcoal"><SpotsBar trip={trip} t={t} /></div>
               {isOrganizer ? (
                 <OrganizerTools trip={trip} t={t} locale={locale} />
               ) : (
@@ -186,7 +186,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
     ]);
     return (
       <div className="space-y-3">
-        <div className="rounded-2xl bg-mint p-4 text-forest">
+        <div className="rounded-[5px] bg-mint p-4 text-forest">
           <p className="font-semibold">✓ {g.accepted}</p>
           {contact && <p className="mt-2 text-lg font-extrabold">{contact.contact}</p>}
         </div>
@@ -209,7 +209,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
   if (mine?.status === 'requested') {
     return (
       <form action={cancelMyRequest} className="space-y-3">
-        <p className="rounded-2xl bg-white/10 p-4 font-semibold">✓ {g.requested}</p>
+        <p className="rounded-[5px] bg-white/10 p-4 font-semibold">✓ {g.requested}</p>
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="group_trip_id" value={trip.id} />
         <button className="text-sm font-semibold text-gold underline">{g.cancel}</button>
@@ -223,7 +223,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
       <h2 className="text-lg font-bold text-white">{mine?.status === 'cancelled' ? g.askAgain : g.joinTitle}</h2>
       {mine?.status === 'declined' && <p className="text-sm text-white/80">{g.declined}</p>}
       {!mine && <p className="text-sm text-white/80">{g.joinBody}</p>}
-      {status.error && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+      {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="group_trip_id" value={trip.id} />
       <input name="name" className="field" placeholder={t.profile.name} required maxLength={120} defaultValue={user.fullName ?? ''} />
@@ -270,7 +270,7 @@ async function Requests({ trip, status, t, locale }: { trip: GroupTrip; status: 
   return (
     <section id="requests" className="scroll-mt-28">
       <h2 className="text-2xl font-bold">{g.requestsTitle}</h2>
-      {status.full && <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-800">{g.full}</p>}
+      {status.full && <p className="mt-3 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{g.full}</p>}
       {requests.length === 0 && <p className="mt-3 text-muted">{g.noRequests}</p>}
       <ul className="mt-4 space-y-3">
         {requests.map((r) => (
@@ -278,7 +278,7 @@ async function Requests({ trip, status, t, locale }: { trip: GroupTrip; status: 
             <div>
               <p className="font-bold">
                 {r.traveler_name} · {r.seats} {g.people}
-                <span className="ml-2 rounded-full bg-surface px-2 py-0.5 text-xs font-semibold">{label[r.status]}</span>
+                <span className="ml-2 rounded-[5px] bg-surface px-2 py-0.5 text-xs font-semibold">{label[r.status]}</span>
               </p>
               <p className="text-sm">{r.traveler_contact}</p>
               {r.message && <p className="mt-1 whitespace-pre-line text-sm text-muted">{r.message}</p>}

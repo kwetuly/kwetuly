@@ -20,7 +20,7 @@ export default async function ConversationPage({ params, searchParams }: PagePro
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto flex max-w-3xl flex-col px-4 py-6">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <Thread params={params} searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </div>
@@ -63,7 +63,7 @@ async function Thread({
     <>
       <LiveRefresh conversationId={id} />
       <div className="flex items-center gap-3">
-        <Link href={`/${locale}/messages`} className="flex size-10 items-center justify-center rounded-full border border-line hover:border-leaf" aria-label={m.back}>
+        <Link href={`/${locale}/messages`} className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-leaf" aria-label={m.back}>
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
         <div>
@@ -76,18 +76,18 @@ async function Thread({
         </div>
       </div>
 
-      <p className={`mt-4 flex gap-2 rounded-2xl p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-leaf-dark'}`}>
+      <p className={`mt-4 flex gap-2 rounded-[5px] p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-leaf-dark'}`}>
         {conversation.contact_unlocked ? <ShieldCheck className="size-4 shrink-0" aria-hidden /> : <LockKeyhole className="size-4 shrink-0" aria-hidden />}
         {conversation.contact_unlocked ? m.unlockedNote : m.hiddenNote}
       </p>
-      {status.reported && <p className="mt-3 rounded-2xl bg-mint p-3 text-sm font-semibold text-forest">{m.reported}</p>}
+      {status.reported && <p className="mt-3 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{m.reported}</p>}
 
-      <ol className="mt-4 flex-1 space-y-3 rounded-3xl bg-surface p-4" aria-live="polite">
+      <ol className="mt-4 flex-1 space-y-3 rounded-[5px] bg-surface p-4" aria-live="polite">
         {(messages ?? []).map((msg) => {
           const mine = msg.sender_id === user.id;
           return (
             <li key={msg.id} className={`group flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
-              <p className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm shadow-sm ${mine ? 'rounded-br-sm bg-night text-white' : 'rounded-bl-sm bg-white'}`}>
+              <p className={`max-w-[85%] whitespace-pre-wrap rounded-[5px] px-4 py-2.5 text-sm shadow-sm ${mine ? ' bg-night text-white' : ' bg-white'}`}>
                 {msg.body}
               </p>
               <span className="mt-1 flex items-center gap-2 text-[11px] text-muted">

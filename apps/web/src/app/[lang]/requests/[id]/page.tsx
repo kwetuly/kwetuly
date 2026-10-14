@@ -24,7 +24,7 @@ export default async function RequestPage({ params, searchParams }: PageProps<'/
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <View params={params} searchParams={searchParams} t={t} locale={locale} />
       </Suspense>
     </div>
@@ -50,8 +50,8 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
       <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-leaf">
         <ArrowLeft className="size-4" aria-hidden /> {r.title}
       </Link>
-      {status.posted && <p className="mt-4 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {r.posted}</p>}
-      {status.error && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-red-800">{r.error}</p>}
+      {status.posted && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.posted}</p>}
+      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{r.error}</p>}
 
       <RequestSummary request={request} isOwner={isOwner} t={t} locale={locale} />
 
@@ -78,7 +78,7 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
           <h1 className="mt-1 text-3xl font-extrabold">{request.title}</h1>
           {!isOwner && <p className="mt-1 text-muted">{t.offers.from} {request.traveler_name}</p>}
         </div>
-        <span className={`rounded-full px-3 py-1 text-sm font-bold ${request.status === 'open' ? 'bg-mint text-forest' : 'bg-surface text-muted'}`}>
+        <span className={`rounded-[5px] px-3 py-1 text-sm font-bold ${request.status === 'open' ? 'bg-mint text-forest' : 'bg-surface text-muted'}`}>
           {r.status[request.status]}
         </span>
       </div>
@@ -92,9 +92,9 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
       <p className="mt-5 whitespace-pre-line leading-relaxed">{request.details}</p>
       {(request.expertise.length > 0 || request.female_guide) && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {request.female_guide && <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">{r.femaleGuide}</span>}
+          {request.female_guide && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">{r.femaleGuide}</span>}
           {request.expertise.map((id) => (
-            <span key={id} className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">
+            <span key={id} className="rounded-[5px] bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">
               {GUIDE_EXPERTISE.find((e) => e.id === id)?.label[locale] ?? id}
             </span>
           ))}
@@ -134,7 +134,7 @@ function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
             {offer.guides && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-xs font-bold text-forest">
+              <span className="inline-flex items-center gap-1 rounded-[5px] bg-mint px-2 py-0.5 text-xs font-bold text-forest">
                 <BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}
               </span>
             )}
@@ -152,7 +152,7 @@ function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate
         {offer.deposit_percent > 0 && offer.valid_until ? ' · ' : ''}
         {offer.valid_until && (offer.valid_until < today() ? <span className="text-red-700">{r.expired}</span> : `${r.validUntil} ${date.format(new Date(offer.valid_until))}`)}
       </p>
-      <details className="mt-3 rounded-2xl bg-surface px-4 py-3 text-sm">
+      <details className="mt-3 rounded-[5px] bg-surface px-4 py-3 text-sm">
         <summary className="cursor-pointer font-semibold">{r.showItinerary}</summary>
         <p className="mt-2 whitespace-pre-line leading-relaxed">{offer.itinerary}</p>
         {offer.excludes && <p className="mt-2"><span className="font-semibold">{r.excludes}:</span> {offer.excludes}</p>}
@@ -274,9 +274,9 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
     <section id="offer" className="mt-8 scroll-mt-28">
       <h2 className="text-2xl font-bold">{offer ? o.yourOffer : o.makeOffer}</h2>
       <p className="mt-1 text-sm text-muted">{o.competing}: {request.offers_count}</p>
-      {status.offerSent && <p className="mt-3 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {o.sent}</p>}
-      {status.offerError && <p className="mt-3 rounded-2xl bg-red-50 p-4 text-red-800">{t.requests.error}</p>}
-      {banner && <p className="mt-3 rounded-2xl bg-surface p-4 font-semibold">{banner}</p>}
+      {status.offerSent && <p className="mt-3 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {o.sent}</p>}
+      {status.offerError && <p className="mt-3 rounded-[5px] bg-red-50 p-4 text-red-800">{t.requests.error}</p>}
+      {banner && <p className="mt-3 rounded-[5px] bg-surface p-4 font-semibold">{banner}</p>}
 
       {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
         <div className="mt-4">

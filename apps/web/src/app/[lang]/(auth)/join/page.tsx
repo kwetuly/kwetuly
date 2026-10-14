@@ -48,20 +48,20 @@ async function JoinForm({
   const selected = roles.some((r) => r.id === params.role) ? (params.role as string) : 'guide';
 
   if (params.sent) {
-    return <p className="mt-8 rounded-3xl bg-mint p-6 text-lg font-semibold text-forest">{t.auth.checkEmail}</p>;
+    return <p className="mt-8 rounded-[5px] bg-mint p-6 text-lg font-semibold text-forest">{t.auth.checkEmail}</p>;
   }
 
   return (
     <div className="card mt-8 space-y-5">
     <SocialSignIn locale={locale} t={t} role={selected} />
     <form action={signUp} className="space-y-5">
-      {params.error && <p className="rounded-2xl bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
+      {params.error && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <fieldset className="grid gap-3 sm:grid-cols-3">
         {roles.map(({ id, Icon }) => (
           <label key={id} className="cursor-pointer">
             <input type="radio" name="role" value={id} defaultChecked={selected === id} className="peer sr-only" />
-            <span className="flex h-full flex-col gap-2 rounded-2xl border-2 border-line p-4 transition peer-checked:border-leaf peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-mint">
+            <span className="flex h-full flex-col gap-2 rounded-[5px] border-2 border-line p-4 transition peer-checked:border-leaf peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-mint">
               <Icon className="size-6 text-leaf" aria-hidden />
               <span className="font-bold">{t.join[id].title}</span>
               <span className="text-xs text-muted">{t.join[id].body}</span>

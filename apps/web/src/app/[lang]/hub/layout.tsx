@@ -32,7 +32,7 @@ export default async function HubLayout({ children }: LayoutProps<'/[lang]/hub'>
           </nav>
         </div>
       </div>
-      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-3xl bg-white" />}>
+      <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-6xl animate-pulse rounded-[5px] bg-white" />}>
         <HubGate locale={locale}>{children}</HubGate>
       </Suspense>
     </div>

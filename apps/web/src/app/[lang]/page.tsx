@@ -58,7 +58,7 @@ export default async function HomePage() {
             return (
               <div
                 key={section.slug}
-                className={`group relative isolate flex min-h-[340px] flex-col justify-end overflow-hidden rounded-3xl p-6 text-white ${index === 0 ? 'sm:col-span-2 lg:row-span-2 lg:min-h-[700px]' : ''}`}
+                className={`group relative isolate flex min-h-[340px] flex-col justify-end overflow-hidden rounded-[5px] p-6 text-white ${index === 0 ? 'sm:col-span-2 lg:row-span-2 lg:min-h-[700px]' : ''}`}
               >
                 <Image
                   src={photoUrl(photo, index === 0 ? 1400 : 900)}
@@ -68,7 +68,7 @@ export default async function HomePage() {
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/60 to-night/10" />
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-leaf">
+                <span className="flex size-12 items-center justify-center rounded-[5px] bg-leaf">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
@@ -120,7 +120,7 @@ export default async function HomePage() {
 
       {/* Guides + AFCON */}
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-16 lg:grid-cols-2">
-        <div className="relative isolate overflow-hidden rounded-3xl p-8 text-white sm:p-10">
+        <div className="relative isolate overflow-hidden rounded-[5px] p-8 text-white sm:p-10">
           <Image src={photoUrl(PHOTOS.kiboSaddleHikers, 1200)} alt={PHOTOS.kiboSaddleHikers.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="-z-10 object-cover" />
           <div className="absolute inset-0 -z-10 bg-gradient-to-br from-forest/95 via-night/85 to-night/40" />
           <h2 className="text-3xl font-extrabold">{t.home.forGuidesTitle}</h2>
@@ -131,7 +131,7 @@ export default async function HomePage() {
         </div>
         <Link
           href={`/${locale}/discover/afcon-2027`}
-          className="group relative overflow-hidden rounded-3xl bg-gold p-8 text-night sm:p-10"
+          className="group relative overflow-hidden rounded-[5px] bg-gold p-8 text-night sm:p-10"
         >
           <p className="font-bold">{t.home.afconDates}</p>
           <h2 className="mt-3 max-w-sm text-3xl font-extrabold">{t.home.afconTitle}</h2>

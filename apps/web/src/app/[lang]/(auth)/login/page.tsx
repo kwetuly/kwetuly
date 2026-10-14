@@ -55,7 +55,7 @@ async function ErrorNote({
   message: string;
 }) {
   const params = await searchParams;
-  return params.error ? <p className="mt-6 rounded-brand bg-red-50 p-4 text-red-800">{message}</p> : null;
+  return params.error ? <p className="mt-6 rounded-[5px] bg-red-50 p-4 text-red-800">{message}</p> : null;
 }
 
 async function NextField({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

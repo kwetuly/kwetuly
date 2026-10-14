@@ -73,12 +73,12 @@ export function RecentlyViewed({ title, clearLabel }: { title: string; clearLabe
       <ul className="mt-5 flex snap-x gap-4 overflow-x-auto pb-2">
         {items.map((item) => (
           <li key={item.href} className="w-64 shrink-0 snap-start">
-            <Link href={item.href} className="group flex items-center gap-3 rounded-2xl border border-line bg-white p-3 transition hover:border-leaf">
+            <Link href={item.href} className="group flex items-center gap-3 rounded-[5px] border border-line bg-white p-3 transition hover:border-leaf">
               {item.image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={item.image} alt="" className="size-14 shrink-0 rounded-xl object-cover" />
+                <img src={item.image} alt="" className="size-14 shrink-0 rounded-[5px] object-cover" />
               ) : (
-                <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-mint text-xl font-bold text-forest" aria-hidden>
+                <span className="flex size-14 shrink-0 items-center justify-center rounded-[5px] bg-mint text-xl font-bold text-forest" aria-hidden>
                   {item.title.charAt(0)}
                 </span>
               )}

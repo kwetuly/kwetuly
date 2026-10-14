@@ -35,10 +35,10 @@ export function MessageComposer({ conversationId, locale, labels }: { conversati
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} className="sticky bottom-3 mt-4 space-y-2 rounded-3xl border border-line bg-white p-2 shadow-lg">
+    <form ref={formRef} onSubmit={submit} className="sticky bottom-3 mt-4 space-y-2 rounded-[5px] border border-line bg-white p-2 shadow-lg">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="conversation_id" value={conversationId} />
-      {error && <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+      {error && <p role="alert" className="rounded-[5px] bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
       <div className="flex gap-2">
         <textarea
           ref={bodyRef}
@@ -47,7 +47,7 @@ export function MessageComposer({ conversationId, locale, labels }: { conversati
           maxLength={4000}
           rows={2}
           placeholder={labels.placeholder}
-          className="min-h-12 flex-1 resize-none rounded-2xl px-3 py-2 text-sm outline-none"
+          className="min-h-12 flex-1 resize-none rounded-[5px] px-3 py-2 text-sm outline-none"
           aria-label={labels.placeholder}
         />
         <button disabled={pending} className="btn self-end px-4 py-3" aria-label={labels.send}>

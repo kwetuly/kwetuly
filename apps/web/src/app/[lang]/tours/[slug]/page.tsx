@@ -59,12 +59,12 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
           </Link>
           <div className="mt-16 flex flex-wrap gap-2">
             {trip.is_signature && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gold px-3 py-1 text-xs font-bold text-night">
+              <span className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1 text-xs font-bold text-night">
                 <Sparkles className="size-3" aria-hidden /> {tt.signature}
               </span>
             )}
-            {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-leaf">{tt.draft}</span>}
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
+            {trip.status !== 'published' && <span className="rounded-[5px] bg-white px-3 py-1 text-xs font-bold text-leaf">{tt.draft}</span>}
+            <span className="rounded-[5px] bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
               {TRIP_CIRCUITS.find((c) => c.id === trip.circuit)?.[locale]}
             </span>
           </div>
@@ -80,13 +80,13 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1fr_380px]">
         <div className="space-y-10">
-          {trip.promo_text && <p className="rounded-2xl bg-sand p-4 font-semibold text-leaf-dark">✦ {trip.promo_text}</p>}
+          {trip.promo_text && <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">✦ {trip.promo_text}</p>}
 
           <section>
             <h2 className="text-xl font-bold">{tt.highlights}</h2>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {trip.highlights.map((h) => (
-                <li key={h} className="flex gap-2 rounded-2xl bg-surface p-3 text-sm font-medium">
+                <li key={h} className="flex gap-2 rounded-[5px] bg-surface p-3 text-sm font-medium">
                   <Sparkles className="mt-0.5 size-4 shrink-0 text-leaf" aria-hidden /> {h}
                 </li>
               ))}
@@ -99,7 +99,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               {trip.itinerary.map((d, i) => (
                 <li key={`${d.day}-${i}`} className="relative flex gap-4 pb-6 last:pb-0">
                   <div className="flex flex-col items-center">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-leaf text-sm font-extrabold text-white">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf text-sm font-extrabold text-white">
                       {d.day}
                     </span>
                     {i < trip.itinerary.length - 1 && <span className="w-0.5 flex-1 bg-line" />}
@@ -139,7 +139,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
                 {MONTHS[locale].map((m, i) => (
                   <span
                     key={m}
-                    className={`rounded-lg py-1.5 text-center text-xs font-bold ${trip.best_months.includes(i + 1) ? 'bg-forest text-white' : 'bg-surface text-muted'}`}
+                    className={`rounded-[5px] py-1.5 text-center text-xs font-bold ${trip.best_months.includes(i + 1) ? 'bg-forest text-white' : 'bg-surface text-muted'}`}
                   >
                     {m}
                   </span>
@@ -150,7 +150,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               <h2 className="text-lg font-bold">{tt.destinations}</h2>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {trip.destinations.map((d) => (
-                  <li key={d} className="rounded-full border border-line px-3 py-1 text-sm">{d}</li>
+                  <li key={d} className="rounded-[5px] border border-line px-3 py-1 text-sm">{d}</li>
                 ))}
               </ul>
             </div>
@@ -163,7 +163,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
         <aside id="enquire" className="h-fit lg:sticky lg:top-24">
           <EnquiryCard trip={trip} status={status} t={t} locale={locale} />
-          <Link href={`/${locale}/calls`} className="mt-4 flex items-center gap-2 rounded-2xl border border-line p-4 text-sm font-semibold hover:border-leaf">
+          <Link href={`/${locale}/calls`} className="mt-4 flex items-center gap-2 rounded-[5px] border border-line p-4 text-sm font-semibold hover:border-leaf">
             <Video className="size-5 text-leaf" aria-hidden /> {tt.talkToGuide}
           </Link>
         </aside>
@@ -195,7 +195,7 @@ async function MoreTrips({ trip, t, locale }: { trip: Trip; t: Dictionary; local
 function EnquiryCard({ trip, status, t, locale }: { trip: Trip; status: Record<string, string | string[] | undefined>; t: Dictionary; locale: Locale }) {
   const tt = t.tours;
   return (
-    <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
+    <div className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
       <div className="bg-leaf px-6 py-5 text-white">
         <p className="text-sm font-bold">{trip.price_from_usd != null ? tt.priceFrom : tt.enquireTitle}</p>
         <p className="text-3xl font-extrabold tabular-nums">{trip.price_from_usd != null ? formatUsd(trip.price_from_usd) : tt.priceOnRequest}</p>
@@ -203,10 +203,10 @@ function EnquiryCard({ trip, status, t, locale }: { trip: Trip; status: Record<s
       <div className="p-6">
         <p className="text-sm text-white/80">{tt.enquireBody}</p>
         {status.sent ? (
-          <p className="mt-4 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {tt.sent}</p>
+          <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {tt.sent}</p>
         ) : (
           <form action={enquireTrip} className="mt-4 space-y-3 text-charcoal">
-            {status.error && <p className="rounded-2xl bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={trip.slug} />
             <input type="hidden" name="trip_id" value={trip.id} />

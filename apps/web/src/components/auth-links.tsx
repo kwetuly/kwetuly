@@ -45,7 +45,7 @@ export async function AuthLinks() {
       )}
       <Link
         href={`/${locale}/messages`}
-        className="flex size-10 items-center justify-center rounded-full border border-line hover:border-leaf"
+        className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-leaf"
         aria-label={t.messages.title}
         title={t.messages.title}
       >
