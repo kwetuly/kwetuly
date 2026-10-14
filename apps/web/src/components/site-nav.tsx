@@ -40,7 +40,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                         href={itemHref(locale, section, item)}
                         className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand"
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-night shadow-sm">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf shadow-sm">
                           <Icon name={item.icon} className="size-5 text-gold" />
                         </span>
                         <span>
@@ -99,7 +99,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     className="flex w-full items-center gap-3 py-4 text-left text-lg font-semibold"
                     aria-expanded={isOpen}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-white/15 text-gold">
+                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-leaf text-gold">
                       <Icon name={section.icon} className="size-5" />
                     </span>
                     {section.label[locale]}
