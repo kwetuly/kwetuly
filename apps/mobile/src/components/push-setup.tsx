@@ -1,14 +1,17 @@
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { useSession } from '@/lib/auth';
-import { appPathFor, registerForPush } from '@/lib/push';
+import { appPathFor, Notifications, registerForPush } from '@/lib/push';
 
 // Registers this phone for alerts once signed in (only if allowed before), and opens the right screen when an alert is tapped.
 export function PushSetup() {
+  return Notifications ? <PushListener notifications={Notifications} /> : null;
+}
+
+function PushListener({ notifications }: { notifications: NonNullable<typeof Notifications> }) {
   const { session } = useSession();
   const userId = session?.user.id;
-  const response = Notifications.useLastNotificationResponse();
+  const response = notifications.useLastNotificationResponse();
 
   useEffect(() => {
     if (userId) registerForPush(false);

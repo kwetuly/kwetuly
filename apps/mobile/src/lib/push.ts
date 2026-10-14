@@ -1,11 +1,15 @@
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import type { Href } from 'expo-router';
 import { supabase } from './supabase';
 
+// Expo Go on Android throws as soon as expo-notifications is loaded (SDK 53+), so only load it elsewhere.
+export const pushSupported = !(process.env.EXPO_OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient);
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+export const Notifications: typeof import('expo-notifications') | null = pushSupported ? require('expo-notifications') : null;
+
 // Show alerts as banners while the app is open too.
-Notifications.setNotificationHandler({
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
 });
 
@@ -17,7 +21,7 @@ let registeredToken: string | null = null;
 // remote push since SDK 53, so this reports "unavailable" there instead of failing.
 export async function registerForPush(ask: boolean): Promise<PushState> {
   const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
-  if (!Device.isDevice || !projectId) return 'unavailable';
+  if (!Notifications || !Device.isDevice || !projectId) return 'unavailable';
   try {
     if (process.env.EXPO_OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', { name: 'Rafrika', importance: Notifications.AndroidImportance.HIGH });
