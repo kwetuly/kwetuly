@@ -20,7 +20,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
     <>
       <PhotoHero photo="saddleHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <UsersRound className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.groups.title}</h1>
@@ -43,7 +43,7 @@ async function List({ searchParams, t, locale }: { searchParams: Promise<Record<
   const type = typeof raw === 'string' && GUIDE_SPECIALTIES.some((s) => s.id === raw) ? raw : undefined;
   const trips = await listGroupTrips(type);
   const chip = (active: boolean) =>
-    `rounded-[5px] px-4 py-2 text-sm font-semibold ${active ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'}`;
+    `rounded-[5px] px-4 py-2 text-sm font-semibold ${active ? 'bg-night text-gold' : 'border border-line bg-white hover:border-leaf'}`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">

@@ -37,9 +37,9 @@ export default async function HomePage() {
           </div>
           {stats.guides >= STATS_FROM.guides && (
             <p className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-white/85">
-              <span><strong className="text-base tabular-nums text-white">{stats.guides}</strong> {t.explore.statGuides}</span>
+              <span><strong className="text-base tabular-nums text-gold">{stats.guides}</strong> {t.explore.statGuides}</span>
               {stats.reviews >= STATS_FROM.reviews && (
-                <span><strong className="text-base tabular-nums text-white">{stats.reviews}</strong> {t.explore.statReviews}</span>
+                <span><strong className="text-base tabular-nums text-gold">{stats.reviews}</strong> {t.explore.statReviews}</span>
               )}
             </p>
           )}
@@ -68,7 +68,7 @@ export default async function HomePage() {
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/60 to-night/10" />
-                <span className="flex size-12 items-center justify-center rounded-[5px] bg-leaf">
+                <span className="flex size-12 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
@@ -78,9 +78,9 @@ export default async function HomePage() {
                     <li key={item.slug}>
                       <Link
                         href={itemHref(locale, section, item)}
-                        className="inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
+                        className="group/chip inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
                       >
-                        <Icon name={item.icon} className="size-4" />
+                        <Icon name={item.icon} className="size-4 text-gold group-hover/chip:text-leaf" />
                         {item.label[locale]}
                       </Link>
                     </li>

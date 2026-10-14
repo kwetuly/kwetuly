@@ -22,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
     <>
       <PhotoHero photo="buffaloCar">
         <div className="mx-auto max-w-6xl px-4 pb-20 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <Handshake className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>

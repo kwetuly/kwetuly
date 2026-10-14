@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '@/components/language-switcher';
 import { SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
+import { Icon } from '@/components/icon';
 import { SITE_URL } from '@/lib/site';
 import { PHOTOS, photoUrl } from '@/lib/photos';
 import { itemHref } from '@/lib/menu';
@@ -79,11 +80,14 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             </div>
             {MENU.map((section) => (
               <div key={section.slug}>
-                <p className="text-sm font-bold text-gold">{section.label[locale]}</p>
+                <p className="flex items-center gap-2 text-sm font-bold text-gold">
+                  <Icon name={section.icon} className="size-4" />
+                  {section.label[locale]}
+                </p>
                 <ul className="mt-3 space-y-2 text-sm text-white/75">
                   {section.items.map((item) => (
                     <li key={item.slug}>
-                      <Link href={itemHref(locale, section, item)} className="hover:text-white">
+                      <Link href={itemHref(locale, section, item)} className="transition hover:text-gold">
                         {item.label[locale]}
                       </Link>
                     </li>

@@ -30,7 +30,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
             </button>
             <div className={`invisible absolute top-full z-30 ${section.items.length > 6 ? 'left-0 w-[42rem]' : 'left-1/2 w-[22rem] -translate-x-1/2'} translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}>
               <div className="overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(28,58,46,0.25)]">
-                <p className="bg-night px-5 py-3 text-xs font-medium text-mint">
+                <p className="bg-night px-5 py-3 text-xs font-medium text-gold">
                   {section.tagline[locale]}
                 </p>
                 <ul className={`p-2 ${section.items.length > 6 ? 'grid grid-cols-2' : ''}`}>
@@ -85,7 +85,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
               className="flex size-10 items-center justify-center rounded-[5px] bg-white/10"
               aria-label="Close menu"
             >
-              <X className="size-5" />
+              <X className="size-5 text-gold" />
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 pb-10">
@@ -99,7 +99,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     className="flex w-full items-center gap-3 py-4 text-left text-lg font-semibold"
                     aria-expanded={isOpen}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-leaf">
+                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
                       <Icon name={section.icon} className="size-5" />
                     </span>
                     {section.label[locale]}
@@ -112,7 +112,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                           <Link
                             href={itemHref(locale, section, item)}
                             onClick={() => setOpen(false)}
-                            className="block rounded-[5px] px-3 py-2.5 text-white/85 hover:bg-white/10"
+                            className="block rounded-[5px] px-3 py-2.5 text-white/85 hover:bg-white/10 hover:text-gold"
                           >
                             {item.label[locale]}
                           </Link>

@@ -92,7 +92,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
               <Link
                 href={`/${locale}/guides?language=${l.code}`}
                 className={`inline-block rounded-[5px] px-3 py-1.5 text-sm font-semibold ${
-                  filters.language === l.code ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'
+                  filters.language === l.code ? 'bg-night text-gold' : 'border border-line bg-white hover:border-leaf'
                 }`}
               >
                 {l.name}

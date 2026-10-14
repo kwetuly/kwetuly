@@ -46,10 +46,10 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
       <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 pb-24 pt-10">
           <Link href={`/${locale}/${section.slug}`} className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
-            <ArrowLeft className="size-4" aria-hidden /> {t.explore.back} {section.label[locale]}
+            <ArrowLeft className="size-4 text-gold" aria-hidden /> {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-[5px] bg-leaf">
+            <span className="flex size-16 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>

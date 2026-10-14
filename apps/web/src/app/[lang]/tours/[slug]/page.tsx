@@ -55,7 +55,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
         <div className="absolute inset-0 bg-gradient-to-t from-night via-night/60 to-night/10" />
         <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/tours`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
-            <ArrowLeft className="size-4" aria-hidden /> {tt.title}
+            <ArrowLeft className="size-4 text-gold" aria-hidden /> {tt.title}
           </Link>
           <div className="mt-16 flex flex-wrap gap-2">
             {trip.is_signature && (
@@ -71,9 +71,9 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
           <h1 className="mt-3 max-w-3xl text-4xl font-extrabold sm:text-5xl">{tripTitle(trip, locale)}</h1>
           <p className="mt-3 max-w-2xl text-lg text-white/85">{tripSummary(trip, locale)}</p>
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-            <span className="flex items-center gap-1.5"><Clock className="size-4" aria-hidden /> {trip.days} {trip.days === 1 ? tt.day : tt.days}</span>
-            {trip.start_from && <span className="flex items-center gap-1.5"><MapPin className="size-4" aria-hidden /> {tt.startsFrom} {trip.start_from}</span>}
-            <span className="flex items-center gap-1.5"><ShieldCheck className="size-4" aria-hidden /> {TRIP_OPERATORS[trip.operated_by][locale]}</span>
+            <span className="flex items-center gap-1.5"><Clock className="size-4 text-gold" aria-hidden /> {trip.days} {trip.days === 1 ? tt.day : tt.days}</span>
+            {trip.start_from && <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" aria-hidden /> {tt.startsFrom} {trip.start_from}</span>}
+            <span className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-gold" aria-hidden /> {TRIP_OPERATORS[trip.operated_by][locale]}</span>
           </div>
         </div>
       </section>

@@ -63,14 +63,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/70 to-night/20" />
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/group-trips`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
-            <ArrowLeft className="size-4" aria-hidden /> {g.title}
+            <ArrowLeft className="size-4 text-gold" aria-hidden /> {g.title}
           </Link>
           <p className="mt-16 inline-block rounded-[5px] bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{specialtyName(trip.specialty, locale)}</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-extrabold sm:text-5xl">{trip.title}</h1>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
-            <span className="flex items-center gap-1.5"><CalendarDays className="size-4" aria-hidden /> {formatDates(trip, locale)}</span>
-            <span className="flex items-center gap-1.5"><MapPin className="size-4" aria-hidden /> {trip.region}</span>
-            <span className="flex items-center gap-1.5"><Users className="size-4" aria-hidden /> {trip.seats_taken}/{trip.max_people}</span>
+            <span className="flex items-center gap-1.5"><CalendarDays className="size-4 text-gold" aria-hidden /> {formatDates(trip, locale)}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" aria-hidden /> {trip.region}</span>
+            <span className="flex items-center gap-1.5"><Users className="size-4 text-gold" aria-hidden /> {trip.seats_taken}/{trip.max_people}</span>
           </div>
         </div>
       </section>

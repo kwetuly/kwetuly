@@ -42,7 +42,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
     <>
       <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <Icon name={section.icon} className="size-7" />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{section.label[locale]}</h1>

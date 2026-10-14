@@ -61,7 +61,7 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
   const trips = await listTrips(filters);
 
   const chip = (active: boolean) =>
-    `rounded-[5px] px-4 py-2 text-sm font-semibold transition ${active ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'}`;
+    `rounded-[5px] px-4 py-2 text-sm font-semibold transition ${active ? 'bg-night text-gold' : 'border border-line bg-white hover:border-leaf'}`;
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
