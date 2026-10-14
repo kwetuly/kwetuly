@@ -20,7 +20,7 @@ export default async function RequestsPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <>
-      <PhotoHero photo="kiliHikers">
+      <PhotoHero photo="kiliHeather">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <Gavel className="size-7" aria-hidden />

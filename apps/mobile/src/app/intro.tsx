@@ -5,7 +5,8 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LOCALES, PHOTOS, photoUrl } from '@rafrika/shared';
+import { LOCALES, PHOTOS } from '@rafrika/shared';
+import { photoSource } from '@/lib/photos';
 import { useI18n } from '@/lib/i18n';
 import { markIntroSeen } from '@/lib/intro';
 import { brand, radius, space, textSize } from '@/theme';
@@ -22,8 +23,8 @@ export default function IntroScreen() {
   const [page, setPage] = useState(0);
 
   const slides = [
-    { photo: PHOTOS.kiliHikers, title: i.s1Title, body: i.s1Body },
-    { photo: PHOTOS.lions, title: i.s2Title, body: i.s2Body },
+    { photo: PHOTOS.saddleHikers, title: i.s1Title, body: i.s1Body },
+    { photo: PHOTOS.leopardTree, title: i.s2Title, body: i.s2Body },
     { photo: PHOTOS.dhowSunset, title: i.s3Title, body: i.s3Body },
   ];
   const last = page === slides.length - 1;
@@ -46,7 +47,7 @@ export default function IntroScreen() {
       >
         {slides.map((slide, index) => (
           <View key={slide.photo.id} style={{ width, height }}>
-            <Image source={{ uri: photoUrl(slide.photo, 1200) }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
+            <Image source={photoSource(slide.photo)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
             <LinearGradient
               colors={['rgba(10,31,23,0.15)', 'rgba(10,31,23,0.6)', brand.night, brand.night]}
               locations={[0, 0.35, 0.62, 1]}

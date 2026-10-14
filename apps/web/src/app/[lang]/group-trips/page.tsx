@@ -18,7 +18,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <>
-      <PhotoHero photo="kiliHikers">
+      <PhotoHero photo="saddleHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
           <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
             <UsersRound className="size-7" aria-hidden />

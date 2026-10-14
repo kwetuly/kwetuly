@@ -2,7 +2,8 @@ import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { photoUrl, tripPhoto, formatUsd } from '@rafrika/shared';
+import { tripPhoto, formatUsd } from '@rafrika/shared';
+import { photoSource } from '@/lib/photos';
 import { BottomBar, Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { listTours } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -23,7 +24,7 @@ export default function TourScreen() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{title}</Stack.Title>
-      <Image source={{ uri: photoUrl(tripPhoto(tour.slug, tour.categories), 1200) }} style={{ height: 220 }} contentFit="cover" />
+      <Image source={photoSource(tripPhoto(tour.slug, tour.categories))} style={{ height: 220 }} contentFit="cover" />
       <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>
           <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{title}</Text>

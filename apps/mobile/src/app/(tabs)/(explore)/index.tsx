@@ -2,18 +2,19 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS, photoUrl } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@rafrika/shared';
 import { GroupTripCard } from '@/components/cards';
 import { Chip, SectionTitle } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
+import { photoSource } from '@/lib/photos';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 export default function ExploreScreen() {
   const { t, locale } = useI18n();
   const groups = useQuery({ queryKey: ['group-trips'], queryFn: listGroupTrips });
-  const hero = PHOTOS.safariSunset;
+  const hero = PHOTOS.saddleHikers;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: space.xxl, gap: space.xl }} style={{ backgroundColor: colors.background }}>
@@ -21,7 +22,7 @@ export default function ExploreScreen() {
 
       {/* Hero */}
       <View style={{ marginHorizontal: space.lg, height: 260, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
-        <Image source={{ uri: photoUrl(hero, 1200) }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
+        <Image source={photoSource(hero)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
         <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: 'linear-gradient(to top, rgba(10,31,23,0.95), rgba(10,31,23,0.1))' }}>
           <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.body }}>{t.home.eyebrow}</Text>
           <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.title1, lineHeight: 32 }}>{t.home.title}</Text>

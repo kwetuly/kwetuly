@@ -3,7 +3,8 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { photoUrl, specialtyPhoto, formatUsd } from '@rafrika/shared';
+import { specialtyPhoto, formatUsd } from '@rafrika/shared';
+import { photoSource } from '@/lib/photos';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
@@ -76,7 +77,7 @@ export default function GroupTripScreen() {
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{g.title}</Stack.Title>
-      <Image source={{ uri: photoUrl(specialtyPhoto(g.specialty), 1200) }} style={{ height: 220 }} contentFit="cover" />
+      <Image source={photoSource(specialtyPhoto(g.specialty))} style={{ height: 220 }} contentFit="cover" />
 
       <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>

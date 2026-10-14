@@ -12,7 +12,7 @@ const HOME_CARD_LINKS = 5;
 
 export default async function HomePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
-  const hero = PHOTOS.safariSunset;
+  const hero = PHOTOS.kiliCampMawenzi;
 
   return (
     <>
@@ -22,7 +22,7 @@ export default async function HomePage() {
         {/* Shade only the side the text sits on, so the landscape stays visible. */}
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night/90 via-night/55 to-transparent" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night/60 via-transparent to-transparent" />
-        <div className="mx-auto flex min-h-[78svh] max-w-7xl flex-col justify-end px-4 pb-14 pt-24 sm:pb-20">
+        <div className="mx-auto flex min-h-[min(78svh,760px)] max-w-7xl flex-col justify-end px-4 pb-14 pt-24 sm:pb-20">
           <p lang="sw" className="text-lg font-semibold text-gold">{t.home.eyebrow}</p>
           <h1 className="mt-3 max-w-3xl text-balance text-[2.75rem] font-extrabold leading-[1.02] tracking-tight sm:text-7xl">
             {t.home.title}
@@ -107,7 +107,7 @@ export default async function HomePage() {
       {/* Guides + AFCON */}
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-16 lg:grid-cols-2">
         <div className="relative isolate overflow-hidden rounded-3xl p-8 text-white sm:p-10">
-          <Image src={photoUrl(PHOTOS.kiliHikers, 1200)} alt={PHOTOS.kiliHikers.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="-z-10 object-cover" />
+          <Image src={photoUrl(PHOTOS.kiboSaddleHikers, 1200)} alt={PHOTOS.kiboSaddleHikers.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="-z-10 object-cover" />
           <div className="absolute inset-0 -z-10 bg-gradient-to-br from-forest/95 via-night/85 to-night/40" />
           <h2 className="text-3xl font-extrabold">{t.home.forGuidesTitle}</h2>
           <p className="mt-3 max-w-md text-white/85">{t.home.forGuidesBody}</p>

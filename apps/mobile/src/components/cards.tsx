@@ -1,7 +1,8 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { photoUrl, specialtyPhoto, tripPhoto, formatUsd } from '@rafrika/shared';
+import { specialtyPhoto, tripPhoto, formatUsd, type Photo } from '@rafrika/shared';
+import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
@@ -53,10 +54,10 @@ export function GuideCard({ guide }: { guide: Guide }) {
   );
 }
 
-function PhotoHeader({ uri, label, price }: { uri: string; label: string; price?: string }) {
+function PhotoHeader({ photo, label, price }: { photo: Photo; label: string; price?: string }) {
   return (
     <View style={{ height: 160, marginHorizontal: -16, marginTop: -16, marginBottom: space.xxs, overflow: 'hidden', borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card }}>
-      <Image source={{ uri }} style={{ flex: 1 }} contentFit="cover" transition={200} />
+      <Image source={photoSource(photo, 900)} style={{ flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
       <View style={{ position: 'absolute', top: 12, left: 12 }}>
         <Badge label={label} tone="gold" />
       </View>
@@ -89,7 +90,7 @@ export function GroupTripCard({ trip }: { trip: GroupTrip }) {
     <Link href={`/group-trip/${trip.id}`} asChild>
       <Pressable accessibilityRole="link">
         <Card>
-          <PhotoHeader uri={photoUrl(specialtyPhoto(trip.specialty), 900)} label={specialtyName(trip.specialty, locale)} price={`${formatUsd(trip.price_per_person_usd)} ${t.groups.perPerson}`} />
+          <PhotoHeader photo={specialtyPhoto(trip.specialty)} label={specialtyName(trip.specialty, locale)} price={`${formatUsd(trip.price_per_person_usd)} ${t.groups.perPerson}`} />
           <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{trip.title}</Text>
           <Text style={{ color: colors.secondaryLabel }}>
             {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.region}
@@ -114,7 +115,7 @@ export function TourCard({ tour }: { tour: Tour }) {
       <Pressable accessibilityRole="link">
         <Card>
           <PhotoHeader
-            uri={photoUrl(tripPhoto(tour.slug, tour.categories), 900)}
+            photo={tripPhoto(tour.slug, tour.categories)}
             label={`${tour.days} ${tour.days === 1 ? t.tours.day : t.tours.days}`}
             price={tour.price_from_usd != null ? `${t.tours.priceFrom} ${formatUsd(tour.price_from_usd)}` : undefined}
           />

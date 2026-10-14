@@ -1,10 +1,38 @@
-// Stock photos from Unsplash (free for commercial use under the Unsplash License, no attribution
-// required; we credit photographers anyway). Every photo below was checked to be taken in Tanzania.
-// Replace with Rafrika's own photos over time.
+// Rafrika's own photos (local: true, served from the website's /photos folder and bundled in the
+// app) plus stock photos from Unsplash (free for commercial use under the Unsplash License, no
+// attribution required; we credit photographers anyway). Every stock photo was checked to be taken
+// in Tanzania and to be free (not Unsplash+).
 
-export type Photo = { id: string; alt: string; credit: string };
+export type Photo = { id: string; alt: string; credit: string; local?: true };
 
 export const PHOTOS = {
+  // Rafrika's own photos from Kilimanjaro (location data removed).
+  kiliCampMawenzi: { id: 'kili-camp-mawenzi', alt: 'Tents above the clouds on Kilimanjaro, with Mawenzi peak behind', credit: 'Rafrika', local: true },
+  saddleHikers: { id: 'saddle-hikers-mawenzi', alt: 'A guided group walking across the Kilimanjaro saddle towards Mawenzi', credit: 'Rafrika', local: true },
+  kiboSaddleHikers: { id: 'kibo-saddle-hikers', alt: 'Hikers on the trail to Kibo, the summit cone of Kilimanjaro', credit: 'Rafrika', local: true },
+  kiboFromShira: { id: 'kibo-from-shira', alt: 'Kibo peak above the moorland of the Shira Plateau', credit: 'Rafrika', local: true },
+  kiboHutTrail: { id: 'kibo-hut-trail', alt: 'Hikers on the alpine desert below Kibo Hut, Kilimanjaro', credit: 'Rafrika', local: true },
+  kiliMoorland: { id: 'kili-moorland-trail', alt: 'Rocky moorland trail with Kibo peak in the distance', credit: 'Rafrika', local: true },
+  mawenziClouds: { id: 'mawenzi-clouds', alt: 'Mawenzi peak under a clear blue sky', credit: 'Rafrika', local: true },
+  mawenziMist: { id: 'mawenzi-mist', alt: 'Mist rolling past Mawenzi peak over the heath', credit: 'Rafrika', local: true },
+  kiboCrater: { id: 'kibo-crater-glacier', alt: 'The crater rim and glaciers at the top of Kilimanjaro at sunrise', credit: 'Rafrika', local: true },
+  uhuruPeak: { id: 'uhuru-peak', alt: 'Climbers at the Uhuru Peak summit sign, 5,895 m', credit: 'Rafrika', local: true },
+  kiliRainforest: { id: 'kili-rainforest-hikers', alt: 'A group hiking through the Kilimanjaro rainforest', credit: 'Rafrika', local: true },
+  kiliRockyTrail: { id: 'kili-rocky-trail', alt: 'Hikers on a rocky trail with the snowy summit ahead', credit: 'Rafrika', local: true },
+  kiliHeather: { id: 'kili-heather-zone', alt: 'Hikers in the heather zone above a sea of clouds', credit: 'Rafrika', local: true },
+  mountainHut: { id: 'mountain-hut', alt: 'Bunk beds inside a mountain hut on the Marangu route', credit: 'Rafrika', local: true },
+  colobus: { id: 'colobus-monkey', alt: 'Black-and-white colobus monkey in the forest', credit: 'Rafrika', local: true },
+  blueMonkey: { id: 'blue-monkey', alt: 'Blue monkey on a forest trail on Kilimanjaro', credit: 'Rafrika', local: true },
+  // Unsplash stock photos.
+  leopardTree: { id: 'photo-1667987486234-a1330e262ea3', alt: 'Leopard resting in a tree in Tarangire', credit: 'Uzuri Safaris Tanzania' },
+  giraffesBalloon: { id: 'photo-1707410436230-d4b2fba910e7', alt: 'Giraffes and a hot-air balloon in the Serengeti', credit: 'Tanzania Wild Sky' },
+  elephantDrinking: { id: 'photo-1627394678482-833a3d8d10f5', alt: 'Elephant drinking at a lake in Tanzania', credit: 'Elliot Paris' },
+  elephantsTarangire: { id: 'photo-1507087549419-3ec469e82d13', alt: 'Elephants among trees in Tarangire National Park', credit: 'Jeff Lemond' },
+  buffaloGolden: { id: 'photo-1528277342758-f1d7613953a2', alt: 'Buffalo herd at golden hour in Tarangire', credit: 'Ray Rui' },
+  ngorongoroView: { id: 'photo-1745885979468-44a855f8a5fa', alt: 'View down into the Ngorongoro Crater and its lake', credit: 'Matthew Stephenson' },
+  darAerial: { id: 'photo-1589177900326-900782f88a55', alt: 'Dar es Salaam city and harbour from the air', credit: 'Peter Mitchell' },
+  darHarbour: { id: 'photo-1674334264912-704cb2a24b37', alt: 'Dar es Salaam skyline over the water', credit: 'Nichika Sakurai' },
+  darStreet: { id: 'photo-1718010561203-ababa995734f', alt: 'Fruit seller pushing a cart down a street in Tanzania', credit: 'Ali Mkumbwa' },
   safariSunset: { id: 'photo-1516426122078-c23e76319801', alt: 'Safari vehicle at sunset in Tanzania', credit: 'Hu Chen' },
   kiliHikers: { id: 'photo-1621414050946-1b936a78491f', alt: 'Hikers above the clouds on Kilimanjaro', credit: 'Crispin Jones' },
   kiliSummit: { id: 'photo-1611961547440-bde7c756990f', alt: 'Climbers on the snowy summit of Kilimanjaro', credit: 'Kristoffer Darj' },
@@ -30,33 +58,36 @@ export const PHOTOS = {
 
 export type PhotoKey = keyof typeof PHOTOS;
 
+/** Web URL of a photo. Own photos are files on the website (the app bundles its own copies, see
+ * apps/mobile/src/lib/photos.ts); stock photos are resized by Unsplash. */
 export function photoUrl(photo: Photo, width = 1600) {
-  return `https://images.unsplash.com/${photo.id}?auto=format&fit=crop&w=${width}&q=70`;
+  if (photo.local) return `/photos/${photo.id}.jpg`;
+  return `https://images.unsplash.com/${photo.id}?auto=format&fit=crop&w=${width}&q=80`;
 }
 
 // Hero photo for each menu section.
 export const SECTION_PHOTOS: Record<string, PhotoKey> = {
   safaris: 'migration',
-  trips: 'kiliHikers',
+  trips: 'kiliRainforest',
   special: 'elephantsBalloon',
   partners: 'safariSunset',
   stay: 'zanzibarBeach',
   transport: 'buffaloCar',
   shop: 'stoneTownDoor',
-  local: 'stoneTownStreet',
+  local: 'darStreet',
   discover: 'flamingos',
 };
 
 // Cover photo for each trip; falls back to the first category.
 const TRIP_PHOTOS: Record<string, PhotoKey> = {
-  'serengeti-ngorongoro-4-days': 'serengetiHerd',
-  'northern-circuit-7-days': 'lions',
+  'serengeti-ngorongoro-4-days': 'ngorongoroView',
+  'northern-circuit-7-days': 'leopardTree',
   'migration-calving-safari-6-days': 'migration',
-  'arusha-national-park-day': 'cheetah',
-  'tarangire-day-trip': 'elephantsRiver',
-  'kilimanjaro-machame-7-days': 'kiliSummit',
-  'kilimanjaro-lemosho-8-days': 'kiliStars',
-  'kilimanjaro-marangu-6-days': 'kiliHikers',
+  'arusha-national-park-day': 'colobus',
+  'tarangire-day-trip': 'elephantsTarangire',
+  'kilimanjaro-machame-7-days': 'kiboCrater',
+  'kilimanjaro-lemosho-8-days': 'kiboFromShira',
+  'kilimanjaro-marangu-6-days': 'kiboHutTrail',
   'mount-meru-4-days': 'kiliCamp',
   'ol-doinyo-lengai-natron-3-days': 'flamingos',
   'mto-wa-mbu-village-bike': 'maasai',
@@ -68,24 +99,24 @@ const TRIP_PHOTOS: Record<string, PhotoKey> = {
   'zanzibar-beach-mnemba-4-days': 'zanzibarBoats',
   'bagamoyo-history-day': 'stoneTownPalm',
   'kilwa-kisiwani-3-days': 'stoneTownPalm',
-  'kili-safari-zanzibar-15-days': 'kiliSummit',
+  'kili-safari-zanzibar-15-days': 'uhuruPeak',
   'safari-zanzibar-9-days': 'zanzibarBeach',
   'kili-cultural-immersion-10-days': 'maasai',
-  'signature-guides-day-off': 'kiliCamp',
-  'signature-walk-with-a-kili-guide': 'kiliHikers',
+  'signature-guides-day-off': 'kiliCampMawenzi',
+  'signature-walk-with-a-kili-guide': 'kiliRainforest',
   'signature-afcon-2027-fan-days': 'safariSunset',
   'signature-spice-stone-sea': 'dhowSunset',
 };
 
 const CATEGORY_PHOTOS: Record<string, PhotoKey> = {
   safari: 'serengetiHerd',
-  mountain: 'kiliHikers',
+  mountain: 'saddleHikers',
   cultural: 'maasai',
   beach: 'zanzibarBeach',
   historical: 'stoneTownPalm',
   marine: 'dhowSunset',
   chimpanzee: 'elephantsBalloon',
-  walking: 'kiliCamp',
+  walking: 'kiliRockyTrail',
   event: 'safariSunset',
 };
 
@@ -95,14 +126,14 @@ export function tripPhoto(slug: string, categories: string[]): Photo {
 
 // Cover photo for a group trip, chosen by the kind of trip (guide specialty).
 const SPECIALTY_PHOTOS: Record<string, PhotoKey> = {
-  mountain: 'kiliHikers',
-  safari: 'serengetiHerd',
+  mountain: 'saddleHikers',
+  safari: 'giraffesBalloon',
   cultural: 'maasai',
-  city: 'stoneTownStreet',
+  city: 'darAerial',
   birding: 'flamingos',
   marine: 'dhowSunset',
-  photography: 'lions',
-  day_trips: 'kiliCamp',
+  photography: 'leopardTree',
+  day_trips: 'blueMonkey',
 };
 
 export function specialtyPhoto(specialty: string): Photo {
