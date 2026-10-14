@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as SystemUI from 'expo-system-ui';
 import { PushSetup } from '@/components/push-setup';
 import { AuthProvider } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
@@ -11,6 +12,9 @@ const rafrikaTheme: Theme = {
   ...DefaultTheme,
   colors: { ...DefaultTheme.colors, primary: brand.leafDark, background: colors.background, card: colors.card, text: colors.label, border: colors.separator },
 };
+
+// The window behind every screen: the website's light page colour, never the phone's dark default.
+SystemUI.setBackgroundColorAsync(colors.background);
 
 function RootStack() {
   const { t } = useI18n();
