@@ -45,11 +45,11 @@ export async function AuthLinks() {
       )}
       <Link
         href={`/${locale}/messages`}
-        className="flex size-10 items-center justify-center rounded-[5px] bg-gold text-charcoal transition hover:brightness-95"
+        className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-gold"
         aria-label={t.messages.title}
         title={t.messages.title}
       >
-        <MessagesSquare className="size-5" aria-hidden />
+        <MessagesSquare className="size-5 text-gold" strokeWidth={2.5} aria-hidden />
       </Link>
       <Link href={`/${locale}/dashboard`} className="btn-dark whitespace-nowrap px-4 py-2 text-sm">
         {t.nav.dashboard}
