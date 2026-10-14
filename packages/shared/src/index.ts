@@ -8,3 +8,4 @@ export * from './dictionaries';
 export * from './photos';
 export * from './phone';
 export * from './money';
+export * from './guide-checks';

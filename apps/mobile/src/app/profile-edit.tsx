@@ -4,12 +4,13 @@ import { Stack } from 'expo-router';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@rafrika/shared';
+import { Glyph } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, space } from '@/theme';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
 
@@ -37,6 +38,62 @@ async function pickImage(square: boolean): Promise<Upload | null> {
   } catch {
     return { uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' };
   }
+}
+
+type Translations = ReturnType<typeof useI18n>['t'];
+
+// Profile strength: how complete the profile is and what is still missing (same rules as the website).
+function ProfileStrength({ input, t }: { input: Parameters<typeof profileCompletion>[0]; t: Translations }) {
+  const c = t.checks;
+  const { items, percent } = profileCompletion(input);
+  const allDone = items.every((i) => i.done || i.optional);
+  return (
+    <Card>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <SectionTitle>{c.strength}</SectionTitle>
+        <Text style={{ fontWeight: '800', color: brand.leafDark, fontVariant: ['tabular-nums'] }}>
+          {percent}% {c.complete}
+        </Text>
+      </View>
+      <View style={{ height: 8, borderRadius: radius.bar, backgroundColor: colors.fill, overflow: 'hidden' }} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }}>
+        <View style={{ width: `${percent}%`, height: '100%', backgroundColor: brand.leaf }} />
+      </View>
+      <Text style={{ fontWeight: '700', color: allDone ? brand.leafDark : colors.secondaryLabel, fontSize: textSize.footnote }}>{allDone ? c.allDone : c.missing}</Text>
+      <View style={{ gap: space.xs }}>
+        {items.map((item) => (
+          <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+            <Glyph
+              name={item.done ? { ios: 'checkmark.circle.fill', android: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked' }}
+              size={18}
+              color={item.done ? brand.leafDark : colors.secondaryLabel}
+            />
+            <Text style={{ color: item.done ? colors.secondaryLabel : colors.label, fontWeight: item.done ? '400' : '700' }}>
+              {c[item.id]}
+              {item.optional ? ` (${c.optional})` : ''}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+// One private document: its review status and a button to pick a new photo of it.
+function DocumentRow({ label, status, picked, onPick, t }: { label: string; status: DocumentStatus; picked: boolean; onPick: () => void; t: Translations }) {
+  const c = t.checks;
+  const badge: Record<DocumentStatus, { text: string; tone: 'mint' | 'sand' | 'night' | 'gold' }> = {
+    checked: { text: c.statusChecked, tone: 'mint' },
+    waiting: { text: c.statusWaiting, tone: 'sand' },
+    missing: { text: c.statusMissing, tone: 'night' },
+    expired: { text: c.statusExpired, tone: 'gold' },
+  };
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={{ fontWeight: '700', color: colors.label }}>{label}</Text>
+      <Badge label={picked ? c.statusWaiting : badge[status].text} tone={picked ? 'sand' : badge[status].tone} />
+      <Button title={`${label}${picked ? ' ✓' : ''}`} variant="outline" onPress={onPick} />
+    </View>
+  );
 }
 
 // Create or edit the guide profile, the same fields and rules as the website editor.
@@ -79,6 +136,8 @@ export default function ProfileEditScreen() {
   });
   const [photo, setPhoto] = useState<Upload | null>(null);
   const [idDocument, setIdDocument] = useState<Upload | null>(null);
+  const [licenceDocument, setLicenceDocument] = useState<Upload | null>(null);
+  const [firstAidDocument, setFirstAidDocument] = useState<Upload | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
@@ -157,10 +216,12 @@ export default function ProfileEditScreen() {
           call_topics: f.call_topics,
         },
         { phone: f.phone.trim() || null, whatsapp_number: f.whatsapp_number.trim() || null, registration_number: f.registration_number.trim() || null, kinapa_tanapa_id: f.kinapa_tanapa_id.trim() || null },
-        { photo: photo ?? undefined, idDocument: idDocument ?? undefined },
+        { photo: photo ?? undefined, idDocument: idDocument ?? undefined, licenceDocument: licenceDocument ?? undefined, firstAidDocument: firstAidDocument ?? undefined },
       );
       setPhoto(null);
       setIdDocument(null);
+      setLicenceDocument(null);
+      setFirstAidDocument(null);
       await queryClient.invalidateQueries({ queryKey: ['my-guide'] });
       setMessage({ tone: 'ok', text: d.saved });
     } catch (e) {
@@ -171,6 +232,21 @@ export default function ProfileEditScreen() {
   }
 
   const status = guide?.verification_status;
+  const details = mine.data?.details;
+  // Strength counts what is saved; documents picked but not yet saved count too, so the bar moves as the guide works.
+  const strengthInput = {
+    photo_url: photo?.uri ?? guide?.photo_url,
+    headline: f.headline,
+    bio: f.bio,
+    specialties: f.specialties,
+    languages: f.languages,
+    regions: f.regions,
+    years_experience: num(f.years_experience),
+    phone: f.phone,
+    id_document_path: idDocument?.uri ?? details?.id_document_path,
+    license_document_path: licenceDocument?.uri ?? details?.license_document_path,
+    first_aid_document_path: firstAidDocument?.uri ?? details?.first_aid_document_path,
+  };
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
@@ -180,6 +256,8 @@ export default function ProfileEditScreen() {
           <Badge label={status === 'approved' ? d.statusApproved : status === 'rejected' ? d.statusRejected : d.statusPending} tone={status === 'approved' ? 'mint' : 'sand'} />
         </Card>
       )}
+
+      <ProfileStrength input={strengthInput} t={t} />
 
       <Card>
         <SectionTitle>{d.publicSection}</SectionTitle>
@@ -233,10 +311,33 @@ export default function ProfileEditScreen() {
         <Field label={d.whatsapp} value={f.whatsapp_number} onChangeText={set('whatsapp_number')} keyboardType="phone-pad" />
         <Field label={d.registration} value={f.registration_number} onChangeText={set('registration_number')} />
         <Field label={d.kinapa} value={f.kinapa_tanapa_id} onChangeText={set('kinapa_tanapa_id')} />
-        <Button
-          title={`${d.idDocument}${idDocument || mine.data?.details?.id_document_path ? ' ✓' : ''}`}
-          variant="outline"
-          onPress={async () => setIdDocument((await pickImage(false)) ?? idDocument)}
+      </Card>
+
+      <Card>
+        <SectionTitle>{t.checks.documentsTitle}</SectionTitle>
+        <Muted>
+          {t.checks.documentsNote} {t.checks.recheckNote}
+        </Muted>
+        <DocumentRow
+          label={d.idDocument}
+          status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null)}
+          picked={!!idDocument}
+          onPick={async () => setIdDocument((await pickImage(false)) ?? idDocument)}
+          t={t}
+        />
+        <DocumentRow
+          label={t.checks.licenceUpload}
+          status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null)}
+          picked={!!licenceDocument}
+          onPick={async () => setLicenceDocument((await pickImage(false)) ?? licenceDocument)}
+          t={t}
+        />
+        <DocumentRow
+          label={t.checks.firstAidUpload}
+          status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null)}
+          picked={!!firstAidDocument}
+          onPick={async () => setFirstAidDocument((await pickImage(false)) ?? firstAidDocument)}
+          t={t}
         />
       </Card>
 

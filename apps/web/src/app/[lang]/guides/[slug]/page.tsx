@@ -12,6 +12,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
 import { GuideAvatar, GuideBadges, GuideCard, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
 import { TrackView } from '@/components/recently-viewed';
+import { GuideCheckPills, GuideChecksSection } from '@/components/guide-checks';
 import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
@@ -77,6 +78,9 @@ async function Profile({
             <div className="mt-3">
               <GuideBadges guide={guide} t={t} />
             </div>
+            <div className="mt-2">
+              <GuideCheckPills guide={guide} t={t} />
+            </div>
           </div>
         </div>
 
@@ -97,6 +101,8 @@ async function Profile({
             ]}
           />
         </section>
+
+        <GuideChecksSection guide={guide} t={t} locale={locale} />
 
         {guide.bio && (
           <section className="mt-8">

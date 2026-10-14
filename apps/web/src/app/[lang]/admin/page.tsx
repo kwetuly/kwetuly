@@ -75,14 +75,32 @@ type PendingGuide = {
   female_guide: boolean;
   association: string | null;
   created_at: string;
+  verification_status: 'pending' | 'approved' | 'rejected';
+  identity_checked_at: string | null;
+  licence_checked_at: string | null;
+  first_aid_checked_at: string | null;
+  first_aid_valid_until: string | null;
   guide_private: {
     phone: string | null;
     whatsapp_number: string | null;
     registration_number: string | null;
     kinapa_tanapa_id: string | null;
     id_document_path: string | null;
+    license_document_path: string | null;
+    first_aid_document_path: string | null;
   } | null;
 };
+
+const DOCUMENTS = [
+  { path: 'id_document_path', check: 'identity_checked_at', field: 'identity', label: 'ID document' },
+  { path: 'license_document_path', check: 'licence_checked_at', field: 'licence', label: 'Guide licence' },
+  { path: 'first_aid_document_path', check: 'first_aid_checked_at', field: 'first_aid', label: 'First-aid certificate' },
+] as const;
+
+// An uploaded document nobody has checked yet (e.g. an approved guide uploaded a new one).
+function hasUncheckedDocument(g: PendingGuide) {
+  return DOCUMENTS.some((doc) => g.guide_private?.[doc.path] && !g[doc.check]);
+}
 
 export default async function AdminPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -257,22 +275,25 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
   const { data } = await supabase
     .from('guides')
     .select(
-      'id, slug, display_name, headline, base_region, specialties, languages, expertise, female_guide, association, created_at, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path)',
+      'id, slug, display_name, headline, base_region, specialties, languages, expertise, female_guide, association, created_at, verification_status, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path, license_document_path, first_aid_document_path)',
     )
-    .eq('verification_status', 'pending')
+    .in('verification_status', ['pending', 'approved'])
     .order('created_at', { ascending: true })
     .returns<PendingGuide[]>();
-  const guides = data ?? [];
+  // New applications, plus approved guides who uploaded a document that still needs a check.
+  const guides = (data ?? []).filter((g) => g.verification_status === 'pending' || hasUncheckedDocument(g));
 
-  // Short-lived links to the private ID documents.
+  // Short-lived links to the private documents, keyed "guideId:path".
   const docLinks = new Map<string, string>();
   await Promise.all(
-    guides.map(async (g) => {
-      const path = g.guide_private?.id_document_path;
-      if (!path) return;
-      const { data: signed } = await supabase.storage.from('verification').createSignedUrl(path, 600);
-      if (signed) docLinks.set(g.id, signed.signedUrl);
-    }),
+    guides.flatMap((g) =>
+      DOCUMENTS.map(async (doc) => {
+        const path = g.guide_private?.[doc.path];
+        if (!path) return;
+        const { data: signed } = await supabase.storage.from('verification').createSignedUrl(path, 600);
+        if (signed) docLinks.set(`${g.id}:${doc.path}`, signed.signedUrl);
+      }),
+    ),
   );
 
   if (guides.length === 0) return <p className="mt-6 text-muted">{t.admin.none}</p>;
@@ -299,17 +320,41 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
               )}
               <p>Registration: <strong>{p?.registration_number ?? '—'}</strong> · KINAPA/TANAPA: {p?.kinapa_tanapa_id ?? '—'}</p>
               <p>Phone: {p?.phone ?? '—'} · WhatsApp: {p?.whatsapp_number ?? '—'} · {g.association ?? ''}</p>
-              {docLinks.get(g.id) && (
-                <a href={docLinks.get(g.id)} target="_blank" rel="noopener" className="font-semibold text-forest underline">
-                  {t.admin.document}
-                </a>
-              )}
+              {g.verification_status === 'approved' && <p className="font-semibold text-leaf-dark">Approved guide: new document to check</p>}
             </div>
-            <form action={reviewGuide} className="flex items-start gap-2">
+            {/* Tick only what you actually looked at: each tick shows publicly as "… checked". */}
+            <form action={reviewGuide} className="space-y-2 text-sm sm:w-72">
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="guide_id" value={g.id} />
-              <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
-              <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
+              {DOCUMENTS.map((doc) => {
+                const link = docLinks.get(`${g.id}:${doc.path}`);
+                return (
+                  <label key={doc.field} className="flex items-center gap-2">
+                    <input type="checkbox" name={doc.field} defaultChecked={!!g[doc.check]} disabled={!link} className="size-4 accent-leaf" />
+                    {link ? (
+                      <a href={link} target="_blank" rel="noopener" className="font-semibold text-leaf-dark underline">
+                        {doc.label} checked
+                      </a>
+                    ) : (
+                      <span className="text-muted">{doc.label}: not uploaded</span>
+                    )}
+                  </label>
+                );
+              })}
+              <label className="block">
+                <span className="text-xs text-muted">First aid valid until</span>
+                <input type="date" name="first_aid_valid_until" defaultValue={g.first_aid_valid_until ?? ''} className="field py-1.5" />
+              </label>
+              <div className="flex gap-2 pt-1">
+                {g.verification_status === 'pending' ? (
+                  <>
+                    <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
+                    <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
+                  </>
+                ) : (
+                  <button name="decision" value="checks" className="btn px-4 py-2 text-sm">Save checks</button>
+                )}
+              </div>
             </form>
           </div>
         );

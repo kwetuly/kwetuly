@@ -8,6 +8,7 @@ import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
+import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 
 import { formatUsd } from '@rafrika/shared';
 import { brand, colors, space, textSize } from '@/theme';
@@ -33,6 +34,7 @@ export default function GuideScreen() {
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
   const reviews = useQuery({ queryKey: ['reviews', guide.data?.id], queryFn: () => listReviews(guide.data!.id), enabled: !!guide.data });
   const [opening, setOpening] = useState(false);
+  const checkLabels = useCheckLabels(guide.data ?? { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null, first_aid_valid_until: null });
 
   if (!guide.data) {
     return <ScreenState loading={guide.isLoading} error={guide.error} empty emptyText={t.guides.empty} />;
@@ -75,6 +77,7 @@ export default function GuideScreen() {
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           <Badge label={`✓ ${t.guides.verified}`} />
+          {checkLabels.map((label) => <Badge key={label} label={`✓ ${label}`} />)}
           {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
           {g.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
           {g.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}
@@ -90,6 +93,8 @@ export default function GuideScreen() {
         {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } })} />}
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>
+
+      <GuideChecksCard guide={g} />
 
       {g.bio && (
         <Card>

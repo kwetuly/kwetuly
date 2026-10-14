@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@rafrika/shared';
+import { Circle, CircleCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser, type CurrentUser } from '@/lib/auth';
@@ -10,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
 import { DirectUpload } from '@/components/direct-upload';
+import { today } from '@/lib/today';
 
 export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
 
@@ -19,6 +21,8 @@ type PrivateDetails = {
   registration_number: string | null;
   kinapa_tanapa_id: string | null;
   id_document_path: string | null;
+  license_document_path: string | null;
+  first_aid_document_path: string | null;
 };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -61,11 +65,12 @@ async function GuideEditor({
   const { data: details } = guide
     ? await supabase
         .from('guide_private')
-        .select('phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path')
+        .select('phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path, license_document_path, first_aid_document_path')
         .eq('guide_id', guide.id)
         .maybeSingle<PrivateDetails>()
     : { data: null };
   const d = t.dashboard;
+  const now = await today();
 
   const statusText =
     guide?.verification_status === 'approved'
@@ -93,6 +98,7 @@ async function GuideEditor({
           )}
         </div>
       )}
+      <ProfileStrength guide={guide} details={details} t={t} />
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
       {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
 
@@ -200,9 +206,24 @@ async function GuideEditor({
             <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
             <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
           </div>
-          <Field label={`${d.idDocument}${details?.id_document_path ? ' ✓' : ''}`}>
+        </fieldset>
+
+        <fieldset className="card space-y-4">
+          <legend className="px-1 text-lg font-semibold">{t.checks.documentsTitle}</legend>
+          <p className="text-sm text-muted">{t.checks.documentsNote} {t.checks.recheckNote}</p>
+          <DocumentField label={d.idDocument} status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null, null, now)} t={t}>
             <DirectUpload name="id_document_path" bucket="verification" userId={user.id} prefix="guide-id" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
-          </Field>
+          </DocumentField>
+          <DocumentField label={t.checks.licenceUpload} status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null, null, now)} t={t}>
+            <DirectUpload name="license_document_path" bucket="verification" userId={user.id} prefix="guide-licence" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
+          </DocumentField>
+          <DocumentField
+            label={t.checks.firstAidUpload}
+            status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null, now)}
+            t={t}
+          >
+            <DirectUpload name="first_aid_document_path" bucket="verification" userId={user.id} prefix="guide-first-aid" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
+          </DocumentField>
         </fieldset>
 
         <button className="btn w-full sm:w-auto">{d.save}</button>
@@ -322,6 +343,57 @@ async function BusinessDashboard({ t, locale, user }: { t: Dictionary; locale: L
         ))}
       </ul>
     </>
+  );
+}
+
+// Profile strength: how complete the profile is and what is still missing.
+function ProfileStrength({ guide, details, t }: { guide: Guide | null; details: PrivateDetails | null; t: Dictionary }) {
+  const c = t.checks;
+  const { items, percent } = profileCompletion({ ...guide, ...details });
+  const allDone = items.every((i) => i.done || i.optional);
+  return (
+    <section className="card mt-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-lg font-bold">{c.strength}</h2>
+        <p className="font-bold text-leaf-dark">
+          {percent}% {c.complete}
+        </p>
+      </div>
+      <div className="mt-3 h-2 overflow-hidden rounded-[4px] bg-surface" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={c.strength}>
+        <div className="h-full bg-leaf" style={{ width: `${percent}%` }} />
+      </div>
+      {allDone && <p className="mt-3 text-sm font-semibold text-leaf-dark">{c.allDone}</p>}
+      {!allDone && <h3 className="mt-4 text-sm font-semibold text-muted">{c.missing}</h3>}
+      <ul className="mt-2 grid gap-1.5 text-sm sm:grid-cols-2">
+        {items.map((item) => (
+          <li key={item.id} className={`flex items-center gap-2 ${item.done ? 'text-muted' : 'font-semibold'}`}>
+            {item.done ? <CircleCheck className="size-4 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-4 shrink-0 text-muted" aria-hidden />}
+            <span>{c[item.id]}</span>
+            {item.optional && <span className="text-xs font-normal text-muted">({c.optional})</span>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// One private document with where its review stands.
+function DocumentField({ label, status, t, children }: { label: string; status: DocumentStatus; t: Dictionary; children: React.ReactNode }) {
+  const c = t.checks;
+  const badge: Record<DocumentStatus, { text: string; className: string }> = {
+    checked: { text: c.statusChecked, className: 'bg-mint text-forest' },
+    waiting: { text: c.statusWaiting, className: 'bg-sand text-charcoal' },
+    missing: { text: c.statusMissing, className: 'bg-surface text-muted' },
+    expired: { text: c.statusExpired, className: 'bg-red-50 text-red-800' },
+  };
+  return (
+    <div>
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <span className="text-sm font-semibold">{label}</span>
+        <span className={`rounded-[5px] px-2 py-0.5 text-xs font-semibold ${badge[status].className}`}>{badge[status].text}</span>
+      </div>
+      {children}
+    </div>
   );
 }
 

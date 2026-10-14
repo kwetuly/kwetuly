@@ -1,6 +1,6 @@
 // More data access: reviews, calls, enquiries, Guide Hub, guide profile, organiser tools and business tools.
 // Same tables and rules as the website; row-level security enforces who may do what.
-import { normalizePhone } from '@rafrika/shared';
+import { normalizePhone, type GuideCheckFields } from '@rafrika/shared';
 import { supabase } from './supabase';
 
 function check(error: { message: string } | null) {
@@ -165,19 +165,28 @@ export type MyGuide = {
   call_price_usd: number | null;
   call_minutes: number;
   call_topics: string[];
-};
+} & GuideCheckFields;
 
-export type GuidePrivate = { phone: string | null; whatsapp_number: string | null; registration_number: string | null; kinapa_tanapa_id: string | null; id_document_path: string | null };
+export type GuidePrivate = {
+  phone: string | null;
+  whatsapp_number: string | null;
+  registration_number: string | null;
+  kinapa_tanapa_id: string | null;
+  id_document_path: string | null;
+  license_document_path: string | null;
+  first_aid_document_path: string | null;
+};
+type DocumentPath = 'id_document_path' | 'license_document_path' | 'first_aid_document_path';
 
 export async function getMyGuide(userId: string): Promise<{ guide: MyGuide | null; details: GuidePrivate | null }> {
   const { data: guide, error } = await supabase
     .from('guides')
-    .select('id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, languages, expertise, female_guide, open_to_partners, max_group_size, years_experience, summits, certifications, association, has_vehicle, visibility, verification_status, call_enabled, call_price_usd, call_minutes, call_topics')
+    .select('id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, languages, expertise, female_guide, open_to_partners, max_group_size, years_experience, summits, certifications, association, has_vehicle, visibility, verification_status, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until')
     .eq('owner_id', userId)
     .maybeSingle();
   check(error);
   if (!guide) return { guide: null, details: null };
-  const { data: details } = await supabase.from('guide_private').select('phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path').eq('guide_id', guide.id).maybeSingle();
+  const { data: details } = await supabase.from('guide_private').select('phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path, license_document_path, first_aid_document_path').eq('guide_id', guide.id).maybeSingle();
   return { guide: guide as MyGuide, details: (details as GuidePrivate | null) ?? null };
 }
 
@@ -193,12 +202,12 @@ const slugify = (value: string) =>
 type Upload = { uri: string; mimeType: string };
 const EXTENSIONS: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
 
-/** Creates or updates the guide profile, with optional new photo and ID document (same rules as the website). */
+/** Creates or updates the guide profile, with optional new photo and documents (same rules as the website). */
 export async function saveGuideProfile(
   userId: string,
-  profile: Omit<MyGuide, 'id' | 'verification_status' | 'photo_url'> & { photo_url?: string | null },
-  details: Omit<GuidePrivate, 'id_document_path'>,
-  uploads: { photo?: Upload; idDocument?: Upload },
+  profile: Omit<MyGuide, 'id' | 'verification_status' | 'photo_url' | keyof GuideCheckFields> & { photo_url?: string | null },
+  details: Omit<GuidePrivate, DocumentPath>,
+  uploads: { photo?: Upload; idDocument?: Upload; licenceDocument?: Upload; firstAidDocument?: Upload },
 ) {
   const guide = { ...profile, owner_id: userId, slug: slugify(profile.slug || profile.display_name) };
   if (uploads.photo) {
@@ -213,14 +222,24 @@ export async function saveGuideProfile(
   check(error);
 
   const privateData: Record<string, string | null> = { guide_id: saved!.id, ...details };
-  if (uploads.idDocument) {
-    const ext = EXTENSIONS[uploads.idDocument.mimeType] ?? 'jpg';
-    const path = `${userId}/guide-id-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('verification').upload(path, await bytesOf(uploads.idDocument.uri), { contentType: uploads.idDocument.mimeType });
+  // Private documents go to the verification bucket; a new one clears its public check until an admin looks again.
+  const documents: { upload?: Upload; prefix: string; column: DocumentPath; check: keyof GuideCheckFields }[] = [
+    { upload: uploads.idDocument, prefix: 'guide-id', column: 'id_document_path', check: 'identity_checked_at' },
+    { upload: uploads.licenceDocument, prefix: 'guide-licence', column: 'license_document_path', check: 'licence_checked_at' },
+    { upload: uploads.firstAidDocument, prefix: 'guide-first-aid', column: 'first_aid_document_path', check: 'first_aid_checked_at' },
+  ];
+  const cleared: Partial<Record<keyof GuideCheckFields, null>> = {};
+  for (const doc of documents) {
+    if (!doc.upload) continue;
+    const ext = EXTENSIONS[doc.upload.mimeType] ?? 'jpg';
+    const path = `${userId}/${doc.prefix}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from('verification').upload(path, await bytesOf(doc.upload.uri), { contentType: doc.upload.mimeType });
     check(uploadError);
-    privateData.id_document_path = path;
+    privateData[doc.column] = path;
+    cleared[doc.check] = null;
   }
   check((await supabase.from('guide_private').upsert(privateData)).error);
+  if (Object.keys(cleared).length > 0) check((await supabase.from('guides').update(cleared).eq('id', saved!.id)).error);
 }
 
 export type HubCall = { id: string; topic: string; preferred_times: string | null; message: string | null; traveler_contact: string | null; status: string; scheduled_at: string | null; price_usd: number | null; created_at: string };

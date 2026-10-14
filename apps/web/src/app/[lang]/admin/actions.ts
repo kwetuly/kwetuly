@@ -15,14 +15,33 @@ export async function reviewGuide(formData: FormData) {
   if (user?.role !== 'admin') redirect(`/${locale}`);
 
   const guideId = String(formData.get('guide_id') ?? '');
-  const decision = formData.get('decision') === 'approve' ? 'approved' : 'rejected';
+  const action = String(formData.get('decision') ?? '');
 
   const supabase = await createClient();
+  const { data: current } = await supabase
+    .from('guides')
+    .select('identity_checked_at, licence_checked_at, first_aid_checked_at')
+    .eq('id', guideId)
+    .maybeSingle<{ identity_checked_at: string | null; licence_checked_at: string | null; first_aid_checked_at: string | null }>();
+  if (!current) redirect(`/${locale}/admin`);
+
+  // Each ticked box is a document the admin looked at; keep the first check date, clear unticked ones.
+  const now = new Date().toISOString();
+  const tick = (name: string, previous: string | null) => (formData.get(name) === 'on' ? previous ?? now : null);
+  const validUntil = String(formData.get('first_aid_valid_until') ?? '');
+  const checks = {
+    identity_checked_at: tick('identity', current.identity_checked_at),
+    licence_checked_at: tick('licence', current.licence_checked_at),
+    first_aid_checked_at: tick('first_aid', current.first_aid_checked_at),
+    first_aid_valid_until: formData.get('first_aid') === 'on' && /^\d{4}-\d{2}-\d{2}$/.test(validUntil) ? validUntil : null,
+  };
+
+  const decision = action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : null;
   await supabase
     .from('guides')
     .update({
-      verification_status: decision,
-      verified_at: decision === 'approved' ? new Date().toISOString() : null,
+      ...checks,
+      ...(decision ? { verification_status: decision, verified_at: decision === 'approved' ? now : null } : {}),
     })
     .eq('id', guideId);
 

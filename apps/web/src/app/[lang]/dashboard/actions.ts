@@ -115,9 +115,21 @@ export async function saveGuideProfile(formData: FormData) {
   // Same for the ID document, in the private verification bucket.
   const idPath = ownPath(formData, 'id_document_path', user.id, 'guide-id', ['jpg', 'png', 'webp', 'pdf']);
   if (idPath) privateData.id_document_path = idPath;
+  const licencePath = ownPath(formData, 'license_document_path', user.id, 'guide-licence', ['jpg', 'png', 'webp', 'pdf']);
+  if (licencePath) privateData.license_document_path = licencePath;
+  const firstAidPath = ownPath(formData, 'first_aid_document_path', user.id, 'guide-first-aid', ['jpg', 'png', 'webp', 'pdf']);
+  if (firstAidPath) privateData.first_aid_document_path = firstAidPath;
 
   const { error: privateError } = await supabase.from('guide_private').upsert(privateData);
   if (privateError) redirect(`${back}?error=save`);
+
+  // A new document has not been looked at yet, so its public check comes off until an admin checks it again.
+  const cleared = {
+    ...(idPath ? { identity_checked_at: null } : {}),
+    ...(licencePath ? { licence_checked_at: null } : {}),
+    ...(firstAidPath ? { first_aid_checked_at: null } : {}),
+  };
+  if (Object.keys(cleared).length > 0) await supabase.from('guides').update(cleared).eq('id', saved.id);
 
   revalidateTag('guides', 'max');
   redirect(`${back}?saved=1`);
