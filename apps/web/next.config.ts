@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Shared code from the monorepo is TypeScript source, so Next compiles it.
   transpilePackages: ["@rafrika/shared"],
+  // Lets a phone on the same Wi-Fi open the dev server (http://<this computer's IP>:3000).
+  allowedDevOrigins: ["192.168.1.131"],
   images: {
     // Stock photos (see src/lib/photos.ts) and guide photos stored in Supabase.
     remotePatterns: [
