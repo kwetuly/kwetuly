@@ -16,7 +16,7 @@ export default async function HubLayout({ children }: LayoutProps<'/[lang]/hub'>
       <div className="bg-night text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
           <p className="flex items-center gap-2 font-extrabold">
-            <ShieldCheck className="size-5 text-gold" aria-hidden /> {t.hub.title}
+            <ShieldCheck className="size-5" aria-hidden /> {t.hub.title}
           </p>
           <nav className="flex flex-wrap gap-1">
             {HUB_MENU.map((item) => (
@@ -25,7 +25,7 @@ export default async function HubLayout({ children }: LayoutProps<'/[lang]/hub'>
                 href={`/${locale}${item.href}`}
                 className="flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
               >
-                <Icon name={item.icon} className="size-4 text-gold" />
+                <Icon name={item.icon} className="size-4" />
                 {item.label[locale]}
               </Link>
             ))}

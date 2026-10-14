@@ -49,7 +49,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
             <ArrowLeft className="size-4 text-gold" aria-hidden /> {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+            <span className="flex size-16 items-center justify-center rounded-[5px] bg-leaf text-white">
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>
@@ -134,7 +134,7 @@ async function InterestForm({
 
   return (
     <div id={kind} className={`card ${isBusiness ? 'bg-sand' : ''}`}>
-      <span className={`flex size-11 items-center justify-center rounded-[5px] ${isBusiness ? 'bg-night text-white' : 'bg-mint text-forest'}`}>
+      <span className={`flex size-11 items-center justify-center rounded-[5px] ${isBusiness ? 'bg-leaf text-white' : 'bg-mint text-forest'}`}>
         {isBusiness ? <Store className="size-5" aria-hidden /> : <Bell className="size-5" aria-hidden />}
       </span>
       <h2 className="mt-4 text-2xl font-bold">{title}</h2>

@@ -20,7 +20,7 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
     <>
       <PhotoHero photo="giraffesBalloon">
         <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf text-white">
             <Plus className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold">{t.groups.newTitle}</h1>

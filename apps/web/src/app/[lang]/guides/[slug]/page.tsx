@@ -110,7 +110,7 @@ async function Profile({
             href={`/${locale}/partners/agents`}
             className="mt-6 flex items-center gap-3 rounded-[5px] bg-night p-4 text-sm text-white hover:bg-forest"
           >
-            <Icon name="handshake" className="size-6 shrink-0 text-gold" />
+            <Icon name="handshake" className="size-6 shrink-0" />
             <span>
               <strong className="block">{t.guides.partners}</strong>
               {t.partners.applyTitle} →

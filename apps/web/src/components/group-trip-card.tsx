@@ -43,7 +43,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
         <span className="absolute left-4 top-4 rounded-[5px] bg-white/90 px-3 py-1 text-xs font-bold text-charcoal">
           {specialtyName(trip.specialty, locale)}
         </span>
-        <span className="absolute bottom-4 right-4 rounded-[5px] bg-night px-3 py-1.5 text-sm font-extrabold text-gold">
+        <span className="absolute bottom-4 right-4 rounded-[5px] bg-night px-3 py-1.5 text-sm font-extrabold text-white">
           <span className="tabular-nums">{formatUsd(trip.price_per_person_usd)}</span> <span className="text-xs font-semibold text-white/70">{t.groups.perPerson}</span>
         </span>
       </div>

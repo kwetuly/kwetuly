@@ -212,7 +212,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
         <p className="rounded-[5px] bg-white/10 p-4 font-semibold">✓ {g.requested}</p>
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="group_trip_id" value={trip.id} />
-        <button className="text-sm font-semibold text-gold underline">{g.cancel}</button>
+        <button className="text-sm font-semibold text-white underline">{g.cancel}</button>
       </form>
     );
   }

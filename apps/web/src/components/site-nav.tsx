@@ -41,7 +41,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                         className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand"
                       >
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf shadow-sm">
-                          <Icon name={item.icon} className="size-5 text-gold" />
+                          <Icon name={item.icon} className="size-5 text-white" />
                         </span>
                         <span>
                           <span className="flex items-center gap-2 text-sm font-semibold text-charcoal">
@@ -85,7 +85,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
               className="flex size-10 items-center justify-center rounded-[5px] bg-white/10"
               aria-label="Close menu"
             >
-              <X className="size-5 text-gold" />
+              <X className="size-5" />
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 pb-10">
@@ -99,7 +99,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     className="flex w-full items-center gap-3 py-4 text-left text-lg font-semibold"
                     aria-expanded={isOpen}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-leaf text-gold">
+                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-leaf text-white">
                       <Icon name={section.icon} className="size-5" />
                     </span>
                     {section.label[locale]}
@@ -114,7 +114,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                             onClick={() => setOpen(false)}
                             className="flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-white hover:bg-white/15"
                           >
-                            <Icon name={item.icon} className="size-4 shrink-0 text-gold" />
+                            <Icon name={item.icon} className="size-4 shrink-0" />
                             {item.label[locale]}
                           </Link>
                         </li>

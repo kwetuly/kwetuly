@@ -81,13 +81,15 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             {MENU.map((section) => (
               <div key={section.slug}>
                 <p className="flex items-center gap-2 text-sm font-bold text-white">
-                  <Icon name={section.icon} className="size-4 text-gold" />
+                  <span className="flex size-6 items-center justify-center rounded-[5px] bg-leaf">
+                    <Icon name={section.icon} className="size-3.5" />
+                  </span>
                   {section.label[locale]}
                 </p>
                 <ul className="mt-3 space-y-2 text-sm text-white/90">
                   {section.items.map((item) => (
                     <li key={item.slug}>
-                      <Link href={itemHref(locale, section, item)} className="transition hover:text-gold">
+                      <Link href={itemHref(locale, section, item)} className="hover:text-white hover:underline">
                         {item.label[locale]}
                       </Link>
                     </li>

@@ -68,7 +68,7 @@ export default async function HomePage() {
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade via-shade/60 to-shade/10" />
-                <span className="flex size-12 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+                <span className="flex size-12 items-center justify-center rounded-[5px] bg-leaf text-white">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>

@@ -231,7 +231,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           >
             <div className="pattern-kanga flex items-center justify-between gap-2 px-5 py-4 text-white">
               <p className="flex items-center gap-2 font-extrabold">
-                <Sparkles className="size-5 text-gold" aria-hidden /> {labels.title}
+                <Sparkles className="size-5" aria-hidden /> {labels.title}
               </p>
               <div className="flex items-center gap-1.5">
                 {canSpeak && (

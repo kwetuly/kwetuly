@@ -56,7 +56,7 @@ export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
         <span className={`${pill} bg-sand text-leaf-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
       )}
       {guide.open_to_partners && (
-        <span className={`${pill} bg-night text-white`}><Handshake className="size-3.5 text-gold" aria-hidden /> {t.guides.partners}</span>
+        <span className={`${pill} bg-night text-white`}><Handshake className="size-3.5" aria-hidden /> {t.guides.partners}</span>
       )}
     </div>
   );

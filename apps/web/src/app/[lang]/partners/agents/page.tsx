@@ -22,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
     <>
       <PhotoHero photo="buffaloCar">
         <div className="mx-auto max-w-6xl px-4 pb-20 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf text-white">
             <Handshake className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>
@@ -65,7 +65,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
             </ol>
 
             <div className="mt-10 rounded-[5px] bg-night p-6 text-white">
-              <ArrowRightLeft className="size-7 text-gold" aria-hidden />
+              <ArrowRightLeft className="size-7" aria-hidden />
               <h3 className="mt-3 text-xl font-extrabold">{p.overflowTitle}</h3>
               <p className="mt-2 text-white/80">{p.overflowBody}</p>
               <Link href={`/${locale}/jobs/post?kind=handover`} className="btn mt-5">

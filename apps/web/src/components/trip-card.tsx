@@ -41,7 +41,7 @@ export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale;
         <TripCover trip={trip} className="h-52" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
           {trip.is_signature && (
-            <span className="inline-flex items-center gap-1 rounded-[5px] bg-night px-3 py-1 text-xs font-bold text-gold">
+            <span className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1 text-xs font-bold text-charcoal">
               <Sparkles className="size-3" aria-hidden /> {labels.signature}
             </span>
           )}
