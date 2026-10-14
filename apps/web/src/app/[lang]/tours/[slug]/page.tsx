@@ -173,7 +173,7 @@ function EnquiryCard({ trip, status, t, locale }: { trip: Trip; status: Record<s
   return (
     <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
       <div className="bg-sunset px-6 py-5 text-night">
-        <p className="text-sm font-bold uppercase tracking-wide">{trip.price_from_usd != null ? tt.priceFrom : tt.enquireTitle}</p>
+        <p className="text-sm font-bold">{trip.price_from_usd != null ? tt.priceFrom : tt.enquireTitle}</p>
         <p className="text-3xl font-extrabold tabular-nums">{trip.price_from_usd != null ? formatUsd(trip.price_from_usd) : tt.priceOnRequest}</p>
       </div>
       <div className="p-6">

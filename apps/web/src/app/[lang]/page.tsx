@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
 import { MENU } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { GuideSearch } from '@/components/guide-search';
@@ -14,30 +13,25 @@ const HOME_CARD_LINKS = 5;
 export default async function HomePage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const hero = PHOTOS.safariSunset;
-  const titleWords = t.home.title.split(' ');
 
   return (
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden bg-night text-white">
         <Image src={photoUrl(hero, 2000)} alt={hero.alt} fill priority sizes="100vw" className="-z-10 object-cover" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night via-night/80 to-night/20" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night/70 via-transparent to-transparent" />
-        <div className="mx-auto max-w-7xl px-4 pb-32 pt-20 sm:pt-28">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-gold backdrop-blur">
-            <span className="size-2 animate-pulse rounded-full bg-gold" /> {t.home.eyebrow}
-          </p>
-          <h1 className="mt-6 max-w-4xl text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-7xl">
-            {titleWords.slice(0, -2).join(' ')} <span className="text-glow">{titleWords.slice(-2).join(' ')}</span>
+        {/* Shade only the side the text sits on, so the landscape stays visible. */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night/90 via-night/55 to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night/60 via-transparent to-transparent" />
+        <div className="mx-auto flex min-h-[78svh] max-w-7xl flex-col justify-end px-4 pb-14 pt-24 sm:pb-20">
+          <p lang="sw" className="text-lg font-semibold text-gold">{t.home.eyebrow}</p>
+          <h1 className="mt-3 max-w-3xl text-balance text-[2.75rem] font-extrabold leading-[1.02] tracking-tight sm:text-7xl">
+            {t.home.title}
           </h1>
-          <p className="mt-6 max-w-2xl text-lg text-white/85 sm:text-xl">{t.home.subtitle}</p>
-          <div className="mt-10 max-w-3xl rounded-[28px] border border-white/20 bg-white/10 p-2 text-charcoal backdrop-blur-xl">
+          <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/85">{t.home.subtitle}</p>
+          <div className="mt-8 max-w-3xl text-charcoal">
             <GuideSearch locale={locale} t={t} />
           </div>
         </div>
-        <svg className="absolute -bottom-px left-0 w-full text-surface" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden>
-          <path fill="currentColor" d="M0,64 C240,16 480,0 720,24 C960,48 1200,80 1440,40 L1440,80 L0,80 Z" />
-        </svg>
       </section>
 
       {/* Explore every section, each with its own photo */}
@@ -83,7 +77,7 @@ export default async function HomePage() {
                         href={`/${locale}/${section.slug}`}
                         className="inline-flex items-center gap-1 rounded-[15px] bg-gold px-3 py-1.5 text-sm font-bold text-night"
                       >
-                        {t.explore.more} ({section.items.length}) <ArrowRight className="size-4" aria-hidden />
+                        {t.explore.more} ({section.items.length})
                       </Link>
                     </li>
                   )}
@@ -99,17 +93,14 @@ export default async function HomePage() {
       <section className="border-y border-line bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1fr_2fr]">
           <h2 className="text-3xl font-extrabold tracking-tight">{t.home.whyTitle}</h2>
-          <ol className="divide-y divide-line">
-            {t.home.why.map((item, i) => (
-              <li key={item.title} className="grid grid-cols-[2rem_1fr] gap-3 py-5 first:pt-0 last:pb-0">
-                <span className="text-lg font-extrabold tabular-nums text-sunset">{i + 1}</span>
-                <div>
-                  <h3 className="text-lg font-bold">{item.title}</h3>
-                  <p className="mt-1 text-muted">{item.body}</p>
-                </div>
+          <ul className="divide-y divide-line">
+            {t.home.why.map((item) => (
+              <li key={item.title} className="py-5 first:pt-0 last:pb-0">
+                <h3 className="text-lg font-bold">{item.title}</h3>
+                <p className="mt-1 max-w-prose text-muted">{item.body}</p>
               </li>
             ))}
-          </ol>
+          </ul>
         </div>
       </section>
 
@@ -121,18 +112,18 @@ export default async function HomePage() {
           <h2 className="text-3xl font-extrabold">{t.home.forGuidesTitle}</h2>
           <p className="mt-3 max-w-md text-white/85">{t.home.forGuidesBody}</p>
           <Link href={`/${locale}/join?role=guide`} className="btn mt-8">
-            {t.home.forGuidesCta} <ArrowRight className="size-4" aria-hidden />
+            {t.home.forGuidesCta}
           </Link>
         </div>
         <Link
           href={`/${locale}/discover/afcon-2027`}
           className="group relative overflow-hidden rounded-3xl bg-gold p-8 text-night sm:p-10"
         >
-          <p className="text-sm font-bold uppercase tracking-widest">{t.home.afconDates}</p>
+          <p className="font-bold">{t.home.afconDates}</p>
           <h2 className="mt-3 max-w-sm text-3xl font-extrabold">{t.home.afconTitle}</h2>
           <p className="mt-3 max-w-md font-medium text-night/80">{t.home.afconBody}</p>
           <span className="btn-dark mt-8">
-            AFCON 2027 <ArrowRight className="size-4 transition group-hover:translate-x-1" aria-hidden />
+            AFCON 2027
           </span>
         </Link>
       </section>

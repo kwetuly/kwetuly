@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ArrowRight, ArrowRightLeft, BadgeCheck, Handshake, Languages, Sparkles, Zap } from 'lucide-react';
+import { ArrowRightLeft, BadgeCheck, Handshake, Languages, Sparkles, Zap } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { PhotoHero } from '@/components/photo-hero';
@@ -28,7 +28,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>
           <p className="mt-4 max-w-2xl text-lg text-white/85">{p.subtitle}</p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href="#apply" className="btn">{p.applyTitle} <ArrowRight className="size-4" aria-hidden /></a>
+            <a href="#apply" className="btn">{p.applyTitle}</a>
             <Link href={`/${locale}/guides?partners=1`} className="btn-dark bg-white/15 backdrop-blur hover:bg-white hover:text-night">
               {p.browse}
             </Link>
@@ -69,7 +69,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
               <h3 className="mt-3 text-xl font-extrabold">{p.overflowTitle}</h3>
               <p className="mt-2 text-white/80">{p.overflowBody}</p>
               <Link href={`/${locale}/jobs/post?kind=handover`} className="btn mt-5">
-                {p.overflowCta} <ArrowRight className="size-4" aria-hidden />
+                {p.overflowCta}
               </Link>
             </div>
           </div>

@@ -80,7 +80,7 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
         {req.regions.length ? ` · ${req.regions.join(', ')}` : ''}
       </Muted>
       {req.budget_per_person_usd ? <Muted>{r.budgetLabel}: ${req.budget_per_person_usd.toLocaleString(locale)} {r.perPerson}</Muted> : null}
-      {req.languages.length > 0 && <Muted>{req.languages.map(languageName).join(' · ')}</Muted>}
+      {req.languages.length > 0 && <Muted>{req.languages.map(languageName).join(', ')}</Muted>}
       <Text selectable style={{ color: colors.label, lineHeight: 22 }}>{req.details}</Text>
       {(req.female_guide || req.expertise.length > 0) && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

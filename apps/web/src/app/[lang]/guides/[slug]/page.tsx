@@ -58,7 +58,7 @@ async function Profile({
     guide.years_experience != null && `${guide.years_experience} ${t.guides.years}`,
     guide.summits ? `${guide.summits} ${t.guides.summits}` : null,
     `${t.guides.groupUpTo} ${guide.max_group_size}`,
-  ].filter(Boolean);
+  ].filter((fact): fact is string => !!fact);
 
   return (
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
@@ -77,7 +77,9 @@ async function Profile({
           </div>
         </div>
 
-        <p className="mt-6 text-sm font-medium text-muted">{facts.join(' · ')}</p>
+        <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-muted">
+          {facts.map((fact) => <li key={fact}>{fact}</li>)}
+        </ul>
 
         <section className="mt-8 grid gap-6 sm:grid-cols-2">
           <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
@@ -208,7 +210,7 @@ async function CallBooking({
   return (
     <section id="call" className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
       <div className="bg-sunset px-6 py-4 text-night">
-        <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide">
+        <p className="flex items-center gap-2 text-sm font-bold">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
         </p>
         <p className="mt-1 text-2xl font-extrabold">

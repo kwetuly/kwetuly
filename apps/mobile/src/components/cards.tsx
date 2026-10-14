@@ -41,10 +41,10 @@ export function GuideCard({ guide }: { guide: Guide }) {
             {guide.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
             {guide.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}
           </View>
-          <Text style={{ color: colors.label, fontSize: 13 }}>{guide.specialties.map((s) => specialtyName(s, locale)).join(' · ')}</Text>
-          <Text style={{ color: brand.forest, fontSize: 13, fontWeight: '600' }}>{guide.languages.map(languageName).join(' · ')}</Text>
+          <Text style={{ color: colors.label, fontSize: 13 }}>{guide.specialties.map((s) => specialtyName(s, locale)).join(', ')}</Text>
+          <Text style={{ color: brand.forest, fontSize: 13, fontWeight: '600' }}>{guide.languages.map(languageName).join(', ')}</Text>
           {guide.expertise.length > 0 && (
-            <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{expertiseOf(guide.expertise).map((e) => e.label[locale]).join(' · ')}</Text>
+            <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{expertiseOf(guide.expertise).map((e) => e.label[locale]).join(', ')}</Text>
           )}
         </Card>
       </Pressable>

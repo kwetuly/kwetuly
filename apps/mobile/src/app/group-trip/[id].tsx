@@ -102,7 +102,7 @@ export default function GroupTripScreen() {
           <Text selectable style={{ color: colors.label, fontSize: 15, lineHeight: 22 }}>{g.description}</Text>
           {g.meeting_point && <Muted>{g10n.meeting}: {g.meeting_point}</Muted>}
           <Muted>{g10n.minPeople} {g.min_people} {g10n.people}</Muted>
-          {g.languages.length > 0 && <Muted>{g.languages.map(languageName).join(' · ')}</Muted>}
+          {g.languages.length > 0 && <Muted>{g.languages.map(languageName).join(', ')}</Muted>}
           {g.includes && <Muted>{g10n.includes}: {g.includes}</Muted>}
         </Card>
 

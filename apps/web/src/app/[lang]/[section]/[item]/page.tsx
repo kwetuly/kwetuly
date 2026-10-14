@@ -88,7 +88,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
 
       {siblings.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 pb-20">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-muted">
+          <h2 className="text-lg font-bold">
             {t.explore.alsoIn} {section.label[locale]}
           </h2>
           <div className="mt-4 flex flex-wrap gap-3">

@@ -48,7 +48,7 @@ export async function SocialSignIn({ locale, t, role }: { locale: Locale; t: Dic
           </button>
         </form>
       ))}
-      <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-widest text-muted">
+      <p className="flex items-center gap-3 text-sm text-muted">
         <span className="h-px flex-1 bg-line" /> {t.auth.orEmail} <span className="h-px flex-1 bg-line" />
       </p>
     </div>

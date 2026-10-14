@@ -87,7 +87,7 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
         <span className="flex items-center gap-1.5"><Users className="size-4" aria-hidden /> {request.adults} {r.adults}{request.children ? ` · ${request.children} ${r.children}` : ''}</span>
         {request.regions.length > 0 && <span className="flex items-center gap-1.5"><MapPin className="size-4" aria-hidden /> {request.regions.join(', ')}</span>}
         {request.budget_per_person_usd && <span className="flex items-center gap-1.5"><Wallet className="size-4" aria-hidden /> {r.budgetLabel}: ${request.budget_per_person_usd.toLocaleString(locale)} {r.perPerson}</span>}
-        {request.languages.length > 0 && <span className="flex items-center gap-1.5"><Languages className="size-4" aria-hidden /> {request.languages.map(languageName).join(' · ')}</span>}
+        {request.languages.length > 0 && <span className="flex items-center gap-1.5"><Languages className="size-4" aria-hidden /> {request.languages.map(languageName).join(', ')}</span>}
       </div>
       <p className="mt-5 whitespace-pre-line leading-relaxed">{request.details}</p>
       {(request.expertise.length > 0 || request.female_guide) && (
@@ -242,7 +242,7 @@ async function OffersForTraveller({ request, offers, status, t, locale }: { requ
         {(accepted ? others.concat(accepted) : others).map((offer) => (
           <li key={offer.id} className={`card p-5 ${offer.status === 'declined' ? 'opacity-60' : ''}`}>
             <OfferRow offer={offer} rate={rate} t={t} locale={locale}>
-              {offer.status !== 'sent' && <p className="mt-3 text-xs font-bold uppercase tracking-wide text-muted">{r.offerStatus[offer.status]}</p>}
+              {offer.status !== 'sent' && <p className="mt-3 text-sm font-semibold text-muted">{r.offerStatus[offer.status]}</p>}
               {offer.status === 'sent' && request.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
                 <form action={answerOffer} className="mt-4 space-y-2">
                   <input type="hidden" name="locale" value={locale} />

@@ -78,10 +78,10 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
           <div className="mt-1">
             <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
           </div>
-          <p className="mt-1 flex items-center gap-1 text-xs text-muted">
-            <MapPin className="size-3.5" aria-hidden /> {guide.base_region}
-            {guide.years_experience ? ` · ${guide.years_experience} ${t.guides.years}` : ''}
-            {guide.summits ? ` · ${guide.summits} ${t.guides.summits}` : ''}
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+            <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden /> {guide.base_region}</span>
+            {guide.years_experience ? <span>{guide.years_experience} {t.guides.years}</span> : null}
+            {guide.summits ? <span>{guide.summits} {t.guides.summits}</span> : null}
           </p>
         </div>
       </div>
@@ -104,7 +104,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
       {/* Languages */}
       <p className="mt-3 flex items-start gap-1.5 text-sm">
         <Languages className="mt-0.5 size-4 shrink-0 text-forest" aria-label={t.guides.languages} />
-        <span className="font-medium">{guide.languages.map(languageName).join(' · ')}</span>
+        <span className="font-medium">{guide.languages.map(languageName).join(', ')}</span>
       </p>
 
       {/* Special trips */}

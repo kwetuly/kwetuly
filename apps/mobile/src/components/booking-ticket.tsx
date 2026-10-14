@@ -45,7 +45,7 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
   return (
     <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, overflow: 'hidden' }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, ...dashed }}>
-        <Text style={{ color: colors.secondaryLabel, fontSize: 12, fontWeight: '800', letterSpacing: 1.5 }}>{r.ticketTitle.toUpperCase()}</Text>
+        <Text style={{ color: colors.secondaryLabel, fontSize: 14, fontWeight: '700' }}>{r.ticketTitle}</Text>
         <Badge label={r.offerStatus.accepted} />
       </View>
       <View style={{ padding: 16, gap: 12 }}>

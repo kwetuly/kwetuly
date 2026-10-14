@@ -47,7 +47,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                           <span className="flex items-center gap-2 text-sm font-semibold text-charcoal">
                             {item.label[locale]}
                             {item.status !== 'live' && (
-                              <span className="rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-forest">
+                              <span className="rounded-full bg-mint px-2 py-0.5 text-[11px] font-bold text-forest">
                                 {soonLabel}
                               </span>
                             )}

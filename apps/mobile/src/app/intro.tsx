@@ -60,7 +60,7 @@ export default function IntroScreen() {
             >
               {index === 0 && (
                 <View style={{ gap: 4, marginBottom: 8 }}>
-                  <Text style={{ color: brand.gold, fontWeight: '800', fontSize: 13, letterSpacing: 2 }}>{i.welcome.toUpperCase()}</Text>
+                  <Text style={{ color: brand.gold, fontWeight: '700', fontSize: 17 }}>{i.welcome}</Text>
                   <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>Rafrika</Text>
                   <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16 }}>{i.tagline}</Text>
                 </View>

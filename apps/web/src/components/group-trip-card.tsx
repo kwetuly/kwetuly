@@ -54,7 +54,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
           <p className="flex items-center gap-1.5"><CalendarDays className="size-4 text-forest" aria-hidden /> {formatDates(trip, locale)}</p>
           <p className="flex items-center gap-1.5"><MapPin className="size-4 text-forest" aria-hidden /> {trip.region}</p>
           {trip.languages.length > 0 && (
-            <p className="flex items-center gap-1.5"><Languages className="size-4 text-forest" aria-hidden /> {trip.languages.map(languageName).join(' · ')}</p>
+            <p className="flex items-center gap-1.5"><Languages className="size-4 text-forest" aria-hidden /> {trip.languages.map(languageName).join(', ')}</p>
           )}
           <p className="flex items-center gap-1.5"><Users className="size-4 text-forest" aria-hidden /> {t.groups.minPeople} {trip.min_people} {t.groups.people}</p>
         </div>

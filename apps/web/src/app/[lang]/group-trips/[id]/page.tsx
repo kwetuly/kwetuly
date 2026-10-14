@@ -88,7 +88,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
             {trip.meeting_point && <Fact label={g.meeting} value={trip.meeting_point} />}
             <Fact label={g.minPeople} value={`${trip.min_people} ${g.people}`} />
             {trip.languages.length > 0 && (
-              <Fact label={t.guides.languages} value={trip.languages.map(languageName).join(' · ')} icon={<Languages className="size-4 text-forest" aria-hidden />} />
+              <Fact label={t.guides.languages} value={trip.languages.map(languageName).join(', ')} icon={<Languages className="size-4 text-forest" aria-hidden />} />
             )}
             {trip.includes && <Fact label={g.includes} value={trip.includes} />}
           </dl>
