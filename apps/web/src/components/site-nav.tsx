@@ -40,7 +40,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                         href={itemHref(locale, section, item)}
                         className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand"
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf text-white shadow-sm">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-night text-gold shadow-sm">
                           <Icon name={item.icon} className="size-5" />
                         </span>
                         <span>
@@ -106,14 +106,15 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     <ChevronDown className={`ml-auto size-5 transition ${isOpen ? 'rotate-180' : ''}`} aria-hidden />
                   </button>
                   {isOpen && (
-                    <ul className="pb-4 pl-12">
+                    <ul className="pb-4 pl-9">
                       {section.items.map((item) => (
                         <li key={item.slug}>
                           <Link
                             href={itemHref(locale, section, item)}
                             onClick={() => setOpen(false)}
-                            className="block rounded-[5px] px-3 py-2.5 text-white/85 hover:bg-white/10 hover:text-gold"
+                            className="flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-white/85 hover:bg-white/10 hover:text-gold"
                           >
+                            <Icon name={item.icon} className="size-4 shrink-0 text-gold" />
                             {item.label[locale]}
                           </Link>
                         </li>
