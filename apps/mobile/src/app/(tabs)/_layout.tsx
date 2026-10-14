@@ -3,7 +3,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useSession } from '@/lib/auth';
 import { introSeen } from '@/lib/intro';
 import { useI18n } from '@/lib/i18n';
-import { brand } from '@/theme';
+import { brand, colors } from '@/theme';
 
 // Five tabs, each with its own stack. Detail screens (guide, trip, chat) open above the tabs.
 export default function TabsLayout() {
@@ -12,7 +12,7 @@ export default function TabsLayout() {
   // First launch, not signed in: show the welcome slides once.
   if (ready && !session && !introSeen()) return <Redirect href="/intro" />;
   return (
-    <NativeTabs tintColor={brand.leaf} minimizeBehavior="onScrollDown">
+    <NativeTabs tintColor={brand.leaf} backgroundColor={colors.card} indicatorColor={brand.mint} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="(explore)">
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
         <NativeTabs.Trigger.Label>{t.app.tabExplore}</NativeTabs.Trigger.Label>

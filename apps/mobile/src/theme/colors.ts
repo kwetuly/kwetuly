@@ -1,17 +1,15 @@
-import { Platform } from 'react-native';
-import { Color } from 'expo-router';
-
-// Native semantic colours (adapt to light/dark mode automatically) plus Rafrika brand colours.
+// Fixed light colours taken from the website, so the app looks the same as rafrika.com even when the
+// phone is in dark mode or Android picks colours from the wallpaper.
 export const colors = {
-  label: Platform.select({ ios: Color.ios.label, android: Color.android.dynamic.onSurface, default: '#2b3631' })!,
-  secondaryLabel: Platform.select({ ios: Color.ios.secondaryLabel, android: Color.android.dynamic.onSurfaceVariant, default: '#5f6b66' })!,
-  separator: Platform.select({ ios: Color.ios.separator, android: Color.android.dynamic.outlineVariant, default: '#e7e5e0' })!,
-  background: Platform.select({ ios: Color.ios.systemGroupedBackground, android: Color.android.dynamic.surface, default: '#f7f6f3' })!,
-  card: Platform.select({ ios: Color.ios.secondarySystemGroupedBackground, android: Color.android.dynamic.surfaceContainer, default: '#ffffff' })!,
-  fill: Platform.select({ ios: Color.ios.tertiarySystemFill, android: Color.android.dynamic.surfaceContainerHigh, default: '#eeece7' })!,
+  label: '#2b3631', // website charcoal
+  secondaryLabel: '#5f6b66', // website muted
+  separator: '#e7e5e0', // website line
+  background: '#f7f6f3', // website surface (page background)
+  card: '#ffffff',
+  fill: '#eeece7',
 };
 
-// Brand colours from the website ("savanna sunset"); the same in light and dark mode.
+// Brand colours from the website ("savanna sunset").
 export const brand = {
   night: '#7f7f7f', // grey for dark surfaces; text on it is white
   shade: '#3a3a3a', // darker grey for fades over photos
@@ -26,4 +24,3 @@ export const brand = {
   danger: '#b42318', // error text
   onDark: '#ffffff', // text on night, leaf, forest or a photo
 };
-
