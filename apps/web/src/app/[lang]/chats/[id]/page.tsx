@@ -68,7 +68,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
     <>
       <LiveChatRefresh chatId={id} />
       <div className="flex items-center gap-3">
-        <Link href={`/${locale}/chats`} className="flex size-10 items-center justify-center rounded-[15px] border border-line hover:border-sunset" aria-label={c.title}>
+        <Link href={`/${locale}/chats`} className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-leaf" aria-label={c.title}>
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
         <div className="min-w-0 flex-1">
@@ -83,14 +83,14 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
         <input type="hidden" name="locale" value={locale} />
         <input type="hidden" name="chat_id" value={id} />
         <input type="hidden" name="muted" value={muted ? 'false' : 'true'} />
-        <button className="inline-flex items-center gap-1.5 rounded-[15px] border border-line px-3 py-1.5 text-xs font-semibold hover:border-sunset" title={muted ? t.alerts.muted : undefined}>
+        <button className="inline-flex items-center gap-1.5 rounded-[5px] border border-line px-3 py-1.5 text-xs font-semibold hover:border-leaf" title={muted ? t.alerts.muted : undefined}>
           {muted ? <BellOff className="size-4" aria-hidden /> : <Bell className="size-4" aria-hidden />} {muted ? t.alerts.unmute : t.alerts.mute}
         </button>
       </form>
 
       <details className="card mt-2 p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-bold [&::-webkit-details-marker]:hidden">
-          <UserPlus className="size-5 text-sunset" aria-hidden /> {c.invite}
+          <UserPlus className="size-5 text-leaf" aria-hidden /> {c.invite}
         </summary>
         <p className="mt-2 text-sm text-muted">{c.inviteBody}</p>
         <div className="mt-3">
@@ -154,7 +154,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
                   <button className="rounded-[10px] px-2 py-1 text-[11px] font-semibold text-muted hover:bg-white hover:text-red-700">{c.delete}</button>
                 </form>
               )}
-              {mine && blocked && <p className="mt-1 max-w-[85%] text-right text-[11px] text-sunset-dark">{c.objectionNote}</p>}
+              {mine && blocked && <p className="mt-1 max-w-[85%] text-right text-[11px] text-leaf-dark">{c.objectionNote}</p>}
 
               {/* Anyone else in the chat can block public use of something they appear in. */}
               {!mine && msg.share_public && (
@@ -163,7 +163,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
                   <input type="hidden" name="chat_id" value={id} />
                   <input type="hidden" name="message_id" value={msg.id} />
                   <input type="hidden" name="object" value={iObject ? 'false' : 'true'} />
-                  <button className={`inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-semibold ${iObject ? 'bg-sand text-sunset-dark' : 'hover:bg-white'}`}>
+                  <button className={`inline-flex items-center gap-1 rounded-[10px] px-2 py-1 text-xs font-semibold ${iObject ? 'bg-sand text-leaf-dark' : 'hover:bg-white'}`}>
                     <ShieldOff className="size-3.5" aria-hidden /> {iObject ? `${c.objected} · ${c.withdrawObjection}` : c.objectCta}
                   </button>
                 </form>

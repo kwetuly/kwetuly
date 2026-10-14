@@ -63,7 +63,7 @@ async function Thread({
     <>
       <LiveRefresh conversationId={id} />
       <div className="flex items-center gap-3">
-        <Link href={`/${locale}/messages`} className="flex size-10 items-center justify-center rounded-full border border-line hover:border-sunset" aria-label={m.back}>
+        <Link href={`/${locale}/messages`} className="flex size-10 items-center justify-center rounded-full border border-line hover:border-leaf" aria-label={m.back}>
           <ArrowLeft className="size-5" aria-hidden />
         </Link>
         <div>
@@ -76,7 +76,7 @@ async function Thread({
         </div>
       </div>
 
-      <p className={`mt-4 flex gap-2 rounded-2xl p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-sunset-dark'}`}>
+      <p className={`mt-4 flex gap-2 rounded-2xl p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-leaf-dark'}`}>
         {conversation.contact_unlocked ? <ShieldCheck className="size-4 shrink-0" aria-hidden /> : <LockKeyhole className="size-4 shrink-0" aria-hidden />}
         {conversation.contact_unlocked ? m.unlockedNote : m.hiddenNote}
       </p>
@@ -97,7 +97,7 @@ async function Thread({
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="conversation_id" value={id} />
                     <input type="hidden" name="message_id" value={msg.id} />
-                    <button className="inline-flex items-center gap-0.5 opacity-60 hover:text-sunset hover:opacity-100" title={m.report}>
+                    <button className="inline-flex items-center gap-0.5 opacity-60 hover:text-leaf hover:opacity-100" title={m.report}>
                       <Flag className="size-3" aria-hidden /> {m.report}
                     </button>
                   </form>

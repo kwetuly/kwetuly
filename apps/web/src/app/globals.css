@@ -6,8 +6,8 @@
   --color-forest: #0e6b4f;
   --color-forest-dark: #0a4f3a;
   --color-mint: #e3f6ee;
-  --color-sunset: #ff6a2b;
-  --color-sunset-dark: #e5521a;
+  --color-leaf: #157a55;
+  --color-leaf-dark: #0e6b4f;
   --color-gold: #ffb627;
   --color-sand: #fff8ee;
   --color-charcoal: #16211c;
@@ -25,19 +25,19 @@ body {
 }
 
 .btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-[15px] bg-sunset px-6 py-3 font-semibold text-white transition hover:bg-sunset-dark active:bg-sunset-dark disabled:opacity-60;
+  @apply inline-flex items-center justify-center gap-2 rounded-[5px] bg-leaf px-6 py-3 font-semibold text-white transition hover:bg-leaf-dark active:bg-leaf-dark disabled:opacity-60;
 }
 
 .btn-dark {
-  @apply inline-flex items-center justify-center gap-2 rounded-[15px] bg-night px-6 py-3 font-semibold text-white transition hover:bg-forest;
+  @apply inline-flex items-center justify-center gap-2 rounded-[5px] bg-night px-6 py-3 font-semibold text-white transition hover:bg-forest;
 }
 
 .btn-outline {
-  @apply inline-flex items-center justify-center gap-2 rounded-[15px] border-2 border-forest px-6 py-2.5 font-semibold text-forest transition hover:bg-mint;
+  @apply inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-forest px-6 py-2.5 font-semibold text-forest transition hover:bg-mint;
 }
 
 .field {
-  @apply w-full rounded-brand border border-line bg-white px-4 py-3 text-base outline-none transition focus:border-forest focus:ring-4 focus:ring-mint;
+  @apply w-full rounded-[5px] border border-line bg-white px-4 py-3 text-base outline-none transition focus:border-forest focus:ring-4 focus:ring-mint;
 }
 
 .label {

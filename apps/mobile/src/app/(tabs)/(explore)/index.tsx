@@ -27,7 +27,7 @@ export default function ExploreScreen() {
           <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.body }}>{t.home.eyebrow}</Text>
           <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.title1, lineHeight: 32 }}>{t.home.title}</Text>
           <Link href="/guides" asChild>
-            <Pressable style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.md, alignItems: 'center', marginTop: space.sm }}>
+            <Pressable style={{ backgroundColor: brand.leaf, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.md, alignItems: 'center', marginTop: space.sm }}>
               <Text style={{ color: brand.onDark, fontWeight: '800' }}>{t.home.search}</Text>
             </Pressable>
           </Link>
@@ -78,7 +78,7 @@ export default function ExploreScreen() {
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <SectionTitle>{t.groups.title}</SectionTitle>
-          <Link href="/trips" style={{ color: brand.sunset, fontWeight: '700' }}>
+          <Link href="/trips" style={{ color: brand.leaf, fontWeight: '700' }}>
             {t.explore.more}
           </Link>
         </View>
@@ -113,7 +113,6 @@ export default function ExploreScreen() {
         <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, paddingHorizontal: space.lg }}>
           {t.home.why.map((item, i) => (
             <View key={item.title} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.lg, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
-              <Text style={{ width: 18, fontWeight: '800', fontSize: textSize.body, color: brand.sunset, fontVariant: ['tabular-nums'] }}>{i + 1}</Text>
               <View style={{ flex: 1, gap: space.xs }}>
                 <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{item.title}</Text>
                 <Text style={{ color: colors.secondaryLabel, lineHeight: 20 }}>{item.body}</Text>

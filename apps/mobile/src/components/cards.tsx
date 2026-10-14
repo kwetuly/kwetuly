@@ -29,7 +29,7 @@ export function GuideCard({ guide }: { guide: Guide }) {
                   <Text style={{ color: colors.secondaryLabel }}>({guide.rating_count})</Text>
                 </View>
               ) : (
-                <Text style={{ color: brand.sunsetDark, fontSize: textSize.caption, fontWeight: '700' }}>✦ {t.reviews.newGuide}</Text>
+                <Text style={{ color: brand.leafDark, fontSize: textSize.caption, fontWeight: '700' }}>✦ {t.reviews.newGuide}</Text>
               )}
               <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>
                 {guide.base_region}
@@ -75,9 +75,9 @@ export function SpotsBar({ taken, max, labels }: { taken: number; max: number; l
   return (
     <View style={{ gap: space.sm }}>
       <View style={{ height: 8, borderRadius: radius.bar, backgroundColor: colors.fill, overflow: 'hidden' }}>
-        <View style={{ width: `${Math.min(100, (taken / max) * 100)}%`, height: '100%', backgroundColor: brand.sunset }} />
+        <View style={{ width: `${Math.min(100, (taken / max) * 100)}%`, height: '100%', backgroundColor: brand.leaf }} />
       </View>
-      <Text style={{ color: left === 0 ? colors.secondaryLabel : brand.sunsetDark, fontWeight: '700', fontSize: textSize.caption, fontVariant: ['tabular-nums'] }}>
+      <Text style={{ color: left === 0 ? colors.secondaryLabel : brand.leafDark, fontWeight: '700', fontSize: textSize.caption, fontVariant: ['tabular-nums'] }}>
         {left === 0 ? labels.full : `${left} ${labels.spotsLeft}`} · {taken}/{max}
       </Text>
     </View>

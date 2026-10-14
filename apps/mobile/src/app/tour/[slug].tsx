@@ -49,7 +49,7 @@ export default function TourScreen() {
           <SectionTitle>{t.tours.itinerary}</SectionTitle>
           {tour.itinerary.map((day, i) => (
             <View key={`${day.day}-${i}`} style={{ gap: space.xxs }}>
-              <Text style={{ fontWeight: '800', color: brand.sunsetDark }}>{day.day}</Text>
+              <Text style={{ fontWeight: '800', color: brand.leafDark }}>{day.day}</Text>
               <Text style={{ fontWeight: '700', color: colors.label }}>{day.title}</Text>
               <Muted>{day.body}</Muted>
             </View>

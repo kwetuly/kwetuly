@@ -12,7 +12,7 @@ export default function TabsLayout() {
   // First launch, not signed in: show the welcome slides once.
   if (ready && !session && !introSeen()) return <Redirect href="/intro" />;
   return (
-    <NativeTabs tintColor={brand.sunset} minimizeBehavior="onScrollDown">
+    <NativeTabs tintColor={brand.leaf} minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="(explore)">
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
         <NativeTabs.Trigger.Label>{t.app.tabExplore}</NativeTabs.Trigger.Label>

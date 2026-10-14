@@ -10,7 +10,7 @@ import { brand } from '@/theme';
 function RootStack() {
   const { t } = useI18n();
   return (
-    <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal', headerTintColor: brand.sunset }}>
+    <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal', headerTintColor: brand.leaf }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="intro" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
       <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: t.auth.signInTitle }} />

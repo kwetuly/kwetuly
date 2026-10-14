@@ -63,7 +63,7 @@ export default function ConversationScreen() {
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         contentContainerStyle={{ padding: space.lg, gap: space.md }}
         ListHeaderComponent={
-          <Text style={{ backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.sunsetDark, padding: space.md, borderRadius: radius.media, fontSize: textSize.caption, marginBottom: space.sm }}>
+          <Text style={{ backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, fontSize: textSize.caption, marginBottom: space.sm }}>
             {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
           </Text>
         }
@@ -115,7 +115,7 @@ export default function ConversationScreen() {
           maxLength={4000}
           style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
         />
-        <Pressable onPress={send} disabled={sending || !body.trim()} accessibilityRole="button" accessibilityLabel={t.messages.send} style={{ backgroundColor: brand.sunset, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: sending || !body.trim() ? 0.5 : 1 }}>
+        <Pressable onPress={send} disabled={sending || !body.trim()} accessibilityRole="button" accessibilityLabel={t.messages.send} style={{ backgroundColor: brand.leaf, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: sending || !body.trim() ? 0.5 : 1 }}>
           <Text style={{ color: brand.onDark, fontWeight: '800' }}>{t.messages.send}</Text>
         </Pressable>
       </View>

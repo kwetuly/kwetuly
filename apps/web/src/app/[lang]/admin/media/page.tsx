@@ -69,7 +69,7 @@ async function Library({ locale }: { locale: Locale }) {
               {shortName(m.sender_name)} · {m.group_chats?.name} · {new Date(m.created_at).toLocaleDateString('en-GB')}
             </p>
             {blocked.has(m.id) ? (
-              <p className="font-semibold text-sunset-dark">Someone in the chat objected. It can’t be used publicly.</p>
+              <p className="font-semibold text-red-700">Someone in the chat objected. It can’t be used publicly.</p>
             ) : (
               <form action={setFeatured}>
                 <input type="hidden" name="locale" value={locale} />

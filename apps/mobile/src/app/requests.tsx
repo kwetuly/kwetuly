@@ -41,7 +41,7 @@ export default function RequestsScreen() {
           <Muted>
             {req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : r.datesFlexible} · {req.adults + req.children} {r.people}
           </Muted>
-          <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>
+          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>
             {r.offersTitle}: {req.offers_count}
             {!showName && lowest.data?.[req.id] != null ? ` · ${r.fromPrice.replace('{price}', formatUsd(lowest.data[req.id]))}` : ''}
           </Text>
@@ -63,7 +63,7 @@ export default function RequestsScreen() {
             open.refetch();
             offers.refetch();
           }}
-          tintColor={brand.sunset}
+          tintColor={brand.leaf}
         />
       }
     >

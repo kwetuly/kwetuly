@@ -113,7 +113,7 @@ export default function AccountScreen() {
                   {c.scheduled_at ? ` · ${new Date(c.scheduled_at).toLocaleString(locale)}` : ''}
                 </Muted>
                 {c.status === 'accepted' && c.meeting_link && (
-                  <Text style={{ color: brand.sunset, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(c.meeting_link!)}>
+                  <Text style={{ color: brand.leaf, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(c.meeting_link!)}>
                     {t.traveler.joinCall} ›
                   </Text>
                 )}

@@ -5,8 +5,8 @@ export const colors = {
   forest: '#0E6B4F', // primary brand green
   forestDark: '#0A4F3A',
   mint: '#E3F6EE', // soft green tint: badges, selections
-  sunset: '#FF6A2B', // main call-to-action
-  sunsetDark: '#E5521A',
+  leaf: '#157A55', // main call-to-action: calm green, 5.3:1 with white text
+  leafDark: '#0E6B4F',
   gold: '#FFB627', // highlights
   sand: '#FFF8EE', // warm background sections
   charcoal: '#16211C', // body text

@@ -101,7 +101,7 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
             </button>
           </div>
           <label className="mt-2 flex items-start gap-2">
-            <input type="checkbox" name="share_public" className="mt-0.5 size-4 accent-sunset" />
+            <input type="checkbox" name="share_public" className="mt-0.5 size-4 accent-leaf" />
             <span>
               <span className="font-semibold">{labels.shareConsent}</span>
               <span className="block text-xs text-muted">{labels.consentNote}</span>
@@ -110,7 +110,7 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
         </div>
       )}
       <div className="flex items-end gap-2">
-        <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[15px] bg-mint text-forest hover:bg-forest hover:text-white" title={labels.attach}>
+        <label className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[5px] bg-mint text-forest hover:bg-forest hover:text-white" title={labels.attach}>
           <ImagePlus className="size-5" aria-hidden />
           <span className="sr-only">{labels.attach}</span>
           <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime,video/webm" onChange={pick} className="sr-only" />

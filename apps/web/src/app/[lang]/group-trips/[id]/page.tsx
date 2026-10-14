@@ -79,7 +79,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         <div className="space-y-8">
           {status.created && <p className="rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
           {trip.cancelled && <p className="rounded-2xl bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
-          {!trip.cancelled && trip.status === 'pending' && <p className="rounded-2xl bg-sand p-4 font-semibold text-sunset-dark">{g.statusPending}</p>}
+          {!trip.cancelled && trip.status === 'pending' && <p className="rounded-2xl bg-sand p-4 font-semibold text-leaf-dark">{g.statusPending}</p>}
           {trip.status === 'rejected' && <p className="rounded-2xl bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
 
           <p className="whitespace-pre-line text-lg leading-relaxed">{trip.description}</p>
@@ -104,7 +104,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
           <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-            <div className="bg-sunset px-6 py-5 text-night">
+            <div className="bg-leaf px-6 py-5 text-white">
               <p className="text-3xl font-extrabold tabular-nums">{formatUsd(trip.price_per_person_usd)}</p>
               {approxTzs(trip.price_per_person_usd, rate) && <p className="text-xs font-semibold tabular-nums">{approxTzs(trip.price_per_person_usd, rate)}</p>}
               <p className="text-sm font-bold">{g.perPerson}</p>
@@ -142,7 +142,7 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
     <section className="card">
       <p className="text-sm font-bold text-muted">{t.groups.organisedBy}</p>
       {trip.guides ? (
-        <Link href={`/${locale}/guides/${trip.guides.slug}`} className="mt-2 block hover:text-sunset">
+        <Link href={`/${locale}/guides/${trip.guides.slug}`} className="mt-2 block hover:text-leaf">
           <span className="text-xl font-bold">{trip.guides.display_name}</span>
           <span className="mt-1 block">
             <RatingSummary avg={trip.guides.rating_avg} count={trip.guides.rating_count} labels={t.reviews} />

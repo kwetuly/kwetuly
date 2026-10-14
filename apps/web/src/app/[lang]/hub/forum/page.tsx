@@ -31,9 +31,9 @@ export default async function ForumPage() {
       </Suspense>
       <aside className="card h-fit">
         <h2 className="flex items-center gap-2 text-lg font-bold">
-          <MessagesSquare className="size-5 text-sunset" aria-hidden /> {t.hub.newPost}
+          <MessagesSquare className="size-5 text-leaf" aria-hidden /> {t.hub.newPost}
         </h2>
-        <p className="mt-2 flex gap-2 rounded-2xl bg-sand p-3 text-xs font-semibold text-sunset-dark">
+        <p className="mt-2 flex gap-2 rounded-2xl bg-sand p-3 text-xs font-semibold text-leaf-dark">
           <TriangleAlert className="size-4 shrink-0" aria-hidden /> {t.hub.sightingWarning}
         </p>
         <form action={createPost} className="mt-4 space-y-3">
@@ -73,7 +73,7 @@ async function Threads({ t, locale }: { t: Dictionary; locale: Locale }) {
         <ul className="mt-6 space-y-3">
           {posts.map((p) => (
             <li key={p.id}>
-              <Link href={`/${locale}/hub/forum/${p.id}`} className="card block transition hover:border-sunset/50">
+              <Link href={`/${locale}/hub/forum/${p.id}`} className="card block transition hover:border-leaf/50">
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span className="font-semibold text-charcoal">{p.author_name}</span>
                   {p.region && <span className="badge">{p.region}</span>}

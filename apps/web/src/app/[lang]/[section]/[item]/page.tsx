@@ -49,7 +49,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
             <ArrowLeft className="size-4" aria-hidden /> {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
-            <span className="flex size-16 items-center justify-center rounded-2xl bg-sunset">
+            <span className="flex size-16 items-center justify-center rounded-2xl bg-leaf">
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>
@@ -96,7 +96,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
               <Link
                 key={s.slug}
                 href={itemHref(locale, section, s)}
-                className="inline-flex items-center gap-2 rounded-[15px] border border-line bg-white px-4 py-2 font-semibold transition hover:border-sunset hover:text-sunset"
+                className="inline-flex items-center gap-2 rounded-[5px] border border-line bg-white px-4 py-2 font-semibold transition hover:border-leaf hover:text-leaf"
               >
                 <Icon name={s.icon} className="size-4" /> {s.label[locale]}
               </Link>

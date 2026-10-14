@@ -16,7 +16,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle> }) {
-  const background = variant === 'primary' ? brand.sunset : variant === 'dark' ? brand.night : 'transparent';
+  const background = variant === 'primary' ? brand.leaf : variant === 'dark' ? brand.night : 'transparent';
   const color = variant === 'outline' ? brand.forest : brand.onDark;
   return (
     <Pressable
@@ -64,7 +64,7 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
 export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' | 'sand' | 'night' | 'gold' }) {
   const styles = {
     mint: { backgroundColor: brand.mint, color: brand.forest },
-    sand: { backgroundColor: brand.sand, color: brand.sunsetDark },
+    sand: { backgroundColor: brand.sand, color: brand.leafDark },
     night: { backgroundColor: brand.night, color: brand.onDark },
     gold: { backgroundColor: brand.goldSoft, color: brand.night },
   }[tone];
@@ -110,7 +110,7 @@ export function Muted({ children, selectable }: { children: ReactNode; selectabl
 
 /** Loading, error and empty states in one place. */
 export function ScreenState({ loading, error, empty, emptyText, onRetry, retryLabel }: { loading?: boolean; error?: unknown; empty?: boolean; emptyText?: string; onRetry?: () => void; retryLabel?: string }) {
-  if (loading) return <ActivityIndicator style={{ padding: space.xxl }} color={brand.sunset} />;
+  if (loading) return <ActivityIndicator style={{ padding: space.xxl }} color={brand.leaf} />;
   if (error) {
     return (
       <View style={{ padding: space.xl, gap: space.md }}>

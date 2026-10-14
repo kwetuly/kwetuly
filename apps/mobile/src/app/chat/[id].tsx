@@ -155,10 +155,10 @@ export default function GroupChatScreen() {
           <View style={{ gap: space.sm }}>
             <Text numberOfLines={1} style={{ fontWeight: '700', color: colors.label }}>
               {picked.kind === 'video' ? '🎬' : '📷'} {picked.name}{' '}
-              <Text onPress={() => setPicked(null)} style={{ color: brand.sunset }}>✕</Text>
+              <Text onPress={() => setPicked(null)} style={{ color: brand.leaf }}>✕</Text>
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-              <Switch value={sharePublic} onValueChange={setSharePublic} trackColor={{ true: brand.sunset }} />
+              <Switch value={sharePublic} onValueChange={setSharePublic} trackColor={{ true: brand.leaf }} />
               <Text style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{c.shareConsent}</Text>
             </View>
             <Text style={{ fontSize: textSize.caption, color: colors.secondaryLabel }}>{c.consentNote}</Text>
@@ -177,7 +177,7 @@ export default function GroupChatScreen() {
             maxLength={4000}
             style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
           />
-          <Pressable onPress={send} disabled={sending || (!body.trim() && !picked)} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.sunset, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: sending || (!body.trim() && !picked) ? 0.5 : 1 }}>
+          <Pressable onPress={send} disabled={sending || (!body.trim() && !picked)} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.leaf, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: sending || (!body.trim() && !picked) ? 0.5 : 1 }}>
             <Text style={{ color: brand.onDark, fontWeight: '800' }}>{sending ? c.uploading : c.send}</Text>
           </Pressable>
         </View>

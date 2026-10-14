@@ -48,7 +48,7 @@ export default function MyGroupTripsScreen() {
             organised.refetch();
             joined.refetch();
           }}
-          tintColor={brand.sunset}
+          tintColor={brand.leaf}
         />
       }
     >

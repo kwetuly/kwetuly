@@ -54,14 +54,14 @@ async function Jobs({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <section>
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <Briefcase className="size-7 text-sunset" aria-hidden /> {hubLabel('jobs', locale)}
+        <Briefcase className="size-7 text-leaf" aria-hidden /> {hubLabel('jobs', locale)}
       </h1>
       {jobs.length === 0 && <p className="mt-6 text-muted">{t.hub.noJobs}</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {jobs.map((j) => (
-          <div key={j.id} className={`card ${j.kind === 'handover' ? 'border-sunset' : ''}`}>
+          <div key={j.id} className={`card ${j.kind === 'handover' ? 'border-leaf' : ''}`}>
             {j.kind === 'handover' ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-sunset px-3 py-1 text-xs font-bold text-white"><ArrowRightLeft className="size-3.5" aria-hidden /> {t.jobs.handoverBadge}</span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-leaf px-3 py-1 text-xs font-bold text-white"><ArrowRightLeft className="size-3.5" aria-hidden /> {t.jobs.handoverBadge}</span>
             ) : (
               <span className="badge">{jobRoleName(j.role_needed, locale)}</span>
             )}

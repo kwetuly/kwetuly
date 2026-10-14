@@ -20,7 +20,7 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
     <>
       <PhotoHero photo="giraffesBalloon">
         <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
             <Plus className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold">{t.groups.newTitle}</h1>
@@ -121,7 +121,7 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
           {GUIDE_LANGUAGES.map((l) => (
             <label key={l.code} className="cursor-pointer">
               <input type="checkbox" name="languages" value={l.code} defaultChecked={l.code === 'en'} className="peer sr-only" />
-              <span className="inline-block rounded-[15px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
+              <span className="inline-block rounded-[5px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
                 {l.name}
               </span>
             </label>

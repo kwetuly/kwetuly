@@ -36,7 +36,7 @@ async function Hero({ searchParams, t, locale }: { searchParams: Search; t: Dict
   const handover = (await searchParams).kind === 'handover';
   const j = t.jobs;
   const tab = (active: boolean) =>
-    `inline-flex items-center gap-2 rounded-[15px] px-4 py-2 text-sm font-bold ${active ? 'bg-white text-night' : 'bg-white/10 text-white hover:bg-white/20'}`;
+    `inline-flex items-center gap-2 rounded-[5px] px-4 py-2 text-sm font-bold ${active ? 'bg-white text-night' : 'bg-white/10 text-white hover:bg-white/20'}`;
   return (
     <PhotoHero photo={handover ? 'safariSunset' : 'kiliHikers'}>
       <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
@@ -121,7 +121,7 @@ async function JobForm({
               {GUIDE_LANGUAGES.map((l) => (
                 <label key={l.code} className="cursor-pointer">
                   <input type="checkbox" name="languages" value={l.code} className="peer sr-only" />
-                  <span className="inline-block rounded-[15px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
+                  <span className="inline-block rounded-[5px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
                     {l.name}
                   </span>
                 </label>

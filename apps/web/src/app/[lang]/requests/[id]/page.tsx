@@ -47,7 +47,7 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
 
   return (
     <>
-      <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-sunset">
+      <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-leaf">
         <ArrowLeft className="size-4" aria-hidden /> {r.title}
       </Link>
       {status.posted && <p className="mt-4 rounded-2xl bg-mint p-4 font-semibold text-forest">✓ {r.posted}</p>}
@@ -74,7 +74,7 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
     <section className="card mt-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-bold text-sunset-dark">{specialtyName(request.specialty, locale)}</p>
+          <p className="text-sm font-bold text-leaf-dark">{specialtyName(request.specialty, locale)}</p>
           <h1 className="mt-1 text-3xl font-extrabold">{request.title}</h1>
           {!isOwner && <p className="mt-1 text-muted">{t.offers.from} {request.traveler_name}</p>}
         </div>
@@ -92,9 +92,9 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
       <p className="mt-5 whitespace-pre-line leading-relaxed">{request.details}</p>
       {(request.expertise.length > 0 || request.female_guide) && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {request.female_guide && <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-sunset-dark">{r.femaleGuide}</span>}
+          {request.female_guide && <span className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">{r.femaleGuide}</span>}
           {request.expertise.map((id) => (
-            <span key={id} className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-sunset-dark">
+            <span key={id} className="rounded-full bg-sand px-3 py-1 text-xs font-bold text-leaf-dark">
               {GUIDE_EXPERTISE.find((e) => e.id === id)?.label[locale] ?? id}
             </span>
           ))}
@@ -105,7 +105,7 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="request_id" value={request.id} />
           <input type="hidden" name="open" value={request.status === 'open' ? 'false' : 'true'} />
-          <button className="text-sm font-semibold text-muted underline hover:text-sunset">{request.status === 'open' ? r.close : r.reopen}</button>
+          <button className="text-sm font-semibold text-muted underline hover:text-leaf">{request.status === 'open' ? r.close : r.reopen}</button>
         </form>
       )}
     </section>
@@ -128,7 +128,7 @@ function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate
       <div className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-1">
         <div className="min-w-0">
           {offer.guides ? (
-            <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-lg font-bold hover:text-sunset">{offer.guides.display_name}</Link>
+            <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-lg font-bold hover:text-leaf">{offer.guides.display_name}</Link>
           ) : (
             <p className="text-lg font-bold">{offer.company_name}</p>
           )}

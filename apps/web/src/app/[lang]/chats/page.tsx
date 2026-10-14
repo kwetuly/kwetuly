@@ -15,7 +15,7 @@ export default async function ChatsPage({ searchParams }: PageProps<'/[lang]/cha
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <UsersRound className="size-7 text-sunset" aria-hidden /> {t.chats.title}
+        <UsersRound className="size-7 text-leaf" aria-hidden /> {t.chats.title}
       </h1>
       <p className="mt-2 text-muted">{t.chats.subtitle}</p>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-3xl bg-surface" />}>
@@ -59,7 +59,7 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
           {chats.map((chat) => (
             <li key={chat.id}>
               <Link href={`/${locale}/chats/${chat.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sunset font-bold text-night">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-leaf font-bold text-white">
                   <UsersRound className="size-5" aria-hidden />
                 </span>
                 <span className="min-w-0 flex-1">

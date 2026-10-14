@@ -23,7 +23,7 @@ export function RatingSummary({
   labels: { newGuide: string; reviews: string; review: string; stars: string };
 }) {
   if (!count || avg == null) {
-    return <span className="text-xs font-semibold text-sunset-dark">✦ {labels.newGuide}</span>;
+    return <span className="text-xs font-semibold text-leaf-dark">✦ {labels.newGuide}</span>;
   }
   return (
     <span className="inline-flex items-center gap-1.5 text-sm">

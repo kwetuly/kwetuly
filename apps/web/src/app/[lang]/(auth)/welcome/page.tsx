@@ -56,8 +56,8 @@ async function WelcomeForm({
           {roles.map(({ id, Icon }) => (
             <label key={id} className="cursor-pointer">
               <input type="radio" name="role" value={id} defaultChecked={selected === id} className="peer sr-only" />
-              <span className="flex h-full flex-col gap-2 rounded-2xl border-2 border-line p-4 transition peer-checked:border-sunset peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-mint">
-                <Icon className="size-6 text-sunset" aria-hidden />
+              <span className="flex h-full flex-col gap-2 rounded-2xl border-2 border-line p-4 transition peer-checked:border-leaf peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-mint">
+                <Icon className="size-6 text-leaf" aria-hidden />
                 <span className="font-bold">{t.join[id].title}</span>
                 <span className="text-xs text-muted">{t.join[id].body}</span>
               </span>

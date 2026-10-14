@@ -22,7 +22,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
     <>
       <PhotoHero photo="buffaloCar">
         <div className="mx-auto max-w-6xl px-4 pb-20 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
             <Handshake className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{p.title}</h1>
@@ -41,7 +41,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
           const WhyIcon = whyIcons[i] ?? BadgeCheck;
           return (
             <div key={item.title} className="card">
-              <WhyIcon className="size-8 text-sunset" aria-hidden />
+              <WhyIcon className="size-8 text-leaf" aria-hidden />
               <h2 className="mt-4 font-bold">{item.title}</h2>
               <p className="mt-2 text-sm text-muted">{item.body}</p>
             </div>
@@ -56,7 +56,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
             <ol className="mt-6 space-y-4">
               {p.how.map((step, i) => (
                 <li key={step} className="flex gap-4">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[15px] bg-sunset font-extrabold text-night">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf font-extrabold text-white">
                     {i + 1}
                   </span>
                   <p className="pt-2 font-semibold">{step}</p>

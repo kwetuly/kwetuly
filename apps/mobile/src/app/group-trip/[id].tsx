@@ -81,7 +81,7 @@ export default function GroupTripScreen() {
 
       <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>
-          <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>{specialtyName(g.specialty, locale)}</Text>
+          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{specialtyName(g.specialty, locale)}</Text>
           <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.title}</Text>
           <Muted>
             {formatDateRange(g.start_date, g.end_date, locale)} · {g.region}

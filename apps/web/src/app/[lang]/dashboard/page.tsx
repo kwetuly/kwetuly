@@ -176,7 +176,7 @@ async function GuideEditor({
           <legend className="px-1 text-lg font-semibold">{d.callsSection}</legend>
           <p className="text-sm text-muted">{d.callsHint}</p>
           <label className="flex items-center gap-2 font-semibold">
-            <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-sunset" />
+            <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-leaf" />
             {d.callEnabled}
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -257,7 +257,7 @@ async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: L
                     {c.meeting_link && (
                       <>
                         {' · '}
-                        <a href={c.meeting_link} className="font-semibold text-sunset underline" target="_blank" rel="noopener">
+                        <a href={c.meeting_link} className="font-semibold text-leaf underline" target="_blank" rel="noopener">
                           {t.traveler.joinCall}
                         </a>
                       </>
@@ -352,7 +352,7 @@ function Checkboxes({
         {options.map((o) => (
           <label key={o.value} className="cursor-pointer">
             <input type="checkbox" name={name} value={o.value} defaultChecked={checked.includes(o.value)} className="peer sr-only" />
-            <span className="inline-block rounded-[15px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
+            <span className="inline-block rounded-[5px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest">
               {o.label}
             </span>
           </label>

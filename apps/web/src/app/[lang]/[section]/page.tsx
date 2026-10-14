@@ -42,7 +42,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
     <>
       <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
             <Icon name={section.icon} className="size-7" />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{section.label[locale]}</h1>
@@ -54,9 +54,9 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
           <Link
             key={item.slug}
             href={itemHref(locale, section, item)}
-            className="card group flex items-start gap-4 transition hover:-translate-y-1 hover:border-sunset/40"
+            className="card group flex items-start gap-4 transition hover:-translate-y-1 hover:border-leaf/40"
           >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-sunset transition group-hover:bg-sunset group-hover:text-white">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-leaf transition group-hover:bg-leaf group-hover:text-white">
               <Icon name={item.icon} className="size-6" />
             </span>
             <span className="flex-1">
@@ -66,7 +66,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
               </span>
               <span className="mt-1 block text-muted">{item.blurb[locale]}</span>
             </span>
-            <ArrowRight className="mt-1 size-5 text-muted transition group-hover:translate-x-1 group-hover:text-sunset" aria-hidden />
+            <ArrowRight className="mt-1 size-5 text-muted transition group-hover:translate-x-1 group-hover:text-leaf" aria-hidden />
           </Link>
         ))}
       </section>

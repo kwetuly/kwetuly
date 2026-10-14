@@ -33,7 +33,7 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
     />
   ) : (
     <div
-      className="flex shrink-0 items-center justify-center rounded-brand bg-sand font-bold text-sunset-dark"
+      className="flex shrink-0 items-center justify-center rounded-brand bg-sand font-bold text-leaf-dark"
       style={{ width: size, height: size, fontSize: size / 2.5 }}
       aria-hidden
     >
@@ -53,7 +53,7 @@ export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
       )}
       {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-night`}>{t.guides.pro}</span>}
       {guide.female_guide && (
-        <span className={`${pill} bg-sand text-sunset-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
+        <span className={`${pill} bg-sand text-leaf-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
       )}
       {guide.open_to_partners && (
         <span className={`${pill} bg-night text-white`}><Handshake className="size-3.5" aria-hidden /> {t.guides.partners}</span>
@@ -68,12 +68,12 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
   return (
     <Link
       href={`/${locale}/guides/${guide.slug}`}
-      className="group flex flex-col rounded-3xl border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-sunset"
+      className="group flex flex-col rounded-3xl border border-line bg-white p-5 transition hover:-translate-y-1 hover:border-leaf"
     >
       <div className="flex gap-4">
         <GuideAvatar guide={guide} size={72} />
         <div className="min-w-0">
-          <h3 className="text-lg font-bold leading-tight group-hover:text-sunset">{guide.display_name}</h3>
+          <h3 className="text-lg font-bold leading-tight group-hover:text-leaf">{guide.display_name}</h3>
           {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
           <div className="mt-1">
             <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />

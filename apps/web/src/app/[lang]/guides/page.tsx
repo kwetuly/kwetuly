@@ -68,7 +68,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
     <>
       {heading ? (
         <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-sunset text-white shadow-lg">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-leaf text-white shadow-lg">
             <Icon name={heading.icon} className="size-7" />
           </span>
           <div>
@@ -91,8 +91,8 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
             <li key={l.code}>
               <Link
                 href={`/${locale}/guides?language=${l.code}`}
-                className={`inline-block rounded-[15px] px-3 py-1.5 text-sm font-semibold ${
-                  filters.language === l.code ? 'bg-night text-white' : 'border border-line bg-white hover:border-sunset'
+                className={`inline-block rounded-[5px] px-3 py-1.5 text-sm font-semibold ${
+                  filters.language === l.code ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'
                 }`}
               >
                 {l.name}
@@ -103,7 +103,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
       </section>
 
       {filtered && (
-        <Link href={`/${locale}/guides`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-sunset">
+        <Link href={`/${locale}/guides`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-leaf">
           <X className="size-4" aria-hidden /> {t.guides.clear}
         </Link>
       )}

@@ -33,7 +33,7 @@ export default function TripsScreen() {
       )}
       ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
       contentContainerStyle={{ paddingBottom: space.xxl }}
-      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => active.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => active.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ flexDirection: 'row', gap: space.sm, padding: space.lg }}>
           <Stack.Title large>{t.app.tabTrips}</Stack.Title>

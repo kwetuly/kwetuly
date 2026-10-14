@@ -43,7 +43,7 @@ export async function SocialSignIn({ locale, t, role }: { locale: Locale; t: Dic
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="provider" value={provider} />
           {role && <input type="hidden" name="role" value={role} />}
-          <button className="flex w-full items-center justify-center gap-3 rounded-[15px] border-2 border-line bg-white px-4 py-3 font-semibold text-charcoal transition hover:border-charcoal">
+          <button className="flex w-full items-center justify-center gap-3 rounded-[5px] border-2 border-line bg-white px-4 py-3 font-semibold text-charcoal transition hover:border-charcoal">
             <Mark provider={provider} /> {t.auth.continueWith} {NAMES[provider]}
           </button>
         </form>

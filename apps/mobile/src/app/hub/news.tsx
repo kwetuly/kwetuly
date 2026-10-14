@@ -18,7 +18,7 @@ export default function NewsScreen() {
       data={news.data ?? []}
       keyExtractor={(p) => p.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
-      refreshControl={<RefreshControl refreshing={news.isRefetching} onRefresh={() => news.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={news.isRefetching} onRefresh={() => news.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={<Stack.Title>{HUB_MENU.find((i) => i.slug === 'news')?.label[locale]}</Stack.Title>}
       ListEmptyComponent={<ScreenState loading={news.isLoading} error={news.error} empty emptyText={t.hub.noNews} />}
       renderItem={({ item }) => (

@@ -21,9 +21,9 @@ export function SpotsBar({ trip, t }: { trip: GroupTrip; t: Dictionary }) {
   return (
     <div>
       <div className="h-2 overflow-hidden rounded-full bg-surface">
-        <div className="h-full rounded-full bg-sunset" style={{ width: `${percent}%` }} />
+        <div className="h-full rounded-full bg-leaf" style={{ width: `${percent}%` }} />
       </div>
-      <p className={`mt-1.5 text-xs font-bold ${left === 0 ? 'text-muted' : 'text-sunset-dark'}`}>
+      <p className={`mt-1.5 text-xs font-bold ${left === 0 ? 'text-muted' : 'text-leaf-dark'}`}>
         {left === 0 ? t.groups.full : `${left} ${t.groups.spotsLeft}`} · {trip.seats_taken}/{trip.max_people}
       </p>
     </div>
@@ -48,7 +48,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
         </span>
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-lg font-bold leading-snug group-hover:text-sunset">{trip.title}</h3>
+        <h3 className="text-lg font-bold leading-snug group-hover:text-leaf">{trip.title}</h3>
         {organizer && <p className="mt-1 text-sm text-muted">{t.groups.organisedBy} {organizer}</p>}
         <div className="mt-3 space-y-1.5 text-sm">
           <p className="flex items-center gap-1.5"><CalendarDays className="size-4 text-forest" aria-hidden /> {formatDates(trip, locale)}</p>

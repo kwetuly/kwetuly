@@ -22,7 +22,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
           <li key={section.slug} className="group relative">
             <button
               type="button"
-              className="flex items-center gap-1 whitespace-nowrap rounded-[15px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
+              className="flex items-center gap-1 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
               aria-haspopup="true"
             >
               {section.label[locale]}
@@ -40,7 +40,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                         href={itemHref(locale, section, item)}
                         className="flex items-start gap-3 rounded-2xl p-3 transition hover:bg-sand focus-visible:bg-sand"
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-sunset text-white shadow-sm">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-leaf text-white shadow-sm">
                           <Icon name={item.icon} className="size-5" />
                         </span>
                         <span>
@@ -67,7 +67,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center rounded-[15px] border border-line xl:hidden"
+        className="flex size-10 items-center justify-center rounded-[5px] border border-line xl:hidden"
         aria-label="Open menu"
       >
         <Menu className="size-5" />
@@ -82,7 +82,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="flex size-10 items-center justify-center rounded-[15px] bg-white/10"
+              className="flex size-10 items-center justify-center rounded-[5px] bg-white/10"
               aria-label="Close menu"
             >
               <X className="size-5" />
@@ -99,7 +99,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     className="flex w-full items-center gap-3 py-4 text-left text-lg font-semibold"
                     aria-expanded={isOpen}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-xl bg-sunset">
+                    <span className="flex size-9 items-center justify-center rounded-xl bg-leaf">
                       <Icon name={section.icon} className="size-5" />
                     </span>
                     {section.label[locale]}

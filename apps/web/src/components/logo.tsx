@@ -2,7 +2,7 @@
 // Sizes with the surrounding font size, so set `className` with a text size.
 export function Logo({ tone = 'dark', className = '' }: { tone?: 'dark' | 'light'; className?: string }) {
   const text = tone === 'dark' ? 'text-night' : 'text-white';
-  const sun = tone === 'dark' ? 'bg-sunset' : 'bg-gold';
+  const sun = 'bg-gold';
   return (
     <span className={`inline-block font-extrabold leading-none tracking-[-0.04em] ${text} ${className}`} aria-label="Rafrika">
       <span aria-hidden>

@@ -125,3 +125,18 @@ export async function listReviews(guideId: string): Promise<Review[]> {
     .limit(50);
   return (data ?? []) as Review[];
 }
+
+/** Real totals for the home page: verified public guides and the reviews they have received. */
+export async function siteStats(): Promise<{ guides: number; reviews: number }> {
+  'use cache';
+  cacheTag('guides');
+  cacheLife('hours');
+
+  const { data } = await publicClient()
+    .from('guides')
+    .select('rating_count')
+    .eq('verification_status', 'approved')
+    .eq('visibility', 'public');
+  const rows = (data ?? []) as { rating_count: number | null }[];
+  return { guides: rows.length, reviews: rows.reduce((sum, g) => sum + (g.rating_count ?? 0), 0) };
+}

@@ -81,7 +81,7 @@ function Linkified({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         isPath.test(part) ? (
-          <Link key={i} href={part} className="font-semibold text-sunset underline">
+          <Link key={i} href={part} className="font-semibold text-leaf underline">
             {part}
           </Link>
         ) : (
@@ -216,7 +216,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           // Some browsers load their voice list lazily; asking early makes the first reply use the right voice.
           if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
         }}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[15px] bg-sunset px-5 py-3.5 font-bold text-night shadow-[0_8px_24px_-8px_rgba(10,31,23,0.35)] transition hover:bg-sunset-dark"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[5px] bg-leaf px-5 py-3.5 font-bold text-white shadow-[0_8px_24px_-8px_rgba(10,31,23,0.35)] transition hover:bg-leaf-dark"
       >
         <Sparkles className="size-5" aria-hidden />
         <span className="hidden sm:inline">{labels.open}</span>
@@ -276,14 +276,14 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
                   type="button"
                   onClick={toggleListening}
                   disabled={busy}
-                  className={`relative flex shrink-0 items-center justify-center rounded-[15px] px-3.5 transition disabled:opacity-60 ${
-                    listening ? 'bg-sunset text-white' : 'bg-mint text-forest hover:bg-forest hover:text-white'
+                  className={`relative flex shrink-0 items-center justify-center rounded-[5px] px-3.5 transition disabled:opacity-60 ${
+                    listening ? 'bg-leaf text-white' : 'bg-mint text-forest hover:bg-forest hover:text-white'
                   }`}
                   aria-label={listening ? labels.listening : labels.talk}
                   aria-pressed={listening}
                   title={labels.talk}
                 >
-                  {listening && <span className="absolute inset-0 animate-ping rounded-[15px] bg-sunset/40" aria-hidden />}
+                  {listening && <span className="absolute inset-0 animate-ping rounded-[5px] bg-leaf/40" aria-hidden />}
                   {listening ? <Square className="relative size-4" aria-hidden /> : <Mic className="size-5" aria-hidden />}
                 </button>
               )}

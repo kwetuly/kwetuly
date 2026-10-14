@@ -48,12 +48,12 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   const item = (trip: Row, note?: string | null) => (
     <li key={trip.id}>
-      <Link href={`/${locale}/group-trips/${trip.id}`} className="card flex flex-wrap items-center justify-between gap-3 p-5 hover:border-sunset">
+      <Link href={`/${locale}/group-trips/${trip.id}`} className="card flex flex-wrap items-center justify-between gap-3 p-5 hover:border-leaf">
         <span>
           <span className="block font-bold">{trip.title}</span>
           <span className="text-sm text-muted">{formatDates(trip as GroupTrip, locale)} · {trip.seats_taken}/{trip.max_people}</span>
         </span>
-        {note && <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-sunset-dark">{note}</span>}
+        {note && <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
       </Link>
     </li>
   );

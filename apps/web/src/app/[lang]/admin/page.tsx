@@ -194,7 +194,7 @@ async function Inbox({ locale }: { locale: Locale }) {
         <h2 className="text-2xl font-bold">Sign-ups & partner applications ({signups.data?.length ?? 0})</h2>
         <ul className="mt-4 space-y-3">
           {(signups.data ?? []).map((s) => (
-            <li key={s.id} className={`card p-4 text-sm ${s.section === 'partners' ? 'border-sunset' : ''}`}>
+            <li key={s.id} className={`card p-4 text-sm ${s.section === 'partners' ? 'border-leaf' : ''}`}>
               <p className="font-semibold">
                 {s.section === 'partners' ? 'Travel agent application' : `${s.kind === 'business' ? 'Business listing' : 'Traveller interest'}: ${s.section} / ${s.item}`}
               </p>
@@ -292,7 +292,7 @@ async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
               <p>{g.base_region} · {g.specialties.map((s) => specialtyName(s, locale)).join(', ')}</p>
               <p>{g.languages.map(languageName).join(', ')}</p>
               {(g.expertise.length > 0 || g.female_guide) && (
-                <p className="font-semibold text-sunset-dark">
+                <p className="font-semibold text-amber-700">
                   {/* Special skills are self-declared: ask for proof before approving. */}
                   Check proof: {[...(g.female_guide ? ['Female guide'] : []), ...GUIDE_EXPERTISE.filter((e) => g.expertise.includes(e.id)).map((e) => e.label.en)].join(', ')}
                 </p>

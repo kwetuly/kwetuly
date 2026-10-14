@@ -18,7 +18,7 @@ export default function MomentsScreen() {
       data={moments.data ?? []}
       keyExtractor={(m) => m.id}
       contentContainerStyle={{ padding: space.lg, gap: space.lg }}
-      refreshControl={<RefreshControl refreshing={moments.isRefetching} onRefresh={() => moments.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={moments.isRefetching} onRefresh={() => moments.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.sm }}>
           <Stack.Title>{t.moments.title}</Stack.Title>

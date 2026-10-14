@@ -6,8 +6,9 @@ import { ArrowLeft, CalendarDays, Check, Clock, MapPin, ShieldCheck, Sparkles, V
 import { MONTHS, TRIP_CIRCUITS, TRIP_OPERATORS, formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
-import { getTripForViewer, tripSummary, tripTitle, type Trip } from '@/lib/trips';
-import { TripCover } from '@/components/trip-card';
+import { getTripForViewer, listTrips, tripSummary, tripTitle, type Trip } from '@/lib/trips';
+import { TripCard, TripCover } from '@/components/trip-card';
+import { TrackView } from '@/components/recently-viewed';
 import { ShareButtons } from '@/components/share-buttons';
 import { photoUrl, tripPhoto } from '@/lib/photos';
 import { enquireTrip } from './actions';
@@ -46,6 +47,9 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
   return (
     <>
+      {trip.status === 'published' && (
+        <TrackView item={{ href: `/${locale}/tours/${trip.slug}`, title: tripTitle(trip, locale), subtitle: `${trip.days} ${trip.days === 1 ? tt.day : tt.days}`, image: photoUrl(tripPhoto(trip.slug, trip.categories), 300) }} />
+      )}
       <section className="relative text-white">
         <TripCover trip={trip} className="absolute inset-0" sizes="100vw" priority />
         <div className="absolute inset-0 bg-gradient-to-t from-night via-night/60 to-night/10" />
@@ -59,7 +63,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
                 <Sparkles className="size-3" aria-hidden /> {tt.signature}
               </span>
             )}
-            {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sunset">{tt.draft}</span>}
+            {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-leaf">{tt.draft}</span>}
             <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
               {TRIP_CIRCUITS.find((c) => c.id === trip.circuit)?.[locale]}
             </span>
@@ -76,14 +80,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1fr_380px]">
         <div className="space-y-10">
-          {trip.promo_text && <p className="rounded-2xl bg-sand p-4 font-semibold text-sunset-dark">✦ {trip.promo_text}</p>}
+          {trip.promo_text && <p className="rounded-2xl bg-sand p-4 font-semibold text-leaf-dark">✦ {trip.promo_text}</p>}
 
           <section>
             <h2 className="text-xl font-bold">{tt.highlights}</h2>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {trip.highlights.map((h) => (
                 <li key={h} className="flex gap-2 rounded-2xl bg-surface p-3 text-sm font-medium">
-                  <Sparkles className="mt-0.5 size-4 shrink-0 text-sunset" aria-hidden /> {h}
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-leaf" aria-hidden /> {h}
                 </li>
               ))}
             </ul>
@@ -95,7 +99,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               {trip.itinerary.map((d, i) => (
                 <li key={`${d.day}-${i}`} className="relative flex gap-4 pb-6 last:pb-0">
                   <div className="flex flex-col items-center">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-sunset text-sm font-extrabold text-night">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-leaf text-sm font-extrabold text-white">
                       {d.day}
                     </span>
                     {i < trip.itinerary.length - 1 && <span className="w-0.5 flex-1 bg-line" />}
@@ -130,7 +134,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
           <section className="grid gap-6 sm:grid-cols-2">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarDays className="size-5 text-sunset" aria-hidden /> {tt.bestTime}</h2>
+              <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarDays className="size-5 text-leaf" aria-hidden /> {tt.bestTime}</h2>
               <div className="mt-3 grid grid-cols-6 gap-1.5">
                 {MONTHS[locale].map((m, i) => (
                   <span
@@ -159,12 +163,32 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
         <aside id="enquire" className="h-fit lg:sticky lg:top-24">
           <EnquiryCard trip={trip} status={status} t={t} locale={locale} />
-          <Link href={`/${locale}/calls`} className="mt-4 flex items-center gap-2 rounded-2xl border border-line p-4 text-sm font-semibold hover:border-sunset">
-            <Video className="size-5 text-sunset" aria-hidden /> {tt.talkToGuide}
+          <Link href={`/${locale}/calls`} className="mt-4 flex items-center gap-2 rounded-2xl border border-line p-4 text-sm font-semibold hover:border-leaf">
+            <Video className="size-5 text-leaf" aria-hidden /> {tt.talkToGuide}
           </Link>
         </aside>
       </div>
+      <Suspense fallback={null}>
+        <MoreTrips trip={trip} t={t} locale={locale} />
+      </Suspense>
     </>
+  );
+}
+
+// Three more published trips of the same kind, so the page never ends in a dead end.
+async function MoreTrips({ trip, t, locale }: { trip: Trip; t: Dictionary; locale: Locale }) {
+  const category = trip.categories[0];
+  const others = (await listTrips(category ? { category } : {})).filter((x) => x.slug !== trip.slug).slice(0, 3);
+  if (others.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-6xl px-4 pb-16">
+      <h2 className="text-2xl font-extrabold tracking-tight">{t.explore.moreTrips}</h2>
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        {others.map((x) => (
+          <TripCard key={x.id} trip={x} locale={locale} labels={t.tours} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -172,7 +196,7 @@ function EnquiryCard({ trip, status, t, locale }: { trip: Trip; status: Record<s
   const tt = t.tours;
   return (
     <div className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-      <div className="bg-sunset px-6 py-5 text-night">
+      <div className="bg-leaf px-6 py-5 text-white">
         <p className="text-sm font-bold">{trip.price_from_usd != null ? tt.priceFrom : tt.enquireTitle}</p>
         <p className="text-3xl font-extrabold tabular-nums">{trip.price_from_usd != null ? formatUsd(trip.price_from_usd) : tt.priceOnRequest}</p>
       </div>

@@ -3,15 +3,19 @@ import Link from 'next/link';
 import { MENU } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { GuideSearch } from '@/components/guide-search';
+import { RecentlyViewed } from '@/components/recently-viewed';
+import { siteStats } from '@/lib/guides';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
 
 // Home cards stay even: long sections show their first links and a "See all" link.
 const HOME_CARD_LINKS = 5;
+// Totals only appear once they are big enough to mean something (no "3 guides" on launch day).
+const STATS_FROM = { guides: 10, reviews: 25 };
 
 export default async function HomePage() {
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const [t, locale, stats] = await Promise.all([getDictionary(), getLocale(), siteStats()]);
   const hero = PHOTOS.kiliCampMawenzi;
 
   return (
@@ -31,8 +35,18 @@ export default async function HomePage() {
           <div className="mt-8 max-w-3xl text-charcoal">
             <GuideSearch locale={locale} t={t} />
           </div>
+          {stats.guides >= STATS_FROM.guides && (
+            <p className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-sm text-white/85">
+              <span><strong className="text-base tabular-nums text-white">{stats.guides}</strong> {t.explore.statGuides}</span>
+              {stats.reviews >= STATS_FROM.reviews && (
+                <span><strong className="text-base tabular-nums text-white">{stats.reviews}</strong> {t.explore.statReviews}</span>
+              )}
+            </p>
+          )}
         </div>
       </section>
+
+      <RecentlyViewed title={t.explore.recentTitle} clearLabel={t.explore.recentClear} />
 
       {/* Explore every section, each with its own photo */}
       <section className="mx-auto max-w-7xl px-4 py-16">
@@ -54,7 +68,7 @@ export default async function HomePage() {
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/60 to-night/10" />
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-sunset">
+                <span className="flex size-12 items-center justify-center rounded-2xl bg-leaf">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
@@ -64,7 +78,7 @@ export default async function HomePage() {
                     <li key={item.slug}>
                       <Link
                         href={itemHref(locale, section, item)}
-                        className="inline-flex items-center gap-1.5 rounded-[15px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
+                        className="inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
                       >
                         <Icon name={item.icon} className="size-4" />
                         {item.label[locale]}
@@ -75,7 +89,7 @@ export default async function HomePage() {
                     <li>
                       <Link
                         href={`/${locale}/${section.slug}`}
-                        className="inline-flex items-center gap-1 rounded-[15px] bg-gold px-3 py-1.5 text-sm font-bold text-night"
+                        className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1.5 text-sm font-bold text-night"
                       >
                         {t.explore.more} ({section.items.length})
                       </Link>

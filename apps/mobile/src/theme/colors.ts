@@ -16,12 +16,12 @@ export const brand = {
   night: '#0a1f17',
   forest: '#0e6b4f',
   mint: '#e3f6ee',
-  sunset: '#ff6a2b',
-  sunsetDark: '#e5521a',
+  leaf: '#157a55', // calm green for buttons and links
+  leafDark: '#0e6b4f',
   gold: '#ffb627',
   sand: '#fff8ee',
   goldSoft: '#ffe7b0', // gold badge background
   danger: '#b42318', // error text
-  onDark: '#ffffff', // text on night, sunset, forest or a photo
+  onDark: '#ffffff', // text on night, leaf, forest or a photo
 };
 

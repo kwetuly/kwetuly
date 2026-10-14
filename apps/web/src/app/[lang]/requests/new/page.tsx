@@ -20,7 +20,7 @@ export default async function NewRequestPage({ searchParams }: PageProps<'/[lang
     <>
       <PhotoHero photo="safariSunset">
         <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
             <Gavel className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold">{t.requests.newTitle}</h1>
@@ -37,7 +37,7 @@ export default async function NewRequestPage({ searchParams }: PageProps<'/[lang
 }
 
 const chip =
-  'inline-block rounded-[15px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest';
+  'inline-block rounded-[5px] border border-line px-3 py-1.5 text-sm peer-checked:border-forest peer-checked:bg-mint peer-checked:text-forest peer-focus-visible:ring-2 peer-focus-visible:ring-forest';
 
 async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary; locale: Locale }) {
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);

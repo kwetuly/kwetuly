@@ -14,9 +14,9 @@ export default async function MessagesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <MessagesSquare className="size-7 text-sunset" aria-hidden /> {t.messages.title}
+        <MessagesSquare className="size-7 text-leaf" aria-hidden /> {t.messages.title}
       </h1>
-      <Link href={`/${locale}/chats`} className="card mt-6 flex items-center justify-between gap-3 p-4 hover:border-sunset">
+      <Link href={`/${locale}/chats`} className="card mt-6 flex items-center justify-between gap-3 p-4 hover:border-leaf">
         <span>
           <span className="block font-bold">{t.chats.title}</span>
           <span className="text-sm text-muted">{t.chats.subtitle}</span>
@@ -55,7 +55,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
         return (
           <li key={c.id}>
             <Link href={`/${locale}/messages/${c.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
-              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-lg font-bold text-sunset-dark">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-sand text-lg font-bold text-leaf-dark">
                 {otherName.charAt(0)}
               </span>
               <span className="min-w-0 flex-1">

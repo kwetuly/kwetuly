@@ -45,7 +45,7 @@ export default function ForumScreen() {
       data={posts.data ?? []}
       keyExtractor={(p) => p.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
-      refreshControl={<RefreshControl refreshing={posts.isRefetching} onRefresh={() => posts.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={posts.isRefetching} onRefresh={() => posts.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.md }}>
           <Stack.Title>{HUB_MENU.find((i) => i.slug === 'forum')?.label[locale]}</Stack.Title>

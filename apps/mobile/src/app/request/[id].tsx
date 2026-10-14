@@ -48,7 +48,7 @@ export default function RequestScreen() {
       keyboardShouldPersistTaps="handled"
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
-      refreshControl={<RefreshControl refreshing={request.isRefetching} onRefresh={() => { request.refetch(); offers.refetch(); }} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={request.isRefetching} onRefresh={() => { request.refetch(); offers.refetch(); }} tintColor={brand.leaf} />}
     >
       <Stack.Title>{req.title}</Stack.Title>
       {posted && <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {t.requests.posted}</Text>}
@@ -65,7 +65,7 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
   return (
     <Card>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.sm }}>
-        <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>{specialtyName(req.specialty, locale)}</Text>
+        <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{specialtyName(req.specialty, locale)}</Text>
         <Badge label={r.status[req.status]} tone={req.status === 'open' ? 'mint' : 'sand'} />
       </View>
       <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{req.title}</Text>

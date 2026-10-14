@@ -7,10 +7,11 @@ import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
 import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
-import { getGuideBySlug, listReviews, type Guide } from '@/lib/guides';
+import { getGuideBySlug, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
-import { GuideAvatar, GuideBadges, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
+import { GuideAvatar, GuideBadges, GuideCard, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
+import { TrackView } from '@/components/recently-viewed';
 import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
@@ -61,6 +62,8 @@ async function Profile({
   ].filter((fact): fact is string => !!fact);
 
   return (
+    <>
+    <TrackView item={{ href: `/${locale}/guides/${guide.slug}`, title: guide.display_name, subtitle: guide.headline ?? guide.base_region, image: guide.photo_url }} />
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
       <div>
         <div className="flex gap-5">
@@ -121,8 +124,8 @@ async function Profile({
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {expertiseOf(guide).map((e) => (
                 <li key={e.id}>
-                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 hover:border-sunset">
-                    <Icon name={e.icon} className="size-5 shrink-0 text-sunset" />
+                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-2xl border border-line bg-white p-3 hover:border-leaf">
+                    <Icon name={e.icon} className="size-5 shrink-0 text-leaf" />
                     <span className="text-sm font-semibold">{e.label[locale]}</span>
                   </Link>
                 </li>
@@ -169,6 +172,27 @@ async function Profile({
       </aside>
       </div>
     </div>
+    <Suspense fallback={null}>
+      <SimilarGuides guide={guide} t={t} locale={locale} />
+    </Suspense>
+    </>
+  );
+}
+
+// Other verified guides who do the same kind of trip, so the profile never ends in a dead end.
+async function SimilarGuides({ guide, t, locale }: { guide: Guide; t: Dictionary; locale: Locale }) {
+  const specialty = guide.specialties[0];
+  const others = (await listGuides(specialty ? { specialty } : {})).filter((g) => g.id !== guide.id).slice(0, 3);
+  if (others.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-5xl px-4 pb-16">
+      <h2 className="text-2xl font-extrabold tracking-tight">{t.explore.similarGuides}</h2>
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        {others.map((g) => (
+          <GuideCard key={g.id} guide={g} locale={locale} t={t} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -209,7 +233,7 @@ async function CallBooking({
 
   return (
     <section id="call" className="overflow-hidden rounded-3xl bg-night text-white shadow-xl">
-      <div className="bg-sunset px-6 py-4 text-night">
+      <div className="bg-leaf px-6 py-4 text-white">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
         </p>

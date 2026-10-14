@@ -85,7 +85,7 @@ export default function ChatsScreen() {
             conversations.refetch();
             chats.refetch();
           }}
-          tintColor={brand.sunset}
+          tintColor={brand.leaf}
         />
       }
     >

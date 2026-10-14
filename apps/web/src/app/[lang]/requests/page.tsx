@@ -22,7 +22,7 @@ export default async function RequestsPage() {
     <>
       <PhotoHero photo="kiliHeather">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-sunset">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-leaf">
             <Gavel className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.requests.title}</h1>
@@ -143,7 +143,7 @@ function RequestRow({ req, lowest, t, locale, showName }: { req: TripRequest; lo
             {req.start_date ? date.format(new Date(req.start_date)) : r.datesFlexible}
           </span>
           <span className="flex items-center gap-1.5"><Users className="size-4" aria-hidden /> {req.adults + req.children} {r.people}</span>
-          <span className="text-sunset-dark">{r.offersTitle}: {req.offers_count}</span>
+          <span className="text-leaf-dark">{r.offersTitle}: {req.offers_count}</span>
           {lowest != null && <span className="tabular-nums">{r.fromPrice.replace('{price}', formatUsd(lowest))}</span>}
         </div>
       </Link>

@@ -104,7 +104,7 @@ export default function HubScreen() {
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
-      refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => inbox.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => inbox.refetch()} tintColor={brand.leaf} />}
     >
       <Stack.Title large>{h.title}</Stack.Title>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>

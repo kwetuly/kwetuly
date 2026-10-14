@@ -38,14 +38,14 @@ export async function AuthLinks() {
       {user.canUseHub && (
         <Link
           href={`/${locale}/hub`}
-          className="hidden rounded-[15px] bg-sunset px-4 py-2 text-sm font-bold text-night whitespace-nowrap sm:inline-flex"
+          className="hidden rounded-[5px] bg-leaf px-4 py-2 text-sm font-bold text-white whitespace-nowrap sm:inline-flex"
         >
           {t.nav.hub}
         </Link>
       )}
       <Link
         href={`/${locale}/messages`}
-        className="flex size-10 items-center justify-center rounded-full border border-line hover:border-sunset"
+        className="flex size-10 items-center justify-center rounded-full border border-line hover:border-leaf"
         aria-label={t.messages.title}
         title={t.messages.title}
       >

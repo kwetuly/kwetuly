@@ -68,11 +68,11 @@ export function ShareButtons({ path, title, text, labels, compact = false }: { p
     }
   }
 
-  const button = 'inline-flex items-center gap-1.5 rounded-[15px] border border-line bg-white px-3 py-2 text-sm font-semibold text-charcoal transition hover:border-sunset';
+  const button = 'inline-flex items-center gap-1.5 rounded-[5px] border border-line bg-white px-3 py-2 text-sm font-semibold text-charcoal transition hover:border-leaf';
 
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label={labels.share}>
-      {!compact && <span className="mr-1 flex items-center gap-1.5 text-sm font-bold"><Share2 className="size-4 text-sunset" aria-hidden /> {labels.share}</span>}
+      {!compact && <span className="mr-1 flex items-center gap-1.5 text-sm font-bold"><Share2 className="size-4 text-leaf" aria-hidden /> {labels.share}</span>}
       {canNativeShare && (
         <button type="button" onClick={nativeShare} className={`${button} bg-night text-white hover:border-night`}>
           <Share2 className="size-4" aria-hidden /> {labels.more}

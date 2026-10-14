@@ -45,14 +45,14 @@ export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale;
               <Sparkles className="size-3" aria-hidden /> {labels.signature}
             </span>
           )}
-          {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sunset">{labels.draft}</span>}
+          {trip.status !== 'published' && <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-leaf">{labels.draft}</span>}
           <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-night">
             {TRIP_KINDS.find((k) => k.id === trip.kind)?.[locale]}
           </span>
         </div>
       </div>
       <div className="p-5">
-        <h3 className="text-lg font-bold leading-snug group-hover:text-sunset">{tripTitle(trip, locale)}</h3>
+        <h3 className="text-lg font-bold leading-snug group-hover:text-leaf">{tripTitle(trip, locale)}</h3>
         <p className="mt-1 line-clamp-2 text-sm text-muted">{tripSummary(trip, locale)}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted">
           <span className="flex items-center gap-1"><Clock className="size-3.5" aria-hidden /> {trip.days} {trip.days === 1 ? labels.day : labels.days}</span>

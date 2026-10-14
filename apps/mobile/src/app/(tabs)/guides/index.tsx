@@ -47,7 +47,7 @@ export default function GuidesScreen() {
       )}
       ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
       contentContainerStyle={{ paddingBottom: space.xxl }}
-      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => guides.refetch()} tintColor={brand.sunset} />}
+      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => guides.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.md, paddingVertical: space.md }}>
           <Stack.Title large>{t.guides.title}</Stack.Title>
@@ -69,7 +69,7 @@ export default function GuidesScreen() {
             ))}
           </ChipRow>
           {filtered && (
-            <Text onPress={() => setFilters({})} style={{ color: brand.sunset, fontWeight: '700', paddingHorizontal: space.lg }}>
+            <Text onPress={() => setFilters({})} style={{ color: brand.leaf, fontWeight: '700', paddingHorizontal: space.lg }}>
               ✕ {t.guides.clear}
             </Text>
           )}

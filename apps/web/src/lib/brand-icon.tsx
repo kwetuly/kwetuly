@@ -35,7 +35,7 @@ export function BrandIcon({ size, rounded }: { size: number; rounded: boolean })
           width: size * 0.24,
           height: size * 0.24,
           borderRadius: size,
-          background: '#ff6a2b',
+          background: '#ffb627',
         }}
       />
     </div>

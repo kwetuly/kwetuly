@@ -109,14 +109,14 @@ export default function IntroScreen() {
           ))}
         </View>
         {last ? (
-          <Pressable onPress={() => finish('join')} accessibilityRole="button" style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}>
+          <Pressable onPress={() => finish('join')} accessibilityRole="button" style={{ backgroundColor: brand.leaf, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}>
             <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.body }}>{i.getStarted}</Text>
           </Pressable>
         ) : (
           <Pressable
             onPress={() => scroller.current?.scrollTo({ x: (page + 1) * width, animated: true })}
             accessibilityRole="button"
-            style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}
+            style={{ backgroundColor: brand.leaf, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}
           >
             <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.body }}>{i.next}</Text>
           </Pressable>

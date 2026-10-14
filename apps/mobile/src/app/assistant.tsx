@@ -99,7 +99,7 @@ export default function AssistantScreen() {
           maxLength={2000}
           style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
         />
-        <Pressable onPress={send} disabled={busy || !input.trim()} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.sunset, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: busy || !input.trim() ? 0.5 : 1 }}>
+        <Pressable onPress={send} disabled={busy || !input.trim()} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.leaf, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: busy || !input.trim() ? 0.5 : 1 }}>
           <Text style={{ color: brand.onDark, fontWeight: '800' }}>{c.send}</Text>
         </Pressable>
       </View>
