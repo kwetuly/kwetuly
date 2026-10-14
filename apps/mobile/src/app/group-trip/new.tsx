@@ -7,7 +7,7 @@ import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from
 import { createGroupTrip, getMyGuide } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -47,7 +47,7 @@ export default function NewGroupTripScreen() {
   if (!userId || mine.isLoading || profile.isLoading) return <ScreenState loading />;
   if (!asGuide && !asBusiness) {
     return (
-      <Card style={{ margin: 16 }}>
+      <Card style={{ margin: space.lg }}>
         <Muted>{g.whoCan}</Muted>
         <Button title={t.dashboard.title} onPress={() => router.replace('/profile-edit')} />
       </Card>
@@ -106,7 +106,7 @@ export default function NewGroupTripScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
       <Stack.Title>{g.newTitle}</Stack.Title>
       <Card>
         <Muted>{g.newBody}</Muted>

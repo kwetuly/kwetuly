@@ -6,7 +6,7 @@ import { Badge, Card, Muted, ScreenState } from '@/components/ui';
 import { listJobs } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';
 import { languageName, specialtyName } from '@/lib/labels';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 // Jobs and client handovers from companies; only verified guides can see them (database rule).
 export default function JobsScreen() {
@@ -18,14 +18,14 @@ export default function JobsScreen() {
       style={{ backgroundColor: colors.background }}
       data={jobs.data ?? []}
       keyExtractor={(j) => j.id}
-      contentContainerStyle={{ padding: 16, gap: 12 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshControl={<RefreshControl refreshing={jobs.isRefetching} onRefresh={() => jobs.refetch()} tintColor={brand.sunset} />}
       ListHeaderComponent={<Stack.Title>{HUB_MENU.find((i) => i.slug === 'jobs')?.label[locale]}</Stack.Title>}
       ListEmptyComponent={<ScreenState loading={jobs.isLoading} error={jobs.error} empty emptyText={t.hub.noJobs} />}
       renderItem={({ item: j }) => (
         <Card style={j.kind === 'handover' ? { borderWidth: 2, borderColor: brand.sunset } : undefined}>
           <Badge label={j.kind === 'handover' ? t.jobs.handoverBadge : (JOB_ROLES.find((r) => r.id === j.role_needed)?.[locale] ?? j.role_needed)} tone={j.kind === 'handover' ? 'sand' : 'mint'} />
-          <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{j.title}</Text>
+          <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{j.title}</Text>
           <Muted>{j.company_name}</Muted>
           <Muted>
             {[

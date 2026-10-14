@@ -5,7 +5,7 @@ import { Button, Card, Field, FormMessage, Muted } from '@/components/ui';
 import { contactGuide } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space, textSize } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
 export default function ContactGuideScreen() {
@@ -35,9 +35,9 @@ export default function ContactGuideScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{p.contactTitle}</Stack.Title>
-      {name && <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{name}</Text>}
+      {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
       <Card>
         <Muted>{p.contactBody}</Muted>
         <Field label={p.name} value={fullName} onChangeText={setFullName} />

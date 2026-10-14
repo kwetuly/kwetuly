@@ -2,39 +2,40 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { brand, colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize, type } from '@/theme';
 
-// Small building blocks shared by every screen, in Rafrika's colours and 15px button corners.
+// Small building blocks shared by every screen. Values come from '@/theme'; screens compose these
+// instead of styling text, buttons or cards themselves.
 
 export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
-    <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: 16, gap: 10, borderWidth: 1, borderColor: colors.separator }, style]}>
+    <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: space.lg, gap: space.md, borderWidth: 1, borderColor: colors.separator }, style]}>
       {children}
     </View>
   );
 }
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean }) {
+export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle> }) {
   const background = variant === 'primary' ? brand.sunset : variant === 'dark' ? brand.night : 'transparent';
-  const color = variant === 'outline' ? brand.forest : '#ffffff';
+  const color = variant === 'outline' ? brand.forest : brand.onDark;
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
       accessibilityRole="button"
-      style={({ pressed }) => ({
+      style={({ pressed }) => [{
         backgroundColor: background,
         borderWidth: variant === 'outline' ? 2 : 0,
         borderColor: brand.forest,
         borderRadius: radius.button,
         borderCurve: 'continuous',
-        paddingVertical: 14,
-        paddingHorizontal: 18,
+        paddingVertical: space.lg,
+        paddingHorizontal: space.lg,
         alignItems: 'center',
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-      })}
+      }, style]}
     >
-      {loading ? <ActivityIndicator color={color} /> : <Text style={{ color, fontWeight: '700', fontSize: 16 }}>{title}</Text>}
+      {loading ? <ActivityIndicator color={color} /> : <Text style={{ color, fontWeight: '700', fontSize: textSize.body }}>{title}</Text>}
     </Pressable>
   );
 }
@@ -51,11 +52,11 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
         borderWidth: 1,
         borderRadius: radius.chip,
         borderCurve: 'continuous',
-        paddingVertical: 7,
-        paddingHorizontal: 12,
+        paddingVertical: space.sm,
+        paddingHorizontal: space.md,
       }}
     >
-      <Text style={{ color: active ? '#ffffff' : colors.label, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: active ? brand.onDark : colors.label, fontWeight: '600', fontSize: textSize.footnote }}>{label}</Text>
     </Pressable>
   );
 }
@@ -64,12 +65,12 @@ export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' |
   const styles = {
     mint: { backgroundColor: brand.mint, color: brand.forest },
     sand: { backgroundColor: brand.sand, color: brand.sunsetDark },
-    night: { backgroundColor: brand.night, color: '#ffffff' },
-    gold: { backgroundColor: '#ffe7b0', color: brand.night },
+    night: { backgroundColor: brand.night, color: brand.onDark },
+    gold: { backgroundColor: brand.goldSoft, color: brand.night },
   }[tone];
   return (
-    <View style={{ backgroundColor: styles.backgroundColor, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' }}>
-      <Text style={{ color: styles.color, fontSize: 12, fontWeight: '700' }}>{label}</Text>
+    <View style={{ backgroundColor: styles.backgroundColor, borderRadius: radius.full, paddingHorizontal: space.md, paddingVertical: space.xs, alignSelf: 'flex-start' }}>
+      <Text style={{ color: styles.color, fontSize: textSize.caption, fontWeight: '700' }}>{label}</Text>
     </View>
   );
 }
@@ -96,12 +97,12 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {
-  return <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{children}</Text>;
+  return <Text style={type.title}>{children}</Text>;
 }
 
 export function Muted({ children, selectable }: { children: ReactNode; selectable?: boolean }) {
   return (
-    <Text selectable={selectable} style={{ color: colors.secondaryLabel, fontSize: 14, lineHeight: 20 }}>
+    <Text selectable={selectable} style={type.muted}>
       {children}
     </Text>
   );
@@ -109,16 +110,16 @@ export function Muted({ children, selectable }: { children: ReactNode; selectabl
 
 /** Loading, error and empty states in one place. */
 export function ScreenState({ loading, error, empty, emptyText, onRetry, retryLabel }: { loading?: boolean; error?: unknown; empty?: boolean; emptyText?: string; onRetry?: () => void; retryLabel?: string }) {
-  if (loading) return <ActivityIndicator style={{ padding: 32 }} color={brand.sunset} />;
+  if (loading) return <ActivityIndicator style={{ padding: space.xxl }} color={brand.sunset} />;
   if (error) {
     return (
-      <View style={{ padding: 24, gap: 12 }}>
-        <Text selectable style={{ color: '#b42318' }}>{error instanceof Error ? error.message : String(error)}</Text>
+      <View style={{ padding: space.xl, gap: space.md }}>
+        <Text selectable style={{ color: brand.danger }}>{error instanceof Error ? error.message : String(error)}</Text>
         {onRetry && retryLabel && <Button title={retryLabel} variant="outline" onPress={onRetry} />}
       </View>
     );
   }
-  if (empty && emptyText) return <Text style={{ padding: 24, color: colors.secondaryLabel, fontSize: 15 }}>{emptyText}</Text>;
+  if (empty && emptyText) return <Text style={{ padding: space.xl, color: colors.secondaryLabel, fontSize: textSize.callout }}>{emptyText}</Text>;
   return null;
 }
 
@@ -126,9 +127,9 @@ const fieldInput = {
   backgroundColor: colors.background,
   borderRadius: radius.button,
   borderCurve: 'continuous' as const,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
-  fontSize: 16,
+  paddingHorizontal: space.lg,
+  paddingVertical: space.md,
+  fontSize: textSize.body,
   color: colors.label,
 };
 
@@ -153,8 +154,8 @@ export function Field({
   hint?: string;
 }) {
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ fontWeight: '600', color: colors.label, fontSize: 14 }}>{label}</Text>
+    <View style={{ gap: space.sm }}>
+      <Text style={type.label}>{label}</Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -166,7 +167,7 @@ export function Field({
         accessibilityLabel={label}
         style={[fieldInput, multiline ? { minHeight: 100, textAlignVertical: 'top' } : null]}
       />
-      {hint ? <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{hint}</Text> : null}
+      {hint ? <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{hint}</Text> : null}
     </View>
   );
 }
@@ -190,9 +191,9 @@ export function ChipSelect<T extends string>({
     onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
   };
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ fontWeight: '600', color: colors.label, fontSize: 14 }}>{label}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+    <View style={{ gap: space.sm }}>
+      <Text style={type.label}>{label}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {options.map((o) => (
           <Chip key={o.value} label={o.label} active={selected.includes(o.value)} onPress={() => toggle(o.value)} />
         ))}
@@ -201,11 +202,16 @@ export function ChipSelect<T extends string>({
   );
 }
 
+/** An error message; renders nothing when there is none. */
+export function ErrorText({ children }: { children?: string | null }) {
+  return children ? <Text selectable style={{ color: brand.danger }}>{children}</Text> : null;
+}
+
 /** Success or error line under a form. */
 export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text: string } | null }) {
   if (!message) return null;
   return (
-    <Text selectable style={{ color: message.tone === 'ok' ? brand.forest : '#b42318', fontWeight: '600' }}>
+    <Text selectable style={{ color: message.tone === 'ok' ? brand.forest : brand.danger, fontWeight: '600' }}>
       {message.tone === 'ok' ? '✓ ' : ''}
       {message.text}
     </Text>
@@ -216,7 +222,7 @@ export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text
 export function BottomBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12), gap: 8, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.separator }}>
+    <View style={{ paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: Math.max(insets.bottom, 12), gap: space.sm, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.separator }}>
       {children}
     </View>
   );

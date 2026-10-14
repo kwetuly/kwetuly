@@ -5,7 +5,7 @@ import { ChatMedia } from '@/components/chat-media';
 import { Card, Muted, ScreenState } from '@/components/ui';
 import { listMoments } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 // Photos, videos and tips travellers agreed to share and Rafrika featured (enforced by the database).
 export default function MomentsScreen() {
@@ -17,10 +17,10 @@ export default function MomentsScreen() {
       style={{ backgroundColor: colors.background }}
       data={moments.data ?? []}
       keyExtractor={(m) => m.id}
-      contentContainerStyle={{ padding: 16, gap: 14 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.lg }}
       refreshControl={<RefreshControl refreshing={moments.isRefetching} onRefresh={() => moments.refetch()} tintColor={brand.sunset} />}
       ListHeaderComponent={
-        <View style={{ gap: 6 }}>
+        <View style={{ gap: space.sm }}>
           <Stack.Title>{t.moments.title}</Stack.Title>
           <Muted>{t.moments.subtitle}</Muted>
         </View>
@@ -29,7 +29,7 @@ export default function MomentsScreen() {
       renderItem={({ item }) => (
         <Card>
           {item.media_url && item.media_type && <ChatMedia url={item.media_url} type={item.media_type} />}
-          {item.body && <Text style={{ color: colors.label, fontSize: 15, lineHeight: 21 }}>{item.body}</Text>}
+          {item.body && <Text style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 21 }}>{item.body}</Text>}
           <Muted>
             {t.moments.sharedBy} {item.sender_name}
           </Muted>

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LOCALES, PHOTOS, photoUrl } from '@rafrika/shared';
 import { useI18n } from '@/lib/i18n';
 import { markIntroSeen } from '@/lib/intro';
-import { brand, radius } from '@/theme/colors';
+import { brand, radius, space, textSize } from '@/theme';
 
 const SHORT: Record<string, string> = { en: 'EN', sw: 'SW', fr: 'FR', it: 'IT', de: 'DE', pl: 'PL', zh: '中文' };
 
@@ -53,20 +53,20 @@ export default function IntroScreen() {
               style={{
                 flex: 1,
                 justifyContent: 'flex-end',
-                paddingHorizontal: 24,
+                paddingHorizontal: space.xl,
                 paddingBottom: insets.bottom + 230,
-                gap: 12,
+                gap: space.md,
               }}
             >
               {index === 0 && (
-                <View style={{ gap: 4, marginBottom: 8 }}>
-                  <Text style={{ color: brand.gold, fontWeight: '700', fontSize: 17 }}>{i.welcome}</Text>
-                  <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: 48, letterSpacing: -1 }}>Rafrika</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16 }}>{i.tagline}</Text>
+                <View style={{ gap: space.xs, marginBottom: space.sm }}>
+                  <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.headline }}>{i.welcome}</Text>
+                  <Text style={{ color: brand.onDark, fontWeight: '900', fontSize: textSize.hero, letterSpacing: -1 }}>Rafrika</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: textSize.body }}>{i.tagline}</Text>
                 </View>
               )}
-              <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 28, lineHeight: 33 }}>{slide.title}</Text>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 16, lineHeight: 23 }}>{slide.body}</Text>
+              <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.title1, lineHeight: 33 }}>{slide.title}</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: textSize.body, lineHeight: 23 }}>{slide.body}</Text>
             </LinearGradient>
           </View>
         ))}
@@ -77,7 +77,7 @@ export default function IntroScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ position: 'absolute', top: insets.top + 12, left: 0, right: 0, flexGrow: 0 }}
-        contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}
         accessibilityLabel={i.language}
       >
         {LOCALES.map((l) => (
@@ -87,43 +87,43 @@ export default function IntroScreen() {
             accessibilityRole="button"
             accessibilityState={{ selected: l === locale }}
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 999,
+              paddingHorizontal: space.md,
+              paddingVertical: space.sm,
+              borderRadius: radius.full,
               backgroundColor: l === locale ? brand.gold : 'rgba(10,31,23,0.45)',
               borderWidth: 1,
               borderColor: l === locale ? brand.gold : 'rgba(255,255,255,0.35)',
             }}
           >
-            <Text style={{ color: l === locale ? brand.night : '#ffffff', fontWeight: '800', fontSize: 12 }}>{SHORT[l] ?? l}</Text>
+            <Text style={{ color: l === locale ? brand.night : brand.onDark, fontWeight: '800', fontSize: textSize.caption }}>{SHORT[l] ?? l}</Text>
           </Pressable>
         ))}
       </ScrollView>
 
       {/* Dots and the way in. */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 24, paddingBottom: insets.bottom + 20, gap: 12 }}>
-        <View style={{ flexDirection: 'row', gap: 6, justifyContent: 'center', marginBottom: 8 }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.xl, paddingBottom: insets.bottom + 20, gap: space.md }}>
+        <View style={{ flexDirection: 'row', gap: space.sm, justifyContent: 'center', marginBottom: space.sm }}>
           {slides.map((slide, index) => (
-            <View key={slide.photo.id} style={{ height: 6, width: index === page ? 22 : 6, borderRadius: 3, backgroundColor: index === page ? brand.gold : 'rgba(255,255,255,0.4)' }} />
+            <View key={slide.photo.id} style={{ height: 6, width: index === page ? 22 : 6, borderRadius: radius.full, backgroundColor: index === page ? brand.gold : 'rgba(255,255,255,0.4)' }} />
           ))}
         </View>
         {last ? (
-          <Pressable onPress={() => finish('join')} accessibilityRole="button" style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 16, alignItems: 'center' }}>
-            <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 16 }}>{i.getStarted}</Text>
+          <Pressable onPress={() => finish('join')} accessibilityRole="button" style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}>
+            <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.body }}>{i.getStarted}</Text>
           </Pressable>
         ) : (
           <Pressable
             onPress={() => scroller.current?.scrollTo({ x: (page + 1) * width, animated: true })}
             accessibilityRole="button"
-            style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 16, alignItems: 'center' }}
+            style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}
           >
-            <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 16 }}>{i.next}</Text>
+            <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.body }}>{i.next}</Text>
           </Pressable>
         )}
-        <Pressable onPress={() => finish('signIn')} accessibilityRole="button" style={{ borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 15, alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)' }}>
-          <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>{i.haveAccount}</Text>
+        <Pressable onPress={() => finish('signIn')} accessibilityRole="button" style={{ borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.7)' }}>
+          <Text style={{ color: brand.onDark, fontWeight: '700', fontSize: textSize.body }}>{i.haveAccount}</Text>
         </Pressable>
-        <Pressable onPress={() => finish()} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: 6 }}>
+        <Pressable onPress={() => finish()} accessibilityRole="button" style={{ alignItems: 'center', paddingVertical: space.sm }}>
           <Text style={{ color: brand.gold, fontWeight: '700' }}>{i.explore}</Text>
         </Pressable>
       </View>

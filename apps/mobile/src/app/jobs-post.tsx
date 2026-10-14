@@ -6,7 +6,7 @@ import { Button, Card, Chip, ChipSelect, Field, FormMessage, Muted } from '@/com
 import { postJob } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -38,7 +38,7 @@ export default function JobsPostScreen() {
 
   if (!session) {
     return (
-      <Card style={{ margin: 16 }}>
+      <Card style={{ margin: space.lg }}>
         <Muted>{j.signInFirst}</Muted>
         <Button title={t.auth.signIn} onPress={() => router.replace('/sign-in')} />
       </Card>
@@ -76,9 +76,9 @@ export default function JobsPostScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
       <Stack.Title>{handover ? j.handoverTitle : j.postTitle}</Stack.Title>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
         <Chip label={j.crewTab} active={!handover} onPress={() => setKind('crew')} />
         <Chip label={j.handoverTab} active={handover} onPress={() => setKind('handover')} />
       </View>

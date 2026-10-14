@@ -6,7 +6,7 @@ import { Button, Card, Field, Muted, ScreenState, SectionTitle } from '@/compone
 import { createHubReply, getHubPost } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space, textSize } from '@/theme';
 
 export default function ForumPostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,12 +33,12 @@ export default function ForumPostScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: space.xxxl }}>
       <Stack.Title>{p.title}</Stack.Title>
       <Card>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{p.title}</Text>
+        <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{p.title}</Text>
         <Muted>{[p.author_name, p.region, date(p.created_at)].filter(Boolean).join(' · ')}</Muted>
-        <Text selectable style={{ color: colors.label, fontSize: 15, lineHeight: 22 }}>{p.body}</Text>
+        <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{p.body}</Text>
       </Card>
       <SectionTitle>
         {p.hub_replies.length} {t.hub.replies}

@@ -7,7 +7,7 @@ import { BottomBar, Button, Card, Muted, ScreenState, SectionTitle } from '@/com
 import { listTours } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { shareLink } from '@/lib/share';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 export default function TourScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -21,14 +21,14 @@ export default function TourScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: 16, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{title}</Stack.Title>
       <Image source={{ uri: photoUrl(tripPhoto(tour.slug, tour.categories), 1200) }} style={{ height: 220 }} contentFit="cover" />
-      <View style={{ paddingHorizontal: 16, gap: 16 }}>
+      <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{title}</Text>
+          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{title}</Text>
           <Muted selectable>{(locale === 'sw' && tour.summary_sw) || tour.summary_en}</Muted>
-          <Text style={{ color: brand.forest, fontWeight: '800', fontSize: 18 }}>
+          <Text style={{ color: brand.forest, fontWeight: '800', fontSize: textSize.headline }}>
             {tour.days} {tour.days === 1 ? t.tours.day : t.tours.days}
             {tour.price_from_usd != null ? ` · ${t.tours.priceFrom} ${formatUsd(tour.price_from_usd)}` : ` · ${t.tours.priceOnRequest}`}
           </Text>
@@ -47,7 +47,7 @@ export default function TourScreen() {
         <Card>
           <SectionTitle>{t.tours.itinerary}</SectionTitle>
           {tour.itinerary.map((day, i) => (
-            <View key={`${day.day}-${i}`} style={{ gap: 2 }}>
+            <View key={`${day.day}-${i}`} style={{ gap: space.xxs }}>
               <Text style={{ fontWeight: '800', color: brand.sunsetDark }}>{day.day}</Text>
               <Text style={{ fontWeight: '700', color: colors.label }}>{day.title}</Text>
               <Muted>{day.body}</Muted>

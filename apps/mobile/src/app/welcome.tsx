@@ -6,7 +6,7 @@ import { Button, Card, Chip, Field, FormMessage, Muted } from '@/components/ui';
 import { completeOnboarding } from '@/lib/api-more';
 import { useProfile } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
 
@@ -40,12 +40,12 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{t.auth.welcomeTitle}</Stack.Title>
       <Muted>{t.auth.welcomeBody}</Muted>
       <Card>
         <Text style={{ fontWeight: '600', color: colors.label }}>{t.auth.welcomeRole}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {ROLES.map((r) => (
             <Chip key={r} label={t.join[r].title} active={role === r} onPress={() => setRole(r)} />
           ))}

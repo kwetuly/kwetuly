@@ -6,7 +6,7 @@ import { approxTzs, formatUsd, type Dictionary, type Locale } from '@rafrika/sha
 import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Badge, Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
+import { Badge, Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle, Stars, ErrorText } from '@/components/ui';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import {
   answerOffer,
@@ -27,7 +27,7 @@ import {
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 export default function RequestScreen() {
   const { id, posted } = useLocalSearchParams<{ id: string; posted?: string }>();
@@ -47,7 +47,7 @@ export default function RequestScreen() {
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
       refreshControl={<RefreshControl refreshing={request.isRefetching} onRefresh={() => { request.refetch(); offers.refetch(); }} tintColor={brand.sunset} />}
     >
       <Stack.Title>{req.title}</Stack.Title>
@@ -64,11 +64,11 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
   const queryClient = useQueryClient();
   return (
     <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.sm }}>
         <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>{specialtyName(req.specialty, locale)}</Text>
         <Badge label={r.status[req.status]} tone={req.status === 'open' ? 'mint' : 'sand'} />
       </View>
-      <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{req.title}</Text>
+      <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{req.title}</Text>
       {!isOwner && <Muted>{t.offers.from} {req.traveler_name}</Muted>}
       <Muted>
         {req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : r.datesFlexible}
@@ -83,7 +83,7 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
       {req.languages.length > 0 && <Muted>{req.languages.map(languageName).join(', ')}</Muted>}
       <Text selectable style={{ color: colors.label, lineHeight: 22 }}>{req.details}</Text>
       {(req.female_guide || req.expertise.length > 0) && (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {req.female_guide && <Badge label={r.femaleGuide} tone="sand" />}
           {expertiseOf(req.expertise).map((e) => <Badge key={e.id} label={e.label[locale]} tone="sand" />)}
         </View>
@@ -123,21 +123,21 @@ function OfferRow({ offer }: { offer: TripOffer }) {
 
   return (
     <>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-        <View style={{ flex: 1, gap: 4 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
+        <View style={{ flex: 1, gap: space.xs }}>
           {offer.guides ? (
-            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: 17, fontWeight: '800', color: colors.label }}>{offer.guides.display_name} ›</Link>
+            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.guides.display_name} ›</Link>
           ) : (
-            <Text style={{ fontSize: 17, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
+            <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
           )}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm }}>
             {offer.guides && <Badge label={`✓ ${t.guides.verified}`} />}
             {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}>{formatUsd(offer.price_total_usd)}</Text>
-          {tzs && <Text style={{ fontSize: 12, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>{tzs}</Text>}
+          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}>{formatUsd(offer.price_total_usd)}</Text>
+          {tzs && <Text style={{ fontSize: textSize.caption, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>{tzs}</Text>}
         </View>
       </View>
       {offer.includes && (
@@ -146,8 +146,8 @@ function OfferRow({ offer }: { offer: TripOffer }) {
           {offer.includes}
         </Text>
       )}
-      {meta ? <Text style={{ color: expired ? '#b42318' : colors.secondaryLabel, fontSize: 13 }}>{meta}</Text> : null}
-      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: 12, padding: 12, gap: 6 }}>
+      {meta ? <Text style={{ color: expired ? brand.danger : colors.secondaryLabel, fontSize: textSize.footnote }}>{meta}</Text> : null}
+      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: radius.chip, padding: space.md, gap: space.sm }}>
         <Text style={{ fontWeight: '700', color: colors.label }}>{open ? '▾' : '▸'} {r.showItinerary}</Text>
         {open && (
           <>
@@ -165,7 +165,7 @@ function Contacts({ offer, traveller }: { offer: TripOffer; traveller: string })
   const contacts = useQuery({ queryKey: ['offer-contacts', offer.id], queryFn: () => offerContacts(offer.id) });
   const c = contacts.data;
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       <Text style={{ fontWeight: '800', color: colors.label }}>{t.requests.contactTitle}</Text>
       {c && (
         <>
@@ -231,7 +231,7 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
   }
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: space.md }}>
       {accepted && (
         <AcceptedTicket req={req} offer={accepted}>
           <PayDeposit kind="offer" id={accepted.id} totalUsd={accepted.price_total_usd} percent={accepted.deposit_percent} />
@@ -239,7 +239,7 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
       )}
       <SectionTitle>{r.offersTitle} ({offers.length})</SectionTitle>
       {offers.length === 0 && <Muted>{r.noOffers}</Muted>}
-      {error ? <Text selectable style={{ color: '#b42318' }}>{error}</Text> : null}
+      <ErrorText>{error}</ErrorText>
       {(accepted ? [...others, accepted] : others).map((offer) => (
         <Card key={offer.id} style={offer.status === 'declined' ? { opacity: 0.6 } : undefined}>
           <OfferRow offer={offer} />
@@ -337,7 +337,7 @@ function MyOffer({ req }: { req: TripRequest }) {
   }
 
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: space.md }}>
       <SectionTitle>{offer ? o.yourOffer : o.makeOffer}</SectionTitle>
       <Muted>{o.competing}: {req.offers_count}</Muted>
       {banner ? <Text style={{ fontWeight: '700', color: colors.label }}>{banner}</Text> : null}

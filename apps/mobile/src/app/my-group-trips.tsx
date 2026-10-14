@@ -6,7 +6,7 @@ import { getMyGuide, listMyJoinedTrips, listMyOrganisedTrips, type OrganisedTrip
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { formatDateRange } from '@/lib/labels';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 export default function MyGroupTripsScreen() {
   const { t, locale } = useI18n();
@@ -26,7 +26,7 @@ export default function MyGroupTripsScreen() {
     <Link key={trip.id} href={{ pathname: '/group-trip/[id]', params: { id: trip.id } }} asChild>
       <Pressable>
         <Card>
-          <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{trip.title}</Text>
+          <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{trip.title}</Text>
           <Muted>
             {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.seats_taken}/{trip.max_people}
           </Muted>
@@ -40,7 +40,7 @@ export default function MyGroupTripsScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
       refreshControl={
         <RefreshControl
           refreshing={organised.isRefetching || joined.isRefetching}
@@ -55,12 +55,12 @@ export default function MyGroupTripsScreen() {
       <Stack.Title>{g.mine}</Stack.Title>
       <ScreenState loading={organised.isLoading || joined.isLoading} error={organised.error ?? joined.error} />
       {(organised.data?.length ?? 0) > 0 && (
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: space.md }}>
           <SectionTitle>{g.organising}</SectionTitle>
           {organised.data!.map((trip) => row(trip, state(trip)))}
         </View>
       )}
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <SectionTitle>{g.joined}</SectionTitle>
         {joined.data?.length === 0 && <Muted>{g.noneJoined}</Muted>}
         {(joined.data ?? []).map((j) => row(j.group_trips!, state(j.group_trips!) ?? requestLabel[j.status] ?? null))}

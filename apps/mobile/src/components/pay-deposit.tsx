@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@/components/ui';
 import { depositState, payDeposit, paymentsEnabled } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';
-import { brand } from '@/theme/colors';
+import { brand, textSize } from '@/theme';
 
 type Props = { kind: 'offer' | 'group'; id: string; totalUsd: number; percent: number };
 
@@ -41,14 +41,14 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   return (
     <Card style={{ backgroundColor: brand.sand }}>
       <Text style={{ fontWeight: '800', color: brand.night }}>{p.title}</Text>
-      <Text style={{ fontSize: 24, fontWeight: '800', color: brand.night }}>
-        ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: 14 }}>({percent}%)</Text>
+      <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: brand.night }}>
+        ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: textSize.subhead }}>({percent}%)</Text>
       </Text>
       <Text style={{ color: brand.night, opacity: 0.8 }}>{p.body}</Text>
       {note ? <Text selectable style={{ color: brand.night, fontWeight: '600' }}>{note}</Text> : null}
       <Button title={p.cta} onPress={pay} loading={busy} />
       {note === p.pending && <Button title={p.checkAgain} variant="outline" onPress={() => paid.refetch()} />}
-      <Text style={{ color: brand.night, opacity: 0.7, fontSize: 12 }}>{p.direct}</Text>
+      <Text style={{ color: brand.night, opacity: 0.7, fontSize: textSize.caption }}>{p.direct}</Text>
     </Card>
   );
 }

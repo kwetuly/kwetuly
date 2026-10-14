@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 import { fetch } from 'expo/fetch';
 import { useI18n } from '@/lib/i18n';
 import { SITE_URL } from '@/lib/supabase';
-import { brand, colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -62,11 +62,11 @@ export default function AssistantScreen() {
         data={messages}
         keyExtractor={(_, i) => String(i)}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-        contentContainerStyle={{ padding: 16, gap: 10 }}
+        contentContainerStyle={{ padding: space.lg, gap: space.md }}
         ListHeaderComponent={
-          <View style={{ gap: 8, marginBottom: 6 }}>
-            <Text style={{ backgroundColor: colors.card, color: colors.label, padding: 12, borderRadius: 18, overflow: 'hidden' }}>{c.intro}</Text>
-            <Text style={{ color: colors.secondaryLabel, fontSize: 11 }}>{c.disclaimer}</Text>
+          <View style={{ gap: space.sm, marginBottom: space.sm }}>
+            <Text style={{ backgroundColor: colors.card, color: colors.label, padding: space.md, borderRadius: radius.bubble, overflow: 'hidden' }}>{c.intro}</Text>
+            <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{c.disclaimer}</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -76,12 +76,12 @@ export default function AssistantScreen() {
               alignSelf: item.role === 'user' ? 'flex-end' : 'flex-start',
               maxWidth: '85%',
               backgroundColor: item.role === 'user' ? brand.night : colors.card,
-              color: item.role === 'user' ? '#ffffff' : colors.label,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-              borderRadius: 18,
+              color: item.role === 'user' ? brand.onDark : colors.label,
+              paddingHorizontal: space.lg,
+              paddingVertical: space.md,
+              borderRadius: radius.bubble,
               overflow: 'hidden',
-              fontSize: 15,
+              fontSize: textSize.callout,
               lineHeight: 21,
             }}
           >
@@ -89,7 +89,7 @@ export default function AssistantScreen() {
           </Text>
         )}
       />
-      <View style={{ flexDirection: 'row', gap: 8, padding: 12, borderTopWidth: 0.5, borderColor: colors.separator, backgroundColor: colors.card }}>
+      <View style={{ flexDirection: 'row', gap: space.sm, padding: space.md, borderTopWidth: 0.5, borderColor: colors.separator, backgroundColor: colors.card }}>
         <TextInput
           value={input}
           onChangeText={setInput}
@@ -97,10 +97,10 @@ export default function AssistantScreen() {
           placeholderTextColor={colors.secondaryLabel}
           multiline
           maxLength={2000}
-          style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: 14, paddingVertical: 10, fontSize: 16, color: colors.label }}
+          style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
         />
-        <Pressable onPress={send} disabled={busy || !input.trim()} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.sunset, borderRadius: radius.button, paddingHorizontal: 16, justifyContent: 'center', opacity: busy || !input.trim() ? 0.5 : 1 }}>
-          <Text style={{ color: '#ffffff', fontWeight: '800' }}>{c.send}</Text>
+        <Pressable onPress={send} disabled={busy || !input.trim()} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.sunset, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: busy || !input.trim() ? 0.5 : 1 }}>
+          <Text style={{ color: brand.onDark, fontWeight: '800' }}>{c.send}</Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>

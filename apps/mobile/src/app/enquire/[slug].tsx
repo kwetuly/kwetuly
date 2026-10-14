@@ -7,7 +7,7 @@ import { listTours } from '@/lib/api';
 import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space, textSize } from '@/theme';
 
 // "Plan this trip": an enquiry to Rafrika about a catalogue tour.
 export default function EnquireScreen() {
@@ -45,9 +45,9 @@ export default function EnquireScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{tt.enquireTitle}</Stack.Title>
-      <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{title}</Text>
+      <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{title}</Text>
       <Card>
         <Muted>{tt.enquireBody}</Muted>
         <Field label={t.profile.name} value={name} onChangeText={setName} />

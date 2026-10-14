@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PushSetup } from '@/components/push-setup';
 import { AuthProvider } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
-import { brand } from '@/theme/colors';
+import { brand } from '@/theme';
 
 function RootStack() {
   const { t } = useI18n();

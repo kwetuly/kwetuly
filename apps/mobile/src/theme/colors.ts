@@ -20,6 +20,8 @@ export const brand = {
   sunsetDark: '#e5521a',
   gold: '#ffb627',
   sand: '#fff8ee',
+  goldSoft: '#ffe7b0', // gold badge background
+  danger: '#b42318', // error text
+  onDark: '#ffffff', // text on night, sunset, forest or a photo
 };
 
-export const radius = { card: 20, button: 15, chip: 12 };

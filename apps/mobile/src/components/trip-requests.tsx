@@ -3,8 +3,9 @@ import { Alert, Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { cancelGroupTrip, listTripRequests, respondToTripRequest } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+
 import { Badge, Button, Card, Muted, SectionTitle } from './ui';
+import { brand, colors, space } from '@/theme';
 
 // Organiser view on a group trip: requests to join (accept / decline) and cancelling the trip.
 export function TripRequests({ tripId, cancelled }: { tripId: string; cancelled: boolean }) {
@@ -30,7 +31,7 @@ export function TripRequests({ tripId, cancelled }: { tripId: string; cancelled:
   const label: Record<string, string> = { requested: g.stateRequested, accepted: g.stateAccepted, declined: g.stateDeclined };
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: space.md }}>
       <SectionTitle>{g.requestsTitle}</SectionTitle>
       {requests.data?.length === 0 && <Muted>{g.noRequests}</Muted>}
       {(requests.data ?? []).map((r) => (
@@ -44,7 +45,7 @@ export function TripRequests({ tripId, cancelled }: { tripId: string; cancelled:
           <Text selectable style={{ color: brand.forest, fontWeight: '600' }}>{r.traveler_contact}</Text>
           {r.message && <Text selectable style={{ color: colors.label }}>{r.message}</Text>}
           {r.status === 'requested' && (
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: space.sm }}>
               <View style={{ flex: 1 }}>
                 <Button title={t.hub.accept} onPress={() => respond(r.id, true)} loading={busy === r.id} />
               </View>

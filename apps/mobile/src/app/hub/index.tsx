@@ -8,7 +8,7 @@ import { getMyGuide, listHubInbox, respondToCall, type HubCall } from '@/lib/api
 import { listMyDeposits } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
   const { t, locale } = useI18n();
@@ -47,7 +47,7 @@ function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
             <Button title={h.accept} onPress={() => respond(true)} loading={busy} />
           </>
         ) : (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: space.sm }}>
             <View style={{ flex: 1 }}>
               <Button title={h.accept} onPress={() => setAccepting(true)} />
             </View>
@@ -74,7 +74,7 @@ export default function HubScreen() {
 
   if (!guide || guide.verification_status !== 'approved') {
     return (
-      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md }}>
         <Stack.Title>{h.title}</Stack.Title>
         <ScreenState loading={mine.isLoading} error={mine.error} />
         {!mine.isLoading && (
@@ -103,11 +103,11 @@ export default function HubScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
       refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => inbox.refetch()} tintColor={brand.sunset} />}
     >
       <Stack.Title large>{h.title}</Stack.Title>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {links.map((l) => (
           <Button key={l.label} title={l.label} variant="outline" onPress={() => router.push(l.href)} />
         ))}
@@ -115,17 +115,17 @@ export default function HubScreen() {
 
       {/* Deposits as statement rows: date, trip, amount, where the money is. */}
       <SectionTitle>{h.depositsTitle}</SectionTitle>
-      <Card style={{ gap: 0, paddingVertical: 4 }}>
-        {deposits.data?.length === 0 && <View style={{ paddingVertical: 12 }}><Muted>{h.noDeposits}</Muted></View>}
+      <Card style={{ gap: 0, paddingVertical: space.xs }}>
+        {deposits.data?.length === 0 && <View style={{ paddingVertical: space.md }}><Muted>{h.noDeposits}</Muted></View>}
         {(deposits.data ?? []).map((d, i) => (
-          <View key={d.id} style={{ flexDirection: 'row', gap: 10, paddingVertical: 12, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
+          <View key={d.id} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
             <Text style={{ width: 52, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
               {d.paid_at ? new Date(d.paid_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : ''}
             </Text>
             <Text numberOfLines={2} style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{d.description}</Text>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ color: colors.label, fontWeight: '800', fontVariant: ['tabular-nums'] }}>TSh {d.amount_tzs.toLocaleString('en-US')}</Text>
-              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
+              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
             </View>
           </View>
         ))}

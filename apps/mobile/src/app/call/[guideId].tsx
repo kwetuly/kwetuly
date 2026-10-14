@@ -8,7 +8,7 @@ import { getGuide } from '@/lib/api';
 import { requestCall } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 // Request a paid 1-on-1 prep call with a guide; the guide confirms a time and sends a video link.
 export default function CallScreen() {
@@ -28,7 +28,7 @@ export default function CallScreen() {
 
   if (!session) {
     return (
-      <Card style={{ margin: 16 }}>
+      <Card style={{ margin: space.lg }}>
         <Muted>{c.signInFirst}</Muted>
         <Button title={t.auth.signIn} onPress={() => router.replace('/sign-in')} />
       </Card>
@@ -54,11 +54,11 @@ export default function CallScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{c.book}</Stack.Title>
       <Card>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
-        <Text style={{ fontSize: 18, fontWeight: '800', color: brand.forest }}>
+        <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
+        <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: brand.forest }}>
           {g.call_price_usd != null ? formatUsd(g.call_price_usd) : c.priceTbc} · {g.call_minutes} {c.minutes}
         </Text>
         {c.how.map((step, i) => (

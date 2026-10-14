@@ -7,16 +7,16 @@ import { photoUrl, specialtyPhoto, formatUsd } from '@rafrika/shared';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
-import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { Button, Card, Muted, ScreenState, SectionTitle, ErrorText } from '@/components/ui';
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
-import { brand, colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
-const input = { backgroundColor: colors.background, borderRadius: radius.button, borderCurve: 'continuous' as const, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.label };
+const input = { backgroundColor: colors.background, borderRadius: radius.button, borderCurve: 'continuous' as const, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label };
 
 export default function GroupTripScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -74,19 +74,19 @@ export default function GroupTripScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: 16, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{g.title}</Stack.Title>
       <Image source={{ uri: photoUrl(specialtyPhoto(g.specialty), 1200) }} style={{ height: 220 }} contentFit="cover" />
 
-      <View style={{ paddingHorizontal: 16, gap: 16 }}>
+      <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>
           <Text style={{ color: brand.sunsetDark, fontWeight: '700' }}>{specialtyName(g.specialty, locale)}</Text>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{g.title}</Text>
+          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.title}</Text>
           <Muted>
             {formatDateRange(g.start_date, g.end_date, locale)} · {g.region}
           </Muted>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: brand.forest }}>
-            {formatUsd(g.price_per_person_usd)} <Text style={{ fontSize: 14, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
+          <Text style={{ fontSize: textSize.title1, fontWeight: '800', color: brand.forest }}>
+            {formatUsd(g.price_per_person_usd)} <Text style={{ fontSize: textSize.subhead, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
           </Text>
           <SpotsBar taken={g.seats_taken} max={g.max_people} labels={g10n} />
           {g.guides ? (
@@ -99,7 +99,7 @@ export default function GroupTripScreen() {
         </Card>
 
         <Card>
-          <Text selectable style={{ color: colors.label, fontSize: 15, lineHeight: 22 }}>{g.description}</Text>
+          <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{g.description}</Text>
           {g.meeting_point && <Muted>{g10n.meeting}: {g.meeting_point}</Muted>}
           <Muted>{g10n.minPeople} {g.min_people} {g10n.people}</Muted>
           {g.languages.length > 0 && <Muted>{g.languages.map(languageName).join(', ')}</Muted>}
@@ -112,7 +112,7 @@ export default function GroupTripScreen() {
           ) : mine.data?.status === 'accepted' ? (
             <>
               <Text style={{ fontWeight: '700', color: brand.forest }}>✓ {g10n.accepted}</Text>
-              {contact.data && <Text selectable style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
+              {contact.data && <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
               <PayDeposit kind="group" id={mine.data.id} totalUsd={g.price_per_person_usd * mine.data.seats} percent={g.deposit_percent} />
             </>
           ) : mine.data?.status === 'requested' ? (
@@ -128,7 +128,7 @@ export default function GroupTripScreen() {
               <TextInput value={seats} onChangeText={setSeats} keyboardType="number-pad" placeholder={g10n.seats} placeholderTextColor={colors.secondaryLabel} style={input} accessibilityLabel={g10n.seats} />
               <TextInput value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? t.profile.contact} placeholderTextColor={colors.secondaryLabel} style={input} accessibilityLabel={t.profile.contact} />
               <TextInput value={message} onChangeText={setMessage} placeholder={g10n.message} placeholderTextColor={colors.secondaryLabel} multiline style={[input, { minHeight: 80 }]} />
-              {error ? <Text selectable style={{ color: '#b42318' }}>{error}</Text> : null}
+              <ErrorText>{error}</ErrorText>
               <Button title={userId ? g10n.joinCta : g10n.signInToJoin} onPress={join} loading={busy} />
             </>
           ) : (

@@ -6,7 +6,7 @@ import { GroupTripCard, TourCard } from '@/components/cards';
 import { Chip, ScreenState } from '@/components/ui';
 import { listGroupTrips, listTours, type GroupTrip, type Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space } from '@/theme';
 
 type Item = { kind: 'group'; trip: GroupTrip } | { kind: 'tour'; tour: Tour };
 
@@ -29,13 +29,13 @@ export default function TripsScreen() {
       data={items}
       keyExtractor={(item) => (item.kind === 'group' ? item.trip.id : item.tour.id)}
       renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: 16 }}>{item.kind === 'group' ? <GroupTripCard trip={item.trip} /> : <TourCard tour={item.tour} />}</View>
+        <View style={{ paddingHorizontal: space.lg }}>{item.kind === 'group' ? <GroupTripCard trip={item.trip} /> : <TourCard tour={item.tour} />}</View>
       )}
       ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: space.xxl }}
       refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => active.refetch()} tintColor={brand.sunset} />}
       ListHeaderComponent={
-        <View style={{ flexDirection: 'row', gap: 8, padding: 16 }}>
+        <View style={{ flexDirection: 'row', gap: space.sm, padding: space.lg }}>
           <Stack.Title large>{t.app.tabTrips}</Stack.Title>
           <Chip label={t.app.groupTrips} active={view === 'groups'} onPress={() => setView('groups')} />
           <Chip label={t.app.tours} active={view === 'tours'} onPress={() => setView('tours')} />

@@ -7,7 +7,7 @@ import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from
 import { createHubPost, listHubPosts } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 export default function ForumScreen() {
   const { t, locale } = useI18n();
@@ -44,14 +44,14 @@ export default function ForumScreen() {
       style={{ backgroundColor: colors.background }}
       data={posts.data ?? []}
       keyExtractor={(p) => p.id}
-      contentContainerStyle={{ padding: 16, gap: 12 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshControl={<RefreshControl refreshing={posts.isRefetching} onRefresh={() => posts.refetch()} tintColor={brand.sunset} />}
       ListHeaderComponent={
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: space.md }}>
           <Stack.Title>{HUB_MENU.find((i) => i.slug === 'forum')?.label[locale]}</Stack.Title>
           {writing ? (
             <Card>
-              <Text style={{ color: '#b42318', fontSize: 12 }}>{h.sightingWarning}</Text>
+              <Text style={{ color: brand.danger, fontSize: textSize.caption }}>{h.sightingWarning}</Text>
               <Field label={h.postTitle} value={title} onChangeText={setTitle} />
               <Field label={h.postBody} value={body} onChangeText={setBody} multiline />
               <ChipSelect label={h.region} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={region} onChange={setRegion} multiple={false} />
@@ -68,7 +68,7 @@ export default function ForumScreen() {
         <Link href={{ pathname: '/hub/post/[id]', params: { id: item.id } }} asChild>
           <Pressable>
             <Card>
-              <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{item.title}</Text>
+              <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{item.title}</Text>
               <Text numberOfLines={2} style={{ color: colors.secondaryLabel }}>{item.body}</Text>
               <Muted>
                 {[item.author_name, item.region, `${item.hub_replies?.[0]?.count ?? 0} ${h.replies}`].filter(Boolean).join(' · ')}

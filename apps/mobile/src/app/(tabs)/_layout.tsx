@@ -3,7 +3,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useSession } from '@/lib/auth';
 import { introSeen } from '@/lib/intro';
 import { useI18n } from '@/lib/i18n';
-import { brand } from '@/theme/colors';
+import { brand } from '@/theme';
 
 // Five tabs, each with its own stack. Detail screens (guide, trip, chat) open above the tabs.
 export default function TabsLayout() {

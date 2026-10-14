@@ -11,7 +11,7 @@ import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { registerForPush, signOut, type PushState } from '@/lib/push';
 import { SITE_URL } from '@/lib/supabase';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 export default function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
@@ -31,14 +31,14 @@ export default function AccountScreen() {
   }, [userId]);
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxxl }}>
       <Stack.Title large>{t.app.tabAccount}</Stack.Title>
 
       {session ? (
         <>
           <Card>
             <Muted>{t.app.signedInAs}</Muted>
-            <Text selectable style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>
+            <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>
               {profile.data?.full_name ?? session.user.email}
             </Text>
             <Text selectable style={{ color: colors.secondaryLabel }}>{session.user.email}</Text>
@@ -104,7 +104,7 @@ export default function AccountScreen() {
             <Text style={{ fontWeight: '700', color: colors.label }}>{t.traveler.calls}</Text>
             {calls.data?.length === 0 && <Muted>{t.traveler.noCalls}</Muted>}
             {(calls.data ?? []).map((c) => (
-              <View key={c.id} style={{ gap: 2, paddingVertical: 4 }}>
+              <View key={c.id} style={{ gap: space.xxs, paddingVertical: space.xs }}>
                 <Text style={{ fontWeight: '700', color: colors.label }}>
                   {CALL_TOPICS.find((x) => x.id === c.topic)?.[locale] ?? c.topic} · {c.guides?.display_name}
                 </Text>
@@ -135,16 +135,16 @@ export default function AccountScreen() {
         </View>
       )}
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <SectionTitle>{t.app.language}</SectionTitle>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {LOCALES.map((l) => (
             <Chip key={l} label={LOCALE_NAMES[l]} active={l === locale} onPress={() => setLocale(l)} />
           ))}
         </View>
       </View>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <Button title={t.moments.title} variant="outline" onPress={() => router.push('/moments')} />
         <Button title={t.partners.title} variant="outline" onPress={() => router.push('/partners')} />
         <Button title={t.app.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}`)} />

@@ -6,7 +6,7 @@ import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { enabledProviders, signInWithProvider, type SocialProvider } from '@/lib/social';
-import { colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
 
@@ -14,9 +14,9 @@ const input = {
   backgroundColor: colors.card,
   borderRadius: radius.button,
   borderCurve: 'continuous' as const,
-  paddingHorizontal: 14,
-  paddingVertical: 13,
-  fontSize: 16,
+  paddingHorizontal: space.lg,
+  paddingVertical: space.md,
+  fontSize: textSize.body,
   color: colors.label,
 };
 
@@ -79,14 +79,14 @@ export default function SignInScreen() {
 
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
           <Chip label={t.auth.signIn} active={mode === 'signIn'} onPress={() => setMode('signIn')} />
           <Chip label={t.nav.signUp} active={mode === 'join'} onPress={() => setMode('join')} />
         </View>
 
         {message && (
-          <Text selectable style={{ color: message.tone === 'error' ? '#b42318' : '#0e6b4f', fontWeight: '600' }}>
+          <Text selectable style={{ color: message.tone === 'error' ? brand.danger : brand.forest, fontWeight: '600' }}>
             {message.text}
           </Text>
         )}
@@ -96,7 +96,7 @@ export default function SignInScreen() {
             {providers.map((p) => (
               <Button key={p} title={`${t.auth.continueWith} ${p === 'google' ? 'Google' : p === 'facebook' ? 'Facebook' : 'Apple'}`} variant="outline" onPress={() => social(p)} />
             ))}
-            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: 12, fontWeight: '700' }}>{t.auth.orEmail.toUpperCase()}</Text>
+            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '700' }}>{t.auth.orEmail.toUpperCase()}</Text>
           </Card>
         )}
 
@@ -104,7 +104,7 @@ export default function SignInScreen() {
           {mode === 'join' && (
             <>
               <Muted>{t.auth.welcomeRole}</Muted>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                 {ROLES.map((r) => (
                   <Chip key={r} label={t.join[r].title} active={role === r} onPress={() => setRole(r)} />
                 ))}
@@ -112,7 +112,7 @@ export default function SignInScreen() {
               <Muted>{t.join[role].body}</Muted>
               <TextInput value={fullName} onChangeText={setFullName} placeholder={t.auth.fullName} placeholderTextColor={colors.secondaryLabel} autoComplete="name" textContentType="name" style={input} />
               <TextInput value={phone} onChangeText={setPhone} placeholder={t.auth.phone} placeholderTextColor={colors.secondaryLabel} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" style={input} />
-              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{t.auth.phoneHint}</Text>
+              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.auth.phoneHint}</Text>
             </>
           )}
           <TextInput value={email} onChangeText={setEmail} placeholder={t.auth.email} placeholderTextColor={colors.secondaryLabel} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={input} />

@@ -8,15 +8,16 @@ import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
-import { brand, colors } from '@/theme/colors';
+
 import { formatUsd } from '@rafrika/shared';
+import { brand, colors, space, textSize } from '@/theme';
 
 function Facts({ title, items }: { title: string; items: string[] }) {
   if (items.length === 0) return null;
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ fontWeight: '700', color: colors.secondaryLabel, fontSize: 13 }}>{title}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+    <View style={{ gap: space.sm }}>
+      <Text style={{ fontWeight: '700', color: colors.secondaryLabel, fontSize: textSize.footnote }}>{title}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {items.map((item) => (
           <Badge key={item} label={item} />
         ))}
@@ -54,17 +55,17 @@ export default function GuideScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{g.display_name}</Stack.Title>
 
       <Card>
-        <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: space.lg, alignItems: 'center' }}>
           <Avatar name={g.display_name} uri={g.photo_url} size={88} />
-          <View style={{ flex: 1, gap: 4 }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
+          <View style={{ flex: 1, gap: space.xs }}>
+            <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
             {g.headline && <Muted>{g.headline}</Muted>}
             {g.rating_count > 0 && g.rating_avg != null && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                 <Stars value={g.rating_avg} />
                 <Text style={{ fontWeight: '700', color: colors.label }}>{Number(g.rating_avg).toFixed(1)}</Text>
                 <Text style={{ color: colors.secondaryLabel }}>({g.rating_count})</Text>
@@ -72,7 +73,7 @@ export default function GuideScreen() {
             )}
           </View>
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           <Badge label={`✓ ${t.guides.verified}`} />
           {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
           {g.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
@@ -93,7 +94,7 @@ export default function GuideScreen() {
       {g.bio && (
         <Card>
           <SectionTitle>{t.profile.about}</SectionTitle>
-          <Text selectable style={{ color: colors.label, fontSize: 15, lineHeight: 22 }}>{g.bio}</Text>
+          <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{g.bio}</Text>
         </Card>
       )}
 
@@ -105,14 +106,14 @@ export default function GuideScreen() {
         <Facts title={t.profile.certifications} items={[...g.certifications, ...(g.association ? [g.association] : [])]} />
       </Card>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <SectionTitle>{t.reviews.title}</SectionTitle>
         <ScreenState loading={reviews.isLoading} error={reviews.error} empty={reviews.data?.length === 0} emptyText={t.reviews.none} />
         {(reviews.data ?? []).map((r) => (
           <Card key={r.id}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Stars value={r.rating} />
-              <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{dateFormat.format(new Date(r.created_at))}</Text>
+              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{dateFormat.format(new Date(r.created_at))}</Text>
             </View>
             <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{r.body}</Text>
             <Text style={{ fontWeight: '700', color: colors.label }}>— {r.author_name}</Text>
@@ -121,7 +122,7 @@ export default function GuideScreen() {
         {session && !isMe ? (
           <Button title={t.reviews.write} variant="outline" onPress={() => router.push({ pathname: '/review/[guideId]', params: { guideId: g.id, name: g.display_name } })} />
         ) : (
-          <Text style={{ color: brand.forest, fontSize: 13 }}>{t.reviews.onlyAfter}</Text>
+          <Text style={{ color: brand.forest, fontSize: textSize.footnote }}>{t.reviews.onlyAfter}</Text>
         )}
       </View>
     </ScrollView>

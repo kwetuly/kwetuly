@@ -9,13 +9,13 @@ import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, Scr
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: brand.sunset }} />
       <Text style={{ flex: 1, color: colors.label }}>{label}</Text>
     </View>
@@ -173,7 +173,7 @@ export default function ProfileEditScreen() {
   const status = guide?.verification_status;
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 60 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
       <Stack.Title>{d.title}</Stack.Title>
       {status && (
         <Card>
@@ -183,7 +183,7 @@ export default function ProfileEditScreen() {
 
       <Card>
         <SectionTitle>{d.publicSection}</SectionTitle>
-        <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }} accessibilityRole="button">
+        <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }} accessibilityRole="button">
           <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={72} />
           <Text style={{ color: brand.sunset, fontWeight: '700' }}>{d.photo}</Text>
         </Pressable>

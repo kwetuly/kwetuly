@@ -5,7 +5,7 @@ import { Button, Card, Field, FormMessage, Muted, SectionTitle } from '@/compone
 import { registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space, textSize } from '@/theme';
 
 // For travel agents and tour companies: why work with Rafrika, and the partner application.
 export default function PartnersScreen() {
@@ -46,10 +46,10 @@ export default function PartnersScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{p.applyTitle}</Stack.Title>
       <Card>
-        <Text style={{ fontSize: 22, fontWeight: '800', color: colors.label }}>{p.title}</Text>
+        <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{p.title}</Text>
         <Muted>{p.subtitle}</Muted>
       </Card>
       {p.why.map((w) => (

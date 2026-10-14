@@ -8,7 +8,7 @@ import { Chip, SectionTitle } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
-import { brand, colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 export default function ExploreScreen() {
   const { t, locale } = useI18n();
@@ -16,18 +16,18 @@ export default function ExploreScreen() {
   const hero = PHOTOS.safariSunset;
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: 32, gap: 24 }} style={{ backgroundColor: colors.background }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: space.xxl, gap: space.xl }} style={{ backgroundColor: colors.background }}>
       <Stack.Title large>Rafrika</Stack.Title>
 
       {/* Hero */}
-      <View style={{ marginHorizontal: 16, height: 260, borderRadius: 28, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
+      <View style={{ marginHorizontal: space.lg, height: 260, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
         <Image source={{ uri: photoUrl(hero, 1200) }} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: 20, gap: 8, experimental_backgroundImage: 'linear-gradient(to top, rgba(10,31,23,0.95), rgba(10,31,23,0.1))' }}>
-          <Text style={{ color: brand.gold, fontWeight: '700', fontSize: 16 }}>{t.home.eyebrow}</Text>
-          <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 28, lineHeight: 32 }}>{t.home.title}</Text>
+        <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: 'linear-gradient(to top, rgba(10,31,23,0.95), rgba(10,31,23,0.1))' }}>
+          <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.body }}>{t.home.eyebrow}</Text>
+          <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.title1, lineHeight: 32 }}>{t.home.title}</Text>
           <Link href="/guides" asChild>
-            <Pressable style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: 12, alignItems: 'center', marginTop: 6 }}>
-              <Text style={{ color: '#ffffff', fontWeight: '800' }}>{t.home.search}</Text>
+            <Pressable style={{ backgroundColor: brand.sunset, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.md, alignItems: 'center', marginTop: space.sm }}>
+              <Text style={{ color: brand.onDark, fontWeight: '800' }}>{t.home.search}</Text>
             </Pressable>
           </Link>
         </View>
@@ -35,19 +35,19 @@ export default function ExploreScreen() {
 
       {/* AI concierge: shown once EXPO_PUBLIC_AI_ENABLED=1 (after the API key is set on the website). */}
       {process.env.EXPO_PUBLIC_AI_ENABLED === '1' && (
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: space.lg }}>
           <Link href="/assistant" asChild>
-            <Pressable style={{ backgroundColor: brand.gold, borderRadius: radius.button, borderCurve: 'continuous', padding: 16 }}>
-              <Text style={{ color: brand.night, fontWeight: '800', fontSize: 16 }}>✦ {t.concierge.open}</Text>
+            <Pressable style={{ backgroundColor: brand.gold, borderRadius: radius.button, borderCurve: 'continuous', padding: space.lg }}>
+              <Text style={{ color: brand.night, fontWeight: '800', fontSize: textSize.body }}>✦ {t.concierge.open}</Text>
             </Pressable>
           </Link>
         </View>
       )}
 
       {/* What do you want to do? */}
-      <View style={{ gap: 12, paddingHorizontal: 16 }}>
+      <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.home.specialtyLabel}</SectionTitle>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {GUIDE_SPECIALTIES.map((s) => (
             <Link key={s.id} href={{ pathname: '/guides', params: { specialty: s.id } }} asChild>
               <Chip label={s[locale]} />
@@ -57,11 +57,11 @@ export default function ExploreScreen() {
       </View>
 
       {/* Special trips */}
-      <View style={{ gap: 12 }}>
-        <View style={{ paddingHorizontal: 16 }}>
+      <View style={{ gap: space.md }}>
+        <View style={{ paddingHorizontal: space.lg }}>
           <SectionTitle>{t.guides.expertise}</SectionTitle>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 16 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md, paddingHorizontal: space.lg }}>
           <Link href={{ pathname: '/guides', params: { female: '1' } }} asChild>
             <Chip label={t.guides.femaleOnly} />
           </Link>
@@ -74,7 +74,7 @@ export default function ExploreScreen() {
       </View>
 
       {/* Group trips */}
-      <View style={{ gap: 12, paddingHorizontal: 16 }}>
+      <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <SectionTitle>{t.groups.title}</SectionTitle>
           <Link href="/trips" style={{ color: brand.sunset, fontWeight: '700' }}>
@@ -89,13 +89,13 @@ export default function ExploreScreen() {
       </View>
 
       {/* Everything on Rafrika: the same sections as the website menu */}
-      <View style={{ gap: 12, paddingHorizontal: 16 }}>
+      <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.explore.title}</SectionTitle>
         {MENU.map((section) => (
-          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, padding: 16, gap: 8 }}>
-            <Text style={{ fontWeight: '800', fontSize: 17, color: colors.label }}>{section.label[locale]}</Text>
-            <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>{section.tagline[locale]}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, padding: space.lg, gap: space.sm }}>
+            <Text style={{ fontWeight: '800', fontSize: textSize.headline, color: colors.label }}>{section.label[locale]}</Text>
+            <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>{section.tagline[locale]}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {section.items.map((item) => (
                 <Link key={item.slug} href={appHref(section, item)} asChild>
                   <Chip label={item.status === 'live' ? item.label[locale] : `${item.label[locale]} · ${t.nav.soon}`} />
@@ -107,14 +107,14 @@ export default function ExploreScreen() {
       </View>
 
       {/* Why Rafrika */}
-      <View style={{ gap: 12, paddingHorizontal: 16 }}>
+      <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.home.whyTitle}</SectionTitle>
-        <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, paddingHorizontal: 16 }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, paddingHorizontal: space.lg }}>
           {t.home.why.map((item, i) => (
-            <View key={item.title} style={{ flexDirection: 'row', gap: 12, paddingVertical: 14, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
-              <Text style={{ width: 18, fontWeight: '800', fontSize: 16, color: brand.sunset, fontVariant: ['tabular-nums'] }}>{i + 1}</Text>
-              <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ fontWeight: '800', fontSize: 16, color: colors.label }}>{item.title}</Text>
+            <View key={item.title} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.lg, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
+              <Text style={{ width: 18, fontWeight: '800', fontSize: textSize.body, color: brand.sunset, fontVariant: ['tabular-nums'] }}>{i + 1}</Text>
+              <View style={{ flex: 1, gap: space.xs }}>
+                <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{item.title}</Text>
                 <Text style={{ color: colors.secondaryLabel, lineHeight: 20 }}>{item.body}</Text>
               </View>
             </View>

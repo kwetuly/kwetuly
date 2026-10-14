@@ -8,7 +8,7 @@ import { Button, Card, ChipSelect, Field, FormMessage, Muted } from '@/component
 import { createRequest, today } from '@/lib/api-requests';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -83,25 +83,25 @@ export default function NewRequestScreen() {
   }
 
   const toggle = (label: string, value: boolean, onChange: (v: boolean) => void) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
       <Text style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{label}</Text>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: brand.forest }} />
     </View>
   );
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{r.newTitle}</Stack.Title>
       <Muted>{r.newBody}</Muted>
       <Card>
         <Field label={r.tripTitle} value={f.title} onChangeText={set('title')} placeholder={r.tripTitlePlaceholder} />
         <ChipSelect label={r.tripType} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialty} onChange={set('specialty')} multiple={false} />
         <Field label={r.details} value={f.details} onChangeText={set('details')} placeholder={r.detailsPlaceholder} multiline />
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: space.md }}>
           <View style={{ flex: 1 }}><Field label={r.adults} value={f.adults} onChangeText={set('adults')} keyboardType="number-pad" /></View>
           <View style={{ flex: 1 }}><Field label={r.children} value={f.children} onChangeText={set('children')} keyboardType="number-pad" /></View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: space.md }}>
           <View style={{ flex: 1 }}><Field label={r.startDate} value={f.start} onChangeText={set('start')} placeholder="2027-02-10" /></View>
           <View style={{ flex: 1 }}><Field label={r.endDate} value={f.end} onChangeText={set('end')} placeholder="2027-02-16" /></View>
         </View>

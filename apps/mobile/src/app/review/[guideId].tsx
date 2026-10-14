@@ -6,7 +6,7 @@ import { Button, Card, Field, FormMessage, Muted, ScreenState } from '@/componen
 import { reviewStatus, submitReview } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space, textSize } from '@/theme';
 
 // Only travellers with a confirmed call or booking with this guide can review (checked by the database too).
 export default function ReviewScreen() {
@@ -33,7 +33,7 @@ export default function ReviewScreen() {
 
   if (!userId) {
     return (
-      <View style={{ padding: 16 }}>
+      <View style={{ padding: space.lg }}>
         <Button title={r.signIn} onPress={() => router.replace('/sign-in')} />
       </View>
     );
@@ -58,9 +58,9 @@ export default function ReviewScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{status.data.own ? r.edit : r.write}</Stack.Title>
-      {name && <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{name}</Text>}
+      {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
       {!status.data.eligible ? (
         <Card>
           <Muted>{r.onlyAfter}</Muted>
@@ -68,10 +68,10 @@ export default function ReviewScreen() {
       ) : (
         <Card>
           <Text style={{ fontWeight: '600', color: colors.label }}>{r.rating}</Text>
-          <View style={{ flexDirection: 'row', gap: 6 }} accessibilityRole="radiogroup">
+          <View style={{ flexDirection: 'row', gap: space.sm }} accessibilityRole="radiogroup">
             {[1, 2, 3, 4, 5].map((n) => (
               <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="radio" accessibilityState={{ checked: rating === n }} accessibilityLabel={`${n} / 5 ${r.stars}`}>
-                <Text style={{ fontSize: 38, color: n <= rating ? brand.gold : colors.separator }}>★</Text>
+                <Text style={{ fontSize: textSize.display, color: n <= rating ? brand.gold : colors.separator }}>★</Text>
               </Pressable>
             ))}
           </View>

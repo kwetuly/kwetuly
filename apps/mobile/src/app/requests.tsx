@@ -8,8 +8,9 @@ import { listMyOffers, listMyRequests, listOpenRequests, lowestOffers, type Trip
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { formatDateRange, specialtyName } from '@/lib/labels';
-import { brand, colors } from '@/theme/colors';
+
 import { formatUsd } from '@rafrika/shared';
+import { brand, colors, space, textSize } from '@/theme';
 
 export default function RequestsScreen() {
   const { t, locale } = useI18n();
@@ -29,8 +30,8 @@ export default function RequestsScreen() {
     <Link key={req.id} href={{ pathname: '/request/[id]', params: { id: req.id } }} asChild>
       <Pressable>
         <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-            <Text style={{ flex: 1, fontWeight: '800', fontSize: 16, color: colors.label }}>{req.title}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.sm }}>
+            <Text style={{ flex: 1, fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{req.title}</Text>
             <Badge label={r.status[req.status]} tone={req.status === 'open' ? 'mint' : 'sand'} />
           </View>
           <Muted>
@@ -53,7 +54,7 @@ export default function RequestsScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
       refreshControl={
         <RefreshControl
           refreshing={mine.isRefetching || open.isRefetching}

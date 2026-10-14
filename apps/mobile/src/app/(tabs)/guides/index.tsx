@@ -7,11 +7,11 @@ import { GuideCard } from '@/components/cards';
 import { Chip, ScreenState } from '@/components/ui';
 import { listGuides, type GuideFilters } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors } from '@/theme/colors';
+import { brand, colors, space } from '@/theme';
 
 function ChipRow({ children }: { children: React.ReactNode }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
       {children}
     </ScrollView>
   );
@@ -41,15 +41,15 @@ export default function GuidesScreen() {
       data={guides.data ?? []}
       keyExtractor={(g) => g.id}
       renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: 16 }}>
+        <View style={{ paddingHorizontal: space.lg }}>
           <GuideCard guide={item} />
         </View>
       )}
       ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-      contentContainerStyle={{ paddingBottom: 32 }}
+      contentContainerStyle={{ paddingBottom: space.xxl }}
       refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => guides.refetch()} tintColor={brand.sunset} />}
       ListHeaderComponent={
-        <View style={{ gap: 10, paddingVertical: 12 }}>
+        <View style={{ gap: space.md, paddingVertical: space.md }}>
           <Stack.Title large>{t.guides.title}</Stack.Title>
           <ChipRow>
             {GUIDE_SPECIALTIES.map((s) => (
@@ -69,7 +69,7 @@ export default function GuidesScreen() {
             ))}
           </ChipRow>
           {filtered && (
-            <Text onPress={() => setFilters({})} style={{ color: brand.sunset, fontWeight: '700', paddingHorizontal: 16 }}>
+            <Text onPress={() => setFilters({})} style={{ color: brand.sunset, fontWeight: '700', paddingHorizontal: space.lg }}>
               ✕ {t.guides.clear}
             </Text>
           )}

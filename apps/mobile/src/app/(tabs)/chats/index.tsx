@@ -3,19 +3,19 @@ import { Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 're
 import { Link, Stack, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Avatar, Badge, Button, Card, ScreenState, SectionTitle } from '@/components/ui';
+import { Avatar, Badge, Button, Card, ScreenState, SectionTitle, ErrorText } from '@/components/ui';
 import { conversationView, createGroupChat, joinGroupChat, listConversations, listGroupChats } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, radius } from '@/theme/colors';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 const inputStyle = {
   backgroundColor: colors.background,
   borderRadius: radius.button,
   borderCurve: 'continuous' as const,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
-  fontSize: 16,
+  paddingHorizontal: space.lg,
+  paddingVertical: space.md,
+  fontSize: textSize.body,
   color: colors.label,
 };
 
@@ -77,7 +77,7 @@ export default function ChatsScreen() {
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxxl }}
       refreshControl={
         <RefreshControl
           refreshing={conversations.isRefetching || chats.isRefetching}
@@ -91,17 +91,17 @@ export default function ChatsScreen() {
     >
       <Stack.Title large>{t.app.tabChats}</Stack.Title>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <SectionTitle>{t.chats.title}</SectionTitle>
         <ScreenState loading={chats.isLoading} error={chats.error} />
         {(chats.data ?? []).map((chat) => (
           <Link key={chat.id} href={`/chat/${chat.id}`} asChild>
             <Pressable>
-              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                 <Avatar name={chat.name} size={44} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontWeight: chat.unread ? '800' : '600', fontSize: 16, color: colors.label }}>{chat.name}</Text>
-                  {chat.group_trip_id && <Text style={{ color: colors.secondaryLabel, fontSize: 12 }}>{t.chats.tripChat}</Text>}
+                  <Text style={{ fontWeight: chat.unread ? '800' : '600', fontSize: textSize.body, color: colors.label }}>{chat.name}</Text>
+                  {chat.group_trip_id && <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.chats.tripChat}</Text>}
                 </View>
                 {chat.unread && <Badge label={t.messages.newBadge} />}
               </Card>
@@ -114,14 +114,14 @@ export default function ChatsScreen() {
           <Text style={{ fontWeight: '700', color: colors.label }}>{t.chats.newChat}</Text>
           <TextInput value={name} onChangeText={setName} placeholder={t.chats.chatNamePlaceholder} placeholderTextColor={colors.secondaryLabel} maxLength={80} style={inputStyle} accessibilityLabel={t.chats.chatName} />
           <Button title={t.chats.create} onPress={create} loading={busy === 'create'} disabled={!name.trim()} />
-          <Text style={{ fontWeight: '700', color: colors.label, marginTop: 6 }}>{t.chats.joinWithCode}</Text>
+          <Text style={{ fontWeight: '700', color: colors.label, marginTop: space.sm }}>{t.chats.joinWithCode}</Text>
           <TextInput value={code} onChangeText={setCode} placeholder={t.chats.codePlaceholder} placeholderTextColor={colors.secondaryLabel} autoCapitalize="none" autoCorrect={false} style={inputStyle} accessibilityLabel={t.chats.codePlaceholder} />
           <Button title={t.chats.join} variant="outline" onPress={join} loading={busy === 'join'} disabled={!code.trim()} />
-          {error ? <Text selectable style={{ color: '#b42318' }}>{error}</Text> : null}
+          <ErrorText>{error}</ErrorText>
         </Card>
       </View>
 
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: space.md }}>
         <SectionTitle>{t.app.conversations}</SectionTitle>
         <ScreenState loading={conversations.isLoading} error={conversations.error} empty={conversations.data?.length === 0} emptyText={t.messages.noneTraveler} />
         {(conversations.data ?? []).map((c) => {
@@ -129,11 +129,11 @@ export default function ChatsScreen() {
           return (
             <Link key={c.id} href={`/conversation/${c.id}`} asChild>
               <Pressable>
-                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
                   <Avatar name={otherName} uri={c.guides?.photo_url} size={44} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontWeight: unread ? '800' : '600', fontSize: 16, color: colors.label }}>{otherName}</Text>
-                    <Text numberOfLines={1} style={{ color: colors.secondaryLabel, fontSize: 13 }}>
+                    <Text style={{ fontWeight: unread ? '800' : '600', fontSize: textSize.body, color: colors.label }}>{otherName}</Text>
+                    <Text numberOfLines={1} style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>
                       {c.last_message_preview ?? '…'}
                     </Text>
                   </View>

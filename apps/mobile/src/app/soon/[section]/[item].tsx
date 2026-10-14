@@ -6,7 +6,7 @@ import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState } from '@/co
 import { registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors } from '@/theme/colors';
+import { colors, space, textSize } from '@/theme';
 
 // "Opening soon" sections (stays, transport, gear, local life…): travellers register interest,
 // businesses ask to be listed. Same inbox as the website.
@@ -42,16 +42,16 @@ export default function ComingSoonScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{found.item.label[locale]}</Stack.Title>
       <Card>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.label }}>{found.item.label[locale]}</Text>
+        <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{found.item.label[locale]}</Text>
         <Muted>{found.item.blurb[locale]}</Muted>
         <Text style={{ fontWeight: '700', color: colors.label }}>{e.comingTitle}</Text>
         <Muted>{e.comingBody}</Muted>
       </Card>
       <Card>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           <Chip label={t.join.traveler.title} active={kind === 'traveler'} onPress={() => setKind('traveler')} />
           <Chip label={e.listTitle} active={kind === 'business'} onPress={() => setKind('business')} />
         </View>

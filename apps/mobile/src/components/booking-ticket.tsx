@@ -4,7 +4,7 @@ import { approxTzs, formatUsd } from '@rafrika/shared';
 import { Badge } from '@/components/ui';
 import type { DepositState } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';
-import { colors, radius } from '@/theme/colors';
+import { colors, radius, space, textSize } from '@/theme';
 
 type Props = {
   title: string;
@@ -35,22 +35,22 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
       : p.notPaid;
 
   const cell = (label: string, value: string, extra?: string | null) => (
-    <View style={{ width: '50%', paddingRight: 8, gap: 2 }}>
-      <Text style={{ color: colors.secondaryLabel, fontSize: 13 }}>{label}</Text>
+    <View style={{ width: '50%', paddingRight: space.sm, gap: space.xxs }}>
+      <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>{label}</Text>
       <Text selectable style={{ color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{value}</Text>
-      {extra ? <Text style={{ color: colors.secondaryLabel, fontSize: 12, fontVariant: ['tabular-nums'] }}>{extra}</Text> : null}
+      {extra ? <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption, fontVariant: ['tabular-nums'] }}>{extra}</Text> : null}
     </View>
   );
 
   return (
     <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, overflow: 'hidden' }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, ...dashed }}>
-        <Text style={{ color: colors.secondaryLabel, fontSize: 14, fontWeight: '700' }}>{r.ticketTitle}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: space.lg, paddingVertical: space.md, borderBottomWidth: 1, ...dashed }}>
+        <Text style={{ color: colors.secondaryLabel, fontSize: textSize.subhead, fontWeight: '700' }}>{r.ticketTitle}</Text>
         <Badge label={r.offerStatus.accepted} />
       </View>
-      <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ color: colors.label, fontSize: 19, fontWeight: '800' }}>{title}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 12 }}>
+      <View style={{ padding: space.lg, gap: space.md }}>
+        <Text style={{ color: colors.label, fontSize: textSize.headline, fontWeight: '800' }}>{title}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: space.md }}>
           {cell(r.ticketGuide, guide)}
           {cell(r.ticketDates, dates)}
           {cell(r.ticketGroup, `${people} ${r.people}`)}
@@ -58,14 +58,14 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
         </View>
       </View>
       {depositLine && (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, ...dashed, gap: 2 }}>
+        <View style={{ paddingHorizontal: space.lg, paddingVertical: space.md, borderTopWidth: 1, ...dashed, gap: space.xxs }}>
           <Text style={{ color: colors.label, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
             {r.deposit} {depositPercent}% · {formatUsd(deposit?.amountUsd ?? Math.round(totalUsd * depositPercent) / 100)}
           </Text>
           <Text style={{ color: colors.secondaryLabel }}>{depositLine}</Text>
         </View>
       )}
-      {children ? <View style={{ padding: 16, gap: 10, borderTopWidth: 1, borderTopColor: colors.separator }}>{children}</View> : null}
+      {children ? <View style={{ padding: space.lg, gap: space.md, borderTopWidth: 1, borderTopColor: colors.separator }}>{children}</View> : null}
     </View>
   );
 }
