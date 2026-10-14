@@ -2,7 +2,7 @@
 
 /* Rafrika "savanna sunset" tokens — keep in sync with packages/shared/src/theme.ts */
 @theme {
-  --color-night: #0a1f17;
+  --color-night: #1c3a2e;
   --color-forest: #0e6b4f;
   --color-forest-dark: #0a4f3a;
   --color-mint: #e3f6ee;
@@ -10,7 +10,7 @@
   --color-leaf-dark: #0e6b4f;
   --color-gold: #ffb627;
   --color-sand: #fff8ee;
-  --color-charcoal: #16211c;
+  --color-charcoal: #2b3631;
   --color-muted: #5f6b66;
   --color-line: #e7e5e0;
   --color-surface: #f7f6f3;

@@ -216,7 +216,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           // Some browsers load their voice list lazily; asking early makes the first reply use the right voice.
           if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
         }}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[5px] bg-leaf px-5 py-3.5 font-bold text-white shadow-[0_8px_24px_-8px_rgba(10,31,23,0.35)] transition hover:bg-leaf-dark"
+        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-[5px] bg-leaf px-5 py-3.5 font-bold text-white shadow-[0_8px_24px_-8px_rgba(28,58,46,0.35)] transition hover:bg-leaf-dark"
       >
         <Sparkles className="size-5" aria-hidden />
         <span className="hidden sm:inline">{labels.open}</span>
@@ -227,7 +227,7 @@ export function Concierge({ labels, locale }: { labels: Labels; locale: Locale }
           <div
             role="dialog"
             aria-label={labels.title}
-            className="fixed inset-x-3 bottom-3 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_30px_80px_-20px_rgba(10,31,23,0.45)] sm:inset-x-auto sm:right-5 sm:w-[400px]"
+            className="fixed inset-x-3 bottom-3 z-50 flex max-h-[80vh] flex-col overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_30px_80px_-20px_rgba(28,58,46,0.45)] sm:inset-x-auto sm:right-5 sm:w-[400px]"
           >
             <div className="pattern-kanga flex items-center justify-between gap-2 px-5 py-4 text-white">
               <p className="flex items-center gap-2 font-extrabold">

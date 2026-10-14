@@ -9,7 +9,7 @@ export function BrandIcon({ size, rounded }: { size: number; rounded: boolean })
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#0a1f17',
+        background: '#1c3a2e',
         borderRadius: rounded ? size * 0.22 : 0,
         position: 'relative',
       }}
