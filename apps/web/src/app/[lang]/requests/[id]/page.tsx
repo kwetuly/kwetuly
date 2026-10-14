@@ -47,7 +47,7 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
 
   return (
     <>
-      <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-leaf">
+      <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-leaf-dark">
         <ArrowLeft className="size-4" aria-hidden /> {r.title}
       </Link>
       {status.posted && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.posted}</p>}
@@ -105,7 +105,7 @@ function RequestSummary({ request, isOwner, t, locale }: { request: TripRequest;
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="request_id" value={request.id} />
           <input type="hidden" name="open" value={request.status === 'open' ? 'false' : 'true'} />
-          <button className="text-sm font-semibold text-muted underline hover:text-leaf">{request.status === 'open' ? r.close : r.reopen}</button>
+          <button className="text-sm font-semibold text-muted underline hover:text-leaf-dark">{request.status === 'open' ? r.close : r.reopen}</button>
         </form>
       )}
     </section>
@@ -128,7 +128,7 @@ function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate
       <div className="grid grid-cols-[1fr_auto] items-start gap-x-4 gap-y-1">
         <div className="min-w-0">
           {offer.guides ? (
-            <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-lg font-bold hover:text-leaf">{offer.guides.display_name}</Link>
+            <Link href={`/${locale}/guides/${offer.guides.slug}`} className="text-lg font-bold hover:text-leaf-dark">{offer.guides.display_name}</Link>
           ) : (
             <p className="text-lg font-bold">{offer.company_name}</p>
           )}

@@ -63,7 +63,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
                 <Sparkles className="size-3" aria-hidden /> {tt.signature}
               </span>
             )}
-            {trip.status !== 'published' && <span className="rounded-[5px] bg-white px-3 py-1 text-xs font-bold text-leaf">{tt.draft}</span>}
+            {trip.status !== 'published' && <span className="rounded-[5px] bg-white px-3 py-1 text-xs font-bold text-leaf-dark">{tt.draft}</span>}
             <span className="rounded-[5px] bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">
               {TRIP_CIRCUITS.find((c) => c.id === trip.circuit)?.[locale]}
             </span>
@@ -87,7 +87,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {trip.highlights.map((h) => (
                 <li key={h} className="flex gap-2 rounded-[5px] bg-surface p-3 text-sm font-medium">
-                  <Sparkles className="mt-0.5 size-4 shrink-0 text-leaf" aria-hidden /> {h}
+                  <Sparkles className="mt-0.5 size-4 shrink-0 text-leaf-dark" aria-hidden /> {h}
                 </li>
               ))}
             </ul>
@@ -134,7 +134,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
 
           <section className="grid gap-6 sm:grid-cols-2">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarDays className="size-5 text-leaf" aria-hidden /> {tt.bestTime}</h2>
+              <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarDays className="size-5 text-leaf-dark" aria-hidden /> {tt.bestTime}</h2>
               <div className="mt-3 grid grid-cols-6 gap-1.5">
                 {MONTHS[locale].map((m, i) => (
                   <span
@@ -164,7 +164,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
         <aside id="enquire" className="h-fit lg:sticky lg:top-24">
           <EnquiryCard trip={trip} status={status} t={t} locale={locale} />
           <Link href={`/${locale}/calls`} className="mt-4 flex items-center gap-2 rounded-[5px] border border-line p-4 text-sm font-semibold hover:border-leaf">
-            <Video className="size-5 text-leaf" aria-hidden /> {tt.talkToGuide}
+            <Video className="size-5 text-leaf-dark" aria-hidden /> {tt.talkToGuide}
           </Link>
         </aside>
       </div>

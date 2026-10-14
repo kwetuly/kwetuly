@@ -38,7 +38,7 @@ async function News({ t, locale }: { t: Dictionary; locale: Locale }) {
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
         <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-          <Newspaper className="size-7 text-leaf" aria-hidden /> {hubLabel('news', locale)}
+          <Newspaper className="size-7 text-leaf-dark" aria-hidden /> {hubLabel('news', locale)}
         </h1>
         {news.length === 0 && <p className="mt-6 text-muted">{t.hub.noNews}</p>}
         <ul className="mt-6 space-y-4">

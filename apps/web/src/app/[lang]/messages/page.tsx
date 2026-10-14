@@ -14,7 +14,7 @@ export default async function MessagesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <MessagesSquare className="size-7 text-leaf" aria-hidden /> {t.messages.title}
+        <MessagesSquare className="size-7 text-leaf-dark" aria-hidden /> {t.messages.title}
       </h1>
       <Link href={`/${locale}/chats`} className="card mt-6 flex items-center justify-between gap-3 p-4 hover:border-leaf">
         <span>

@@ -48,7 +48,7 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
         </span>
       </div>
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-lg font-bold leading-snug group-hover:text-leaf">{trip.title}</h3>
+        <h3 className="text-lg font-bold leading-snug group-hover:text-leaf-dark">{trip.title}</h3>
         {organizer && <p className="mt-1 text-sm text-muted">{t.groups.organisedBy} {organizer}</p>}
         <div className="mt-3 space-y-1.5 text-sm">
           <p className="flex items-center gap-1.5"><CalendarDays className="size-4 text-forest" aria-hidden /> {formatDates(trip, locale)}</p>

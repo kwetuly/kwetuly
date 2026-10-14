@@ -73,7 +73,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
       <div className="flex gap-4">
         <GuideAvatar guide={guide} size={72} />
         <div className="min-w-0">
-          <h3 className="text-lg font-bold leading-tight group-hover:text-leaf">{guide.display_name}</h3>
+          <h3 className="text-lg font-bold leading-tight group-hover:text-leaf-dark">{guide.display_name}</h3>
           {guide.headline && <p className="mt-0.5 line-clamp-2 text-sm text-muted">{guide.headline}</p>}
           <div className="mt-1">
             <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />

@@ -78,7 +78,7 @@ export default function ExploreScreen() {
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <SectionTitle>{t.groups.title}</SectionTitle>
-          <Link href="/trips" style={{ color: brand.leaf, fontWeight: '700' }}>
+          <Link href="/trips" style={{ color: brand.leafDark, fontWeight: '700' }}>
             {t.explore.more}
           </Link>
         </View>

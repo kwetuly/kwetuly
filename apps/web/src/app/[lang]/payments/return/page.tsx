@@ -66,7 +66,7 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
       ? { icon: <CheckCircle2 className="size-10 text-forest" aria-hidden />, text: p.paid }
       : state === 'failed'
         ? { icon: <XCircle className="size-10 text-red-700" aria-hidden />, text: p.failed }
-        : { icon: <Clock className="size-10 text-leaf" aria-hidden />, text: p.pending };
+        : { icon: <Clock className="size-10 text-leaf-dark" aria-hidden />, text: p.pending };
 
   return (
     <div className="card space-y-4 text-center">

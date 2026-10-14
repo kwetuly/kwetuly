@@ -54,7 +54,7 @@ async function Jobs({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <section>
       <h1 className="flex items-center gap-2 text-3xl font-extrabold">
-        <Briefcase className="size-7 text-leaf" aria-hidden /> {hubLabel('jobs', locale)}
+        <Briefcase className="size-7 text-leaf-dark" aria-hidden /> {hubLabel('jobs', locale)}
       </h1>
       {jobs.length === 0 && <p className="mt-6 text-muted">{t.hub.noJobs}</p>}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

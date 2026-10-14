@@ -142,7 +142,7 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
     <section className="card">
       <p className="text-sm font-bold text-muted">{t.groups.organisedBy}</p>
       {trip.guides ? (
-        <Link href={`/${locale}/guides/${trip.guides.slug}`} className="mt-2 block hover:text-leaf">
+        <Link href={`/${locale}/guides/${trip.guides.slug}`} className="mt-2 block hover:text-leaf-dark">
           <span className="text-xl font-bold">{trip.guides.display_name}</span>
           <span className="mt-1 block">
             <RatingSummary avg={trip.guides.rating_avg} count={trip.guides.rating_count} labels={t.reviews} />

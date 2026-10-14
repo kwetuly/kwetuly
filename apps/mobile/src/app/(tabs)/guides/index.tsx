@@ -69,7 +69,7 @@ export default function GuidesScreen() {
             ))}
           </ChipRow>
           {filtered && (
-            <Text onPress={() => setFilters({})} style={{ color: brand.leaf, fontWeight: '700', paddingHorizontal: space.lg }}>
+            <Text onPress={() => setFilters({})} style={{ color: brand.leafDark, fontWeight: '700', paddingHorizontal: space.lg }}>
               ✕ {t.guides.clear}
             </Text>
           )}

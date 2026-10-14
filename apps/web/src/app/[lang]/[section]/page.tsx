@@ -56,7 +56,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
             href={itemHref(locale, section, item)}
             className="card group flex items-start gap-4 transition hover:-translate-y-1 hover:border-leaf/40"
           >
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-[5px] bg-sand text-leaf transition group-hover:bg-leaf group-hover:text-white">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-[5px] bg-sand text-leaf-dark transition group-hover:bg-leaf group-hover:text-white">
               <Icon name={item.icon} className="size-6" />
             </span>
             <span className="flex-1">
@@ -66,7 +66,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
               </span>
               <span className="mt-1 block text-muted">{item.blurb[locale]}</span>
             </span>
-            <ArrowRight className="mt-1 size-5 text-muted transition group-hover:translate-x-1 group-hover:text-leaf" aria-hidden />
+            <ArrowRight className="mt-1 size-5 text-muted transition group-hover:translate-x-1 group-hover:text-leaf-dark" aria-hidden />
           </Link>
         ))}
       </section>

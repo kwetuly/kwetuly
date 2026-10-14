@@ -97,7 +97,7 @@ async function Thread({
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="conversation_id" value={id} />
                     <input type="hidden" name="message_id" value={msg.id} />
-                    <button className="inline-flex items-center gap-0.5 opacity-60 hover:text-leaf hover:opacity-100" title={m.report}>
+                    <button className="inline-flex items-center gap-0.5 opacity-60 hover:text-leaf-dark hover:opacity-100" title={m.report}>
                       <Flag className="size-3" aria-hidden /> {m.report}
                     </button>
                   </form>

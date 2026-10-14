@@ -83,7 +83,7 @@ export function RecentlyViewed({ title, clearLabel }: { title: string; clearLabe
                 </span>
               )}
               <span className="min-w-0">
-                <span className="block truncate font-bold group-hover:text-leaf">{item.title}</span>
+                <span className="block truncate font-bold group-hover:text-leaf-dark">{item.title}</span>
                 {item.subtitle && <span className="block truncate text-sm text-muted">{item.subtitle}</span>}
               </span>
             </Link>

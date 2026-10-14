@@ -77,7 +77,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
     <div className="mt-8 grid gap-6 lg:grid-cols-2">
       <Link href={`/${locale}/requests`} className="card flex items-center justify-between gap-4 p-5 hover:border-leaf lg:col-span-2">
         <span className="font-bold">{t.hub.openRequests}</span>
-        <span className="text-2xl font-extrabold tabular-nums text-leaf">{openCount ?? 0}</span>
+        <span className="text-2xl font-extrabold tabular-nums text-leaf-dark">{openCount ?? 0}</span>
       </Link>
 
       {/* Deposits as statement rows: date, trip, amount, where the money is. */}

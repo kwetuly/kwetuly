@@ -2,11 +2,11 @@
 
 export const colors = {
   night: '#1C3A2E', // deep night green: hero and dark surfaces
-  forest: '#0E6B4F', // primary brand green
-  forestDark: '#0A4F3A',
-  mint: '#E3F6EE', // soft green tint: badges, selections
-  leaf: '#157A55', // main call-to-action: calm green, 5.3:1 with white text
-  leafDark: '#0E6B4F',
+  forest: '#187A16', // primary brand green
+  forestDark: '#11590F',
+  mint: '#E5F5E3', // soft green tint: badges, selections
+  leaf: '#1D951A', // main call-to-action green (fills); use leafDark #187A16 for small text on white
+  leafDark: '#187A16',
   gold: '#FFB627', // highlights
   sand: '#FFF8EE', // warm background sections
   charcoal: '#2B3631', // body text

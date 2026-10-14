@@ -125,7 +125,7 @@ async function Profile({
               {expertiseOf(guide).map((e) => (
                 <li key={e.id}>
                   <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-[5px] border border-line bg-white p-3 hover:border-leaf">
-                    <Icon name={e.icon} className="size-5 shrink-0 text-leaf" />
+                    <Icon name={e.icon} className="size-5 shrink-0 text-leaf-dark" />
                     <span className="text-sm font-semibold">{e.label[locale]}</span>
                   </Link>
                 </li>

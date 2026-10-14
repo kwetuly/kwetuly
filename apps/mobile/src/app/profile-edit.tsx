@@ -185,7 +185,7 @@ export default function ProfileEditScreen() {
         <SectionTitle>{d.publicSection}</SectionTitle>
         <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }} accessibilityRole="button">
           <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={72} />
-          <Text style={{ color: brand.leaf, fontWeight: '700' }}>{d.photo}</Text>
+          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.photo}</Text>
         </Pressable>
         <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
         <Field label={d.slug} value={f.slug} onChangeText={set('slug')} autoCapitalize="none" hint="rafrika.com/guides/…" />

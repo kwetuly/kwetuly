@@ -257,7 +257,7 @@ async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: L
                     {c.meeting_link && (
                       <>
                         {' · '}
-                        <a href={c.meeting_link} className="font-semibold text-leaf underline" target="_blank" rel="noopener">
+                        <a href={c.meeting_link} className="font-semibold text-leaf-dark underline" target="_blank" rel="noopener">
                           {t.traveler.joinCall}
                         </a>
                       </>

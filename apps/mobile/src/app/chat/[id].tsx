@@ -155,7 +155,7 @@ export default function GroupChatScreen() {
           <View style={{ gap: space.sm }}>
             <Text numberOfLines={1} style={{ fontWeight: '700', color: colors.label }}>
               {picked.kind === 'video' ? '🎬' : '📷'} {picked.name}{' '}
-              <Text onPress={() => setPicked(null)} style={{ color: brand.leaf }}>✕</Text>
+              <Text onPress={() => setPicked(null)} style={{ color: brand.leafDark }}>✕</Text>
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
               <Switch value={sharePublic} onValueChange={setSharePublic} trackColor={{ true: brand.leaf }} />

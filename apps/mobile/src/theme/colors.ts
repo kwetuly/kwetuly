@@ -14,10 +14,10 @@ export const colors = {
 // Brand colours from the website ("savanna sunset"); the same in light and dark mode.
 export const brand = {
   night: '#1c3a2e',
-  forest: '#0e6b4f',
-  mint: '#e3f6ee',
-  leaf: '#157a55', // calm green for buttons and links
-  leafDark: '#0e6b4f',
+  forest: '#187a16',
+  mint: '#e5f5e3',
+  leaf: '#1d951a', // green for buttons and fills; links use leafDark
+  leafDark: '#187a16',
   gold: '#ffb627',
   sand: '#fff8ee',
   goldSoft: '#ffe7b0', // gold badge background

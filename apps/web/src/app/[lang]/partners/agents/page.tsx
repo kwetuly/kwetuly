@@ -41,7 +41,7 @@ export default async function AgentsPage({ searchParams }: PageProps<'/[lang]/pa
           const WhyIcon = whyIcons[i] ?? BadgeCheck;
           return (
             <div key={item.title} className="card">
-              <WhyIcon className="size-8 text-leaf" aria-hidden />
+              <WhyIcon className="size-8 text-leaf-dark" aria-hidden />
               <h2 className="mt-4 font-bold">{item.title}</h2>
               <p className="mt-2 text-sm text-muted">{item.body}</p>
             </div>

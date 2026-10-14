@@ -67,7 +67,7 @@ async function TripList({ locale }: { locale: Locale }) {
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="trip_id" value={trip.id} />
             <div>
-              <Link href={`/${locale}/tours/${trip.slug}`} className="font-bold hover:text-leaf">{trip.title_en}</Link>
+              <Link href={`/${locale}/tours/${trip.slug}`} className="font-bold hover:text-leaf-dark">{trip.title_en}</Link>
               <p className="mt-1 text-xs text-muted">
                 {TRIP_CIRCUITS.find((c) => c.id === trip.circuit)?.en} · {TRIP_KINDS.find((k) => k.id === trip.kind)?.en} · {trip.days} days
               </p>

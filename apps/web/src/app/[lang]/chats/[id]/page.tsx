@@ -90,7 +90,7 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
 
       <details className="card mt-2 p-4">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-bold [&::-webkit-details-marker]:hidden">
-          <UserPlus className="size-5 text-leaf" aria-hidden /> {c.invite}
+          <UserPlus className="size-5 text-leaf-dark" aria-hidden /> {c.invite}
         </summary>
         <p className="mt-2 text-sm text-muted">{c.inviteBody}</p>
         <div className="mt-3">

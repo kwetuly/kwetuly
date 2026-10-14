@@ -80,7 +80,7 @@ export default async function HomePage() {
                         href={itemHref(locale, section, item)}
                         className="group/chip inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
                       >
-                        <Icon name={item.icon} className="size-4 text-gold group-hover/chip:text-leaf" />
+                        <Icon name={item.icon} className="size-4 text-gold group-hover/chip:text-leaf-dark" />
                         {item.label[locale]}
                       </Link>
                     </li>

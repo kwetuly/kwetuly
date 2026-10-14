@@ -103,7 +103,7 @@ async function Results({ searchParams, t, locale }: { searchParams: SearchParams
       </section>
 
       {filtered && (
-        <Link href={`/${locale}/guides`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-leaf">
+        <Link href={`/${locale}/guides`} className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-leaf-dark">
           <X className="size-4" aria-hidden /> {t.guides.clear}
         </Link>
       )}

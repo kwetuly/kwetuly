@@ -81,7 +81,7 @@ function Linkified({ text }: { text: string }) {
     <>
       {parts.map((part, i) =>
         isPath.test(part) ? (
-          <Link key={i} href={part} className="font-semibold text-leaf underline">
+          <Link key={i} href={part} className="font-semibold text-leaf-dark underline">
             {part}
           </Link>
         ) : (

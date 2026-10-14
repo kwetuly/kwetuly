@@ -31,7 +31,7 @@ export default async function ForumPage() {
       </Suspense>
       <aside className="card h-fit">
         <h2 className="flex items-center gap-2 text-lg font-bold">
-          <MessagesSquare className="size-5 text-leaf" aria-hidden /> {t.hub.newPost}
+          <MessagesSquare className="size-5 text-leaf-dark" aria-hidden /> {t.hub.newPost}
         </h2>
         <p className="mt-2 flex gap-2 rounded-[5px] bg-sand p-3 text-xs font-semibold text-leaf-dark">
           <TriangleAlert className="size-4 shrink-0" aria-hidden /> {t.hub.sightingWarning}
