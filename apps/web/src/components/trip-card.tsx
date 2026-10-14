@@ -10,14 +10,14 @@ import { Icon } from './icon';
 // Each category gets its own colour so the catalogue reads at a glance without photos.
 const gradients: Record<string, string> = {
   safari: 'from-[#c2410c] via-[#f59e0b] to-[#fde68a]',
-  mountain: 'from-[#1c3a2e] via-[#1e3a5f] to-[#93c5fd]',
+  mountain: 'from-[#7f7f7f] via-[#1e3a5f] to-[#93c5fd]',
   cultural: 'from-[#7c2d12] via-[#dc2626] to-[#fbbf24]',
   beach: 'from-[#0e7490] via-[#22d3ee] to-[#fef3c7]',
   historical: 'from-[#44403c] via-[#a16207] to-[#fde68a]',
   marine: 'from-[#1e3a8a] via-[#0891b2] to-[#a5f3fc]',
   chimpanzee: 'from-[#14532d] via-[#15803d] to-[#bef264]',
   walking: 'from-[#365314] via-[#65a30d] to-[#d9f99d]',
-  event: 'from-[#1c3a2e] via-[#187a16] to-[#ffb627]',
+  event: 'from-[#7f7f7f] via-[#187a16] to-[#ffb627]',
 };
 
 // Photo cover with the category gradient underneath (shown while the photo loads).
@@ -46,7 +46,7 @@ export function TripCard({ trip, locale, labels }: { trip: Trip; locale: Locale;
             </span>
           )}
           {trip.status !== 'published' && <span className="rounded-[5px] bg-white px-3 py-1 text-xs font-bold text-leaf-dark">{labels.draft}</span>}
-          <span className="rounded-[5px] bg-white/90 px-3 py-1 text-xs font-bold text-night">
+          <span className="rounded-[5px] bg-white/90 px-3 py-1 text-xs font-bold text-charcoal">
             {TRIP_KINDS.find((k) => k.id === trip.kind)?.[locale]}
           </span>
         </div>

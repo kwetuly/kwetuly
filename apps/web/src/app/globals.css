@@ -2,7 +2,8 @@
 
 /* Rafrika "savanna sunset" tokens — keep in sync with packages/shared/src/theme.ts */
 @theme {
-  --color-night: #1c3a2e;
+  --color-night: #7f7f7f;
+  --color-shade: #3a3a3a; /* darker grey for fades over photos, so white text stays readable */
   --color-forest: #187a16;
   --color-forest-dark: #11590f;
   --color-mint: #e5f5e3;
@@ -29,7 +30,7 @@ body {
 }
 
 .btn-dark {
-  @apply inline-flex items-center justify-center gap-2 rounded-[5px] bg-night px-6 py-3 font-semibold text-gold transition hover:bg-forest;
+  @apply inline-flex items-center justify-center gap-2 rounded-[5px] bg-night px-6 py-3 font-semibold text-white transition hover:bg-forest;
 }
 
 .btn-outline {

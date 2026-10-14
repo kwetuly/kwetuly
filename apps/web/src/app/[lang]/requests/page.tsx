@@ -22,7 +22,7 @@ export default async function RequestsPage() {
     <>
       <PhotoHero photo="kiliHeather">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <Gavel className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.requests.title}</h1>

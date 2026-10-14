@@ -52,14 +52,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
       )}
       <section className="relative text-white">
         <TripCover trip={trip} className="absolute inset-0" sizes="100vw" priority />
-        <div className="absolute inset-0 bg-gradient-to-t from-night via-night/60 to-night/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-shade via-shade/60 to-shade/10" />
         <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/tours`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4 text-gold" aria-hidden /> {tt.title}
           </Link>
           <div className="mt-16 flex flex-wrap gap-2">
             {trip.is_signature && (
-              <span className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1 text-xs font-bold text-night">
+              <span className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1 text-xs font-bold text-charcoal">
                 <Sparkles className="size-3" aria-hidden /> {tt.signature}
               </span>
             )}

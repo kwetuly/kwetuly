@@ -17,7 +17,7 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle> }) {
   const background = variant === 'primary' ? brand.leaf : variant === 'dark' ? brand.night : 'transparent';
-  const color = variant === 'outline' ? brand.forest : variant === 'dark' ? brand.gold : brand.onDark;
+  const color = variant === 'outline' ? brand.forest : brand.onDark;
   return (
     <Pressable
       onPress={onPress}
@@ -56,7 +56,7 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
         paddingHorizontal: space.md,
       }}
     >
-      <Text style={{ color: active ? brand.gold : colors.label, fontWeight: '600', fontSize: textSize.footnote }}>{label}</Text>
+      <Text style={{ color: active ? brand.onDark : colors.label, fontWeight: '600', fontSize: textSize.footnote }}>{label}</Text>
     </Pressable>
   );
 }
@@ -65,8 +65,8 @@ export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' |
   const styles = {
     mint: { backgroundColor: brand.mint, color: brand.forest },
     sand: { backgroundColor: brand.sand, color: brand.leafDark },
-    night: { backgroundColor: brand.night, color: brand.gold },
-    gold: { backgroundColor: brand.goldSoft, color: brand.night },
+    night: { backgroundColor: brand.night, color: brand.onDark },
+    gold: { backgroundColor: brand.goldSoft, color: brand.ink },
   }[tone];
   return (
     <View style={{ backgroundColor: styles.backgroundColor, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.xs, alignSelf: 'flex-start' }}>

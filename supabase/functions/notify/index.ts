@@ -141,7 +141,7 @@ function emailHtml(text: Text, link: string, locale: string) {
   return `<!doctype html><html><body style="margin:0;background:#f7f6f3;font-family:Arial,sans-serif;color:#16211c">
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
   <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden">
-    <tr><td style="background:#1c3a2e;padding:20px 28px;color:#ffb627;font-size:22px;font-weight:bold">Rafrika</td></tr>
+    <tr><td style="background:#7f7f7f;padding:20px 28px;color:#ffffff;font-size:22px;font-weight:bold">Rafrika</td></tr>
     <tr><td style="padding:28px">
       <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(text.subject)}</h1>
       <p style="font-size:15px;line-height:1.6;margin:0 0 24px">${escapeHtml(text.body)}</p>

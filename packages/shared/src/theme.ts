@@ -1,7 +1,8 @@
 // Rafrika design tokens ("savanna sunset"), shared by the website and the mobile app.
 
 export const colors = {
-  night: '#1C3A2E', // deep night green: hero and dark surfaces
+  night: '#7F7F7F', // grey for dark surfaces (text on it is white)
+  shade: '#3A3A3A', // darker grey for fades over photos
   forest: '#187A16', // primary brand green
   forestDark: '#11590F',
   mint: '#E5F5E3', // soft green tint: badges, selections

@@ -29,8 +29,8 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
               <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
             </button>
             <div className={`invisible absolute top-full z-30 ${section.items.length > 6 ? 'left-0 w-[42rem]' : 'left-1/2 w-[22rem] -translate-x-1/2'} translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}>
-              <div className="overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(28,58,46,0.25)]">
-                <p className="bg-night px-5 py-3 text-xs font-medium text-gold">
+              <div className="overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)]">
+                <p className="bg-night px-5 py-3 text-xs font-semibold text-white">
                   {section.tagline[locale]}
                 </p>
                 <ul className={`p-2 ${section.items.length > 6 ? 'grid grid-cols-2' : ''}`}>
@@ -40,8 +40,8 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                         href={itemHref(locale, section, item)}
                         className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand"
                       >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-night text-gold shadow-sm">
-                          <Icon name={item.icon} className="size-5" />
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-night shadow-sm">
+                          <Icon name={item.icon} className="size-5 text-gold" />
                         </span>
                         <span>
                           <span className="flex items-center gap-2 text-sm font-semibold text-charcoal">
@@ -99,7 +99,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                     className="flex w-full items-center gap-3 py-4 text-left text-lg font-semibold"
                     aria-expanded={isOpen}
                   >
-                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+                    <span className="flex size-9 items-center justify-center rounded-[5px] bg-white/15 text-gold">
                       <Icon name={section.icon} className="size-5" />
                     </span>
                     {section.label[locale]}
@@ -112,7 +112,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                           <Link
                             href={itemHref(locale, section, item)}
                             onClick={() => setOpen(false)}
-                            className="flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-white/85 hover:bg-white/10 hover:text-gold"
+                            className="flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-white hover:bg-white/15"
                           >
                             <Icon name={item.icon} className="size-4 shrink-0 text-gold" />
                             {item.label[locale]}

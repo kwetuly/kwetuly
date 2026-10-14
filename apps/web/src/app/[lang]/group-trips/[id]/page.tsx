@@ -60,7 +60,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
     <>
       <section className="relative isolate overflow-hidden bg-night text-white">
         <Image src={photoUrl(photo, 2000)} alt={photo.alt} fill priority sizes="100vw" className="-z-10 object-cover" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/70 to-night/20" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade via-shade/70 to-shade/20" />
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/group-trips`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
             <ArrowLeft className="size-4 text-gold" aria-hidden /> {g.title}

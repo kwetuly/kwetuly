@@ -51,7 +51,7 @@ export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
       {guide.verification_status === 'approved' && (
         <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
       )}
-      {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-night`}>{t.guides.pro}</span>}
+      {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-charcoal`}>{t.guides.pro}</span>}
       {guide.female_guide && (
         <span className={`${pill} bg-sand text-leaf-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
       )}

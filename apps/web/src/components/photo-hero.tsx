@@ -8,8 +8,8 @@ export function PhotoHero({ photo, children, className = '' }: { photo: PhotoKey
   return (
     <section className={`relative isolate overflow-hidden bg-night text-white ${className}`}>
       <Image src={photoUrl(p, 2000)} alt={p.alt} fill priority sizes="100vw" className="-z-10 object-cover" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night/90 via-night/60 to-night/10" />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-shade/90 via-shade/60 to-shade/10" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade/80 via-transparent to-transparent" />
       {children}
     </section>
   );

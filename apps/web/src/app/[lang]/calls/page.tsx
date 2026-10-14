@@ -22,7 +22,7 @@ export default async function CallsPage({ searchParams }: PageProps<'/[lang]/cal
     <>
       <PhotoHero photo={'kiliCamp'}>
         <div className="mx-auto max-w-6xl px-4 py-16">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <Video className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 max-w-3xl text-4xl font-extrabold sm:text-5xl">{t.calls.title}</h1>
@@ -63,7 +63,7 @@ async function CallGuides({
       <div className="flex flex-wrap gap-2">
         <Link
           href={`/${locale}/calls`}
-          className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${!topic ? 'bg-night text-gold' : 'border border-line bg-white'}`}
+          className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${!topic ? 'bg-night text-white' : 'border border-line bg-white'}`}
         >
           {t.calls.allTopics}
         </Link>
@@ -71,7 +71,7 @@ async function CallGuides({
           <Link
             key={c.id}
             href={`/${locale}/calls?topic=${c.id}`}
-            className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${topic === c.id ? 'bg-night text-gold' : 'border border-line bg-white hover:border-leaf'}`}
+            className={`rounded-[5px] px-4 py-2 text-sm font-semibold ${topic === c.id ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'}`}
           >
             {c[locale]}
           </Link>

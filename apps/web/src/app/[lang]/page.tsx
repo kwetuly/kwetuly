@@ -24,8 +24,8 @@ export default async function HomePage() {
       <section className="relative isolate overflow-hidden bg-night text-white">
         <Image src={photoUrl(hero, 2000)} alt={hero.alt} fill priority sizes="100vw" className="-z-10 object-cover" />
         {/* Shade only the side the text sits on, so the landscape stays visible. */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-night/90 via-night/55 to-transparent" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-shade/90 via-shade/55 to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade/60 via-transparent to-transparent" />
         <div className="mx-auto flex min-h-[min(78svh,760px)] max-w-7xl flex-col justify-end px-4 pb-14 pt-24 sm:pb-20">
           <p lang="sw" className="text-lg font-semibold text-gold">{t.home.eyebrow}</p>
           <h1 className="mt-3 max-w-3xl text-balance text-[2.75rem] font-extrabold leading-[1.02] tracking-tight sm:text-7xl">
@@ -67,8 +67,8 @@ export default async function HomePage() {
                   sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
                   className="-z-10 object-cover transition duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 -z-10 bg-gradient-to-t from-night via-night/60 to-night/10" />
-                <span className="flex size-12 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+                <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade via-shade/60 to-shade/10" />
+                <span className="flex size-12 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
                   <Icon name={section.icon} className="size-6" />
                 </span>
                 <h3 className={`mt-4 font-extrabold ${index === 0 ? 'text-4xl' : 'text-2xl'}`}>{section.label[locale]}</h3>
@@ -78,7 +78,7 @@ export default async function HomePage() {
                     <li key={item.slug}>
                       <Link
                         href={itemHref(locale, section, item)}
-                        className="group/chip inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-night"
+                        className="group/chip inline-flex items-center gap-1.5 rounded-[5px] bg-white/15 px-3 py-1.5 text-sm font-semibold backdrop-blur transition hover:bg-white hover:text-charcoal"
                       >
                         <Icon name={item.icon} className="size-4 text-gold group-hover/chip:text-leaf-dark" />
                         {item.label[locale]}
@@ -89,7 +89,7 @@ export default async function HomePage() {
                     <li>
                       <Link
                         href={`/${locale}/${section.slug}`}
-                        className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1.5 text-sm font-bold text-night"
+                        className="inline-flex items-center gap-1 rounded-[5px] bg-gold px-3 py-1.5 text-sm font-bold text-charcoal"
                       >
                         {t.explore.more} ({section.items.length})
                       </Link>
@@ -122,7 +122,7 @@ export default async function HomePage() {
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-16 lg:grid-cols-2">
         <div className="relative isolate overflow-hidden rounded-[5px] p-8 text-white sm:p-10">
           <Image src={photoUrl(PHOTOS.kiboSaddleHikers, 1200)} alt={PHOTOS.kiboSaddleHikers.alt} fill sizes="(min-width: 1024px) 50vw, 100vw" className="-z-10 object-cover" />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-forest/95 via-night/85 to-night/40" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-br from-forest/95 via-shade/85 to-shade/40" />
           <h2 className="text-3xl font-extrabold">{t.home.forGuidesTitle}</h2>
           <p className="mt-3 max-w-md text-white/85">{t.home.forGuidesBody}</p>
           <Link href={`/${locale}/join?role=guide`} className="btn mt-8">
@@ -131,11 +131,11 @@ export default async function HomePage() {
         </div>
         <Link
           href={`/${locale}/discover/afcon-2027`}
-          className="group relative overflow-hidden rounded-[5px] bg-gold p-8 text-night sm:p-10"
+          className="group relative overflow-hidden rounded-[5px] bg-gold p-8 text-charcoal sm:p-10"
         >
           <p className="font-bold">{t.home.afconDates}</p>
           <h2 className="mt-3 max-w-sm text-3xl font-extrabold">{t.home.afconTitle}</h2>
-          <p className="mt-3 max-w-md font-medium text-night/80">{t.home.afconBody}</p>
+          <p className="mt-3 max-w-md font-medium text-charcoal/80">{t.home.afconBody}</p>
           <span className="btn-dark mt-8">
             AFCON 2027
           </span>

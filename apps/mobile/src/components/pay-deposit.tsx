@@ -40,15 +40,15 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
 
   return (
     <Card style={{ backgroundColor: brand.sand }}>
-      <Text style={{ fontWeight: '800', color: brand.night }}>{p.title}</Text>
-      <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: brand.night }}>
+      <Text style={{ fontWeight: '800', color: brand.ink }}>{p.title}</Text>
+      <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: brand.ink }}>
         ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: textSize.subhead }}>({percent}%)</Text>
       </Text>
-      <Text style={{ color: brand.night, opacity: 0.8 }}>{p.body}</Text>
-      {note ? <Text selectable style={{ color: brand.night, fontWeight: '600' }}>{note}</Text> : null}
+      <Text style={{ color: brand.ink, opacity: 0.8 }}>{p.body}</Text>
+      {note ? <Text selectable style={{ color: brand.ink, fontWeight: '600' }}>{note}</Text> : null}
       <Button title={p.cta} onPress={pay} loading={busy} />
       {note === p.pending && <Button title={p.checkAgain} variant="outline" onPress={() => paid.refetch()} />}
-      <Text style={{ color: brand.night, opacity: 0.7, fontSize: textSize.caption }}>{p.direct}</Text>
+      <Text style={{ color: brand.ink, opacity: 0.7, fontSize: textSize.caption }}>{p.direct}</Text>
     </Card>
   );
 }

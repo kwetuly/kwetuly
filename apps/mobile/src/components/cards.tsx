@@ -63,7 +63,7 @@ function PhotoHeader({ photo, label, price }: { photo: Photo; label: string; pri
       </View>
       {price && (
         <View style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: brand.night, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.sm }}>
-          <Text style={{ color: brand.gold, fontWeight: '800' }}>{price}</Text>
+          <Text style={{ color: brand.onDark, fontWeight: '800' }}>{price}</Text>
         </View>
       )}
     </View>

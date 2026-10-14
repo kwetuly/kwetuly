@@ -76,15 +76,15 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             <div>
               <Logo tone="light" className="text-3xl" />
-              <p className="mt-2 text-sm text-white/70">{t.footer.tagline}</p>
+              <p className="mt-2 text-sm text-white/90">{t.footer.tagline}</p>
             </div>
             {MENU.map((section) => (
               <div key={section.slug}>
-                <p className="flex items-center gap-2 text-sm font-bold text-gold">
-                  <Icon name={section.icon} className="size-4" />
+                <p className="flex items-center gap-2 text-sm font-bold text-white">
+                  <Icon name={section.icon} className="size-4 text-gold" />
                   {section.label[locale]}
                 </p>
-                <ul className="mt-3 space-y-2 text-sm text-white/75">
+                <ul className="mt-3 space-y-2 text-sm text-white/90">
                   {section.items.map((item) => (
                     <li key={item.slug}>
                       <Link href={itemHref(locale, section, item)} className="transition hover:text-gold">
@@ -97,7 +97,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             ))}
           </div>
           <div className="border-t border-white/10">
-            <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/60">
+            <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/90">
               © 2026 Rafrika. {t.footer.rights} · Photos: Unsplash photographers
             </p>
           </div>

@@ -28,7 +28,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
       >
         <Globe className="size-4" aria-hidden /> {current}
       </summary>
-      <ul className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-[5px] border border-line bg-white p-1.5 shadow-[0_24px_60px_-12px_rgba(28,58,46,0.25)]">
+      <ul className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-[5px] border border-line bg-white p-1.5 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)]">
         {locales.map((locale) => (
           <li key={locale}>
             <Link

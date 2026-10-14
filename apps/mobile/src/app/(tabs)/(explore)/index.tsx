@@ -23,7 +23,7 @@ export default function ExploreScreen() {
       {/* Hero */}
       <View style={{ marginHorizontal: space.lg, height: 260, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
         <Image source={photoSource(hero)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: 'linear-gradient(to top, rgba(28,58,46,0.95), rgba(28,58,46,0.1))' }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: 'linear-gradient(to top, rgba(58,58,58,0.95), rgba(58,58,58,0.1))' }}>
           <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.body }}>{t.home.eyebrow}</Text>
           <Text style={{ color: brand.onDark, fontWeight: '800', fontSize: textSize.title1, lineHeight: 32 }}>{t.home.title}</Text>
           <Link href="/guides" asChild>
@@ -39,7 +39,7 @@ export default function ExploreScreen() {
         <View style={{ paddingHorizontal: space.lg }}>
           <Link href="/assistant" asChild>
             <Pressable style={{ backgroundColor: brand.gold, borderRadius: radius.button, borderCurve: 'continuous', padding: space.lg }}>
-              <Text style={{ color: brand.night, fontWeight: '800', fontSize: textSize.body }}>✦ {t.concierge.open}</Text>
+              <Text style={{ color: brand.ink, fontWeight: '800', fontSize: textSize.body }}>✦ {t.concierge.open}</Text>
             </Pressable>
           </Link>
         </View>

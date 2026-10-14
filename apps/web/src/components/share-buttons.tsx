@@ -74,7 +74,7 @@ export function ShareButtons({ path, title, text, labels, compact = false }: { p
     <div className="flex flex-wrap items-center gap-2" aria-label={labels.share}>
       {!compact && <span className="mr-1 flex items-center gap-1.5 text-sm font-bold"><Share2 className="size-4 text-leaf-dark" aria-hidden /> {labels.share}</span>}
       {canNativeShare && (
-        <button type="button" onClick={nativeShare} className={`${button} bg-night text-white hover:border-night`}>
+        <button type="button" onClick={nativeShare} className={`${button} bg-night text-white hover:border-charcoal`}>
           <Share2 className="size-4 text-gold" aria-hidden /> {labels.more}
         </button>
       )}

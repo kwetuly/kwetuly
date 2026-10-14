@@ -36,7 +36,7 @@ export default function IntroScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: brand.night }}>
+    <View style={{ flex: 1, backgroundColor: brand.shade }}>
       <StatusBar style="light" />
       <ScrollView
         ref={scroller}
@@ -49,7 +49,7 @@ export default function IntroScreen() {
           <View key={slide.photo.id} style={{ width, height }}>
             <Image source={photoSource(slide.photo)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
             <LinearGradient
-              colors={['rgba(28,58,46,0.15)', 'rgba(28,58,46,0.6)', brand.night, brand.night]}
+              colors={['rgba(58,58,58,0.15)', 'rgba(58,58,58,0.6)', brand.shade, brand.shade]}
               locations={[0, 0.35, 0.62, 1]}
               style={{
                 flex: 1,
@@ -91,12 +91,12 @@ export default function IntroScreen() {
               paddingHorizontal: space.md,
               paddingVertical: space.sm,
               borderRadius: radius.button,
-              backgroundColor: l === locale ? brand.gold : 'rgba(28,58,46,0.45)',
+              backgroundColor: l === locale ? brand.gold : 'rgba(58,58,58,0.45)',
               borderWidth: 1,
               borderColor: l === locale ? brand.gold : 'rgba(255,255,255,0.35)',
             }}
           >
-            <Text style={{ color: l === locale ? brand.night : brand.onDark, fontWeight: '800', fontSize: textSize.caption }}>{SHORT[l] ?? l}</Text>
+            <Text style={{ color: l === locale ? brand.ink : brand.onDark, fontWeight: '800', fontSize: textSize.caption }}>{SHORT[l] ?? l}</Text>
           </Pressable>
         ))}
       </ScrollView>

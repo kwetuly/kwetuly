@@ -36,7 +36,7 @@ async function Hero({ searchParams, t, locale }: { searchParams: Search; t: Dict
   const handover = (await searchParams).kind === 'handover';
   const j = t.jobs;
   const tab = (active: boolean) =>
-    `inline-flex items-center gap-2 rounded-[5px] px-4 py-2 text-sm font-bold ${active ? 'bg-white text-night' : 'bg-white/10 text-white hover:bg-white/20'}`;
+    `inline-flex items-center gap-2 rounded-[5px] px-4 py-2 text-sm font-bold ${active ? 'bg-white text-charcoal' : 'bg-white/10 text-white hover:bg-white/20'}`;
   return (
     <PhotoHero photo={handover ? 'safariSunset' : 'kiliHikers'}>
       <div className="mx-auto max-w-4xl px-4 pb-24 pt-14">

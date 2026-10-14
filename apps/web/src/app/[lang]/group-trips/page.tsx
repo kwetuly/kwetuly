@@ -20,14 +20,14 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
     <>
       <PhotoHero photo="saddleHikers">
         <div className="mx-auto max-w-6xl px-4 pb-16 pt-14">
-          <span className="flex size-14 items-center justify-center rounded-[5px] bg-night/60 text-gold ring-1 ring-gold/40 backdrop-blur">
+          <span className="flex size-14 items-center justify-center rounded-[5px] bg-shade/60 text-gold ring-1 ring-gold/40 backdrop-blur">
             <UsersRound className="size-7" aria-hidden />
           </span>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.groups.title}</h1>
           <p className="mt-3 max-w-2xl text-lg text-white/85">{t.groups.subtitle}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={`/${locale}/group-trips/new`} className="btn"><Plus className="size-4" aria-hidden /> {t.groups.start}</Link>
-            <Link href={`/${locale}/group-trips/mine`} className="btn-dark bg-white/15 backdrop-blur hover:bg-white hover:text-night">{t.groups.mine}</Link>
+            <Link href={`/${locale}/group-trips/mine`} className="btn-dark bg-white/15 backdrop-blur hover:bg-white hover:text-charcoal">{t.groups.mine}</Link>
           </div>
         </div>
       </PhotoHero>
@@ -43,7 +43,7 @@ async function List({ searchParams, t, locale }: { searchParams: Promise<Record<
   const type = typeof raw === 'string' && GUIDE_SPECIALTIES.some((s) => s.id === raw) ? raw : undefined;
   const trips = await listGroupTrips(type);
   const chip = (active: boolean) =>
-    `rounded-[5px] px-4 py-2 text-sm font-semibold ${active ? 'bg-night text-gold' : 'border border-line bg-white hover:border-leaf'}`;
+    `rounded-[5px] px-4 py-2 text-sm font-semibold ${active ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'}`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">

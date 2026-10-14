@@ -13,7 +13,9 @@ export const colors = {
 
 // Brand colours from the website ("savanna sunset"); the same in light and dark mode.
 export const brand = {
-  night: '#1c3a2e',
+  night: '#7f7f7f', // grey for dark surfaces; text on it is white
+  shade: '#3a3a3a', // darker grey for fades over photos
+  ink: '#2b3631', // dark text on gold or light surfaces
   forest: '#187a16',
   mint: '#e5f5e3',
   leaf: '#1d951a', // green for buttons and fills; links use leafDark
