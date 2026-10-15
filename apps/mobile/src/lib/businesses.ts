@@ -1,0 +1,116 @@
+import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@rafrika/shared';
+import { supabase } from '@/lib/supabase';
+
+// Business listings, the same rules as the website: visitors see approved businesses; the owner's
+// WhatsApp number and licence live in provider_private, which only the owner and Rafrika can read.
+
+function check(error: { message: string } | null) {
+  if (error) throw new Error(error.message);
+}
+
+export async function listBusinesses(types: BusinessType[]): Promise<Business[]> {
+  const { data, error } = await supabase
+    .from('providers')
+    .select(BUSINESS_COLUMNS)
+    .eq('verification_status', 'approved')
+    .eq('is_available', true)
+    .in('business_type', types)
+    .order('business_name')
+    .limit(60);
+  check(error);
+  return (data ?? []) as Business[];
+}
+
+export async function getBusiness(id: string): Promise<Business | null> {
+  const { data, error } = await supabase.from('providers').select(BUSINESS_COLUMNS).eq('id', id).maybeSingle();
+  check(error);
+  return (data as Business | null) ?? null;
+}
+
+export async function askBusiness(input: { providerId: string; userId?: string; name: string; contact: string; message: string }) {
+  const { error } = await supabase.from('leads').insert({
+    provider_id: input.providerId,
+    traveler_id: input.userId ?? null,
+    source: 'contact_form',
+    traveler_name: input.name.trim(),
+    traveler_contact: input.contact.trim(),
+    message: input.message.trim(),
+  });
+  check(error);
+}
+
+export type MyBusiness = Business & { provider_private: { whatsapp_number: string | null; licence_document_path: string | null } | null };
+
+export async function getMyBusiness(userId: string): Promise<MyBusiness | null> {
+  const { data, error } = await supabase
+    .from('providers')
+    .select(`${BUSINESS_COLUMNS}, provider_private(whatsapp_number, licence_document_path)`)
+    .eq('owner_id', userId)
+    .maybeSingle();
+  check(error);
+  return (data as unknown as MyBusiness | null) ?? null;
+}
+
+export async function listBusinessEnquiries(providerId: string) {
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id, traveler_name, traveler_contact, message, created_at')
+    .eq('provider_id', providerId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+  check(error);
+  return (data ?? []) as { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string }[];
+}
+
+export async function getBadgeFee(): Promise<number | null> {
+  const { data } = await supabase.from('site_settings').select('value').eq('key', 'badge_fee').maybeSingle<{ value: { amount_usd: number | null } }>();
+  return data?.value.amount_usd ?? null;
+}
+
+type Upload = { uri: string; mimeType: string };
+
+async function upload(bucket: 'avatars' | 'verification', path: string, file: Upload) {
+  const body = await (await fetch(file.uri)).arrayBuffer();
+  const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType: file.mimeType });
+  check(error);
+}
+
+/** Creates or updates the owner's listing; new listings wait for an admin. */
+export async function saveMyBusiness(
+  userId: string,
+  existing: MyBusiness | null,
+  input: { business_name: string; business_type: BusinessType; base_region: string; location: string | null; story: string | null; website: string | null; whatsapp_number: string },
+  files: { photo?: Upload; extraPhoto?: Upload; licence?: Upload },
+) {
+  const { whatsapp_number, ...publicFields } = input;
+  const row: Record<string, unknown> = { ...publicFields };
+  const avatars = supabase.storage.from('avatars');
+  if (files.photo) {
+    const path = `${userId}/business-${Date.now()}.jpg`;
+    await upload('avatars', path, files.photo);
+    row.photo_url = avatars.getPublicUrl(path).data.publicUrl;
+  }
+  if (files.extraPhoto) {
+    const path = `${userId}/business-extra-${Date.now()}.jpg`;
+    await upload('avatars', path, files.extraPhoto);
+    row.photos = [...(existing?.photos ?? []), avatars.getPublicUrl(path).data.publicUrl].slice(-6);
+  }
+  const saved = existing
+    ? await supabase.from('providers').update(row).eq('id', existing.id).select('id').single()
+    : await supabase.from('providers').insert({ ...row, owner_id: userId }).select('id').single();
+  check(saved.error);
+  const privateRow: Record<string, string> = { provider_id: saved.data!.id, whatsapp_number };
+  if (files.licence) {
+    const ext = files.licence.mimeType === 'application/pdf' ? 'pdf' : 'jpg';
+    const path = `${userId}/business-licence-${Date.now()}.${ext}`;
+    await upload('verification', path, files.licence);
+    privateRow.licence_document_path = path;
+  }
+  const { error } = await supabase.from('provider_private').upsert(privateRow);
+  check(error);
+}
+
+export async function requestBadge(userId: string) {
+  const { error } = await supabase.from('providers').update({ badge_requested_at: new Date().toISOString() }).eq('owner_id', userId);
+  check(error);
+}

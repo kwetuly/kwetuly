@@ -1,0 +1,171 @@
+// Business listings and the paid "Checked by Rafrika" badge. Traveller texts in all 7 languages;
+// the owner's own texts in English and Kiswahili, like the guide dashboard.
+
+const ownerEn = {
+  dashboardTitle: 'Your business on Rafrika',
+  statusPending: 'Waiting for review. We will look at your details and publish your listing.',
+  statusApproved: 'Your listing is live.',
+  statusRejected: 'Your listing was not approved. Please contact Rafrika.',
+  viewListing: 'View your listing',
+  nameField: 'Business name',
+  typeField: 'Type of business',
+  regionField: 'Region',
+  locationField: 'Town or area',
+  storyField: 'About your business',
+  whatsappField: 'WhatsApp number for enquiries (not shown to travellers)',
+  websiteField: 'Website (optional, starting with https://)',
+  photoField: 'Main photo',
+  morePhotosField: 'More photos',
+  licenceField: 'Business licence (photo or PDF, only Rafrika sees it)',
+  save: 'Save listing',
+  saved: 'Saved.',
+  badgeTitle: 'Get the “Checked by Rafrika” badge',
+  badgeBody: 'We check your business licence, the owner’s identity and that your photos match the place, by video call or a visit. The badge shows on your listing for one year, with exactly what we checked.',
+  badgeFee: 'Yearly fee: {price}',
+  badgeFeeAsk: 'Yearly fee: ask Rafrika',
+  badgeRequest: 'Request a check',
+  badgeRequested: 'Check requested. We will contact you on WhatsApp to arrange the check and the payment.',
+  badgeActive: 'Your badge is valid until {date}.',
+  badgeExpired: 'Your badge ended on {date}. Request a new check to renew it.',
+  enquiriesTitle: 'Enquiries',
+  noEnquiries: 'No enquiries yet.',
+};
+
+type OwnerTexts = typeof ownerEn;
+
+const ownerSw: OwnerTexts = {
+  dashboardTitle: 'Biashara yako kwenye Rafrika',
+  statusPending: 'Inasubiri ukaguzi. Tutaangalia taarifa zako na kuchapisha tangazo lako.',
+  statusApproved: 'Tangazo lako liko hewani.',
+  statusRejected: 'Tangazo lako halikukubaliwa. Tafadhali wasiliana na Rafrika.',
+  viewListing: 'Ona tangazo lako',
+  nameField: 'Jina la biashara',
+  typeField: 'Aina ya biashara',
+  regionField: 'Mkoa',
+  locationField: 'Mji au eneo',
+  storyField: 'Kuhusu biashara yako',
+  whatsappField: 'Namba ya WhatsApp kwa maulizo (haionyeshwi kwa wasafiri)',
+  websiteField: 'Tovuti (si lazima, inaanza na https://)',
+  photoField: 'Picha kuu',
+  morePhotosField: 'Picha zaidi',
+  licenceField: 'Leseni ya biashara (picha au PDF, Rafrika pekee ndiyo inaiona)',
+  save: 'Hifadhi tangazo',
+  saved: 'Imehifadhiwa.',
+  badgeTitle: 'Pata beji ya “Imekaguliwa na Rafrika”',
+  badgeBody: 'Tunakagua leseni ya biashara yako, utambulisho wa mmiliki na kwamba picha zinalingana na mahali, kwa simu ya video au kutembelea. Beji inaonekana kwenye tangazo lako kwa mwaka mmoja, pamoja na tulichokagua.',
+  badgeFee: 'Ada ya mwaka: {price}',
+  badgeFeeAsk: 'Ada ya mwaka: uliza Rafrika',
+  badgeRequest: 'Omba ukaguzi',
+  badgeRequested: 'Ombi limepokelewa. Tutawasiliana nawe kwa WhatsApp kupanga ukaguzi na malipo.',
+  badgeActive: 'Beji yako ni halali hadi {date}.',
+  badgeExpired: 'Beji yako iliisha tarehe {date}. Omba ukaguzi mpya kuifanya upya.',
+  enquiriesTitle: 'Maulizo',
+  noEnquiries: 'Bado hakuna maulizo.',
+};
+
+export const business_en = {
+  ...ownerEn,
+  checked: 'Checked by Rafrika',
+  checkedOn: 'Checked on {date}, valid until {until}',
+  checkedWhat: 'What we checked',
+  badgeExplain: 'Businesses pay a yearly fee for this check. It shows what we looked at. It is not a recommendation.',
+  listed: 'Listed',
+  listedExplain: 'This business is listed on Rafrika. We have not checked it.',
+  placesTitle: 'Places listed on Rafrika',
+  website: 'Website',
+  askTitle: 'Ask {name} a question',
+  askBody: 'Your message goes to the business through Rafrika. Contact details are shared once you agree.',
+  sent: 'Sent. The business will reply to the contact you gave.',
+};
+
+export type BusinessText = typeof business_en;
+
+export const business_sw: BusinessText = {
+  ...ownerSw,
+  checked: 'Imekaguliwa na Rafrika',
+  checkedOn: 'Imekaguliwa tarehe {date}, halali hadi {until}',
+  checkedWhat: 'Tulichokagua',
+  badgeExplain: 'Biashara hulipa ada ya mwaka kwa ukaguzi huu. Unaonyesha tulichoangalia. Si pendekezo.',
+  listed: 'Imeorodheshwa',
+  listedExplain: 'Biashara hii imeorodheshwa kwenye Rafrika. Hatujaikagua.',
+  placesTitle: 'Maeneo yaliyoorodheshwa kwenye Rafrika',
+  website: 'Tovuti',
+  askTitle: 'Muulize {name} swali',
+  askBody: 'Ujumbe wako unafika kwa biashara kupitia Rafrika. Mawasiliano hushirikiwa mkikubaliana.',
+  sent: 'Imetumwa. Biashara itakujibu kupitia mawasiliano uliyotoa.',
+};
+
+export const business_fr: BusinessText = {
+  ...ownerEn,
+  checked: 'Vérifié par Rafrika',
+  checkedOn: 'Vérifié le {date}, valable jusqu’au {until}',
+  checkedWhat: 'Ce que nous avons vérifié',
+  badgeExplain: 'Les établissements paient des frais annuels pour cette vérification. Elle indique ce que nous avons contrôlé. Ce n’est pas une recommandation.',
+  listed: 'Référencé',
+  listedExplain: 'Cet établissement est référencé sur Rafrika. Nous ne l’avons pas vérifié.',
+  placesTitle: 'Adresses référencées sur Rafrika',
+  website: 'Site web',
+  askTitle: 'Poser une question à {name}',
+  askBody: 'Votre message est transmis à l’établissement via Rafrika. Les coordonnées sont partagées une fois que vous êtes d’accord.',
+  sent: 'Envoyé. L’établissement répondra au contact que vous avez donné.',
+};
+
+export const business_it: BusinessText = {
+  ...ownerEn,
+  checked: 'Verificato da Rafrika',
+  checkedOn: 'Verificato il {date}, valido fino al {until}',
+  checkedWhat: 'Cosa abbiamo verificato',
+  badgeExplain: 'Le attività pagano una quota annuale per questa verifica. Mostra cosa abbiamo controllato. Non è una raccomandazione.',
+  listed: 'In elenco',
+  listedExplain: 'Questa attività è elencata su Rafrika. Non l’abbiamo verificata.',
+  placesTitle: 'Luoghi elencati su Rafrika',
+  website: 'Sito web',
+  askTitle: 'Fai una domanda a {name}',
+  askBody: 'Il tuo messaggio arriva all’attività tramite Rafrika. I contatti vengono condivisi quando vi accordate.',
+  sent: 'Inviato. L’attività risponderà al contatto che hai indicato.',
+};
+
+export const business_de: BusinessText = {
+  ...ownerEn,
+  checked: 'Von Rafrika geprüft',
+  checkedOn: 'Geprüft am {date}, gültig bis {until}',
+  checkedWhat: 'Was wir geprüft haben',
+  badgeExplain: 'Unternehmen zahlen für diese Prüfung eine Jahresgebühr. Sie zeigt, was wir angesehen haben. Sie ist keine Empfehlung.',
+  listed: 'Eingetragen',
+  listedExplain: 'Dieses Unternehmen ist bei Rafrika eingetragen. Wir haben es nicht geprüft.',
+  placesTitle: 'Bei Rafrika eingetragene Orte',
+  website: 'Website',
+  askTitle: 'Fragen Sie {name}',
+  askBody: 'Ihre Nachricht erreicht das Unternehmen über Rafrika. Kontaktdaten werden geteilt, sobald Sie sich einig sind.',
+  sent: 'Gesendet. Das Unternehmen antwortet an den angegebenen Kontakt.',
+};
+
+export const business_pl: BusinessText = {
+  ...ownerEn,
+  checked: 'Sprawdzone przez Rafrika',
+  checkedOn: 'Sprawdzone {date}, ważne do {until}',
+  checkedWhat: 'Co sprawdziliśmy',
+  badgeExplain: 'Firmy płacą roczną opłatę za tę weryfikację. Pokazuje ona, co sprawdziliśmy. Nie jest rekomendacją.',
+  listed: 'W katalogu',
+  listedExplain: 'Ta firma jest w katalogu Rafrika. Nie sprawdzaliśmy jej.',
+  placesTitle: 'Miejsca w katalogu Rafrika',
+  website: 'Strona internetowa',
+  askTitle: 'Zadaj pytanie: {name}',
+  askBody: 'Twoja wiadomość trafia do firmy przez Rafrika. Dane kontaktowe są udostępniane po porozumieniu.',
+  sent: 'Wysłano. Firma odpowie na podany kontakt.',
+};
+
+export const business_zh: BusinessText = {
+  ...ownerEn,
+  checked: '经 Rafrika 核实',
+  checkedOn: '核实于 {date}，有效期至 {until}',
+  checkedWhat: '我们核实了什么',
+  badgeExplain: '商家为此项核实支付年费。它显示我们查看过的内容，并非推荐。',
+  listed: '已收录',
+  listedExplain: '该商家已在 Rafrika 收录，我们尚未核实。',
+  placesTitle: 'Rafrika 收录的地点',
+  website: '网站',
+  askTitle: '向 {name} 提问',
+  askBody: '你的消息会通过 Rafrika 发送给商家。双方达成一致后再交换联系方式。',
+  sent: '已发送。商家会通过你留下的联系方式回复。',
+};

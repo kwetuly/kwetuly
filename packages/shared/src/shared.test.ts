@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { safeProps } from './analytics';
+import { hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
 import { filterTours, formatPrice, readTourFilters, verifiedPrice, type Tour } from './tours';
 
@@ -84,5 +85,14 @@ describe('tour filters', () => {
     expect(filterTours(tours, { q: 'serengeti' }).map((t) => t.title_en)).toEqual(['Serengeti migration']);
     expect(filterTours(tours, { theme: 'mountain' }).map((t) => t.title_en)).toEqual(['Kilimanjaro Machame']);
     expect(filterTours(tours, { duration: 'day' })).toEqual([]);
+  });
+});
+
+describe('business badge', () => {
+  it('shows only while valid and when something was checked', () => {
+    expect(hasValidBadge({ badge_checks: ['licence'], badge_valid_until: '2027-10-15' }, '2026-10-15')).toBe(true);
+    expect(hasValidBadge({ badge_checks: ['licence'], badge_valid_until: '2026-10-14' }, '2026-10-15')).toBe(false);
+    expect(hasValidBadge({ badge_checks: [], badge_valid_until: '2027-10-15' }, '2026-10-15')).toBe(false);
+    expect(hasValidBadge({ badge_checks: ['photos'], badge_valid_until: null }, '2026-10-15')).toBe(false);
   });
 });

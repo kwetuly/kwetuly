@@ -10,6 +10,7 @@ import { Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState
 import { getMyGuide } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { SignInPrompt } from '@/components/sign-in-prompt';
 import { deletePackage, listMyPackages, savePackage } from '@/lib/packages';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -47,7 +48,8 @@ export default function MyPackagesScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
 
-  if (!userId || mine.isLoading || packages.isLoading) return <ScreenState loading />;
+  if (!userId) return <SignInPrompt />;
+  if (mine.isLoading || packages.isLoading) return <ScreenState loading />;
   if (!guideId) return <ScreenState empty emptyText={t.dashboard.statusPending} />;
 
   function open(p: GuidePackage | 'new') {

@@ -68,7 +68,8 @@ export default function AccountScreen() {
           {isBusiness && (
             <Card>
               <SectionTitle>{t.join.provider.title}</SectionTitle>
-              <Button title={t.jobs.postNew} onPress={() => router.push('/jobs-post')} />
+              <Button title={t.business.dashboardTitle} onPress={() => router.push('/my-business')} />
+              <Button title={t.jobs.postNew} variant="outline" onPress={() => router.push('/jobs-post')} />
               <Button title={t.jobs.handoverTab} variant="dark" onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
               <Button title={t.groups.start} variant="outline" onPress={() => router.push('/group-trip/new')} />
               <Button title={t.partners.applyTitle} variant="outline" onPress={() => router.push('/partners')} />

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { findMenuItem } from '@rafrika/shared';
+import { BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@rafrika/shared';
+import { useQuery } from '@tanstack/react-query';
+import { BusinessCard } from '@/components/business-card';
+import { listBusinesses } from '@/lib/businesses';
 import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
@@ -17,6 +20,11 @@ export default function ComingSoonScreen() {
   const { session } = useSession();
   const profile = useProfile();
   const found = findMenuItem(section, item);
+  // Listed businesses for pages that have them (Stay, Shop, Transport, Local life), checked ones first.
+  const types = BUSINESS_PAGES[`${section}/${item}`];
+  const businesses = useQuery({ queryKey: ['businesses', section, item], queryFn: () => listBusinesses(types!), enabled: !!types });
+  const today = new Date().toISOString().slice(0, 10);
+  const listed = [...(businesses.data ?? [])].sort((a, b) => Number(hasValidBadge(b, today)) - Number(hasValidBadge(a, today)));
 
   const [kind, setKind] = useState<'traveler' | 'business'>('traveler');
   const [name, setName] = useState(profile.data?.full_name ?? '');
@@ -44,6 +52,14 @@ export default function ComingSoonScreen() {
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
       <Stack.Title>{found.item.label[locale]}</Stack.Title>
+      {listed.length > 0 && (
+        <View style={{ gap: space.md }}>
+          <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{t.business.placesTitle}</Text>
+          {listed.map((b) => (
+            <BusinessCard key={b.id} business={b} />
+          ))}
+        </View>
+      )}
       <Card>
         <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{found.item.label[locale]}</Text>
         <Muted>{found.item.blurb[locale]}</Muted>

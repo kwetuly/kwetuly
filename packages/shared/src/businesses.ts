@@ -1,0 +1,79 @@
+import { L } from './locales';
+
+// Business listings (hotels, homestays, rentals, curio shops...). Keep the ids in sync with the
+// `providers.business_type` check in Supabase.
+
+export const BUSINESS_TYPES = [
+  { id: 'hotel', ...L('Hotel', 'Hoteli', 'Hôtel', 'Hotel', 'Hotel', 'Hotel', '酒店') },
+  { id: 'lodge', ...L('Lodge or camp', 'Loji au kambi', 'Lodge ou camp', 'Lodge o campo', 'Lodge oder Camp', 'Lodż lub obóz', '旅馆或营地') },
+  { id: 'homestay', ...L('Homestay', 'Kukaa na familia', 'Chez l’habitant', 'Soggiorno in famiglia', 'Gastfamilie', 'Pobyt u rodziny', '民宿寄宿') },
+  { id: 'hostel', ...L('Hostel', 'Hosteli', 'Auberge de jeunesse', 'Ostello', 'Hostel', 'Hostel', '青年旅舍') },
+  { id: 'rental', ...L('Holiday rental', 'Nyumba ya kupangisha', 'Location de vacances', 'Casa vacanze', 'Ferienwohnung', 'Apartament wakacyjny', '度假租房') },
+  { id: 'curio_shop', ...L('Curio & art shop', 'Duka la sanaa na zawadi', 'Boutique d’art et souvenirs', 'Negozio di arte e souvenir', 'Kunst- & Souvenirladen', 'Sklep z rękodziełem', '工艺品与艺术品店') },
+  { id: 'gem_shop', ...L('Tanzanite & gems', 'Tanzanite na vito', 'Tanzanite & pierres', 'Tanzanite e gemme', 'Tansanit & Edelsteine', 'Tanzanit i kamienie', '坦桑石与宝石') },
+  { id: 'gear_rental', ...L('Gear rental', 'Kukodisha vifaa', 'Location d’équipement', 'Noleggio attrezzatura', 'Ausrüstungsverleih', 'Wypożyczalnia sprzętu', '装备租赁') },
+  { id: 'transport', ...L('Transport', 'Usafiri', 'Transport', 'Trasporti', 'Transport', 'Transport', '交通') },
+  { id: 'restaurant', ...L('Restaurant', 'Mgahawa', 'Restaurant', 'Ristorante', 'Restaurant', 'Restauracja', '餐厅') },
+  { id: 'spa', ...L('Massage & spa', 'Masaji na spa', 'Massage & spa', 'Massaggi e spa', 'Massage & Spa', 'Masaż i spa', '按摩与水疗') },
+  { id: 'salon', ...L('Salon & barber', 'Saluni na kinyozi', 'Salon & barbier', 'Parrucchiere e barbiere', 'Salon & Barbier', 'Salon i fryzjer', '美发与理发') },
+  { id: 'nightlife', ...L('Nightlife', 'Burudani ya usiku', 'Vie nocturne', 'Vita notturna', 'Nachtleben', 'Życie nocne', '夜生活') },
+  { id: 'other', ...L('Other', 'Nyingine', 'Autre', 'Altro', 'Sonstiges', 'Inne', '其他') },
+] as const;
+
+export type BusinessType = (typeof BUSINESS_TYPES)[number]['id'];
+
+/** What Rafrika can check for the paid badge. Admin ticks the ones actually done. */
+export const BADGE_CHECKS = [
+  { id: 'licence', ...L('Business licence', 'Leseni ya biashara', 'Licence commerciale', 'Licenza commerciale', 'Gewerbelizenz', 'Licencja działalności', '营业执照') },
+  { id: 'tourism_licence', ...L('Tourism licence (TTB)', 'Leseni ya utalii (TTB)', 'Licence de tourisme (TTB)', 'Licenza turistica (TTB)', 'Tourismuslizenz (TTB)', 'Licencja turystyczna (TTB)', '旅游执照（TTB）') },
+  { id: 'identity', ...L('Owner identity', 'Utambulisho wa mmiliki', 'Identité du propriétaire', 'Identità del titolare', 'Identität des Inhabers', 'Tożsamość właściciela', '经营者身份') },
+  { id: 'photos', ...L('Photos match the place', 'Picha zinalingana na mahali', 'Les photos correspondent au lieu', 'Le foto corrispondono al luogo', 'Fotos stimmen mit dem Ort überein', 'Zdjęcia zgadzają się z miejscem', '照片与实地相符') },
+  { id: 'visit', ...L('Visited in person', 'Imetembelewa ana kwa ana', 'Visite sur place', 'Visitato di persona', 'Vor Ort besucht', 'Odwiedzone osobiście', '实地到访') },
+] as const;
+
+export type BadgeCheck = (typeof BADGE_CHECKS)[number]['id'];
+
+/** Which business types appear on each menu page (section slug / item slug). */
+export const BUSINESS_PAGES: Record<string, BusinessType[]> = {
+  'stay/hotels': ['hotel', 'lodge'],
+  'stay/homestays': ['homestay'],
+  'stay/hostels': ['hostel'],
+  'stay/rentals': ['rental'],
+  'shop/art': ['curio_shop'],
+  'shop/tanzanite': ['gem_shop'],
+  'shop/rent-gear': ['gear_rental'],
+  'transport/airport-transfers': ['transport'],
+  'transport/regional': ['transport'],
+  'transport/cross-border': ['transport'],
+  'transport/car-hire': ['transport'],
+  'local/massage': ['spa'],
+  'local/salons': ['salon'],
+  'local/food': ['restaurant'],
+  'local/hot-spots': ['nightlife'],
+};
+
+export type Business = {
+  id: string;
+  business_name: string;
+  business_type: BusinessType;
+  story: string | null;
+  base_region: string;
+  location: string | null;
+  website: string | null;
+  photo_url: string | null;
+  photos: string[];
+  languages: string[];
+  verification_status: 'pending' | 'approved' | 'rejected';
+  badge_checks: BadgeCheck[];
+  badge_checked_at: string | null;
+  badge_valid_until: string | null;
+  badge_requested_at: string | null;
+};
+
+export const BUSINESS_COLUMNS =
+  'id, business_name, business_type, story, base_region, location, website, photo_url, photos, languages, verification_status, badge_checks, badge_checked_at, badge_valid_until, badge_requested_at';
+
+/** The badge only shows while it is valid and something was actually checked. `today` is YYYY-MM-DD. */
+export function hasValidBadge(b: Pick<Business, 'badge_checks' | 'badge_valid_until'>, today: string): boolean {
+  return b.badge_checks.length > 0 && !!b.badge_valid_until && b.badge_valid_until >= today;
+}

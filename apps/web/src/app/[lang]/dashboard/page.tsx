@@ -10,6 +10,7 @@ import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
+import { BusinessListing } from './business-listing';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
@@ -49,7 +50,16 @@ async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; lo
   if (user.role === 'guide' || user.guide || params.as === 'guide') {
     return <GuideEditor t={t} locale={locale} user={user} status={params} />;
   }
-  if (user.role === 'provider') return <BusinessDashboard t={t} locale={locale} user={user} />;
+  if (user.role === 'provider') {
+    return (
+      <>
+        <BusinessListing t={t} locale={locale} user={user} status={params} />
+        <div className="mt-12">
+          <BusinessDashboard t={t} locale={locale} user={user} />
+        </div>
+      </>
+    );
+  }
   return <TravelerDashboard t={t} locale={locale} user={user} />;
 }
 
@@ -404,7 +414,7 @@ async function BusinessDashboard({ t, locale, user }: { t: Dictionary; locale: L
 
   return (
     <>
-      <h1 className="text-3xl font-bold">{t.jobs.postTitle}</h1>
+      <h2 className="text-2xl font-bold">{t.jobs.postTitle}</h2>
       <div className="mt-6 flex flex-wrap gap-2">
         <Link href={`/${locale}/jobs/post`} className="btn">{t.jobs.postNew}</Link>
         <Link href={`/${locale}/group-trips/new`} className="btn-dark">{t.groups.start}</Link>

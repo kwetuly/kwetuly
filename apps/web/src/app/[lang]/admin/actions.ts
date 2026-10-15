@@ -143,3 +143,63 @@ export async function reviewPackage(formData: FormData) {
   revalidateTag('packages', 'max');
   redirect(`/${locale}/admin#packages`);
 }
+
+// Approve or reject a business listing (listing itself is free).
+export async function reviewBusiness(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const approve = formData.get('decision') === 'approve';
+  const supabase = await createClient();
+  await supabase
+    .from('providers')
+    .update({ verification_status: approve ? 'approved' : 'rejected', verified_at: approve ? new Date().toISOString() : null })
+    .eq('id', String(formData.get('provider_id') ?? ''));
+  revalidateTag('businesses', 'max');
+  redirect(`/${locale}/admin#businesses`);
+}
+
+// Record a paid badge check: only the checks actually done, for one year from today.
+// Do this only after the fee is received and the checks are done.
+export async function grantBadge(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const allowed = ['licence', 'tourism_licence', 'identity', 'photos', 'visit'];
+  const checks = formData.getAll('checks').map(String).filter((c) => allowed.includes(c));
+  const now = new Date();
+  const until = new Date(now);
+  until.setUTCFullYear(until.getUTCFullYear() + 1);
+  const providerId = String(formData.get('provider_id') ?? '');
+  const supabase = await createClient();
+  await supabase
+    .from('providers')
+    .update(
+      checks.length > 0
+        ? { badge_checks: checks, badge_checked_at: now.toISOString().slice(0, 10), badge_valid_until: until.toISOString().slice(0, 10), badge_requested_at: null }
+        : { badge_requested_at: null },
+    )
+    .eq('id', providerId);
+  // The note (payment reference, who checked) is private to admins.
+  const note = String(formData.get('note') ?? '').trim().slice(0, 500);
+  if (note) await supabase.from('provider_private').upsert({ provider_id: providerId, badge_note: note });
+  revalidateTag('businesses', 'max');
+  redirect(`/${locale}/admin#businesses`);
+}
+
+// The yearly badge fee in USD; empty means "ask Rafrika".
+export async function setBadgeFee(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const amount = Number.parseFloat(String(formData.get('amount_usd') ?? ''));
+  const supabase = await createClient();
+  await supabase
+    .from('site_settings')
+    .upsert({ key: 'badge_fee', value: { amount_usd: Number.isFinite(amount) && amount >= 0 ? Math.round(amount) : null } });
+  revalidateTag('settings', 'max');
+  redirect(`/${locale}/admin#businesses`);
+}

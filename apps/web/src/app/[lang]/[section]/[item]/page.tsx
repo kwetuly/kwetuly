@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, Bell, Store } from 'lucide-react';
-import { ALL_SECTIONS, findMenuItem } from '@rafrika/shared';
+import { ALL_SECTIONS, BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@rafrika/shared';
+import { listBusinesses } from '@/lib/businesses';
+import { BusinessCard } from '@/components/business-card';
+import { today } from '@/lib/today';
 import { defaultLocale, hasLocale, locales, type Locale } from '@/i18n/config';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';
@@ -62,6 +65,12 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
         </div>
       </PhotoHero>
 
+      {BUSINESS_PAGES[`${section.slug}/${item.slug}`] && (
+        <Suspense fallback={null}>
+          <Businesses pageKey={`${section.slug}/${item.slug}`} t={t} locale={locale} />
+        </Suspense>
+      )}
+
       <section className="relative mx-auto -mt-16 grid max-w-6xl gap-6 px-4 pb-16 lg:grid-cols-2">
         <Suspense fallback={<div className="card h-80 animate-pulse" />}>
           <InterestForm
@@ -106,6 +115,28 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
         </section>
       )}
     </>
+  );
+}
+
+// Listed businesses for this page; ones with a valid "Checked by Rafrika" badge come first.
+async function Businesses({ pageKey, t, locale }: { pageKey: string; t: Dictionary; locale: Locale }) {
+  const [list, now] = await Promise.all([listBusinesses(BUSINESS_PAGES[pageKey]), today()]);
+  if (list.length === 0) return null;
+  const day = now.toISOString().slice(0, 10);
+  const sorted = [...list].sort((a, b) => Number(hasValidBadge(b, day)) - Number(hasValidBadge(a, day)));
+  return (
+    <section className="relative mx-auto -mt-16 mb-24 max-w-6xl px-4">
+      <div className="rounded-[5px] bg-white p-6 shadow-sm">
+        <h2 className="text-xl font-bold">{t.business.placesTitle}</h2>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {sorted.map((b) => (
+            <li key={b.id}>
+              <BusinessCard business={b} t={t} locale={locale} today={day} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
