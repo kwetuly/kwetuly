@@ -93,7 +93,7 @@ export default function ChatsScreen() {
 
       <View style={{ gap: space.md }}>
         <SectionTitle>{t.chats.title}</SectionTitle>
-        <ScreenState loading={chats.isLoading} error={chats.error} />
+        <ScreenState loading={chats.isLoading} error={chats.error} onRetry={() => chats.refetch()} />
         {(chats.data ?? []).map((chat) => (
           <Link key={chat.id} href={`/chat/${chat.id}`} asChild>
             <Pressable>
@@ -123,7 +123,7 @@ export default function ChatsScreen() {
 
       <View style={{ gap: space.md }}>
         <SectionTitle>{t.app.conversations}</SectionTitle>
-        <ScreenState loading={conversations.isLoading} error={conversations.error} empty={conversations.data?.length === 0} emptyText={t.messages.noneTraveler} />
+        <ScreenState loading={conversations.isLoading} error={conversations.error} onRetry={() => conversations.refetch()} empty={conversations.data?.length === 0} emptyText={t.messages.noneTraveler} />
         {(conversations.data ?? []).map((c) => {
           const { otherName, unread } = conversationView(c, userId);
           return (

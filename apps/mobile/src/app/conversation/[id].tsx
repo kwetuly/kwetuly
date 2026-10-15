@@ -67,7 +67,7 @@ export default function ConversationScreen() {
             {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
           </Text>
         }
-        ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} />}
+        ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} onRetry={() => messages.refetch()} />}
         renderItem={({ item }) => {
           const mine = item.sender_id === userId;
           return (

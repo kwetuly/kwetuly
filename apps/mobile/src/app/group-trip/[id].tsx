@@ -43,7 +43,7 @@ export default function GroupTripScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  if (!trip.data) return <ScreenState loading={trip.isLoading} error={trip.error} empty emptyText={t.groups.closed} />;
+  if (!trip.data) return <ScreenState loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
   const g = trip.data;
   const g10n = t.groups;
   const left = Math.max(g.max_people - g.seats_taken, 0);

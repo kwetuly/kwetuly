@@ -38,7 +38,7 @@ export default function RequestScreen() {
   const offers = useQuery({ queryKey: ['offers', id], queryFn: () => listOffers(id), enabled: !!userId });
 
   if (!userId) return <SignInPrompt />;
-  if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} empty emptyText={t.requests.error} />;
+  if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
   const req = request.data;
   const isOwner = req.traveler_id === userId;
 

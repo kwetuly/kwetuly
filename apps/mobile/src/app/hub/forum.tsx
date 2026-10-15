@@ -63,7 +63,7 @@ export default function ForumScreen() {
           )}
         </View>
       }
-      ListEmptyComponent={<ScreenState loading={posts.isLoading} error={posts.error} empty emptyText={h.noPosts} />}
+      ListEmptyComponent={<ScreenState loading={posts.isLoading} error={posts.error} onRetry={() => posts.refetch()} empty emptyText={h.noPosts} />}
       renderItem={({ item }) => (
         <Link href={{ pathname: '/hub/post/[id]', params: { id: item.id } }} asChild>
           <Pressable>

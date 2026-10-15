@@ -29,7 +29,7 @@ export default function EnquireScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} />;
+  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} />;
   const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
 
   async function submit() {

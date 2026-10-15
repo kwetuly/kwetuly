@@ -72,7 +72,7 @@ export default function RequestsScreen() {
       <Button title={r.post} onPress={() => router.push('/request/new')} />
 
       <SectionTitle>{r.mine}</SectionTitle>
-      <ScreenState loading={mine.isLoading} error={mine.error} />
+      <ScreenState loading={mine.isLoading} error={mine.error} onRetry={() => mine.refetch()} />
       {mine.data?.length === 0 && <Muted>{r.none}</Muted>}
       {mine.data?.map((req) => row(req))}
 
@@ -80,7 +80,7 @@ export default function RequestsScreen() {
         <>
           <SectionTitle>{o.boardTitle}</SectionTitle>
           <Muted>{o.boardBody}</Muted>
-          <ScreenState loading={open.isLoading} error={open.error} />
+          <ScreenState loading={open.isLoading} error={open.error} onRetry={() => open.refetch()} />
           {open.data?.length === 0 && <Muted>{o.noneOpen}</Muted>}
           {open.data?.map((req) => row(req, true))}
 

@@ -25,7 +25,7 @@ export default function MomentsScreen() {
           <Muted>{t.moments.subtitle}</Muted>
         </View>
       }
-      ListEmptyComponent={<ScreenState loading={moments.isLoading} error={moments.error} empty emptyText={t.moments.none} />}
+      ListEmptyComponent={<ScreenState loading={moments.isLoading} error={moments.error} onRetry={() => moments.refetch()} empty emptyText={t.moments.none} />}
       renderItem={({ item }) => (
         <Card>
           {item.media_url && item.media_type && <ChatMedia url={item.media_url} type={item.media_type} />}

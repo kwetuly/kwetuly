@@ -29,7 +29,7 @@ export default function PlaceScreen() {
         : [],
     [p],
   );
-  if (!p) return <ScreenState loading={place.isLoading} error={place.error} empty />;
+  if (!p) return <ScreenState loading={place.isLoading} error={place.error} onRetry={() => place.refetch()} empty />;
   const theirs = (tours.data ?? []).filter((tour) => tourIds.data?.includes(tour.id));
 
   const chips = (label: string, items: string[]) =>

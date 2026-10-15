@@ -76,7 +76,7 @@ export default function HubScreen() {
     return (
       <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md }}>
         <Stack.Title>{h.title}</Stack.Title>
-        <ScreenState loading={mine.isLoading} error={mine.error} />
+        <ScreenState loading={mine.isLoading} error={mine.error} onRetry={() => mine.refetch()} />
         {!mine.isLoading && (
           <Card>
             <Muted>{guide ? t.dashboard.statusPending : h.subtitle}</Muted>
@@ -132,7 +132,7 @@ export default function HubScreen() {
       </Card>
 
       <SectionTitle>{h.calls}</SectionTitle>
-      <ScreenState loading={inbox.isLoading} error={inbox.error} empty={inbox.data?.calls.length === 0} emptyText={h.noRequests} />
+      <ScreenState loading={inbox.isLoading} error={inbox.error} onRetry={() => inbox.refetch()} empty={inbox.data?.calls.length === 0} emptyText={h.noRequests} />
       {(inbox.data?.calls ?? []).map((call) => (
         <CallRequest key={call.id} call={call} onDone={() => queryClient.invalidateQueries({ queryKey: ['hub-inbox'] })} />
       ))}

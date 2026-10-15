@@ -41,6 +41,11 @@ export default function SignInScreen() {
   useEffect(() => {
     enabledProviders().then(setProviders);
   }, []);
+  useEffect(() => {
+    if (mode === 'join') track(EVENTS.signupStarted, { role, locale });
+    // Once per switch to the sign-up form, not on every role change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const done = () => (router.canGoBack() ? router.back() : router.replace('/'));
 

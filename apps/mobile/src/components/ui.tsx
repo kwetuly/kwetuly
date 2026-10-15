@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
+import { useI18n } from '@/lib/i18n';
 import { brand, colors, radius, space, textSize, type } from '@/theme';
 
 // Small building blocks shared by every screen. Values come from '@/theme'; screens compose these
@@ -110,12 +111,15 @@ export function Muted({ children, selectable }: { children: ReactNode; selectabl
 
 /** Loading, error and empty states in one place. */
 export function ScreenState({ loading, error, empty, emptyText, onRetry, retryLabel }: { loading?: boolean; error?: unknown; empty?: boolean; emptyText?: string; onRetry?: () => void; retryLabel?: string }) {
+  const { t } = useI18n();
   if (loading) return <ActivityIndicator style={{ padding: space.xxl }} color={brand.leaf} />;
   if (error) {
+    // Plain words instead of the technical message, like the website's error page.
     return (
-      <View style={{ padding: space.xl, gap: space.md }}>
-        <Text selectable style={{ color: brand.danger }}>{error instanceof Error ? error.message : String(error)}</Text>
-        {onRetry && retryLabel && <Button title={retryLabel} variant="outline" onPress={onRetry} />}
+      <View accessibilityRole="alert" style={{ padding: space.xl, gap: space.md }}>
+        <Text style={{ color: colors.label, fontSize: textSize.headline, fontWeight: '800' }}>{t.ux.errorTitle}</Text>
+        <Text style={{ color: colors.secondaryLabel, fontSize: textSize.callout }}>{t.ux.errorBody}</Text>
+        {onRetry && <Button title={retryLabel ?? t.ux.tryAgain} variant="outline" onPress={onRetry} />}
       </View>
     );
   }

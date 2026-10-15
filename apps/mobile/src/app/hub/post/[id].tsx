@@ -16,7 +16,7 @@ export default function ForumPostScreen() {
   const [reply, setReply] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (!post.data) return <ScreenState loading={post.isLoading} error={post.error} />;
+  if (!post.data) return <ScreenState loading={post.isLoading} error={post.error} onRetry={() => post.refetch()} />;
   const p = post.data;
   const date = (iso: string) => new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
 

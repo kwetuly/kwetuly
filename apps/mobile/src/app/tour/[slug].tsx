@@ -1,10 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ACCOMMODATION_LEVELS,
+  EVENTS,
   FITNESS_LEVELS,
   MONTHS,
   STOP_KINDS,
@@ -28,6 +29,7 @@ import { TourCard } from '@/components/cards';
 import TourMap from '@/components/tour-map';
 import { AltitudeChart, DayExtras, GoodToKnowCard, PlaceCard } from '@/components/tour-extras';
 import { getTourGuides, getTourStops, listPlaces, listSavedTourIds, listTours, setTourSaved, type Guide } from '@/lib/api';
+import { track } from '@/lib/analytics';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { languageName, specialtyName } from '@/lib/labels';
@@ -49,8 +51,16 @@ export default function TourScreen() {
   const isSaved = !!tour && !!saved.data?.includes(tour.id);
   const save = useMutation({
     mutationFn: () => setTourSaved(session!.user.id, tour!.id, !isSaved),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-tours'] }),
+    onSuccess: () => {
+      if (!isSaved) track(EVENTS.tourSaved, { tour: tour!.slug, locale });
+      queryClient.invalidateQueries({ queryKey: ['saved-tours'] });
+    },
   });
+  const tourSlug = tour?.slug;
+  const tourType = tour?.tour_type;
+  useEffect(() => {
+    if (tourSlug) track(EVENTS.tourViewed, { tour: tourSlug, tour_type: tourType, locale });
+  }, [tourSlug, tourType, locale]);
   const kinds = useMemo(() => Object.fromEntries(STOP_KINDS.map((k) => [k.id, k[locale]])), [locale]);
   const mapLabels = useMemo(() => ({ day: tt.dayLabel, kinds, altitude: tt.altitude, view3d: tt.view3d, view2d: tt.view2d }), [tt, kinds]);
   const allPlaces = useQuery({ queryKey: ['places'], queryFn: listPlaces });
@@ -59,7 +69,7 @@ export default function TourScreen() {
   const placeIds = [...new Set((stops.data ?? []).map((s) => s.place_id).filter(Boolean))];
   const places = placeIds.map((id) => allPlaces.data?.find((p) => p.id === id)).filter((p) => p != null);
 
-  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} empty emptyText={tt.empty} />;
+  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} empty emptyText={tt.empty} />;
   const title = tourTitle(tour, locale);
   const price = verifiedPrice(tour, new Date());
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -259,7 +269,13 @@ export default function TourScreen() {
         </View>
       </ScrollView>
       <BottomBar>
-        <Button title={tt.enquireTitle} onPress={() => router.push({ pathname: '/enquire/[slug]', params: { slug: tour.slug } })} />
+        <Button
+          title={tt.enquireTitle}
+          onPress={() => {
+            track(EVENTS.enquiryStarted, { kind: 'tour', tour: tour.slug, locale });
+            router.push({ pathname: '/enquire/[slug]', params: { slug: tour.slug } });
+          }}
+        />
       </BottomBar>
     </View>
   );

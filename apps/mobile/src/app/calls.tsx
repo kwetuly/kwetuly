@@ -43,7 +43,7 @@ export default function CallsScreen() {
           </ScrollView>
         </View>
       }
-      ListEmptyComponent={<ScreenState loading={guides.isLoading} error={guides.error} empty emptyText={t.calls.none} />}
+      ListEmptyComponent={<ScreenState loading={guides.isLoading} error={guides.error} onRetry={() => guides.refetch()} empty emptyText={t.calls.none} />}
       renderItem={({ item }) => <GuideCard guide={item} />}
     />
   );

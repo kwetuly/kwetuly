@@ -40,7 +40,7 @@ export default function OperatorsScreen() {
           </Pressable>
         </Link>
       )}
-      ListEmptyComponent={<ScreenState loading={operators.isLoading} error={operators.error} empty emptyText={tt.noOperators} />}
+      ListEmptyComponent={<ScreenState loading={operators.isLoading} error={operators.error} onRetry={() => operators.refetch()} empty emptyText={tt.noOperators} />}
     />
   );
 }

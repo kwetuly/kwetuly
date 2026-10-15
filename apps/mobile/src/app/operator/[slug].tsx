@@ -16,7 +16,7 @@ export default function OperatorScreen() {
   const operator = useQuery({ queryKey: ['operator', slug], queryFn: () => getOperator(slug) });
   const tours = useQuery({ queryKey: ['tours'], queryFn: listTours });
   const op = operator.data;
-  if (!op) return <ScreenState loading={operator.isLoading} error={operator.error} empty emptyText={tt.noOperators} />;
+  if (!op) return <ScreenState loading={operator.isLoading} error={operator.error} onRetry={() => operator.refetch()} empty emptyText={tt.noOperators} />;
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   const theirs = (tours.data ?? []).filter((tour) => tour.operator_id === op.id);
   const link = { color: brand.leafDark, fontWeight: '700' as const };

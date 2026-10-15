@@ -39,7 +39,7 @@ export default function PlacesScreen() {
           </Pressable>
         </Link>
       )}
-      ListEmptyComponent={<ScreenState loading={places.isLoading} error={places.error} empty />}
+      ListEmptyComponent={<ScreenState loading={places.isLoading} error={places.error} onRetry={() => places.refetch()} empty />}
     />
   );
 }

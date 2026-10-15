@@ -21,7 +21,7 @@ export default function JobsScreen() {
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshControl={<RefreshControl refreshing={jobs.isRefetching} onRefresh={() => jobs.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={<Stack.Title>{HUB_MENU.find((i) => i.slug === 'jobs')?.label[locale]}</Stack.Title>}
-      ListEmptyComponent={<ScreenState loading={jobs.isLoading} error={jobs.error} empty emptyText={t.hub.noJobs} />}
+      ListEmptyComponent={<ScreenState loading={jobs.isLoading} error={jobs.error} onRetry={() => jobs.refetch()} empty emptyText={t.hub.noJobs} />}
       renderItem={({ item: j }) => (
         <Card style={j.kind === 'handover' ? { borderWidth: 2, borderColor: brand.leaf } : undefined}>
           <Badge label={j.kind === 'handover' ? t.jobs.handoverBadge : (JOB_ROLES.find((r) => r.id === j.role_needed)?.[locale] ?? j.role_needed)} tone={j.kind === 'handover' ? 'sand' : 'mint'} />

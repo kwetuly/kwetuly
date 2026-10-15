@@ -20,7 +20,7 @@ export default function NewsScreen() {
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
       refreshControl={<RefreshControl refreshing={news.isRefetching} onRefresh={() => news.refetch()} tintColor={brand.leaf} />}
       ListHeaderComponent={<Stack.Title>{HUB_MENU.find((i) => i.slug === 'news')?.label[locale]}</Stack.Title>}
-      ListEmptyComponent={<ScreenState loading={news.isLoading} error={news.error} empty emptyText={t.hub.noNews} />}
+      ListEmptyComponent={<ScreenState loading={news.isLoading} error={news.error} onRetry={() => news.refetch()} empty emptyText={t.hub.noNews} />}
       renderItem={({ item }) => (
         <Card>
           <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{item.title}</Text>

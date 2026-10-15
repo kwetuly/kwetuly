@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -10,7 +10,8 @@ import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 
-import { formatUsd } from '@rafrika/shared';
+import { EVENTS, formatUsd } from '@rafrika/shared';
+import { track } from '@/lib/analytics';
 import { brand, colors, space, textSize } from '@/theme';
 
 function Facts({ title, items }: { title: string; items: string[] }) {
@@ -34,16 +35,21 @@ export default function GuideScreen() {
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
   const reviews = useQuery({ queryKey: ['reviews', guide.data?.id], queryFn: () => listReviews(guide.data!.id), enabled: !!guide.data });
   const [opening, setOpening] = useState(false);
+  const guideSlug = guide.data?.slug;
+  useEffect(() => {
+    if (guideSlug) track(EVENTS.guideViewed, { guide: guideSlug, locale });
+  }, [guideSlug, locale]);
   const checkLabels = useCheckLabels(guide.data ?? { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null, first_aid_valid_until: null });
 
   if (!guide.data) {
-    return <ScreenState loading={guide.isLoading} error={guide.error} empty emptyText={t.guides.empty} />;
+    return <ScreenState loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} empty emptyText={t.guides.empty} />;
   }
   const g = guide.data;
   const isMe = session?.user.id === g.owner_id;
 
   async function message() {
     if (!session) return router.push('/sign-in');
+    track(EVENTS.enquiryStarted, { kind: 'message', guide: g.slug, locale });
     setOpening(true);
     try {
       const id = await openConversation(g.id, session.user.id);
@@ -90,7 +96,10 @@ export default function GuideScreen() {
         {!isMe && g.call_enabled && (
           <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${formatUsd(g.call_price_usd)}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
         )}
-        {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } })} />}
+        {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => {
+          track(EVENTS.enquiryStarted, { kind: 'guide', guide: g.slug, locale });
+          router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } });
+        }} />}
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>
 
@@ -113,7 +122,7 @@ export default function GuideScreen() {
 
       <View style={{ gap: space.md }}>
         <SectionTitle>{t.reviews.title}</SectionTitle>
-        <ScreenState loading={reviews.isLoading} error={reviews.error} empty={reviews.data?.length === 0} emptyText={t.reviews.none} />
+        <ScreenState loading={reviews.isLoading} error={reviews.error} onRetry={() => reviews.refetch()} empty={reviews.data?.length === 0} emptyText={t.reviews.none} />
         {(reviews.data ?? []).map((r) => (
           <Card key={r.id}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

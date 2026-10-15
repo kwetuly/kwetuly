@@ -125,7 +125,7 @@ export default function GroupChatScreen() {
             </Pressable>
           </View>
         }
-        ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} />}
+        ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} onRetry={() => messages.refetch()} />}
         renderItem={({ item }) => {
           const mine = item.sender_id === userId;
           const blocked = item.objectors.length > 0;
