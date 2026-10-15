@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +13,8 @@ import { useI18n } from '@/lib/i18n';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
+
+const STEP_COUNT = 5;
 
 function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
   return (
@@ -96,7 +98,7 @@ function DocumentRow({ label, status, picked, onPick, t }: { label: string; stat
   );
 }
 
-// Create or edit the guide profile, the same fields and rules as the website editor.
+// Create or edit the guide profile in five short steps, the same fields and rules as the website editor.
 export default function ProfileEditScreen() {
   const { t, locale } = useI18n();
   const d = t.dashboard;
@@ -138,6 +140,11 @@ export default function ProfileEditScreen() {
   const [idDocument, setIdDocument] = useState<Upload | null>(null);
   const [licenceDocument, setLicenceDocument] = useState<Upload | null>(null);
   const [firstAidDocument, setFirstAidDocument] = useState<Upload | null>(null);
+  const params = useLocalSearchParams<{ step?: string }>();
+  const [step, setStep] = useState<number | null>(() => {
+    const n = Number(params.step);
+    return Number.isInteger(n) && n >= 0 && n < STEP_COUNT ? n : null;
+  });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
@@ -184,8 +191,12 @@ export default function ProfileEditScreen() {
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
 
-  async function save() {
-    if (!f.display_name.trim() || !f.base_region[0]) return setMessage({ tone: 'error', text: t.auth.error });
+  // Saves the whole form (every step's answers are loaded), and reports whether it worked.
+  async function save(): Promise<boolean> {
+    if (!f.display_name.trim() || !f.base_region[0]) {
+      setMessage({ tone: 'error', text: t.auth.error });
+      return false;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -224,8 +235,10 @@ export default function ProfileEditScreen() {
       setFirstAidDocument(null);
       await queryClient.invalidateQueries({ queryKey: ['my-guide'] });
       setMessage({ tone: 'ok', text: d.saved });
+      return true;
     } catch (e) {
       setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : t.auth.error });
+      return false;
     } finally {
       setBusy(false);
     }
@@ -248,101 +261,166 @@ export default function ProfileEditScreen() {
     first_aid_document_path: firstAidDocument?.uri ?? details?.first_aid_document_path,
   };
 
+  // The same five steps as the website. A new guide starts at step one; others see the overview.
+  const current = step ?? (guide ? null : 0);
+  const stepDone = [
+    !!guide,
+    f.specialties.length > 0 && !!f.headline.trim(),
+    !!details?.id_document_path && !!details?.license_document_path,
+    !!f.bio.trim(),
+    f.call_enabled,
+  ];
+
+  async function saveStep(index: number) {
+    if (await save()) setStep(index + 1 < STEP_COUNT ? index + 1 : null);
+  }
+
+  if (current == null) {
+    return (
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+        <Stack.Title>{d.title}</Stack.Title>
+        {status && (
+          <Card>
+            <Badge label={status === 'approved' ? d.statusApproved : status === 'rejected' ? d.statusRejected : d.statusPending} tone={status === 'approved' ? 'mint' : 'sand'} />
+          </Card>
+        )}
+        <FormMessage message={message} />
+        <Card>
+          {d.steps.map((title, i) => (
+            <Pressable key={title} onPress={() => setStep(i)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm }}>
+              <Glyph
+                name={stepDone[i] ? { ios: 'checkmark.circle.fill', android: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked' }}
+                size={22}
+                color={stepDone[i] ? brand.leafDark : colors.secondaryLabel}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: '700', color: colors.label }}>
+                  {i + 1}. {title}
+                </Text>
+                <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>{i === STEP_COUNT - 1 ? d.optionalStep : stepDone[i] ? d.stepDone : d.stepTodo}</Text>
+              </View>
+              <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.edit}</Text>
+            </Pressable>
+          ))}
+        </Card>
+        <ProfileStrength input={strengthInput} t={t} />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
-      <Stack.Title>{d.title}</Stack.Title>
-      {status && (
+      <Stack.Title>{d.steps[current]}</Stack.Title>
+      <View style={{ gap: space.sm }}>
+        <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.stepOf.replace('{n}', String(current + 1)).replace('{total}', String(STEP_COUNT))}</Text>
+        <View style={{ flexDirection: 'row', gap: space.xs }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {d.steps.map((title, i) => (
+            <View key={title} style={{ flex: 1, height: 6, borderRadius: radius.bar, backgroundColor: i <= current ? brand.leaf : colors.fill }} />
+          ))}
+        </View>
+        {!guide && <Muted>{d.stepsIntro}</Muted>}
+      </View>
+
+      {current === 0 && (
         <Card>
-          <Badge label={status === 'approved' ? d.statusApproved : status === 'rejected' ? d.statusRejected : d.statusPending} tone={status === 'approved' ? 'mint' : 'sand'} />
+          <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }} accessibilityRole="button">
+            <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={72} />
+            <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.photo}</Text>
+          </Pressable>
+          <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
+          <ChipSelect label={d.baseRegion} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.base_region} onChange={set('base_region')} multiple={false} />
+          <ChipSelect label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
         </Card>
       )}
 
-      <ProfileStrength input={strengthInput} t={t} />
+      {current === 1 && (
+        <Card>
+          <Field label={d.headline} value={f.headline} onChangeText={set('headline')} placeholder={d.headlineHint} />
+          <ChipSelect label={d.specialties} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialties} onChange={set('specialties')} />
+          <ChipSelect label={d.regions} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.regions} onChange={set('regions')} />
+          <ChipSelect label={d.expertise} options={GUIDE_EXPERTISE.map((e) => ({ value: e.id, label: e.label[locale] }))} selected={f.expertise} onChange={set('expertise')} />
+          <Muted>{d.expertiseHint}</Muted>
+          <ChipSelect label={d.maxGroup} options={GROUP_SIZES.map((g) => ({ value: String(g.max), label: g[locale] }))} selected={f.max_group_size} onChange={set('max_group_size')} multiple={false} />
+          <Field label={d.years} value={f.years_experience} onChangeText={set('years_experience')} keyboardType="number-pad" />
+          <Field label={d.summits} value={f.summits} onChangeText={set('summits')} keyboardType="number-pad" />
+          <Toggle label={d.femaleGuide} value={f.female_guide} onChange={set('female_guide')} />
+        </Card>
+      )}
 
-      <Card>
-        <SectionTitle>{d.publicSection}</SectionTitle>
-        <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }} accessibilityRole="button">
-          <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={72} />
-          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.photo}</Text>
-        </Pressable>
-        <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
-        <Field label={d.slug} value={f.slug} onChangeText={set('slug')} autoCapitalize="none" hint="rafrika.com/guides/…" />
-        <Field label={d.headline} value={f.headline} onChangeText={set('headline')} placeholder={d.headlineHint} />
-        <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
-        <ChipSelect label={d.baseRegion} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.base_region} onChange={set('base_region')} multiple={false} />
-        <ChipSelect label={d.regions} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.regions} onChange={set('regions')} />
-        <ChipSelect label={d.specialties} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialties} onChange={set('specialties')} />
-        <ChipSelect label={d.expertise} options={GUIDE_EXPERTISE.map((e) => ({ value: e.id, label: e.label[locale] }))} selected={f.expertise} onChange={set('expertise')} />
-        <Muted>{d.expertiseHint}</Muted>
-        <Toggle label={d.femaleGuide} value={f.female_guide} onChange={set('female_guide')} />
-        <Toggle label={d.openToPartners} value={f.open_to_partners} onChange={set('open_to_partners')} />
-        <ChipSelect label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
-        <ChipSelect label={d.maxGroup} options={GROUP_SIZES.map((g) => ({ value: String(g.max), label: g[locale] }))} selected={f.max_group_size} onChange={set('max_group_size')} multiple={false} />
-        <Field label={d.years} value={f.years_experience} onChangeText={set('years_experience')} keyboardType="number-pad" />
-        <Field label={d.summits} value={f.summits} onChangeText={set('summits')} keyboardType="number-pad" />
-        <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} />
-        <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
-        <Toggle label={d.hasVehicle} value={f.has_vehicle} onChange={set('has_vehicle')} />
-        <ChipSelect
-          label={d.visibility}
-          options={[
-            { value: 'public' as const, label: d.visibilityPublic },
-            { value: 'link_only' as const, label: d.visibilityLink },
-          ]}
-          selected={[f.visibility]}
-          onChange={(v) => set('visibility')(v[0] ?? 'public')}
-          multiple={false}
-        />
-        <Muted>{d.followUs}</Muted>
-      </Card>
+      {current === 2 && (
+        <Card>
+          <Muted>{d.documentsWhy}</Muted>
+          <Field label={d.phone} value={f.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
+          <Field label={d.whatsapp} value={f.whatsapp_number} onChangeText={set('whatsapp_number')} keyboardType="phone-pad" />
+          <Field label={d.registration} value={f.registration_number} onChangeText={set('registration_number')} />
+          <Field label={d.kinapa} value={f.kinapa_tanapa_id} onChangeText={set('kinapa_tanapa_id')} />
+          <Muted>
+            {t.checks.documentsNote} {t.checks.recheckNote}
+          </Muted>
+          <DocumentRow
+            label={d.idDocument}
+            status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null)}
+            picked={!!idDocument}
+            onPick={async () => setIdDocument((await pickImage(false)) ?? idDocument)}
+            t={t}
+          />
+          <DocumentRow
+            label={t.checks.licenceUpload}
+            status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null)}
+            picked={!!licenceDocument}
+            onPick={async () => setLicenceDocument((await pickImage(false)) ?? licenceDocument)}
+            t={t}
+          />
+          <DocumentRow
+            label={t.checks.firstAidUpload}
+            status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null)}
+            picked={!!firstAidDocument}
+            onPick={async () => setFirstAidDocument((await pickImage(false)) ?? firstAidDocument)}
+            t={t}
+          />
+        </Card>
+      )}
 
-      <Card>
-        <SectionTitle>{d.callsSection}</SectionTitle>
-        <Muted>{d.callsHint}</Muted>
-        <Toggle label={d.callEnabled} value={f.call_enabled} onChange={set('call_enabled')} />
-        <Field label={d.callPrice} value={f.call_price_usd} onChangeText={set('call_price_usd')} keyboardType="number-pad" placeholder="49" />
-        <ChipSelect label={d.callMinutes} options={['30', '45', '60', '90'].map((m) => ({ value: m, label: m }))} selected={f.call_minutes} onChange={set('call_minutes')} multiple={false} />
-        <ChipSelect label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} selected={f.call_topics} onChange={set('call_topics')} />
-      </Card>
+      {current === 3 && (
+        <Card>
+          <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
+          <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} />
+          <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
+          <Toggle label={d.hasVehicle} value={f.has_vehicle} onChange={set('has_vehicle')} />
+          <Toggle label={d.openToPartners} value={f.open_to_partners} onChange={set('open_to_partners')} />
+          <Field label={d.slug} value={f.slug} onChangeText={set('slug')} autoCapitalize="none" hint="rafrika.com/guides/…" />
+          <ChipSelect
+            label={d.visibility}
+            options={[
+              { value: 'public' as const, label: d.visibilityPublic },
+              { value: 'link_only' as const, label: d.visibilityLink },
+            ]}
+            selected={[f.visibility]}
+            onChange={(v) => set('visibility')(v[0] ?? 'public')}
+            multiple={false}
+          />
+          <Muted>{d.followUs}</Muted>
+        </Card>
+      )}
 
-      <Card>
-        <SectionTitle>{d.privateSection}</SectionTitle>
-        <Field label={d.phone} value={f.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
-        <Field label={d.whatsapp} value={f.whatsapp_number} onChangeText={set('whatsapp_number')} keyboardType="phone-pad" />
-        <Field label={d.registration} value={f.registration_number} onChangeText={set('registration_number')} />
-        <Field label={d.kinapa} value={f.kinapa_tanapa_id} onChangeText={set('kinapa_tanapa_id')} />
-      </Card>
-
-      <Card>
-        <SectionTitle>{t.checks.documentsTitle}</SectionTitle>
-        <Muted>
-          {t.checks.documentsNote} {t.checks.recheckNote}
-        </Muted>
-        <DocumentRow
-          label={d.idDocument}
-          status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null)}
-          picked={!!idDocument}
-          onPick={async () => setIdDocument((await pickImage(false)) ?? idDocument)}
-          t={t}
-        />
-        <DocumentRow
-          label={t.checks.licenceUpload}
-          status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null)}
-          picked={!!licenceDocument}
-          onPick={async () => setLicenceDocument((await pickImage(false)) ?? licenceDocument)}
-          t={t}
-        />
-        <DocumentRow
-          label={t.checks.firstAidUpload}
-          status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null)}
-          picked={!!firstAidDocument}
-          onPick={async () => setFirstAidDocument((await pickImage(false)) ?? firstAidDocument)}
-          t={t}
-        />
-      </Card>
+      {current === 4 && (
+        <Card>
+          <Muted>{d.callsHint}</Muted>
+          <Toggle label={d.callEnabled} value={f.call_enabled} onChange={set('call_enabled')} />
+          <Field label={d.callPrice} value={f.call_price_usd} onChangeText={set('call_price_usd')} keyboardType="number-pad" placeholder="49" />
+          <ChipSelect label={d.callMinutes} options={['30', '45', '60', '90'].map((m) => ({ value: m, label: m }))} selected={f.call_minutes} onChange={set('call_minutes')} multiple={false} />
+          <ChipSelect label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} selected={f.call_topics} onChange={set('call_topics')} />
+        </Card>
+      )}
 
       <FormMessage message={message} />
-      <Button title={d.save} onPress={save} loading={busy} />
+      <Button title={current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish} onPress={() => saveStep(current)} loading={busy} />
+      {guide && current > 0 && <Button title={d.back} variant="outline" onPress={() => setStep(current - 1)} />}
+      {guide && (
+        <Text accessibilityRole="button" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} style={{ color: brand.forest, fontWeight: '700', textAlign: 'center', paddingVertical: space.sm }}>
+          {d.skip}
+        </Text>
+      )}
     </ScrollView>
   );
 }

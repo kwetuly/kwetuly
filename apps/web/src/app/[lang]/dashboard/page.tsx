@@ -10,6 +10,7 @@ import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
+import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
 
@@ -74,6 +75,8 @@ async function GuideEditor({
     : { data: null };
   const d = t.dashboard;
   const now = await today();
+  // A new guide goes straight into the first step; others see the overview unless they open a step.
+  const step: GuideStep | null = isGuideStep(status.step) ? status.step : guide ? null : 'basics';
 
   const statusText =
     guide?.verification_status === 'approved'
@@ -83,6 +86,181 @@ async function GuideEditor({
         : d.statusPending;
 
   const uploadLabels = { uploading: t.chats.uploading, uploaded: t.chats.uploaded, error: t.chats.uploadError };
+  const stepHref = (s: GuideStep) => `/${locale}/dashboard?step=${s}`;
+  const stepDone: Record<GuideStep, boolean> = {
+    basics: !!guide,
+    work: (guide?.specialties.length ?? 0) > 0 && !!guide?.headline,
+    documents: !!details?.id_document_path && !!details?.license_document_path,
+    story: !!guide?.bio,
+    calls: !!guide?.call_enabled,
+  };
+
+  if (step) {
+    const index = GUIDE_STEPS.indexOf(step);
+    const next = GUIDE_STEPS[index + 1];
+    return (
+      <>
+        <p className="text-sm font-semibold text-leaf-dark">{d.stepOf.replace('{n}', String(index + 1)).replace('{total}', String(GUIDE_STEPS.length))}</p>
+        <h1 className="mt-1 text-3xl font-bold">{d.steps[index]}</h1>
+        {!guide && <p className="mt-2 text-muted">{d.stepsIntro}</p>}
+        <ol className="mt-4 flex gap-1.5" aria-hidden>
+          {GUIDE_STEPS.map((s, i) => (
+            <li key={s} className={`h-1.5 flex-1 rounded-[4px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
+          ))}
+        </ol>
+        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+
+        <form action={saveGuideProfile} className="card mt-6 space-y-5">
+          <input type="hidden" name="locale" value={locale} />
+          <input type="hidden" name="step" value={step} />
+
+          {step === 'basics' && (
+            <>
+              <Field label={d.displayName}>
+                <input className="field" name="display_name" required maxLength={80} autoComplete="name" defaultValue={guide?.display_name ?? user.fullName ?? ''} />
+              </Field>
+              <Field label={d.baseRegion}>
+                <select className="field" name="base_region" required defaultValue={guide?.base_region ?? ''}>
+                  <option value="" disabled>—</option>
+                  {REGIONS.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </Field>
+              <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
+              <Field label={d.photo}>
+                <DirectUpload name="photo_path" bucket="avatars" userId={user.id} prefix="avatar" accept="image/jpeg,image/png,image/webp" labels={uploadLabels} />
+              </Field>
+            </>
+          )}
+
+          {step === 'work' && (
+            <>
+              <Field label={d.headline}>
+                <input className="field" name="headline" maxLength={140} defaultValue={guide?.headline ?? ''} placeholder={d.headlineHint} />
+              </Field>
+              <Checkboxes name="specialties" label={d.specialties} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} checked={guide?.specialties ?? []} />
+              <Checkboxes name="regions" label={d.regions} options={REGIONS.map((r) => ({ value: r, label: r }))} checked={guide?.regions ?? []} />
+              <Checkboxes name="expertise" label={d.expertise} options={GUIDE_EXPERTISE.map((e) => ({ value: e.id, label: e.label[locale] }))} checked={guide?.expertise ?? []} />
+              <p className="-mt-2 text-xs text-muted">{d.expertiseHint}</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label={d.maxGroup}>
+                  <select className="field" name="max_group_size" defaultValue={String(guide?.max_group_size ?? 8)}>
+                    {GROUP_SIZES.map((g) => <option key={g.max} value={g.max}>{g[locale]}</option>)}
+                  </select>
+                </Field>
+                <Field label={d.years}>
+                  <input className="field" name="years_experience" type="number" inputMode="numeric" min={0} max={70} defaultValue={guide?.years_experience ?? ''} />
+                </Field>
+                <Field label={d.summits}>
+                  <input className="field" name="summits" type="number" inputMode="numeric" min={0} defaultValue={guide?.summits ?? ''} />
+                </Field>
+              </div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="female_guide" defaultChecked={guide?.female_guide ?? false} className="size-4 accent-forest" />
+                {d.femaleGuide}
+              </label>
+            </>
+          )}
+
+          {step === 'documents' && (
+            <>
+              <p className="text-sm text-muted">{d.documentsWhy}</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={d.phone}><input className="field" name="phone" type="tel" autoComplete="tel" defaultValue={details?.phone ?? user.phone ?? ''} /></Field>
+                <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? user.phone ?? ''} /></Field>
+                <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
+                <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
+              </div>
+              <p className="text-sm text-muted">{t.checks.documentsNote} {t.checks.recheckNote}</p>
+              <DocumentField label={d.idDocument} status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null, null, now)} t={t}>
+                <DirectUpload name="id_document_path" bucket="verification" userId={user.id} prefix="guide-id" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
+              </DocumentField>
+              <DocumentField label={t.checks.licenceUpload} status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null, null, now)} t={t}>
+                <DirectUpload name="license_document_path" bucket="verification" userId={user.id} prefix="guide-licence" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
+              </DocumentField>
+              <DocumentField
+                label={t.checks.firstAidUpload}
+                status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null, now)}
+                t={t}
+              >
+                <DirectUpload name="first_aid_document_path" bucket="verification" userId={user.id} prefix="guide-first-aid" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
+              </DocumentField>
+            </>
+          )}
+
+          {step === 'story' && (
+            <>
+              <Field label={d.bio}>
+                <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
+              </Field>
+              <Field label={`${d.certifications} (First Aid, WFR…)`}>
+                <input className="field" name="certifications" maxLength={300} defaultValue={guide?.certifications.join(', ') ?? ''} />
+              </Field>
+              <Field label={d.association}>
+                <input className="field" name="association" maxLength={80} defaultValue={guide?.association ?? ''} placeholder="TTGA" />
+              </Field>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="has_vehicle" defaultChecked={guide?.has_vehicle ?? false} className="size-4 accent-forest" />
+                {d.hasVehicle}
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="open_to_partners" defaultChecked={guide?.open_to_partners ?? false} className="size-4 accent-forest" />
+                {d.openToPartners}
+              </label>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="Facebook"><input className="field" name="facebook_url" type="url" defaultValue={guide?.facebook_url ?? ''} placeholder="https://" /></Field>
+                <Field label="Instagram"><input className="field" name="instagram_url" type="url" defaultValue={guide?.instagram_url ?? ''} placeholder="https://" /></Field>
+                <Field label="TikTok"><input className="field" name="tiktok_url" type="url" defaultValue={guide?.tiktok_url ?? ''} placeholder="https://" /></Field>
+              </div>
+              <p className="text-sm text-muted">{d.followUs}</p>
+              <Field label={`${d.slug} (rafrika.com/${locale}/guides/…)`}>
+                <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
+              </Field>
+              <Field label={d.visibility}>
+                <select className="field" name="visibility" defaultValue={guide?.visibility ?? 'public'}>
+                  <option value="public">{d.visibilityPublic}</option>
+                  <option value="link_only">{d.visibilityLink}</option>
+                </select>
+              </Field>
+            </>
+          )}
+
+          {step === 'calls' && (
+            <>
+              <p className="text-sm text-muted">{d.callsHint}</p>
+              <label className="flex items-center gap-2 font-semibold">
+                <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-leaf" />
+                {d.callEnabled}
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label={d.callPrice}>
+                  <input className="field" name="call_price_usd" type="number" inputMode="numeric" min={0} step="1" defaultValue={guide?.call_price_usd ?? ''} placeholder="49" />
+                </Field>
+                <Field label={d.callMinutes}>
+                  <select className="field" name="call_minutes" defaultValue={String(guide?.call_minutes ?? 45)}>
+                    {[30, 45, 60, 90].map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <Checkboxes name="call_topics" label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} checked={guide?.call_topics ?? []} />
+            </>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button className="btn">{next ? d.saveContinue : d.saveFinish}</button>
+            {guide && index > 0 && (
+              <Link href={stepHref(GUIDE_STEPS[index - 1])} className="btn-outline">{d.back}</Link>
+            )}
+            {guide && (
+              <Link href={next ? stepHref(next) : `/${locale}/dashboard`} className="ml-auto text-sm font-semibold text-forest underline">
+                {d.skip}
+              </Link>
+            )}
+          </div>
+        </form>
+      </>
+    );
+  }
+
   return (
     <>
       <h1 className="text-3xl font-bold">{d.title}</h1>
@@ -101,136 +279,25 @@ async function GuideEditor({
           )}
         </div>
       )}
-      <ProfileStrength guide={guide} details={details} t={t} />
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
       {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
 
-      <form action={saveGuideProfile} className="mt-6 space-y-8">
-        <input type="hidden" name="locale" value={locale} />
-
-        <fieldset className="card space-y-4">
-          <legend className="px-1 text-lg font-semibold">{d.publicSection}</legend>
-          <Field label={d.displayName}>
-            <input className="field" name="display_name" required maxLength={80} defaultValue={guide?.display_name ?? user.fullName ?? ''} />
-          </Field>
-          <Field label={`${d.slug} (rafrika.com/${locale}/guides/…)`}>
-            <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
-          </Field>
-          <Field label={d.photo}>
-            <DirectUpload name="photo_path" bucket="avatars" userId={user.id} prefix="avatar" accept="image/jpeg,image/png,image/webp" labels={uploadLabels} />
-          </Field>
-          <Field label={d.headline}>
-            <input className="field" name="headline" maxLength={140} defaultValue={guide?.headline ?? ''} placeholder={d.headlineHint} />
-          </Field>
-          <Field label={d.bio}>
-            <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
-          </Field>
-          <Field label={d.baseRegion}>
-            <select className="field" name="base_region" required defaultValue={guide?.base_region ?? ''}>
-              <option value="" disabled>—</option>
-              {REGIONS.map((r) => <option key={r}>{r}</option>)}
-            </select>
-          </Field>
-          <Checkboxes name="regions" label={d.regions} options={REGIONS.map((r) => ({ value: r, label: r }))} checked={guide?.regions ?? []} />
-          <Checkboxes name="specialties" label={d.specialties} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} checked={guide?.specialties ?? []} />
-          <Checkboxes name="expertise" label={d.expertise} options={GUIDE_EXPERTISE.map((e) => ({ value: e.id, label: e.label[locale] }))} checked={guide?.expertise ?? []} />
-          <p className="-mt-2 text-xs text-muted">{d.expertiseHint}</p>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="female_guide" defaultChecked={guide?.female_guide ?? false} className="size-4 accent-forest" />
-            {d.femaleGuide}
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="open_to_partners" defaultChecked={guide?.open_to_partners ?? false} className="size-4 accent-forest" />
-            {d.openToPartners}
-          </label>
-          <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label={d.maxGroup}>
-              <select className="field" name="max_group_size" defaultValue={String(guide?.max_group_size ?? 8)}>
-                {GROUP_SIZES.map((g) => <option key={g.max} value={g.max}>{g[locale]}</option>)}
-              </select>
-            </Field>
-            <Field label={d.years}>
-              <input className="field" name="years_experience" type="number" min={0} max={70} defaultValue={guide?.years_experience ?? ''} />
-            </Field>
-            <Field label={d.summits}>
-              <input className="field" name="summits" type="number" min={0} defaultValue={guide?.summits ?? ''} />
-            </Field>
-          </div>
-          <Field label={`${d.certifications} (First Aid, WFR…)`}>
-            <input className="field" name="certifications" maxLength={300} defaultValue={guide?.certifications.join(', ') ?? ''} />
-          </Field>
-          <Field label={d.association}>
-            <input className="field" name="association" maxLength={80} defaultValue={guide?.association ?? ''} placeholder="TTGA" />
-          </Field>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="has_vehicle" defaultChecked={guide?.has_vehicle ?? false} className="size-4 accent-forest" />
-            {d.hasVehicle}
-          </label>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Facebook"><input className="field" name="facebook_url" type="url" defaultValue={guide?.facebook_url ?? ''} placeholder="https://" /></Field>
-            <Field label="Instagram"><input className="field" name="instagram_url" type="url" defaultValue={guide?.instagram_url ?? ''} placeholder="https://" /></Field>
-            <Field label="TikTok"><input className="field" name="tiktok_url" type="url" defaultValue={guide?.tiktok_url ?? ''} placeholder="https://" /></Field>
-          </div>
-          <p className="text-sm text-muted">{d.followUs}</p>
-          <Field label={d.visibility}>
-            <select className="field" name="visibility" defaultValue={guide?.visibility ?? 'public'}>
-              <option value="public">{d.visibilityPublic}</option>
-              <option value="link_only">{d.visibilityLink}</option>
-            </select>
-          </Field>
-        </fieldset>
-
-        <fieldset className="card space-y-4">
-          <legend className="px-1 text-lg font-semibold">{d.callsSection}</legend>
-          <p className="text-sm text-muted">{d.callsHint}</p>
-          <label className="flex items-center gap-2 font-semibold">
-            <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-leaf" />
-            {d.callEnabled}
-          </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={d.callPrice}>
-              <input className="field" name="call_price_usd" type="number" min={0} step="1" defaultValue={guide?.call_price_usd ?? ''} placeholder="49" />
-            </Field>
-            <Field label={d.callMinutes}>
-              <select className="field" name="call_minutes" defaultValue={String(guide?.call_minutes ?? 45)}>
-                {[30, 45, 60, 90].map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </Field>
-          </div>
-          <Checkboxes name="call_topics" label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} checked={guide?.call_topics ?? []} />
-        </fieldset>
-
-        <fieldset className="card space-y-4">
-          <legend className="px-1 text-lg font-semibold">{d.privateSection}</legend>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={d.phone}><input className="field" name="phone" type="tel" defaultValue={details?.phone ?? user.phone ?? ''} /></Field>
-            <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? user.phone ?? ''} /></Field>
-            <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
-            <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
-          </div>
-        </fieldset>
-
-        <fieldset className="card space-y-4">
-          <legend className="px-1 text-lg font-semibold">{t.checks.documentsTitle}</legend>
-          <p className="text-sm text-muted">{t.checks.documentsNote} {t.checks.recheckNote}</p>
-          <DocumentField label={d.idDocument} status={documentStatus(!!details?.id_document_path, guide?.identity_checked_at ?? null, null, now)} t={t}>
-            <DirectUpload name="id_document_path" bucket="verification" userId={user.id} prefix="guide-id" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
-          </DocumentField>
-          <DocumentField label={t.checks.licenceUpload} status={documentStatus(!!details?.license_document_path, guide?.licence_checked_at ?? null, null, now)} t={t}>
-            <DirectUpload name="license_document_path" bucket="verification" userId={user.id} prefix="guide-licence" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
-          </DocumentField>
-          <DocumentField
-            label={t.checks.firstAidUpload}
-            status={documentStatus(!!details?.first_aid_document_path, guide?.first_aid_checked_at ?? null, guide?.first_aid_valid_until ?? null, now)}
-            t={t}
-          >
-            <DirectUpload name="first_aid_document_path" bucket="verification" userId={user.id} prefix="guide-first-aid" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
-          </DocumentField>
-        </fieldset>
-
-        <button className="btn w-full sm:w-auto">{d.save}</button>
-      </form>
+      {/* The sign-up steps, each with its own short form. */}
+      <ol className="card mt-6 divide-y divide-line">
+        {GUIDE_STEPS.map((s, i) => (
+          <li key={s} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+            {stepDone[s] ? <CircleCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-5 shrink-0 text-muted" aria-hidden />}
+            <span className="font-semibold">
+              {i + 1}. {d.steps[i]}
+            </span>
+            <span className="text-xs text-muted">{s === 'calls' ? d.optionalStep : stepDone[s] ? d.stepDone : d.stepTodo}</span>
+            <Link href={stepHref(s)} className={`ml-auto px-4 py-2 text-sm ${stepDone[s] ? 'btn-outline' : 'btn'}`}>
+              {d.edit}
+            </Link>
+          </li>
+        ))}
+      </ol>
+      <ProfileStrength guide={guide} details={details} t={t} />
     </>
   );
 }
