@@ -101,7 +101,7 @@ async function Profile({
         },
       ]}
     />
-    {!status.sent && <StickyCta target="contact" label={t.messages.messageGuide} track="guide_sticky_contact" />}
+    {!status.sent && <StickyCta target="contact" label={t.profile.askName.replace('{name}', guide.display_name)} track="guide_sticky_contact" />}
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
       <div>
         <div className="flex gap-5">
@@ -196,8 +196,10 @@ async function Profile({
         <CallBooking guide={guide} status={status} t={t} locale={locale} />
       )}
       <aside id="contact" className="card h-fit scroll-mt-28">
-        <h2 className="text-lg font-semibold">{t.profile.contactTitle}</h2>
+        <h2 className="text-lg font-semibold">{t.profile.askName.replace('{name}', guide.display_name)}</h2>
+        <p className="mt-1 text-sm font-semibold text-forest">{t.profile.askNote.replace('{name}', guide.display_name)}</p>
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
+        <p className="mt-1 text-sm text-muted">{t.profile.oneGroup}</p>
         {status.sent ? (
           <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{t.profile.sent}</p>
         ) : (

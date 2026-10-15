@@ -129,7 +129,11 @@ export default async function HomePage() {
       {/* Plain text, no icon cards: a short list reads faster. */}
       <section className="border-y border-line bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1fr_2fr]">
-          <h2 className="text-3xl font-extrabold tracking-tight">{t.home.whyTitle}</h2>
+          <div>
+            <h2 className="text-3xl font-extrabold tracking-tight">{t.home.whyTitle}</h2>
+            <p className="mt-4 text-xl font-bold text-forest">{t.home.hook}</p>
+            <p className="mt-3 max-w-prose leading-relaxed text-muted">{t.home.story}</p>
+          </div>
           <ul className="divide-y divide-line">
             {t.home.why.map((item) => (
               <li key={item.title} className="py-5 first:pt-0 last:pb-0">

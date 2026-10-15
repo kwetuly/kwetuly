@@ -7,7 +7,7 @@ import { track } from '@/lib/analytics';
 import { EVENTS } from '@rafrika/shared';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors, space, textSize } from '@/theme';
+import { brand, colors, space, textSize } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
 export default function ContactGuideScreen() {
@@ -42,7 +42,9 @@ export default function ContactGuideScreen() {
       <Stack.Title>{p.contactTitle}</Stack.Title>
       {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
       <Card>
+        {name && <Text style={{ fontWeight: '700', color: brand.forest }}>{p.askNote.replace('{name}', name)}</Text>}
         <Muted>{p.contactBody}</Muted>
+        <Muted>{p.oneGroup}</Muted>
         <Field label={p.name} value={fullName} onChangeText={setFullName} />
         <Field label={p.contact} value={contact} onChangeText={setContact} autoCapitalize="none" />
         <Field label={p.message} value={text} onChangeText={setText} multiline />

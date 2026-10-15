@@ -110,6 +110,8 @@ export default function ExploreScreen() {
       {/* Why Rafrika */}
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.home.whyTitle}</SectionTitle>
+        <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: brand.forest }}>{t.home.hook}</Text>
+        <Text style={{ color: colors.secondaryLabel, fontSize: textSize.callout, lineHeight: 21 }}>{t.home.story}</Text>
         <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, paddingHorizontal: space.lg }}>
           {t.home.why.map((item, i) => (
             <View key={item.title} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.lg, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>

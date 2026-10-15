@@ -142,7 +142,7 @@ export default function GuideScreen() {
     </ScrollView>
     {!isMe && (
       <BottomBar>
-        <Button title={t.messages.messageGuide} onPress={message} loading={opening} />
+        <Button title={t.profile.askName.replace('{name}', g.display_name)} onPress={message} loading={opening} />
       </BottomBar>
     )}
     </View>
