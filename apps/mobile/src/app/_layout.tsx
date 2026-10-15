@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SystemUI from 'expo-system-ui';
+import { OfflineBanner } from '@/components/offline-banner';
 import { PushSetup } from '@/components/push-setup';
 import { useScreenTracking } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
@@ -38,6 +39,7 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider value={rafrikaTheme}>
             <RootStack />
+            <OfflineBanner />
             <PushSetup />
           </ThemeProvider>
         </AuthProvider>
