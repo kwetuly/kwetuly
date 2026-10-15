@@ -1,4 +1,4 @@
-// The Rafrika app icon: a white lowercase "r" with the rising sun, on the grey night colour.
+// The Rafrika app icon: a white lowercase "r" with the rising sun, on the brand green.
 // Rendered with next/og for the browser tab icon and the Apple home-screen icon.
 export function BrandIcon({ size, rounded }: { size: number; rounded: boolean }) {
   return (
@@ -9,7 +9,7 @@ export function BrandIcon({ size, rounded }: { size: number; rounded: boolean })
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#7f7f7f',
+        background: '#1d951a',
         borderRadius: rounded ? size * 0.22 : 0,
         position: 'relative',
       }}

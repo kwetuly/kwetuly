@@ -16,7 +16,7 @@
     "android": {
       "package": "com.rafrika.app",
       "adaptiveIcon": {
-        "backgroundColor": "#7f7f7f",
+        "backgroundColor": "#1d951a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#7f7f7f",
+          "backgroundColor": "#1d951a",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
