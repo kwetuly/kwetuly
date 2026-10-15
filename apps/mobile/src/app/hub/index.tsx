@@ -143,6 +143,7 @@ export default function HubScreen() {
         <Card key={lead.id}>
           <Text style={{ fontWeight: '800', color: colors.label }}>{lead.traveler_name}</Text>
           <Text selectable style={{ color: brand.forest, fontWeight: '600' }}>{lead.traveler_contact}</Text>
+          {lead.guide_packages && <Text style={{ color: brand.forest, fontWeight: '700' }}>{t.packages.about.replace('{title}', lead.guide_packages.title)}</Text>}
           {lead.message && <Text selectable style={{ color: colors.label }}>{lead.message}</Text>}
           <Muted>{new Date(lead.created_at).toLocaleDateString()}</Muted>
         </Card>

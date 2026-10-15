@@ -61,9 +61,10 @@ export async function listMyCalls(userId: string): Promise<MyCall[]> {
   return (data ?? []) as unknown as MyCall[];
 }
 
-export async function contactGuide(input: { guideId: string; userId?: string; name: string; contact: string; message: string }) {
+export async function contactGuide(input: { guideId: string; userId?: string; name: string; contact: string; message: string; packageId?: string }) {
   const { error } = await supabase.from('leads').insert({
     guide_id: input.guideId,
+    package_id: input.packageId ?? null,
     traveler_id: input.userId ?? null,
     source: 'contact_form',
     traveler_name: input.name.trim(),
@@ -243,15 +244,15 @@ export async function saveGuideProfile(
 }
 
 export type HubCall = { id: string; topic: string; preferred_times: string | null; message: string | null; traveler_contact: string | null; status: string; scheduled_at: string | null; price_usd: number | null; created_at: string };
-export type HubLead = { id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string };
+export type HubLead = { id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; guide_packages: { title: string } | null };
 
 export async function listHubInbox(guideId: string) {
   const [calls, leads] = await Promise.all([
     supabase.from('call_requests').select('id, topic, preferred_times, message, traveler_contact, status, scheduled_at, price_usd, created_at').eq('guide_id', guideId).order('created_at', { ascending: false }).limit(50),
-    supabase.from('leads').select('id, traveler_name, traveler_contact, message, created_at').eq('guide_id', guideId).order('created_at', { ascending: false }).limit(50),
+    supabase.from('leads').select('id, traveler_name, traveler_contact, message, created_at, guide_packages(title)').eq('guide_id', guideId).order('created_at', { ascending: false }).limit(50),
   ]);
   check(calls.error ?? leads.error);
-  return { calls: (calls.data ?? []) as HubCall[], leads: (leads.data ?? []) as HubLead[] };
+  return { calls: (calls.data ?? []) as HubCall[], leads: (leads.data ?? []) as unknown as HubLead[] };
 }
 
 export async function respondToCall(callId: string, accept: boolean, scheduledAt?: string, meetingLink?: string) {

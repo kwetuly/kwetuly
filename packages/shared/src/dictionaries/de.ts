@@ -1,4 +1,5 @@
 import { ux_de } from './ux';
+import { packages_de } from './packages';
 import { en, type Dictionary } from './en';
 
 // German. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -654,6 +655,7 @@ export const de: Dictionary = {
     recheckNote: 'Wenn du ein neues Dokument hochlädst, prüft unser Team es erneut.',
   },
   ux: ux_de,
+  packages: packages_de,
   footer: {
     tagline: 'Das Zuhause tansanischer Guides.',
     rights: 'Alle Rechte vorbehalten.',

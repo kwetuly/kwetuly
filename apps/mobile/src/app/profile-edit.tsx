@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -303,6 +303,13 @@ export default function ProfileEditScreen() {
             </Pressable>
           ))}
         </Card>
+        {guide && (
+          <Card>
+            <SectionTitle>{t.packages.manageTitle}</SectionTitle>
+            <Muted>{t.packages.manageIntro}</Muted>
+            <Button title={t.packages.add} onPress={() => router.push('/my-packages')} />
+          </Card>
+        )}
         <ProfileStrength input={strengthInput} t={t} />
       </ScrollView>
     );

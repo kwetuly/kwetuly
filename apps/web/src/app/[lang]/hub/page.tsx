@@ -26,7 +26,7 @@ type IncomingCall = {
 
 type Deposit = { id: string; description: string; amount_tzs: number; amount_usd: number; paid_at: string | null; payout_done: boolean };
 
-type Lead = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string };
+type Lead = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string; guide_packages: { title: string } | null };
 
 export default async function HubHome() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -56,7 +56,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
       .returns<IncomingCall[]>(),
     supabase
       .from('leads')
-      .select('id, traveler_name, traveler_contact, message, created_at')
+      .select('id, traveler_name, traveler_contact, message, created_at, guide_packages(title)')
       .eq('guide_id', guideId)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -140,6 +140,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
           {(leads ?? []).map((l) => (
             <li key={l.id} className="py-3 text-sm">
               <p className="font-semibold"><span className="mr-2 font-normal tabular-nums text-muted">{day.format(new Date(l.created_at))}</span>{l.traveler_name} · <span className="font-normal text-muted">{l.traveler_contact}</span></p>
+              {l.guide_packages && <p className="mt-1 text-sm font-semibold text-forest">{t.packages.about.replace('{title}', l.guide_packages.title)}</p>}
               <p className="mt-1">{l.message}</p>
             </li>
           ))}

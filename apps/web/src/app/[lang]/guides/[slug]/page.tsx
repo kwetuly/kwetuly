@@ -8,7 +8,8 @@ import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
 import { CALL_TOPICS, EVENTS, formatUsd } from '@rafrika/shared';
-import { getGuideBySlug, listGuides, listReviews, type Guide } from '@/lib/guides';
+import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
+import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
 import { GuideAvatar, GuideBadges, GuideCard, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
@@ -61,7 +62,9 @@ async function Profile({
   const { slug } = await params;
   const guide = await getGuideBySlug(slug);
   if (!guide) notFound();
-  const status = await searchParams;
+  const [status, packages] = await Promise.all([searchParams, getGuidePackages(guide.id)]);
+  // The package the traveller chose with "Ask about this package", if any.
+  const askedPackage = packages.find((p) => p.id === status.package);
 
   const facts = [
     guide.years_experience != null && `${guide.years_experience} ${t.guides.years}`,
@@ -148,6 +151,8 @@ async function Profile({
           </section>
         )}
 
+        <GuidePackages packages={packages} guideName={guide.display_name} t={t} locale={locale} />
+
         {guide.open_to_partners && (
           <Link
             href={`/${locale}/partners/agents`}
@@ -208,6 +213,12 @@ async function Profile({
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={guide.slug} />
             <input type="hidden" name="guide_id" value={guide.id} />
+            {askedPackage && (
+              <>
+                <input type="hidden" name="package_id" value={askedPackage.id} />
+                <p className="rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{t.packages.about.replace('{title}', askedPackage.title)}</p>
+              </>
+            )}
             <label className="block">
               <span className="label">{t.profile.name}</span>
               <input className="field" name="name" required maxLength={120} autoComplete="name" />

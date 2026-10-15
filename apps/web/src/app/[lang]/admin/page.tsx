@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
 import { reviewGroupTrip, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from './actions';
+import { PendingPackages } from './pending-packages';
 
 type PendingJob = {
   id: string;
@@ -114,6 +115,7 @@ export default async function AdminPage() {
       </div>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <PendingList t={t} locale={locale} />
+        <PendingPackages t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
         <PendingGroupTrips t={t} locale={locale} />
         <Payments t={t} locale={locale} />

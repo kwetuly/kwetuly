@@ -297,6 +297,15 @@ async function GuideEditor({
           </li>
         ))}
       </ol>
+      {guide && (
+        <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
+          <span className="flex-1">
+            <span className="block font-bold">{t.packages.manageTitle}</span>
+            <span className="block text-sm text-muted">{t.packages.manageIntro}</span>
+          </span>
+          <span className="btn px-4 py-2 text-sm">{t.packages.add}</span>
+        </Link>
+      )}
       <ProfileStrength guide={guide} details={details} t={t} />
     </>
   );

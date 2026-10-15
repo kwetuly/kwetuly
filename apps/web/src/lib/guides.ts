@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
+import { PACKAGE_COLUMNS, type GuidePackage } from '@rafrika/shared';
 
 export type Guide = {
   id: string;
@@ -143,4 +144,40 @@ export async function siteStats(): Promise<{ guides: number; reviews: number }> 
     .eq('visibility', 'public');
   const rows = (data ?? []) as { rating_count: number | null }[];
   return { guides: rows.length, reviews: rows.reduce((sum, g) => sum + (g.rating_count ?? 0), 0) };
+}
+
+// Approved packages of one guide (the database only returns approved packages of approved guides to visitors).
+export async function getGuidePackages(guideId: string): Promise<GuidePackage[]> {
+  'use cache';
+  cacheTag('guides', 'packages');
+  cacheLife('minutes');
+
+  const { data } = await publicClient()
+    .from('guide_packages')
+    .select(PACKAGE_COLUMNS)
+    .eq('guide_id', guideId)
+    .eq('status', 'approved')
+    .order('sort_order')
+    .order('created_at');
+  return (data ?? []) as GuidePackage[];
+}
+
+export type PackageWithGuide = GuidePackage & { guides: { display_name: string; slug: string; photo_url: string | null; visibility: string } | null };
+
+// Approved packages from all public guides, optionally of one kind, for the catalogue.
+export async function listPackages(kind?: string): Promise<PackageWithGuide[]> {
+  'use cache';
+  cacheTag('guides', 'packages');
+  cacheLife('minutes');
+
+  let query = publicClient()
+    .from('guide_packages')
+    .select(`${PACKAGE_COLUMNS}, guides!inner(display_name, slug, photo_url, visibility)`)
+    .eq('status', 'approved')
+    .eq('guides.visibility', 'public')
+    .order('created_at', { ascending: false })
+    .limit(60);
+  if (kind) query = query.eq('kind', kind);
+  const { data } = await query;
+  return (data ?? []) as unknown as PackageWithGuide[];
 }

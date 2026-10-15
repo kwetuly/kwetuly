@@ -1,4 +1,5 @@
 import { ux_sw } from './ux';
+import { packages_sw } from './packages';
 import type { Dictionary } from './en';
 
 // Swahili strings are a first draft and should be reviewed by a native speaker before launch.
@@ -817,6 +818,7 @@ export const sw: Dictionary = {
     recheckNote: 'Ukipakia hati mpya, timu yetu itaikagua tena.',
   },
   ux: ux_sw,
+  packages: packages_sw,
   footer: {
     tagline: 'Nyumbani kwa waongozaji wa Tanzania.',
     rights: 'Haki zote zimehifadhiwa.',

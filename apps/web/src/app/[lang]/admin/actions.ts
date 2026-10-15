@@ -125,3 +125,21 @@ export async function setPaidOut(formData: FormData) {
     .eq('id', String(formData.get('payment_id') ?? ''));
   redirect(`/${locale}/admin#payments`);
 }
+
+// Approve a guide package, or send it back with a note the guide sees.
+export async function reviewPackage(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+
+  const approve = formData.get('decision') === 'approve';
+  const note = String(formData.get('note') ?? '').trim().slice(0, 500);
+  const supabase = await createClient();
+  await supabase
+    .from('guide_packages')
+    .update({ status: approve ? 'approved' : 'rejected', review_note: approve ? null : note || null })
+    .eq('id', String(formData.get('package_id') ?? ''));
+  revalidateTag('packages', 'max');
+  redirect(`/${locale}/admin#packages`);
+}

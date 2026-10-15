@@ -52,8 +52,11 @@ export async function requestGuide(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // The package the traveller asked about, when they came from "Ask about this package".
+  const packageId = String(formData.get('package_id') ?? '');
   const { error } = await supabase.from('leads').insert({
     guide_id: guideId,
+    package_id: /^[0-9a-f-]{36}$/.test(packageId) ? packageId : null,
     traveler_id: user?.id ?? null,
     source: 'contact_form',
     traveler_name: name,

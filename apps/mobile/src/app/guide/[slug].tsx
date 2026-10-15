@@ -9,6 +9,8 @@ import { useI18n } from '@/lib/i18n';
 import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
+import { GuidePackages } from '@/components/guide-packages';
+import { getGuidePackages } from '@/lib/packages';
 
 import { EVENTS, formatUsd } from '@rafrika/shared';
 import { track } from '@/lib/analytics';
@@ -33,6 +35,7 @@ export default function GuideScreen() {
   const { t, locale } = useI18n();
   const { session } = useSession();
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
+  const packages = useQuery({ queryKey: ['guide-packages', guide.data?.id], queryFn: () => getGuidePackages(guide.data!.id), enabled: !!guide.data });
   const reviews = useQuery({ queryKey: ['reviews', guide.data?.id], queryFn: () => listReviews(guide.data!.id), enabled: !!guide.data });
   const [opening, setOpening] = useState(false);
   const guideSlug = guide.data?.slug;
@@ -111,6 +114,8 @@ export default function GuideScreen() {
           <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{g.bio}</Text>
         </Card>
       )}
+
+      <GuidePackages packages={packages.data ?? []} guideId={g.id} guideName={g.display_name} guideSlug={g.slug} />
 
       <Card>
         <Facts title={t.profile.specialties} items={g.specialties.map((s) => specialtyName(s, locale))} />

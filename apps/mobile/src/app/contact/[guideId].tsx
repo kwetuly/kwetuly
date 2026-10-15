@@ -11,7 +11,7 @@ import { brand, colors, space, textSize } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
 export default function ContactGuideScreen() {
-  const { guideId, name } = useLocalSearchParams<{ guideId: string; name?: string }>();
+  const { guideId, name, packageId, packageTitle } = useLocalSearchParams<{ guideId: string; name?: string; packageId?: string; packageTitle?: string }>();
   const { t } = useI18n();
   const p = t.profile;
   const { session } = useSession();
@@ -26,7 +26,7 @@ export default function ContactGuideScreen() {
     if (!fullName.trim() || !contact.trim() || !text.trim()) return setMessage({ tone: 'error', text: t.auth.error });
     setBusy(true);
     try {
-      await contactGuide({ guideId, userId: session?.user.id, name: fullName, contact, message: text });
+      await contactGuide({ guideId, userId: session?.user.id, name: fullName, contact, message: text, packageId });
       track(EVENTS.enquirySent, { kind: 'guide', guide: guideId });
       setMessage({ tone: 'ok', text: p.sent });
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
@@ -43,6 +43,7 @@ export default function ContactGuideScreen() {
       {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
       <Card>
         {name && <Text style={{ fontWeight: '700', color: brand.forest }}>{p.askNote.replace('{name}', name)}</Text>}
+        {packageTitle && <Text style={{ color: brand.forest, fontWeight: '700', backgroundColor: brand.mint, padding: space.md, borderRadius: 5 }}>{t.packages.about.replace('{title}', packageTitle)}</Text>}
         <Muted>{p.contactBody}</Muted>
         <Muted>{p.oneGroup}</Muted>
         <Field label={p.name} value={fullName} onChangeText={setFullName} />
