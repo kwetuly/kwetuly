@@ -60,6 +60,7 @@ export default function BusinessScreen() {
         </ScrollView>
       )}
       <BusinessBadge business={b} full />
+      {b.has_referral_agreement && <Muted>{bt.commissionNote}</Muted>}
       {b.story && <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{b.story}</Text>}
       {b.website && <Button title={bt.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(b.website!)} />}
 

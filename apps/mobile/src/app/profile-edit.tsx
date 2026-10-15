@@ -10,6 +10,7 @@ import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, Scr
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { GuideReferralCard } from '@/components/referral';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
@@ -310,6 +311,7 @@ export default function ProfileEditScreen() {
             <Button title={t.packages.add} onPress={() => router.push('/my-packages')} />
           </Card>
         )}
+        {guide && <GuideReferralCard approved={guide.verification_status === 'approved'} />}
         <ProfileStrength input={strengthInput} t={t} />
       </ScrollView>
     );

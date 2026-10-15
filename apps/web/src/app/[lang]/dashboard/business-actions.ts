@@ -80,3 +80,28 @@ export async function requestBadge(formData: FormData) {
   await supabase.from('providers').update({ badge_requested_at: new Date().toISOString() }).eq('owner_id', user.id);
   redirect(`/${locale}/dashboard#badge`);
 }
+
+// The business records a sale that came with a Rafrika referral code. The database fills in the guide.
+export async function reportSale(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const back = `/${locale}/dashboard`;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
+  const { data: business } = await supabase.from('providers').select('id').eq('owner_id', user.id).maybeSingle<{ id: string }>();
+  const code = String(formData.get('code') ?? '').trim().toUpperCase();
+  const amount = Number.parseFloat(String(formData.get('amount_tzs') ?? ''));
+  const date = String(formData.get('sale_date') ?? '');
+  if (!business || !/^[A-Z0-9]{6,10}$/.test(code) || !Number.isFinite(amount) || amount <= 0) redirect(`${back}?sale_error=1#sales`);
+  const { error } = await supabase.from('referral_sales').insert({
+    provider_id: business.id,
+    code,
+    amount_tzs: Math.round(amount),
+    sale_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().slice(0, 10),
+    note: text(formData, 'note', 500),
+  });
+  redirect(`${back}?${error ? 'sale_error' : 'sale_saved'}=1#sales`);
+}

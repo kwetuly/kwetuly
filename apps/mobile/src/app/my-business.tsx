@@ -10,6 +10,7 @@ import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { SignInPrompt } from '@/components/sign-in-prompt';
+import { BusinessSalesCard } from '@/components/referral';
 import { brand, colors, space } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
@@ -164,6 +165,8 @@ function Editor({
           )}
         </Card>
       )}
+
+      {business && <BusinessSalesCard providerId={business.id} />}
 
       {business && (
         <Card>

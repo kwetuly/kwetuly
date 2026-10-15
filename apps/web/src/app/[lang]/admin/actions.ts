@@ -203,3 +203,48 @@ export async function setBadgeFee(formData: FormData) {
   revalidateTag('settings', 'max');
   redirect(`/${locale}/admin#businesses`);
 }
+
+// Record or change a business's commission agreement (from the signed paper agreement).
+export async function saveAgreement(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const pct = (key: string) => {
+    const n = Number.parseFloat(String(formData.get(key) ?? ''));
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : 0;
+  };
+  const signed = String(formData.get('signed_on') ?? '');
+  const supabase = await createClient();
+  const { error } = await supabase.from('business_agreements').upsert({
+    provider_id: String(formData.get('provider_id') ?? ''),
+    rafrika_pct: pct('rafrika_pct'),
+    guide_pct: pct('guide_pct'),
+    signed_on: /^\d{4}-\d{2}-\d{2}$/.test(signed) ? signed : null,
+    notes: String(formData.get('notes') ?? '').trim().slice(0, 2000) || null,
+    active: formData.get('active') === 'on',
+  });
+  revalidateTag('businesses', 'max');
+  redirect(`/${locale}/admin/commissions${error ? '?error=1' : ''}`);
+}
+
+// Mark one business's sales for one month as invoiced or paid.
+export async function setSalesStatus(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const month = String(formData.get('month') ?? '');
+  const status = formData.get('status') === 'paid' ? 'paid' : 'invoiced';
+  if (!/^\d{4}-\d{2}$/.test(month)) redirect(`/${locale}/admin/commissions`);
+  const [y, m] = month.split('-').map(Number);
+  const end = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
+  const supabase = await createClient();
+  await supabase
+    .from('referral_sales')
+    .update({ status })
+    .eq('provider_id', String(formData.get('provider_id') ?? ''))
+    .gte('sale_date', `${month}-01`)
+    .lt('sale_date', end);
+  redirect(`/${locale}/admin/commissions?month=${month}`);
+}

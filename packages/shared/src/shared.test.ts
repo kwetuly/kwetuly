@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { safeProps } from './analytics';
-import { hasValidBadge } from './businesses';
+import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
 import { filterTours, formatPrice, readTourFilters, verifiedPrice, type Tour } from './tours';
 
@@ -94,5 +94,12 @@ describe('business badge', () => {
     expect(hasValidBadge({ badge_checks: ['licence'], badge_valid_until: '2026-10-14' }, '2026-10-15')).toBe(false);
     expect(hasValidBadge({ badge_checks: [], badge_valid_until: '2027-10-15' }, '2026-10-15')).toBe(false);
     expect(hasValidBadge({ badge_checks: ['photos'], badge_valid_until: null }, '2026-10-15')).toBe(false);
+  });
+});
+
+describe('referral commission', () => {
+  it('splits a sale by the agreement and pays nothing without one', () => {
+    expect(commissionSplit(100000, { rafrika_pct: 10, guide_pct: 5 })).toEqual({ rafrika: 10000, guide: 5000 });
+    expect(commissionSplit(100000, null)).toEqual({ rafrika: 0, guide: 0 });
   });
 });

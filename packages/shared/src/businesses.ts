@@ -68,12 +68,20 @@ export type Business = {
   badge_checked_at: string | null;
   badge_valid_until: string | null;
   badge_requested_at: string | null;
+  has_referral_agreement: boolean;
 };
 
 export const BUSINESS_COLUMNS =
-  'id, business_name, business_type, story, base_region, location, website, photo_url, photos, languages, verification_status, badge_checks, badge_checked_at, badge_valid_until, badge_requested_at';
+  'id, business_name, business_type, story, base_region, location, website, photo_url, photos, languages, verification_status, badge_checks, badge_checked_at, badge_valid_until, badge_requested_at, has_referral_agreement';
 
 /** The badge only shows while it is valid and something was actually checked. `today` is YYYY-MM-DD. */
 export function hasValidBadge(b: Pick<Business, 'badge_checks' | 'badge_valid_until'>, today: string): boolean {
   return b.badge_checks.length > 0 && !!b.badge_valid_until && b.badge_valid_until >= today;
+}
+
+/** A sale's commission split from the business's agreement (percentages of the sale amount). */
+export function commissionSplit(amount: number, agreement: { rafrika_pct: number; guide_pct: number } | null) {
+  if (!agreement) return { rafrika: 0, guide: 0 };
+  const round = (n: number) => Math.round(n);
+  return { rafrika: round((amount * Number(agreement.rafrika_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
 }

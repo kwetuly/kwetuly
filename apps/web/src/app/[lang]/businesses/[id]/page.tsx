@@ -53,6 +53,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
         <div className="mt-6">
           <BusinessBadge business={business} t={t} locale={locale} today={now.toISOString().slice(0, 10)} full />
         </div>
+        {business.has_referral_agreement && <p className="mt-3 text-sm text-muted">{bt.commissionNote}</p>}
         {business.story && <p className="mt-6 whitespace-pre-line leading-relaxed">{business.story}</p>}
         {business.website && (
           <a href={business.website} target="_blank" rel="nofollow noopener" className="mt-4 inline-flex items-center gap-1 font-semibold text-forest underline">

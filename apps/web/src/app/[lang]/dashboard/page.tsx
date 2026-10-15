@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile } from './actions';
 import { BusinessListing } from './business-listing';
+import { GuideReferral } from './guide-referral';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
@@ -316,6 +317,7 @@ async function GuideEditor({
           <span className="btn px-4 py-2 text-sm">{t.packages.add}</span>
         </Link>
       )}
+      {guide && <GuideReferral approved={guide.verification_status === 'approved'} t={t} locale={locale} />}
       <ProfileStrength guide={guide} details={details} t={t} />
     </>
   );

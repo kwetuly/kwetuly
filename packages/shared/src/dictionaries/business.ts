@@ -29,6 +29,23 @@ const ownerEn = {
   badgeExpired: 'Your badge ended on {date}. Request a new check to renew it.',
   enquiriesTitle: 'Enquiries',
   noEnquiries: 'No enquiries yet.',
+  salesTitle: 'Sales from Rafrika referrals',
+  salesBody: 'When a traveller shows a Rafrika referral code, record the sale here. Rafrika sends you a monthly statement.',
+  codeField: 'Referral code',
+  dateField: 'Date of sale',
+  amountField: 'Amount (TZS)',
+  noteField: 'Note (optional)',
+  reportSale: 'Record sale',
+  agreementShares: 'Your agreement: Rafrika {r}%, guide {g}% of each sale',
+  noAgreement: 'No commission agreement yet. Rafrika will contact you to agree one.',
+  salesNone: 'No sales recorded yet.',
+  unknownCode: 'Unknown code',
+  saleStatus: { reported: 'Recorded', invoiced: 'Invoiced', paid: 'Paid' },
+  referralTitle: 'Your referral code',
+  referralBody: 'Give this code to travellers you send to partner shops, hotels and other businesses. When they buy, the business records the sale with your code and you receive your agreed share.',
+  referralPending: 'Your code appears once your profile is approved.',
+  referralSales: 'Sales with your code',
+  referralNone: 'No sales with your code yet.',
 };
 
 type OwnerTexts = typeof ownerEn;
@@ -61,6 +78,23 @@ const ownerSw: OwnerTexts = {
   badgeExpired: 'Beji yako iliisha tarehe {date}. Omba ukaguzi mpya kuifanya upya.',
   enquiriesTitle: 'Maulizo',
   noEnquiries: 'Bado hakuna maulizo.',
+  salesTitle: 'Mauzo kupitia Rafrika',
+  salesBody: 'Msafiri akionyesha namba ya rufaa ya Rafrika, rekodi mauzo hapa. Rafrika itakutumia taarifa ya kila mwezi.',
+  codeField: 'Namba ya rufaa',
+  dateField: 'Tarehe ya mauzo',
+  amountField: 'Kiasi (TZS)',
+  noteField: 'Maelezo (si lazima)',
+  reportSale: 'Rekodi mauzo',
+  agreementShares: 'Makubaliano yako: Rafrika {r}%, mwongozaji {g}% ya kila mauzo',
+  noAgreement: 'Bado hakuna makubaliano ya kamisheni. Rafrika itawasiliana nawe kukubaliana.',
+  salesNone: 'Bado hakuna mauzo yaliyorekodiwa.',
+  unknownCode: 'Namba haijulikani',
+  saleStatus: { reported: 'Imerekodiwa', invoiced: 'Ankara imetolewa', paid: 'Imelipwa' },
+  referralTitle: 'Namba yako ya rufaa',
+  referralBody: 'Wape wasafiri namba hii unapowapeleka kwenye maduka, hoteli na biashara nyingine washirika. Wakinunua, biashara hurekodi mauzo kwa namba yako na unapata sehemu yako uliyokubaliana.',
+  referralPending: 'Namba yako itaonekana wasifu wako ukishakubaliwa.',
+  referralSales: 'Mauzo kwa namba yako',
+  referralNone: 'Bado hakuna mauzo kwa namba yako.',
 };
 
 export const business_en = {
@@ -76,6 +110,7 @@ export const business_en = {
   askTitle: 'Ask {name} a question',
   askBody: 'Your message goes to the business through Rafrika. Contact details are shared once you agree.',
   sent: 'Sent. The business will reply to the contact you gave.',
+  commissionNote: 'Rafrika and guides may earn a commission when you buy here.',
 };
 
 export type BusinessText = typeof business_en;
@@ -93,6 +128,7 @@ export const business_sw: BusinessText = {
   askTitle: 'Muulize {name} swali',
   askBody: 'Ujumbe wako unafika kwa biashara kupitia Rafrika. Mawasiliano hushirikiwa mkikubaliana.',
   sent: 'Imetumwa. Biashara itakujibu kupitia mawasiliano uliyotoa.',
+  commissionNote: 'Rafrika na waongozaji wanaweza kupata kamisheni ukinunua hapa.',
 };
 
 export const business_fr: BusinessText = {
@@ -108,6 +144,7 @@ export const business_fr: BusinessText = {
   askTitle: 'Poser une question à {name}',
   askBody: 'Votre message est transmis à l’établissement via Rafrika. Les coordonnées sont partagées une fois que vous êtes d’accord.',
   sent: 'Envoyé. L’établissement répondra au contact que vous avez donné.',
+  commissionNote: 'Rafrika et les guides peuvent toucher une commission sur vos achats ici.',
 };
 
 export const business_it: BusinessText = {
@@ -123,6 +160,7 @@ export const business_it: BusinessText = {
   askTitle: 'Fai una domanda a {name}',
   askBody: 'Il tuo messaggio arriva all’attività tramite Rafrika. I contatti vengono condivisi quando vi accordate.',
   sent: 'Inviato. L’attività risponderà al contatto che hai indicato.',
+  commissionNote: 'Rafrika e le guide possono ricevere una commissione sui tuoi acquisti qui.',
 };
 
 export const business_de: BusinessText = {
@@ -138,6 +176,7 @@ export const business_de: BusinessText = {
   askTitle: 'Fragen Sie {name}',
   askBody: 'Ihre Nachricht erreicht das Unternehmen über Rafrika. Kontaktdaten werden geteilt, sobald Sie sich einig sind.',
   sent: 'Gesendet. Das Unternehmen antwortet an den angegebenen Kontakt.',
+  commissionNote: 'Rafrika und Guides können eine Provision erhalten, wenn Sie hier kaufen.',
 };
 
 export const business_pl: BusinessText = {
@@ -153,6 +192,7 @@ export const business_pl: BusinessText = {
   askTitle: 'Zadaj pytanie: {name}',
   askBody: 'Twoja wiadomość trafia do firmy przez Rafrika. Dane kontaktowe są udostępniane po porozumieniu.',
   sent: 'Wysłano. Firma odpowie na podany kontakt.',
+  commissionNote: 'Rafrika i przewodnicy mogą otrzymać prowizję od Twoich zakupów tutaj.',
 };
 
 export const business_zh: BusinessText = {
@@ -168,4 +208,5 @@ export const business_zh: BusinessText = {
   askTitle: '向 {name} 提问',
   askBody: '你的消息会通过 Rafrika 发送给商家。双方达成一致后再交换联系方式。',
   sent: '已发送。商家会通过你留下的联系方式回复。',
+  commissionNote: '你在这里消费时，Rafrika 和向导可能获得佣金。',
 };

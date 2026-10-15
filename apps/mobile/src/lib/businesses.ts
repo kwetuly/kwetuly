@@ -114,3 +114,35 @@ export async function requestBadge(userId: string) {
   const { error } = await supabase.from('providers').update({ badge_requested_at: new Date().toISOString() }).eq('owner_id', userId);
   check(error);
 }
+
+export type ReferralSale = { id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: 'reported' | 'invoiced' | 'paid'; providers?: { business_name: string } | null };
+
+export async function getMyAgreement(providerId: string) {
+  const { data } = await supabase.from('business_agreements').select('rafrika_pct, guide_pct, active').eq('provider_id', providerId).maybeSingle<{ rafrika_pct: number; guide_pct: number; active: boolean }>();
+  return data ?? null;
+}
+
+export async function listBusinessSales(providerId: string): Promise<ReferralSale[]> {
+  const { data, error } = await supabase.from('referral_sales').select('id, code, guide_id, sale_date, amount_tzs, status').eq('provider_id', providerId).order('sale_date', { ascending: false }).limit(50);
+  check(error);
+  return (data ?? []) as ReferralSale[];
+}
+
+/** The business records a sale that came with a Rafrika code; the database fills in the guide. */
+export async function reportSale(providerId: string, code: string, amountTzs: number, note: string | null) {
+  const { error } = await supabase.from('referral_sales').insert({ provider_id: providerId, code: code.trim().toUpperCase(), amount_tzs: Math.round(amountTzs), note });
+  check(error);
+}
+
+/** The guide's personal referral code (created on first use), or null until the profile is approved. */
+export async function myReferralCode(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('my_referral_code');
+  check(error);
+  return (data as string | null) ?? null;
+}
+
+export async function listMyReferralSales(): Promise<ReferralSale[]> {
+  const { data, error } = await supabase.from('referral_sales').select('id, code, guide_id, sale_date, amount_tzs, status, providers(business_name)').order('sale_date', { ascending: false }).limit(30);
+  check(error);
+  return (data ?? []) as unknown as ReferralSale[];
+}

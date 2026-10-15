@@ -8,6 +8,7 @@ import { getBadgeFee } from '@/lib/businesses';
 import { today } from '@/lib/today';
 import { DirectUpload } from '@/components/direct-upload';
 import { requestBadge, saveBusiness } from './business-actions';
+import { BusinessSales } from './business-sales';
 
 type OwnBusiness = {
   id: string;
@@ -142,6 +143,8 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
           )}
         </section>
       )}
+
+      {business && <BusinessSales providerId={business.id} t={t} locale={locale} status={status} />}
 
       {business && (
         <section className="card mt-6">
