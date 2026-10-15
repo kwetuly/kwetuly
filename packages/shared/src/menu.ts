@@ -186,6 +186,11 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Private, premium lodges and camps', 'Binafsi, loji na kambi za hadhi ya juu', 'Privés, lodges et camps haut de gamme', 'Privati, lodge e campi di alto livello', 'Privat, Premium-Lodges und -Camps', 'Prywatnie, ekskluzywne lodge i obozy', '私人定制、高端旅馆与营地'),
       },
       {
+        slug: 'places', icon: 'map', href: '/places', status: 'live',
+        label: L('Parks & places', 'Hifadhi na maeneo', 'Parcs & lieux', 'Parchi e luoghi', 'Parks & Orte', 'Parki i miejsca', '公园与景点'),
+        blurb: L('Guides to the parks and sites we visit', 'Maelezo ya hifadhi na maeneo tunayotembelea', 'Les parcs et sites que nous visitons', 'I parchi e i luoghi che visitiamo', 'Die Parks und Orte unserer Touren', 'Parki i miejsca, które odwiedzamy', '我们行程中的公园与景点'),
+      },
+      {
         slug: 'operators', icon: 'building-2', href: '/operators', status: 'live',
         label: L('Tour operators', 'Kampuni za utalii', 'Opérateurs touristiques', 'Tour operator', 'Reiseveranstalter', 'Biura podróży', '旅行社'),
         blurb: L('Licensed Tanzanian companies we list', 'Kampuni za Kitanzania zenye leseni', 'Entreprises tanzaniennes agréées', 'Aziende tanzaniane autorizzate', 'Lizenzierte tansanische Unternehmen', 'Licencjonowane firmy z Tanzanii', '持牌坦桑尼亚公司'),

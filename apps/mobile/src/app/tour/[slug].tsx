@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
@@ -26,7 +26,8 @@ import { photoSource } from '@/lib/photos';
 import { Avatar, Badge, BottomBar, Button, Card, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
 import { TourCard } from '@/components/cards';
 import TourMap from '@/components/tour-map';
-import { getTourGuides, getTourStops, listSavedTourIds, listTours, setTourSaved, type Guide } from '@/lib/api';
+import { AltitudeChart, DayExtras, GoodToKnowCard, PlaceCard } from '@/components/tour-extras';
+import { getTourGuides, getTourStops, listPlaces, listSavedTourIds, listTours, setTourSaved, type Guide } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { languageName, specialtyName } from '@/lib/labels';
@@ -51,7 +52,12 @@ export default function TourScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['saved-tours'] }),
   });
   const kinds = useMemo(() => Object.fromEntries(STOP_KINDS.map((k) => [k.id, k[locale]])), [locale]);
-  const mapLabels = useMemo(() => ({ day: tt.dayLabel, kinds }), [tt.dayLabel, kinds]);
+  const mapLabels = useMemo(() => ({ day: tt.dayLabel, kinds, altitude: tt.altitude, view3d: tt.view3d, view2d: tt.view2d }), [tt, kinds]);
+  const allPlaces = useQuery({ queryKey: ['places'], queryFn: listPlaces });
+  const [focus, setFocus] = useState<string>();
+
+  const placeIds = [...new Set((stops.data ?? []).map((s) => s.place_id).filter(Boolean))];
+  const places = placeIds.map((id) => allPlaces.data?.find((p) => p.id === id)).filter((p) => p != null);
 
   if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} empty emptyText={tt.empty} />;
   const title = tourTitle(tour, locale);
@@ -155,13 +161,16 @@ export default function TourScreen() {
           {(stops.data?.length ?? 0) > 0 && (
             <Card>
               <SectionTitle>{tt.map}</SectionTitle>
-              <View style={{ height: 280, borderRadius: radius.card, overflow: 'hidden', borderCurve: 'continuous' }}>
-                <TourMap stops={stops.data!} labels={mapLabels} dom={{ scrollEnabled: false, style: { height: 280 }, matchContents: false }} />
+              <Muted>{tt.mapHelp}</Muted>
+              <View style={{ height: 300, borderRadius: radius.card, overflow: 'hidden', borderCurve: 'continuous' }}>
+                <TourMap stops={stops.data!} labels={mapLabels} focus={focus} dom={{ scrollEnabled: false, style: { height: 300 }, matchContents: false }} />
               </View>
-              <StopList stops={stops.data!} kinds={kinds} />
+              <StopList stops={stops.data!} kinds={kinds} onFocus={(position) => setFocus(`${position}-${Date.now()}`)} />
               <Muted>{tt.mapNote}</Muted>
             </Card>
           )}
+
+          <AltitudeChart stops={stops.data ?? []} />
 
           <Card>
             <SectionTitle>{tt.itinerary}</SectionTitle>
@@ -175,6 +184,7 @@ export default function TourScreen() {
                   <View style={{ flex: 1, gap: space.xxs }}>
                     <Text style={{ fontWeight: '700', color: colors.label }}>{day.title}</Text>
                     <Muted>{day.body}</Muted>
+                    <DayExtras day={day} stops={stops.data ?? []} />
                     {dayStops.length > 0 && (
                       <Text style={{ color: brand.forest, fontSize: textSize.caption, fontWeight: '700' }}>{dayStops.map((s) => `${s.position}. ${s.name}`).join('  ·  ')}</Text>
                     )}
@@ -183,6 +193,13 @@ export default function TourScreen() {
               );
             })}
           </Card>
+
+          {places.length > 0 && (
+            <View style={{ gap: space.md }}>
+              <SectionTitle>{tt.aboutPlaces}</SectionTitle>
+              {places.map((place) => <PlaceCard key={place.id} place={place} />)}
+            </View>
+          )}
 
           <Card>
             <SectionTitle>{tt.includes}</SectionTitle>
@@ -218,6 +235,8 @@ export default function TourScreen() {
               ))}
             </Card>
           )}
+
+          <GoodToKnowCard items={tour.good_to_know} />
 
           {(team.data?.guides.length ?? 0) > 0 && (
             <Card>
@@ -257,7 +276,7 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
 
 // Numbered stops with the leg from the previous stop: a checked distance and time, or only the
 // straight-line distance, clearly labelled.
-function StopList({ stops, kinds }: { stops: TourStop[]; kinds: Record<string, string> }) {
+function StopList({ stops, kinds, onFocus }: { stops: TourStop[]; kinds: Record<string, string>; onFocus: (position: number) => void }) {
   const { t, locale } = useI18n();
   const tt = t.tours;
   return (
@@ -267,14 +286,14 @@ function StopList({ stops, kinds }: { stops: TourStop[]; kinds: Record<string, s
         const crow = previous ? Math.round(straightLineKm({ lat: Number(previous.lat), lng: Number(previous.lng) }, { lat: Number(stop.lat), lng: Number(stop.lng) })) : 0;
         const checked = stop.distance_km || stop.transfer_hours;
         return (
-          <View key={stop.id} style={{ flexDirection: 'row', gap: space.md }}>
+          <Pressable key={stop.id} onPress={() => onFocus(stop.position)} accessibilityRole="button" accessibilityLabel={stop.name} style={{ flexDirection: 'row', gap: space.md }}>
             <View style={{ width: 26, height: 26, borderRadius: radius.chip, backgroundColor: stop.kind === 'peak' ? brand.gold : brand.leaf, alignItems: 'center', justifyContent: 'center' }}>
               <Text style={{ color: stop.kind === 'peak' ? brand.ink : brand.onDark, fontWeight: '800', fontSize: textSize.caption }}>{stop.position}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: colors.label, fontWeight: '700' }}>
                 {stop.name}
-                <Text style={{ color: colors.secondaryLabel, fontWeight: '400' }}> · {kinds[stop.kind]}{stop.day ? ` · ${tt.dayLabel} ${stop.day}` : ''}</Text>
+                <Text style={{ color: colors.secondaryLabel, fontWeight: '400' }}> · {kinds[stop.kind]}{stop.day ? ` · ${tt.dayLabel} ${stop.day}` : ''}{stop.elevation_m != null ? ` · ≈ ${stop.elevation_m.toLocaleString('en-US')} m` : ''}</Text>
               </Text>
               {previous && crow > 0 && (
                 <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>
@@ -284,7 +303,7 @@ function StopList({ stops, kinds }: { stops: TourStop[]; kinds: Record<string, s
                 </Text>
               )}
             </View>
-          </View>
+          </Pressable>
         );
       })}
     </View>

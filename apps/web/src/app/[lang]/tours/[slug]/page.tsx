@@ -39,7 +39,7 @@ import {
 } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
-import { getTourGuides, getTourStops, getTripForViewer, listTours, savedTourIds, tripSummary, tripTitle, type Trip } from '@/lib/trips';
+import { getTourGuides, getTourStops, getTripForViewer, listTours, placesForStops, savedTourIds, tripSummary, tripTitle, type Trip } from '@/lib/trips';
 import type { Guide } from '@/lib/guides';
 import { today } from '@/lib/today';
 import { TourTypeBadge, TripCard, TripCover, durationText, tourCoverUrl } from '@/components/trip-card';
@@ -47,6 +47,7 @@ import { GuideAvatar, languageName, specialtyName } from '@/components/guide-car
 import { RatingSummary } from '@/components/stars';
 import { TourMap } from '@/components/tour-map';
 import { OperatorLogo } from '@/components/operator-logo';
+import { AltitudeProfile, DayDetails, GoodToKnow, PlaceGuides } from '@/components/tour-extras';
 import { TrackView } from '@/components/recently-viewed';
 import { ShareButtons } from '@/components/share-buttons';
 import { enquireTrip, toggleSavedTour } from './actions';
@@ -83,6 +84,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
   const trip = await getTripForViewer(slug);
   if (!trip) notFound();
   const [status, stops, team, saved, now] = await Promise.all([searchParams, getTourStops(trip), getTourGuides(trip.id, trip.categories), savedTourIds(), today()]);
+  const places = await placesForStops(stops);
   const tt = t.tours;
   const title = tripTitle(trip, locale);
   const operator = trip.tour_operators;
@@ -155,12 +157,15 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
             <section id="map" className="scroll-mt-28">
               <h2 className="flex items-center gap-2 text-xl font-bold"><Route className="size-5 text-leaf-dark" aria-hidden /> {tt.map}</h2>
               <div className="mt-4">
-                <TourMap stops={stops} labels={{ day: tt.dayLabel, kinds }} title={`${tt.map}: ${title}`} />
+                <TourMap stops={stops} labels={{ day: tt.dayLabel, kinds, altitude: tt.altitude, view3d: tt.view3d, view2d: tt.view2d }} title={`${tt.map}: ${title}`} />
               </div>
+              <p className="mt-2 text-xs text-muted">{tt.mapHelp}</p>
               <StopList stops={stops} t={t} locale={locale} kinds={kinds} />
               <p className="mt-3 text-xs text-muted">{tt.mapNote}</p>
             </section>
           )}
+
+          <AltitudeProfile stops={stops} t={t} />
 
           <section>
             <h2 className="text-xl font-bold">{tt.itinerary}</h2>
@@ -174,12 +179,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
                   <div className="pt-1.5">
                     <h3 className="font-bold">{d.title}</h3>
                     <p className="mt-1 text-sm text-muted">{d.body}</p>
-                    <DayStops stops={stops.filter((s) => String(s.day) === String(d.day))} kinds={kinds} />
+                    <DayDetails day={d} stops={stops} t={t} />
                   </div>
                 </li>
               ))}
             </ol>
           </section>
+
+          <PlaceGuides places={places} t={t} locale={locale} />
 
           <section className="grid gap-6 sm:grid-cols-2">
             <div>
@@ -223,6 +230,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
               </div>
             )}
           </section>
+
+          <GoodToKnow items={trip.good_to_know} t={t} />
 
           <MeetGuides guides={team.guides} assigned={team.assigned} t={t} locale={locale} />
 
@@ -361,12 +370,13 @@ function StopList({ stops, t, locale, kinds }: { stops: TourStop[]; t: Dictionar
         const crow = previous ? Math.round(straightLineKm({ lat: Number(previous.lat), lng: Number(previous.lng) }, { lat: Number(stop.lat), lng: Number(stop.lng) })) : 0;
         return (
           <li key={stop.id} className="flex gap-3 p-3 text-sm">
-            <span className={`flex size-7 shrink-0 items-center justify-center rounded-[5px] text-xs font-extrabold ${stop.kind === 'peak' ? 'bg-gold text-charcoal' : 'bg-leaf text-white'}`}>
+            <button type="button" data-map-stop={stop.position} aria-label={stop.name} className={`flex size-7 shrink-0 items-center justify-center rounded-[5px] text-xs font-extrabold ${stop.kind === 'peak' ? 'bg-gold text-charcoal' : 'bg-leaf text-white'}`}>
               {stop.position}
-            </span>
+            </button>
             <div className="min-w-0 flex-1">
               <p className="font-semibold">
-                {stop.name} <span className="font-normal text-muted">· {kinds[stop.kind]}{stop.day ? ` · ${tt.dayLabel} ${stop.day}` : ''}</span>
+                <button type="button" data-map-stop={stop.position} className="text-left hover:text-leaf-dark hover:underline">{stop.name}</button>{' '}
+                <span className="font-normal text-muted">· {kinds[stop.kind]}{stop.day ? ` · ${tt.dayLabel} ${stop.day}` : ''}{stop.elevation_m != null ? ` · ≈ ${stop.elevation_m.toLocaleString('en-US')} m` : ''}</span>
               </p>
               {previous && crow > 0 && (
                 <p className="mt-0.5 text-xs text-muted">
@@ -388,19 +398,6 @@ function StopList({ stops, t, locale, kinds }: { stops: TourStop[]; t: Dictionar
         );
       })}
     </ol>
-  );
-}
-
-function DayStops({ stops, kinds }: { stops: TourStop[]; kinds: Record<string, string> }) {
-  if (stops.length === 0) return null;
-  return (
-    <p className="mt-2 flex flex-wrap gap-1.5">
-      {stops.map((s) => (
-        <a key={s.id} href="#map" className="inline-flex items-center gap-1 rounded-[5px] bg-mint px-2 py-0.5 text-xs font-semibold text-forest hover:underline" title={kinds[s.kind]}>
-          <MapPin className="size-3" aria-hidden /> {s.position}. {s.name}
-        </a>
-      ))}
-    </p>
   );
 }
 

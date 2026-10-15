@@ -45,22 +45,22 @@ from (values
 
   ('serengeti-ngorongoro-4-days', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
   ('serengeti-ngorongoro-4-days', 2, 1, 'Central Serengeti (Seronera)', 'park', -2.4333, 34.8167),
-  ('serengeti-ngorongoro-4-days', 3, 3, 'Ngorongoro Crater rim', 'lodge', -3.2400, 35.5300),
-  ('serengeti-ngorongoro-4-days', 4, 4, 'Ngorongoro Crater', 'park', -3.1800, 35.5800),
+  ('serengeti-ngorongoro-4-days', 3, 3, 'Ngorongoro Crater rim', 'lodge', -3.2600, 35.5800),
+  ('serengeti-ngorongoro-4-days', 4, 4, 'Ngorongoro Crater', 'park', -3.1750, 35.5650),
   ('serengeti-ngorongoro-4-days', 5, 4, 'Arusha', 'town', -3.3869, 36.6830),
 
   ('northern-circuit-7-days', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
   ('northern-circuit-7-days', 2, 1, 'Tarangire National Park', 'park', -3.9500, 36.0500),
   ('northern-circuit-7-days', 3, 2, 'Lake Manyara National Park', 'park', -3.5500, 35.8000),
   ('northern-circuit-7-days', 4, 3, 'Central Serengeti (Seronera)', 'park', -2.4333, 34.8167),
-  ('northern-circuit-7-days', 5, 6, 'Ngorongoro Crater rim', 'lodge', -3.2400, 35.5300),
-  ('northern-circuit-7-days', 6, 7, 'Ngorongoro Crater', 'park', -3.1800, 35.5800),
+  ('northern-circuit-7-days', 5, 6, 'Ngorongoro Crater rim', 'lodge', -3.2600, 35.5800),
+  ('northern-circuit-7-days', 6, 7, 'Ngorongoro Crater', 'park', -3.1750, 35.5650),
   ('northern-circuit-7-days', 7, 7, 'Arusha', 'town', -3.3869, 36.6830),
 
   ('migration-calving-safari-6-days', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
-  ('migration-calving-safari-6-days', 2, 1, 'Ngorongoro highlands', 'lodge', -3.2400, 35.5300),
+  ('migration-calving-safari-6-days', 2, 1, 'Ngorongoro highlands', 'lodge', -3.2600, 35.5800),
   ('migration-calving-safari-6-days', 3, 2, 'Ndutu plains', 'park', -3.0000, 34.9900),
-  ('migration-calving-safari-6-days', 4, 5, 'Ngorongoro Crater', 'park', -3.1800, 35.5800),
+  ('migration-calving-safari-6-days', 4, 5, 'Ngorongoro Crater', 'park', -3.1750, 35.5650),
   ('migration-calving-safari-6-days', 5, 6, 'Arusha', 'town', -3.3869, 36.6830),
 
   ('arusha-national-park-day', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
@@ -98,7 +98,7 @@ from (values
   ('mount-meru-4-days', 1, 1, 'Momella Gate', 'gate', -3.2200, 36.8700),
   ('mount-meru-4-days', 2, 1, 'Miriakamba Hut', 'camp', -3.2330, 36.8000),
   ('mount-meru-4-days', 3, 2, 'Saddle Hut', 'camp', -3.2400, 36.7700),
-  ('mount-meru-4-days', 4, 3, 'Socialist Peak', 'peak', -3.2465, 36.7480),
+  ('mount-meru-4-days', 4, 3, 'Socialist Peak', 'peak', -3.2445, 36.7500),
   ('mount-meru-4-days', 5, 4, 'Momella Gate', 'gate', -3.2200, 36.8700),
 
   ('ol-doinyo-lengai-natron-3-days', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
@@ -132,7 +132,7 @@ from (values
   ('mikumi-2-days', 3, 2, 'Dar es Salaam', 'town', -6.7924, 39.2083),
 
   ('mahale-chimpanzees-5-days', 1, 1, 'Arusha', 'airport', -3.3677, 36.6334),
-  ('mahale-chimpanzees-5-days', 2, 1, 'Mahale Mountains National Park', 'park', -6.1000, 29.8000),
+  ('mahale-chimpanzees-5-days', 2, 1, 'Mahale Mountains National Park', 'park', -6.1000, 29.7400),
 
   ('zanzibar-stone-town-spice', 1, 1, 'Stone Town', 'cultural', -6.1630, 39.1890),
   ('zanzibar-stone-town-spice', 2, 1, 'Spice farm', 'activity', -6.1000, 39.2500),
@@ -154,13 +154,13 @@ from (values
   ('kili-safari-zanzibar-15-days', 2, 2, 'Kilimanjaro (Uhuru Peak)', 'peak', -3.0758, 37.3533),
   ('kili-safari-zanzibar-15-days', 3, 9, 'Arusha', 'town', -3.3869, 36.6830),
   ('kili-safari-zanzibar-15-days', 4, 10, 'Central Serengeti (Seronera)', 'park', -2.4333, 34.8167),
-  ('kili-safari-zanzibar-15-days', 5, 13, 'Ngorongoro Crater', 'park', -3.1800, 35.5800),
+  ('kili-safari-zanzibar-15-days', 5, 13, 'Ngorongoro Crater', 'park', -3.1750, 35.5650),
   ('kili-safari-zanzibar-15-days', 6, 14, 'Stone Town', 'cultural', -6.1630, 39.1890),
 
   ('safari-zanzibar-9-days', 1, 1, 'Arusha', 'town', -3.3869, 36.6830),
   ('safari-zanzibar-9-days', 2, 1, 'Tarangire National Park', 'park', -3.9500, 36.0500),
   ('safari-zanzibar-9-days', 3, 2, 'Central Serengeti (Seronera)', 'park', -2.4333, 34.8167),
-  ('safari-zanzibar-9-days', 4, 5, 'Ngorongoro Crater', 'park', -3.1800, 35.5800),
+  ('safari-zanzibar-9-days', 4, 5, 'Ngorongoro Crater', 'park', -3.1750, 35.5650),
   ('safari-zanzibar-9-days', 5, 6, 'Zanzibar airport', 'airport', -6.2220, 39.2249),
   ('safari-zanzibar-9-days', 6, 7, 'Zanzibar beaches', 'beach', -5.8700, 39.3600),
 

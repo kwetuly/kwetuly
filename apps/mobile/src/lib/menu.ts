@@ -14,6 +14,8 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
       return { pathname: '/trips', params: { ...params, view: 'tours' } };
     case '/operators':
       return '/operators';
+    case '/places':
+      return '/places';
     case '/group-trips':
       return '/trips';
     case '/group-trips/new':

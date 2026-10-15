@@ -14,6 +14,7 @@ import {
   TRIP_KINDS,
   TRANSFER_MODES,
   tourReadiness,
+  type Meal,
   type Tour,
 } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
@@ -126,7 +127,16 @@ export async function saveTour(formData: FormData) {
   for (let i = 0; i < 60; i++) {
     const dayTitle = r.text(`it_title_${i}`, 140);
     if (!dayTitle) continue;
-    itinerary.push({ day: r.int(`it_day_${i}`, 1, 40) ?? itinerary.length + 1, title: dayTitle, body: r.text(`it_body_${i}`, 1500) });
+    const meals = r.all(`it_meals_${i}`).filter((m): m is Meal => m === 'B' || m === 'L' || m === 'D');
+    const activities = r.text(`it_activities_${i}`, 300).split(',').map((a) => a.trim()).filter(Boolean).slice(0, 10);
+    itinerary.push({
+      day: r.int(`it_day_${i}`, 1, 40) ?? itinerary.length + 1,
+      title: dayTitle,
+      body: r.text(`it_body_${i}`, 1500),
+      ...(r.text(`it_overnight_${i}`, 120) && { overnight: r.text(`it_overnight_${i}`, 120) }),
+      ...(meals.length > 0 && { meals }),
+      ...(activities.length > 0 && { activities }),
+    });
   }
   itinerary.sort((a, b) => Number(a.day) - Number(b.day));
 
@@ -161,6 +171,8 @@ export async function saveTour(formData: FormData) {
       distance_km: distance,
       transfer_hours: hours,
       distance_source: distance != null || hours != null ? source : null,
+      place_id: /^[0-9a-f-]{36}$/.test(r.text(`st_place_${i}`, 40)) ? r.text(`st_place_${i}`, 40) : null,
+      elevation_m: r.int(`st_elev_${i}`, -200, 6000),
     });
   }
   stops.sort((a, b) => Number(a.order) - Number(b.order));
@@ -201,6 +213,7 @@ export async function saveTour(formData: FormData) {
     best_time_note: r.nullable('best_time_note', 400),
     fitness: oneOf(r.text('fitness', 20), idsOf(FITNESS_LEVELS)),
     packing: r.lines('packing', 25, 160),
+    good_to_know: r.lines('good_to_know', 15, 300),
     cover_url: cover,
     source_url: sourceUrl,
     source_checked_at: sourceUrl ? sourceChecked : null,

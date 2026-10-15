@@ -99,6 +99,9 @@ export type TourStop = {
   distance_km: number | null;
   transfer_hours: number | null;
   distance_source: string | null;
+  place_id: string | null;
+  /** Approximate, read from open terrain data. */
+  elevation_m: number | null;
 };
 
 export type TourOperatorSummary = { id: string; slug: string; name: string; logo_url: string | null; location: string | null; verified_at: string | null };
@@ -122,7 +125,7 @@ export type Tour = {
   end_at: string | null;
   destinations: string[];
   highlights: string[];
-  itinerary: { day: number | string; title: string; body: string }[];
+  itinerary: ItineraryDay[];
   accommodation: AccommodationId | null;
   group_type: TourGroupTypeId | null;
   min_group: number | null;
@@ -138,6 +141,7 @@ export type Tour = {
   best_time_note: string | null;
   fitness: FitnessId | null;
   packing: string[];
+  good_to_know: string[];
   cover_url: string | null;
   source_url: string | null;
   source_checked_at: string | null;
@@ -151,9 +155,73 @@ export type Tour = {
 };
 
 export const TOUR_COLUMNS =
-  'id, slug, title_en, title_sw, summary_en, summary_sw, tour_type, is_signature, circuit, kind, categories, travel_styles, days, nights, start_from, end_at, destinations, highlights, itinerary, accommodation, group_type, min_group, max_group, price_from, price_currency, price_conditions, price_verified_at, price_valid_until, includes, excludes, best_months, best_time_note, fitness, packing, cover_url, source_url, source_checked_at, needs_review, operated_by, operator_id, promo_text, status, updated_at, tour_operators(id, slug, name, logo_url, location, verified_at)';
+  'id, slug, title_en, title_sw, summary_en, summary_sw, tour_type, is_signature, circuit, kind, categories, travel_styles, days, nights, start_from, end_at, destinations, highlights, itinerary, accommodation, group_type, min_group, max_group, price_from, price_currency, price_conditions, price_verified_at, price_valid_until, includes, excludes, best_months, best_time_note, fitness, packing, good_to_know, cover_url, source_url, source_checked_at, needs_review, operated_by, operator_id, promo_text, status, updated_at, tour_operators(id, slug, name, logo_url, location, verified_at)';
 
-export const STOP_COLUMNS = 'id, position, day, name, kind, lat, lng, note, transfer_mode, distance_km, transfer_hours, distance_source';
+export const STOP_COLUMNS = 'id, position, day, name, kind, lat, lng, note, transfer_mode, distance_km, transfer_hours, distance_source, place_id, elevation_m';
+
+export type Meal = 'B' | 'L' | 'D';
+/** One day of a tour. Overnight, meals and activities are optional extra detail. */
+export type ItineraryDay = { day: number | string; title: string; body: string; overnight?: string; meals?: Meal[]; activities?: string[] };
+
+// ---------------------------------------------------------------------------
+// Places: short guides to the parks, sites and villages tours visit.
+// ---------------------------------------------------------------------------
+export const PLACE_KINDS = [
+  { id: 'national_park', ...L('National park', 'Hifadhi ya Taifa', 'Parc national', 'Parco nazionale', 'Nationalpark', 'Park narodowy', '国家公园') },
+  { id: 'conservation_area', ...L('Conservation area', 'Eneo la Hifadhi', 'Aire de conservation', 'Area di conservazione', 'Schutzgebiet', 'Obszar chroniony', '保护区') },
+  { id: 'game_reserve', ...L('Game reserve', 'Pori la Akiba', 'Réserve de faune', 'Riserva faunistica', 'Wildreservat', 'Rezerwat', '野生动物保护区') },
+  { id: 'heritage_site', ...L('Heritage site', 'Eneo la urithi', 'Site patrimonial', 'Sito storico', 'Kulturerbe', 'Miejsce dziedzictwa', '遗产地') },
+  { id: 'lake', ...L('Lake', 'Ziwa', 'Lac', 'Lago', 'See', 'Jezioro', '湖泊') },
+  { id: 'mountain', ...L('Mountain', 'Mlima', 'Montagne', 'Montagna', 'Berg', 'Góra', '山') },
+  { id: 'island', ...L('Island', 'Kisiwa', 'Île', 'Isola', 'Insel', 'Wyspa', '岛屿') },
+  { id: 'town', ...L('Town', 'Mji', 'Ville', 'Città', 'Stadt', 'Miasto', '城镇') },
+  { id: 'village', ...L('Village', 'Kijiji', 'Village', 'Villaggio', 'Dorf', 'Wieś', '村庄') },
+  { id: 'marine_area', ...L('Marine area', 'Eneo la bahari', 'Zone marine', 'Area marina', 'Meeresgebiet', 'Obszar morski', '海洋区') },
+] as const;
+export type PlaceKindId = (typeof PLACE_KINDS)[number]['id'];
+
+export type Place = {
+  id: string;
+  slug: string;
+  name: string;
+  kind: PlaceKindId;
+  region: string | null;
+  summary: string;
+  known_for: string[];
+  wildlife: string[];
+  activities: string[];
+  area_km2: number | null;
+  established: number | null;
+  unesco_year: number | null;
+  highest_point: string | null;
+  managed_by: string | null;
+  lat: number | null;
+  lng: number | null;
+  source_name: string | null;
+  source_url: string | null;
+  source_checked_at: string | null;
+  status: 'draft' | 'published' | 'archived';
+};
+
+export const PLACE_COLUMNS =
+  'id, slug, name, kind, region, summary, known_for, wildlife, activities, area_km2, established, unesco_year, highest_point, managed_by, lat, lng, source_name, source_url, source_checked_at, status';
+
+/** Where travellers sleep on a day: the itinerary's own note, else the day's last camp or lodge stop. */
+export function overnightFor(day: ItineraryDay, stops: TourStop[]): string | null {
+  if (day.overnight) return day.overnight;
+  const camps = stops.filter((s) => String(s.day) === String(day.day) && (s.kind === 'camp' || s.kind === 'lodge'));
+  return camps.at(-1)?.name ?? null;
+}
+
+/** Altitude profile for tours that climb (at least 800 m between lowest and highest stop). */
+export function altitudeProfile(stops: TourStop[]): { stops: (TourStop & { elevation_m: number })[]; min: number; max: number } | null {
+  const withHeight = stops.filter((s): s is TourStop & { elevation_m: number } => s.elevation_m != null);
+  if (withHeight.length < 3) return null;
+  const heights = withHeight.map((s) => s.elevation_m);
+  const min = Math.min(...heights);
+  const max = Math.max(...heights);
+  return max - min >= 800 ? { stops: withHeight, min, max } : null;
+}
 
 export const tourTitle = (tour: Pick<Tour, 'title_en' | 'title_sw'>, locale: Locale) => (locale === 'sw' && tour.title_sw) || tour.title_en;
 export const tourSummary = (tour: Pick<Tour, 'summary_en' | 'summary_sw'>, locale: Locale) => (locale === 'sw' && tour.summary_sw) || tour.summary_en;

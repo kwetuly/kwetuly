@@ -26,7 +26,8 @@ export default async function AdminToursPage({ searchParams }: PageProps<'/[lang
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-bold">Tours</h1>
         <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">← Guides & jobs</Link>
-        <Link href={`/${locale}/admin/operators`} className="btn-outline ml-auto px-4 py-2 text-sm">Tour operators →</Link>
+        <Link href={`/${locale}/admin/places`} className="btn-outline ml-auto px-4 py-2 text-sm">Place guides →</Link>
+        <Link href={`/${locale}/admin/operators`} className="btn-outline px-4 py-2 text-sm">Tour operators →</Link>
         <Link href={`/${locale}/admin/trips/new`} className="btn px-4 py-2 text-sm">New tour</Link>
       </div>
       <p className="mt-2 max-w-3xl text-sm text-muted">

@@ -1,7 +1,7 @@
 // Data access for the app. Everything goes through Supabase with the signed-in user's session,
 // so row-level security decides what each person can see and do (exactly as on the website).
 import { randomUUID } from 'expo-crypto';
-import { STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Tour as SharedTour, type TourStop } from '@rafrika/shared';
+import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Place, type Tour as SharedTour, type TourStop } from '@rafrika/shared';
 import { supabase } from './supabase';
 
 export type Guide = {
@@ -404,4 +404,21 @@ export async function listCallGuides(topic?: string): Promise<Guide[]> {
   let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('plan', { ascending: false }).limit(60);
   if (topic) query = query.contains('call_topics', [topic]);
   return must(await query) as unknown as Guide[];
+}
+
+// ---------------------------------------------------------------------------
+// Places: guides to the parks and sites tours visit
+// ---------------------------------------------------------------------------
+export async function listPlaces(): Promise<Place[]> {
+  return must(await supabase.from('places').select(PLACE_COLUMNS).eq('status', 'published').order('name')) as Place[];
+}
+
+export async function getPlace(slug: string): Promise<Place | null> {
+  return must(await supabase.from('places').select(PLACE_COLUMNS).eq('slug', slug).maybeSingle()) as Place | null;
+}
+
+/** Ids of the published tours with a stop at this place. */
+export async function tourIdsVisiting(placeId: string): Promise<string[]> {
+  const rows = must(await supabase.from('trip_stops').select('trip_id').eq('place_id', placeId)) as { trip_id: string }[];
+  return [...new Set(rows.map((r) => r.trip_id))];
 }

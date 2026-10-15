@@ -2,27 +2,34 @@
 
 import { useEffect, useRef } from 'react';
 import type { DOMProps } from 'expo/dom';
-import 'leaflet/dist/leaflet.css';
-import { DEFAULT_TILE_URL, drawTourMap, type TourMapLabels, type TourStop } from '@rafrika/shared';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import { drawTourMap, type TourMapHandle, type TourMapLabels, type TourStop } from '@rafrika/shared';
 
-// The website's Leaflet route map, run inside a web view (Expo DOM component), so the app shows
-// exactly the same map: numbered stops, the route line and tap-for-details popups.
-export default function TourMap({ stops, labels }: { stops: TourStop[]; labels: TourMapLabels; dom?: DOMProps }) {
+// The website's MapLibre route map (OpenFreeMap, relief shading and a 3D view), run inside a web
+// view (Expo DOM component) so the app shows exactly the same map.
+export default function TourMap({ stops, labels, focus }: { stops: TourStop[]; labels: TourMapLabels; focus?: string; dom?: DOMProps }) {
   const ref = useRef<HTMLDivElement>(null);
+  const handle = useRef<TourMapHandle | undefined>(undefined);
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
     let cancelled = false;
-    // Leaflet needs `window`, so it loads in the web view, never during server rendering.
-    import('leaflet').then((L) => {
-      if (cancelled || !ref.current) return;
-      cleanup = drawTourMap(L.default ?? L, ref.current, stops, labels, process.env.EXPO_PUBLIC_MAP_TILE_URL || DEFAULT_TILE_URL);
-    });
+    // MapLibre needs `window`, so it loads in the web view, never during server rendering.
+    import('maplibre-gl')
+      .then((ml) => {
+        if (cancelled || !ref.current) return;
+        handle.current = drawTourMap(ml, ref.current, stops, labels);
+      })
+      .catch((error) => console.error('Tour map failed to load', error));
     return () => {
       cancelled = true;
-      cleanup?.();
+      handle.current?.destroy();
     };
   }, [stops, labels]);
+
+  // The app can move the map to a stop (e.g. when a stop in the list is tapped): "<position>-<tap id>".
+  useEffect(() => {
+    if (focus) handle.current?.focus(Number(focus.split('-')[0]));
+  }, [focus]);
 
   return <div ref={ref} style={{ position: 'absolute', inset: 0, background: '#eeece7' }} />;
 }

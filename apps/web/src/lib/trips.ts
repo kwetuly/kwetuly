@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
-import { STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tourSummary, tourTitle, type Tour, type TourStop } from '@rafrika/shared';
+import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tourSummary, tourTitle, type Place, type Tour, type TourStop } from '@rafrika/shared';
 import { GUIDE_COLUMNS, type Guide } from './guides';
 import { createClient } from './supabase/server';
 
@@ -165,4 +165,43 @@ export async function getOperatorForViewer(slug: string): Promise<TourOperator |
   const supabase = await createClient();
   const { data } = await supabase.from('tour_operators').select(OPERATOR_COLUMNS).eq('slug', slug).maybeSingle();
   return (data as TourOperator | null) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Places: guides to the parks and sites tours visit
+// ---------------------------------------------------------------------------
+export async function listPlaces(): Promise<Place[]> {
+  'use cache';
+  cacheTag('places');
+  cacheLife('minutes');
+
+  const { data } = await publicClient().from('places').select(PLACE_COLUMNS).eq('status', 'published').order('name');
+  return (data ?? []) as Place[];
+}
+
+/** The place guides linked to a tour's stops, in route order. */
+export async function placesForStops(stops: Pick<TourStop, 'place_id'>[]): Promise<Place[]> {
+  const ids = [...new Set(stops.map((s) => s.place_id).filter((id): id is string => !!id))];
+  if (ids.length === 0) return [];
+  const all = await listPlaces();
+  return ids.map((id) => all.find((p) => p.id === id)).filter((p): p is Place => !!p);
+}
+
+export async function getPlaceForViewer(slug: string): Promise<Place | null> {
+  const published = (await listPlaces()).find((p) => p.slug === slug);
+  if (published) return published;
+  const supabase = await createClient();
+  const { data } = await supabase.from('places').select(PLACE_COLUMNS).eq('slug', slug).maybeSingle();
+  return (data as Place | null) ?? null;
+}
+
+/** Published tours with a stop at this place. */
+export async function toursVisiting(placeId: string): Promise<Tour[]> {
+  'use cache';
+  cacheTag('trips', 'places');
+  cacheLife('minutes');
+
+  const { data } = await publicClient().from('trip_stops').select('trip_id').eq('place_id', placeId);
+  const ids = new Set((data ?? []).map((row) => row.trip_id as string));
+  return (await listTours()).filter((tour) => ids.has(tour.id));
 }

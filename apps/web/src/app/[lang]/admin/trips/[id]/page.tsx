@@ -74,13 +74,14 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
   const isNew = id === 'new';
   const supabase = await createClient();
 
-  const [tourRes, stopsRes, partnerRes, chosenRes, guidesRes, operatorsRes] = await Promise.all([
+  const [tourRes, stopsRes, partnerRes, chosenRes, guidesRes, operatorsRes, placesRes] = await Promise.all([
     isNew ? null : supabase.from('trips').select(`${TOUR_COLUMNS}, sort_order`).eq('id', id).maybeSingle(),
     isNew ? null : supabase.from('trip_stops').select(STOP_COLUMNS).eq('trip_id', id).order('position'),
     isNew ? null : supabase.from('trip_partners').select('company_name, tala_licence, contact, commission_note, verification_note').eq('trip_id', id).maybeSingle(),
     isNew ? null : supabase.from('trip_guides').select('guide_id').eq('trip_id', id).order('position'),
     supabase.from('guides').select('id, display_name, specialties, base_region').eq('verification_status', 'approved').order('display_name').limit(300),
     supabase.from('tour_operators').select('id, name, status, verified_at').order('name'),
+    supabase.from('places').select('id, name').order('name'),
   ]);
   if (!isNew && !tourRes?.data) notFound();
 
@@ -90,6 +91,7 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
   const chosen = new Set((chosenRes?.data ?? []).map((row) => row.guide_id as string));
   const guides = (guidesRes.data ?? []) as GuideOption[];
   const operators = (operatorsRes.data ?? []) as { id: string; name: string; status: string; verified_at: string | null }[];
+  const places = (placesRes.data ?? []) as { id: string; name: string }[];
   const readiness = isNew ? [] : tourReadiness(tour, { stops: stops.length, guides: chosen.size });
 
   const itineraryRows = [...tour.itinerary, ...Array.from({ length: 3 }, () => null)];
@@ -203,6 +205,7 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
             <Field label="Not included (one per line)"><textarea name="excludes" defaultValue={lines(tour.excludes)} className="field min-h-28" /></Field>
           </Grid>
           <Field label="Packing suggestions (one per line)"><textarea name="packing" defaultValue={lines(tour.packing)} className="field min-h-24" /></Field>
+          <Field label="Good to know (one per line: visas, health, permits, customs; no prices)"><textarea name="good_to_know" defaultValue={lines(tour.good_to_know)} className="field min-h-24" /></Field>
         </Box>
 
         <Box title="Price">
@@ -259,6 +262,16 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
               <input name={`it_day_${i}`} type="number" min={1} max={40} defaultValue={day ? Number(day.day) || '' : ''} placeholder="Day" aria-label="Day" className="field py-2" />
               <input name={`it_title_${i}`} maxLength={140} defaultValue={day?.title ?? ''} placeholder="Title" aria-label="Title" className="field py-2" />
               <textarea name={`it_body_${i}`} maxLength={1500} defaultValue={day?.body ?? ''} placeholder="What happens this day" aria-label="Description" className="field min-h-16 sm:col-span-2" />
+              <input name={`it_overnight_${i}`} maxLength={120} defaultValue={day?.overnight ?? ''} placeholder="Overnight (camp, lodge or town; leave empty to use the day's camp stop)" aria-label="Overnight" className="field py-2 sm:col-span-2" />
+              <input name={`it_activities_${i}`} maxLength={300} defaultValue={(day?.activities ?? []).join(', ')} placeholder="Activities, separated by commas" aria-label="Activities" className="field py-2 sm:col-span-2" />
+              <div className="flex flex-wrap gap-4 text-sm sm:col-span-2">
+                <span className="font-semibold">Meals included:</span>
+                {(['B', 'L', 'D'] as const).map((m) => (
+                  <label key={m} className="flex items-center gap-1.5">
+                    <input type="checkbox" name={`it_meals_${i}`} value={m} defaultChecked={day?.meals?.includes(m)} className="size-4 accent-leaf" /> {{ B: 'Breakfast', L: 'Lunch', D: 'Dinner' }[m]}
+                  </label>
+                ))}
+              </div>
             </div>
           ))}
         </Box>
@@ -267,7 +280,7 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
           <p className="text-sm text-muted">
             In route order. Coordinates in decimal degrees (e.g. Arusha -3.3869, 36.6830). Distance and time are from the previous stop and need a source
             (e.g. “Driver-guide, Oct 2026” or the operator’s itinerary). Leave them empty if not checked: the page then shows only the straight-line distance.
-            Clear the name to remove a stop.
+            Link a place guide to show its facts on the tour page. Clear the name to remove a stop.
           </p>
           {stopRows.map((stop, i) => (
             <div key={i} className="grid gap-2 rounded-[5px] border border-line p-3 sm:grid-cols-6">
@@ -286,7 +299,12 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
               <input name={`st_km_${i}`} type="number" step="0.1" defaultValue={stop?.distance_km ?? ''} placeholder="km" aria-label="Distance (km)" className="field py-2" />
               <input name={`st_hours_${i}`} type="number" step="0.1" defaultValue={stop?.transfer_hours ?? ''} placeholder="hours" aria-label="Time (hours)" className="field py-2" />
               <input name={`st_source_${i}`} maxLength={300} defaultValue={stop?.distance_source ?? ''} placeholder="Source of distance/time" aria-label="Source" className="field py-2 sm:col-span-2" />
-              <input name={`st_note_${i}`} maxLength={300} defaultValue={stop?.note ?? ''} placeholder="Note (optional)" aria-label="Note" className="field py-2 sm:col-span-6" />
+              <select name={`st_place_${i}`} defaultValue={stop?.place_id ?? ''} aria-label="Place guide" className="field py-2 sm:col-span-2">
+                <option value="">No place guide</option>
+                {places.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              <input name={`st_elev_${i}`} type="number" min={-200} max={6000} defaultValue={stop?.elevation_m ?? ''} placeholder="Altitude m (approx.)" aria-label="Altitude in metres" className="field py-2" />
+              <input name={`st_note_${i}`} maxLength={300} defaultValue={stop?.note ?? ''} placeholder="Note (optional)" aria-label="Note" className="field py-2 sm:col-span-3" />
             </div>
           ))}
         </Box>
