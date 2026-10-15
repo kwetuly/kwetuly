@@ -80,6 +80,8 @@ export const packages_en = {
   about: 'About the package: {title}',
   catalogTitle: 'Packages by local guides',
   catalogBody: 'Cultural visits, day trips and one-on-one trips, offered by verified guides and checked by Rafrika.',
+  all: 'All',
+  catalogEmpty: 'No packages here yet. Check back soon.',
 };
 
 export type PackagesText = typeof packages_en;
@@ -103,6 +105,8 @@ export const packages_sw: PackagesText = {
   about: 'Kuhusu kifurushi: {title}',
   catalogTitle: 'Vifurushi vya waongozaji wa ndani',
   catalogBody: 'Ziara za kitamaduni, safari za siku moja na safari za mtu mmoja, zinazotolewa na waongozaji waliothibitishwa na kukaguliwa na Rafrika.',
+  all: 'Zote',
+  catalogEmpty: 'Bado hakuna vifurushi hapa. Rudi baadaye.',
 };
 
 export const packages_fr: PackagesText = {
@@ -124,6 +128,8 @@ export const packages_fr: PackagesText = {
   about: 'Au sujet de la formule : {title}',
   catalogTitle: 'Formules proposées par des guides locaux',
   catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides vérifiés et contrôlés par Rafrika.',
+  all: 'Toutes',
+  catalogEmpty: 'Pas encore de formule ici. Revenez bientôt.',
 };
 
 export const packages_it: PackagesText = {
@@ -145,6 +151,8 @@ export const packages_it: PackagesText = {
   about: 'Riguardo al pacchetto: {title}',
   catalogTitle: 'Pacchetti di guide locali',
   catalogBody: 'Visite culturali, gite di un giorno e viaggi individuali, offerti da guide verificate e controllati da Rafrika.',
+  all: 'Tutti',
+  catalogEmpty: 'Ancora nessun pacchetto qui. Torna presto.',
 };
 
 export const packages_de: PackagesText = {
@@ -166,6 +174,8 @@ export const packages_de: PackagesText = {
   about: 'Zum Angebot: {title}',
   catalogTitle: 'Angebote lokaler Guides',
   catalogBody: 'Kulturbesuche, Tagesausflüge und Reisen zu zweit mit dem Guide, angeboten von geprüften Guides und von Rafrika kontrolliert.',
+  all: 'Alle',
+  catalogEmpty: 'Hier gibt es noch keine Angebote. Schauen Sie bald wieder vorbei.',
 };
 
 export const packages_pl: PackagesText = {
@@ -187,6 +197,8 @@ export const packages_pl: PackagesText = {
   about: 'W sprawie pakietu: {title}',
   catalogTitle: 'Pakiety lokalnych przewodników',
   catalogBody: 'Wizyty kulturalne, wycieczki jednodniowe i wyprawy jeden na jeden, oferowane przez sprawdzonych przewodników i sprawdzone przez Rafrika.',
+  all: 'Wszystkie',
+  catalogEmpty: 'Nie ma tu jeszcze pakietów. Zajrzyj wkrótce.',
 };
 
 export const packages_zh: PackagesText = {
@@ -208,4 +220,6 @@ export const packages_zh: PackagesText = {
   about: '关于套餐：{title}',
   catalogTitle: '当地向导的套餐',
   catalogBody: '文化探访、一日游和一对一行程，由经过核实的向导提供，并经 Rafrika 审核。',
+  all: '全部',
+  catalogEmpty: '这里还没有套餐，请稍后再来看看。',
 };

@@ -1,5 +1,6 @@
 import { ux_zh } from './ux';
 import { packages_zh } from './packages';
+import { travel_zh } from './travel';
 import { en, type Dictionary } from './en';
 
 // Simplified Chinese. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -651,6 +652,7 @@ export const zh: Dictionary = {
   },
   ux: ux_zh,
   packages: packages_zh,
+  travel: travel_zh,
   footer: {
     tagline: '坦桑尼亚导游之家。',
     rights: '版权所有。',

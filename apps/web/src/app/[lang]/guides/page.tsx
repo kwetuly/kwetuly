@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { X } from 'lucide-react';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, MENU, REGIONS } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, ALL_SECTIONS, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { GuideSearch } from '@/components/guide-search';
@@ -43,7 +43,7 @@ function menuHeading(filters: GuideFilters) {
     filters.partners && '/guides?partners=1',
     filters.specialty && `/guides?specialty=${filters.specialty}`,
   ].filter(Boolean);
-  const items = MENU.flatMap((s) => s.items);
+  const items = ALL_SECTIONS.flatMap((s) => s.items);
   return candidates.map((href) => items.find((i) => i.href === href)).find(Boolean);
 }
 

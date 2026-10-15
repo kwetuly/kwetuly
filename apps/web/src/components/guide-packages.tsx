@@ -25,7 +25,8 @@ export function GuidePackages({ packages, guideName, t, locale }: { packages: Gu
   );
 }
 
-function PackageCard({ p, t, locale }: { p: GuidePackage; t: Dictionary; locale: Locale }) {
+/** One package that opens in place. `askHref` and `guide` are set when it is shown away from the guide's profile. */
+export function PackageCard({ p, t, locale, askHref, guide }: { p: GuidePackage; t: Dictionary; locale: Locale; askHref?: string; guide?: { name: string; href: string } }) {
   const pt = t.packages;
   const duration = packageDuration(p, pt);
   const kind = PACKAGE_KINDS.find((k) => k.id === p.kind)?.[locale];
@@ -71,7 +72,12 @@ function PackageCard({ p, t, locale }: { p: GuidePackage; t: Dictionary; locale:
             {p.meeting_point}
           </p>
         )}
-        <a href={`?package=${p.id}#contact`} className="btn" data-track="package_ask">
+        {guide && (
+          <a href={guide.href} className="block text-sm font-semibold text-forest underline">
+            {guide.name}
+          </a>
+        )}
+        <a href={askHref ?? `?package=${p.id}#contact`} className="btn" data-track="package_ask">
           {pt.ask}
         </a>
       </div>

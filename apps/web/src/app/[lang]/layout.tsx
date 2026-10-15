@@ -78,7 +78,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
         {process.env.ANTHROPIC_API_KEY && <Concierge labels={t.concierge} locale={locale} />}
 
         <footer className="pattern-kanga text-white">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
             <div>
               <Logo tone="light" className="text-3xl" />
               <p className="mt-2 text-sm text-white/90">{t.footer.tagline}</p>

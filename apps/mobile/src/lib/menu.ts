@@ -1,5 +1,5 @@
 import type { Href } from 'expo-router';
-import type { MenuItem, MenuSection } from '@rafrika/shared';
+import { ALL_SECTIONS, type MenuItem, type MenuSection } from '@rafrika/shared';
 
 // Turns a website menu link into the matching app screen, so the app offers the same sections as the site.
 export function appHref(section: MenuSection, item: MenuItem): Href {
@@ -34,7 +34,13 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
       return '/moments';
     case '/join':
       return { pathname: '/sign-in', params: { mode: 'join' } };
+    case '/packages':
+      return { pathname: '/packages', params };
+    case '/travel-info':
+      return '/travel-info';
     default:
+      // A whole section (e.g. "/transport"): its own screen with all its links.
+      if (/^\/[a-z-]+$/.test(path) && ALL_SECTIONS.some((s) => `/${s.slug}` === path)) return { pathname: '/section/[slug]', params: { slug: path.slice(1) } };
       return { pathname: '/soon/[section]/[item]', params: { section: section.slug, item: item.slug } };
   }
 }

@@ -9,7 +9,7 @@ import { EVENTS } from '@rafrika/shared';
 import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { colors, space, textSize } from '@/theme';
+import { brand, colors, space, textSize } from '@/theme';
 
 // "Plan this trip": an enquiry to Rafrika about a catalogue tour.
 export default function EnquireScreen() {
@@ -62,6 +62,9 @@ export default function EnquireScreen() {
         <Button title={tt.send} onPress={submit} loading={busy} />
         <Muted>{t.ux.whatNextTour}</Muted>
         <Muted>{t.ux.privacyTour}</Muted>
+        <Text accessibilityRole="link" onPress={() => router.push('/travel-info')} style={{ color: brand.forest, fontWeight: '700' }}>
+          {t.travel.reminder} {t.travel.reminderLink}
+        </Text>
       </Card>
     </ScrollView>
   );

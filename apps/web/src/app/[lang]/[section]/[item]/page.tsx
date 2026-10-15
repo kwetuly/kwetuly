@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, Bell, Store } from 'lucide-react';
-import { MENU, findMenuItem } from '@rafrika/shared';
+import { ALL_SECTIONS, findMenuItem } from '@rafrika/shared';
 import { defaultLocale, hasLocale, locales, type Locale } from '@/i18n/config';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';
@@ -15,7 +15,7 @@ import { SECTION_PHOTOS } from '@/lib/photos';
 
 export async function generateStaticParams() {
   return locales.flatMap((lang) =>
-    MENU.flatMap((s) => s.items.filter((i) => !i.href).map((i) => ({ lang, section: s.slug, item: i.slug }))),
+    ALL_SECTIONS.flatMap((s) => s.items.filter((i) => !i.href).map((i) => ({ lang, section: s.slug, item: i.slug }))),
   );
 }
 

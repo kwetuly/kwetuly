@@ -491,7 +491,13 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
       <div className="p-6">
         <p className="text-sm text-white/80">{tt.enquireBody}</p>
         {status.sent ? (
-          <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {tt.sent}</p>
+          <>
+            <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {tt.sent}</p>
+            <p className="mt-3 text-sm text-white">
+              {t.travel.reminder}{' '}
+              <Link href={`/${locale}/travel-info`} className="font-semibold underline">{t.travel.reminderLink}</Link>
+            </p>
+          </>
         ) : (
           <form action={enquireTrip} className="mt-4 space-y-3 text-charcoal">
             {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
@@ -517,6 +523,10 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
             <button className="btn w-full" data-track="tour_send_enquiry">{tt.send}</button>
             <p className="text-xs leading-relaxed text-white">{t.ux.whatNextTour}</p>
             <p className="text-xs leading-relaxed text-white">{t.ux.privacyTour}</p>
+            <p className="text-xs leading-relaxed text-white">
+              {t.travel.reminder}{' '}
+              <Link href={`/${locale}/travel-info`} className="font-semibold underline">{t.travel.reminderLink}</Link>
+            </p>
           </form>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { ux_sw } from './ux';
 import { packages_sw } from './packages';
+import { travel_sw } from './travel';
 import type { Dictionary } from './en';
 
 // Swahili strings are a first draft and should be reviewed by a native speaker before launch.
@@ -819,6 +820,7 @@ export const sw: Dictionary = {
   },
   ux: ux_sw,
   packages: packages_sw,
+  travel: travel_sw,
   footer: {
     tagline: 'Nyumbani kwa waongozaji wa Tanzania.',
     rights: 'Haki zote zimehifadhiwa.',

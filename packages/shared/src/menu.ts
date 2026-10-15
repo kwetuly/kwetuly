@@ -3,7 +3,6 @@
 // Labels are in the order en, sw, fr, it, de, pl, zh (see locales.ts).
 
 import { GUIDE_EXPERTISE } from './expertise';
-import { GUIDE_SPECIALTIES } from './guides';
 import { L, type Label } from './locales';
 
 export type MenuItem = {
@@ -22,30 +21,6 @@ export type MenuSection = {
   tagline: Label;
   items: MenuItem[];
 };
-
-function specialtyItem(s: (typeof GUIDE_SPECIALTIES)[number]): MenuItem {
-  const { id, en, sw, fr, it, de, pl, zh } = s;
-  return {
-    slug: `${id.replace(/_/g, '-')}-guides`,
-    icon: SPECIALTY_ICONS[id] ?? 'compass',
-    href: `/guides?specialty=${id}`,
-    status: 'live',
-    label: { en, sw, fr, it, de, pl, zh },
-    blurb: GUIDE_SPECIALTY_BLURB,
-  };
-}
-
-const SPECIALTY_ICONS: Record<string, string> = {
-  mountain: 'mountain',
-  safari: 'binoculars',
-  cultural: 'users',
-  city: 'building-2',
-  birding: 'bird',
-  marine: 'sailboat',
-  day_trips: 'sun',
-};
-
-const GUIDE_SPECIALTY_BLURB = L('Verified guides who specialise in this', 'Waongozaji waliobobea katika hili', 'Guides vérifiés spécialisés dans ce domaine', 'Guide verificate specializzate in questo', 'Geprüfte Guides mit diesem Schwerpunkt', 'Sprawdzeni przewodnicy z tą specjalizacją', '专精此领域的认证导游');
 
 function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
   return { slug: e.id.replace(/_/g, '-'), icon: e.icon, href: `/guides?expertise=${e.id}`, status: 'live', label: e.label, blurb: e.blurb };
@@ -82,8 +57,11 @@ const SECTIONS: MenuSection[] = [
         label: L('Guides by language', 'Waongozaji kwa lugha', 'Guides par langue', 'Guide per lingua', 'Guides nach Sprache', 'Przewodnicy według języka', '按语言找导游'),
         blurb: L('French, Italian, German, Polish, Chinese and more', 'Kifaransa, Kiitaliano, Kijerumani, Kipolandi, Kichina na zaidi', 'Français, italien, allemand, polonais, chinois et plus', 'Francese, italiano, tedesco, polacco, cinese e altre', 'Französisch, Italienisch, Deutsch, Polnisch, Chinesisch und mehr', 'Francuski, włoski, niemiecki, polski, chiński i inne', '法语、意大利语、德语、波兰语、中文等'),
       },
-      // One link per kind of work, except photography which sits under Special trips.
-      ...GUIDE_SPECIALTIES.filter((s) => s.id !== 'photography').map(specialtyItem),
+      {
+        slug: 'special-trips', icon: 'heart-handshake', href: '/special', status: 'live',
+        label: L('Special trips', 'Safari maalum', 'Voyages spéciaux', 'Viaggi speciali', 'Spezialreisen', 'Wyprawy specjalne', '特色主题游'),
+        blurb: L('Guides for blind, deaf and wheelchair travellers, VIPs, families and more', 'Waongozaji kwa wasioona, viziwi, watumiaji wa viti vya magurudumu, VIP, familia na zaidi', 'Guides pour voyageurs aveugles, sourds, en fauteuil, VIP, familles et plus', 'Guide per viaggiatori ciechi, sordi, in carrozzina, VIP, famiglie e altro', 'Guides für blinde, gehörlose und Rollstuhl-Reisende, VIPs, Familien und mehr', 'Przewodnicy dla osób niewidomych, niesłyszących, na wózkach, VIP, rodzin i nie tylko', '为盲人、听障、轮椅旅客、贵宾、家庭等提供服务的导游'),
+      },
       {
         slug: 'calls', icon: 'video', href: '/calls', status: 'live',
         label: L('1-on-1 prep calls', 'Simu za maandalizi', 'Appels de préparation 1-à-1', 'Chiamate di preparazione 1:1', '1:1-Vorbereitungsgespräche', 'Rozmowy przygotowawcze 1:1', '一对一行前咨询'),
@@ -129,17 +107,22 @@ const SECTIONS: MenuSection[] = [
     // Trip catalogue lives at /tours; this section only groups the menu links.
     slug: 'safaris',
     icon: 'mountain',
-    label: L('Safaris & Tours', 'Safari na Ziara', 'Safaris', 'Safari e tour', 'Safaris & Touren', 'Safari i wycieczki', '游猎与行程'),
+    label: L('Experiences', 'Safari na Ziara', 'Expériences', 'Esperienze', 'Erlebnisse', 'Doświadczenia', '体验'),
     tagline: L(
-      'Every circuit of Tanzania, with trusted local operators',
-      'Kila kanda ya Tanzania, na waendeshaji wa ndani wanaoaminika',
-      'Tous les circuits de Tanzanie, avec des opérateurs locaux de confiance',
-      'Tutti i circuiti della Tanzania, con operatori locali affidabili',
-      'Alle Regionen Tansanias, mit vertrauenswürdigen lokalen Anbietern',
-      'Wszystkie szlaki Tanzanii z zaufanymi lokalnymi organizatorami',
-      '坦桑尼亚所有线路，由可信赖的本地运营商提供',
+      'Guide packages, safaris and tours across Tanzania',
+      'Vifurushi vya waongozaji, safari na ziara kote Tanzania',
+      'Formules de guides, safaris et circuits dans toute la Tanzanie',
+      'Pacchetti delle guide, safari e tour in tutta la Tanzania',
+      'Angebote von Guides, Safaris und Touren in ganz Tansania',
+      'Pakiety przewodników, safari i wycieczki po całej Tanzanii',
+      '向导套餐、游猎与行程，遍及坦桑尼亚',
     ),
     items: [
+      {
+        slug: 'packages', icon: 'users', href: '/packages', status: 'live',
+        label: L('Packages by local guides', 'Vifurushi vya waongozaji wa ndani', 'Formules de guides locaux', 'Pacchetti di guide locali', 'Angebote lokaler Guides', 'Pakiety lokalnych przewodników', '当地向导套餐'),
+        blurb: L('Cultural visits, day trips and one-on-one trips', 'Ziara za kitamaduni, safari za siku moja na za mtu mmoja', 'Visites culturelles, excursions et voyages en tête-à-tête', 'Visite culturali, gite e viaggi individuali', 'Kulturbesuche, Tagesausflüge und Reisen zu zweit', 'Wizyty kulturalne, wycieczki i wyprawy jeden na jeden', '文化探访、一日游和一对一行程'),
+      },
       {
         slug: 'all', icon: 'map', href: '/tours', status: 'live',
         label: L('All tours', 'Ziara zote', 'Tous les circuits', 'Tutti i tour', 'Alle Touren', 'Wszystkie wycieczki', '全部行程'),
@@ -427,7 +410,40 @@ const PARTNERS: MenuSection = {
   ],
 };
 
-export const MENU: MenuSection[] = [...SECTIONS, PARTNERS];
+// Plan your trip: travel rules first, then one link per practical section.
+const PLAN: MenuSection = {
+  slug: 'plan',
+  icon: 'map',
+  label: L('Plan your trip', 'Panga safari yako', 'Préparer votre voyage', 'Organizza il viaggio', 'Reise planen', 'Zaplanuj podróż', '规划行程'),
+  tagline: L(
+    'Visa, insurance, transport, gear and local tips',
+    'Viza, bima, usafiri, vifaa na vidokezo vya mtaani',
+    'Visa, assurance, transport, équipement et conseils locaux',
+    'Visto, assicurazione, trasporti, attrezzatura e consigli locali',
+    'Visum, Versicherung, Transport, Ausrüstung und lokale Tipps',
+    'Wiza, ubezpieczenie, transport, sprzęt i lokalne wskazówki',
+    '签证、保险、交通、装备与当地建议',
+  ),
+  items: [
+    {
+      slug: 'visa-insurance', icon: 'badge-check', href: '/travel-info', status: 'live',
+      label: L('Visa & insurance', 'Viza na bima', 'Visa & assurance', 'Visto e assicurazione', 'Visum & Versicherung', 'Wiza i ubezpieczenie', '签证与保险'),
+      blurb: L('Official links and the new insurance rule', 'Viungo rasmi na sheria mpya ya bima', 'Liens officiels et nouvelle règle d’assurance', 'Link ufficiali e nuova regola sull’assicurazione', 'Offizielle Links und die neue Versicherungspflicht', 'Oficjalne linki i nowy obowiązek ubezpieczenia', '官方链接与新的保险规定'),
+    },
+    ...['transport', 'shop', 'local', 'discover'].map((slug): MenuItem => {
+      const section = SECTIONS.find((s) => s.slug === slug)!;
+      return { slug: `${slug}-all`, icon: section.icon, href: `/${slug}`, status: 'live', label: section.label, blurb: section.tagline };
+    }),
+  ],
+};
+
+/** Every section, for section pages, the sitemap and search. */
+export const ALL_SECTIONS: MenuSection[] = [...SECTIONS, PLAN, PARTNERS];
+
+const bySlug = (slug: string) => ALL_SECTIONS.find((s) => s.slug === slug)!;
+
+/** The main menu: five clear choices. Everything else sits one step deeper, on the section pages. */
+export const MENU: MenuSection[] = [bySlug('trips'), bySlug('safaris'), bySlug('stay'), PLAN, PARTNERS];
 
 // The Guide Hub menu is only shown to verified guides (and admins).
 // Guides work in Kiswahili or English, so other languages reuse the English wording.
@@ -446,7 +462,7 @@ export const HUB_MENU: MenuItem[] = [
 ];
 
 export function findMenuItem(sectionSlug: string, itemSlug: string) {
-  const section = MENU.find((s) => s.slug === sectionSlug);
+  const section = ALL_SECTIONS.find((s) => s.slug === sectionSlug);
   const item = section?.items.find((i) => i.slug === itemSlug);
   return section && item ? { section, item } : null;
 }

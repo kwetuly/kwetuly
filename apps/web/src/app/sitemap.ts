@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { MENU } from '@rafrika/shared';
+import { ALL_SECTIONS } from '@rafrika/shared';
 import { locales } from '@/i18n/config';
 import { listGuides } from '@/lib/guides';
 import { listOperators, listPlaces, listTours } from '@/lib/trips';
@@ -11,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [guides, trips, groups, operators, places] = await Promise.all([listGuides({}), listTours(), listGroupTrips(), listOperators(), listPlaces()]);
 
   const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/operators', '/places', '/moments', '/join']);
-  for (const section of MENU) {
+  for (const section of ALL_SECTIONS) {
     paths.add(`/${section.slug}`);
     for (const item of section.items) {
       // Filtered lists (e.g. /guides?expertise=vip) are covered by their base page.

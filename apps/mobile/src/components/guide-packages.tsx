@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
+import { EVENTS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
 import { Button, Card, SectionTitle } from '@/components/ui';
 import { track } from '@/lib/analytics';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, radius, space, textSize } from '@/theme';
-import { EVENTS } from '@rafrika/shared';
 
 /**
  * A guide's approved packages. Each card opens in place, and "Ask about this package" goes
@@ -26,7 +25,8 @@ export function GuidePackages({ packages, guideId, guideName, guideSlug }: { pac
   );
 }
 
-function PackageCard({ p, guideId, guideName, guideSlug }: { p: GuidePackage; guideId: string; guideName: string; guideSlug: string }) {
+/** One package that opens in place. `showGuide` adds a link to the guide, for lists away from the profile. */
+export function PackageCard({ p, guideId, guideName, guideSlug, showGuide }: { p: GuidePackage; guideId: string; guideName: string; guideSlug: string; showGuide?: boolean }) {
   const { t, locale } = useI18n();
   const pt = t.packages;
   const [open, setOpen] = useState(false);
@@ -60,6 +60,11 @@ function PackageCard({ p, guideId, guideName, guideSlug }: { p: GuidePackage; gu
             <Text style={{ color: colors.label }}>
               <Text style={{ fontWeight: '700' }}>{pt.meetingPoint}: </Text>
               {p.meeting_point}
+            </Text>
+          )}
+          {showGuide && (
+            <Text accessibilityRole="link" onPress={() => router.push({ pathname: '/guide/[slug]', params: { slug: guideSlug } })} style={{ color: brand.forest, fontWeight: '700', textDecorationLine: 'underline' }}>
+              {guideName}
             </Text>
           )}
           <Button

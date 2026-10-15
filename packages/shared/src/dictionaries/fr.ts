@@ -1,5 +1,6 @@
 import { ux_fr } from './ux';
 import { packages_fr } from './packages';
+import { travel_fr } from './travel';
 import { en, type Dictionary } from './en';
 
 // French. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -656,6 +657,7 @@ export const fr: Dictionary = {
   },
   ux: ux_fr,
   packages: packages_fr,
+  travel: travel_fr,
   footer: {
     tagline: 'La maison des guides tanzaniens.',
     rights: 'Tous droits réservés.',
