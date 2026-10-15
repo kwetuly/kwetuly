@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
@@ -6,7 +7,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
+import { CALL_TOPICS, EVENTS, formatUsd } from '@rafrika/shared';
 import { getGuideBySlug, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { getCurrentUser } from '@/lib/auth';
 import { topicName } from '@/lib/labels';
@@ -17,18 +18,24 @@ import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
 import { ShareButtons } from '@/components/share-buttons';
+import { LogEvent } from '@/components/analytics';
+import { JsonLd } from '@/components/json-ld';
+import { StickyCta } from '@/components/sticky-cta';
+import { SITE_URL } from '@/lib/site';
 import { requestCall, requestGuide, submitReview } from './actions';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
   const guide = await getGuideBySlug(slug);
   if (!guide) notFound();
-  return {
+  return pageMeta({
+    path: `/guides/${guide.slug}`,
     title: `${guide.display_name} — ${guide.base_region} guide`,
-    description: guide.headline ?? undefined,
-    openGraph: guide.photo_url ? { images: [guide.photo_url] } : undefined,
-    robots: guide.visibility === 'link_only' ? { index: false } : undefined,
-  };
+    description: guide.headline,
+    image: guide.photo_url,
+    type: 'profile',
+    noindex: guide.visibility === 'link_only',
+  });
 }
 
 export default async function GuideProfilePage({ params, searchParams }: PageProps<'/[lang]/guides/[slug]'>) {
@@ -65,6 +72,36 @@ async function Profile({
   return (
     <>
     <TrackView item={{ href: `/${locale}/guides/${guide.slug}`, title: guide.display_name, subtitle: guide.headline ?? guide.base_region, image: guide.photo_url }} />
+    <LogEvent event={EVENTS.guideViewed} props={{ guide: guide.slug, locale }} />
+    {status.sent && <LogEvent event={EVENTS.enquirySent} props={{ kind: 'guide', guide: guide.slug, locale }} />}
+    <JsonLd
+      data={[
+        {
+          '@context': 'https://schema.org',
+          '@type': 'ProfilePage',
+          url: `${SITE_URL}/${locale}/guides/${guide.slug}`,
+          mainEntity: {
+            '@type': 'Person',
+            name: guide.display_name,
+            jobTitle: 'Tour guide',
+            description: guide.headline ?? undefined,
+            image: guide.photo_url ?? undefined,
+            knowsLanguage: guide.languages,
+            homeLocation: { '@type': 'Place', name: `${guide.base_region}, Tanzania` },
+          },
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Rafrika', item: `${SITE_URL}/${locale}` },
+            { '@type': 'ListItem', position: 2, name: t.guides.title, item: `${SITE_URL}/${locale}/guides` },
+            { '@type': 'ListItem', position: 3, name: guide.display_name },
+          ],
+        },
+      ]}
+    />
+    {!status.sent && <StickyCta target="contact" label={t.messages.messageGuide} track="guide_sticky_contact" />}
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-10 lg:grid-cols-[1fr_360px]">
       <div>
         <div className="flex gap-5">
@@ -158,7 +195,7 @@ async function Profile({
       {guide.call_enabled && (
         <CallBooking guide={guide} status={status} t={t} locale={locale} />
       )}
-      <aside id="contact" className="card h-fit">
+      <aside id="contact" className="card h-fit scroll-mt-28">
         <h2 className="text-lg font-semibold">{t.profile.contactTitle}</h2>
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
         {status.sent ? (
@@ -169,10 +206,21 @@ async function Profile({
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={guide.slug} />
             <input type="hidden" name="guide_id" value={guide.id} />
-            <input className="field" name="name" placeholder={t.profile.name} required maxLength={120} />
-            <input className="field" name="contact" placeholder={t.profile.contact} required maxLength={160} />
-            <textarea className="field min-h-28" name="message" placeholder={t.profile.message} required maxLength={2000} />
-            <button className="btn w-full">{t.profile.send}</button>
+            <label className="block">
+              <span className="label">{t.profile.name}</span>
+              <input className="field" name="name" required maxLength={120} autoComplete="name" />
+            </label>
+            <label className="block">
+              <span className="label">{t.profile.contact}</span>
+              <input className="field" name="contact" required maxLength={160} />
+            </label>
+            <label className="block">
+              <span className="label">{t.profile.message}</span>
+              <textarea className="field min-h-28" name="message" required maxLength={2000} />
+            </label>
+            <button className="btn w-full" data-track="guide_send_enquiry">{t.profile.send}</button>
+            <p className="text-xs leading-relaxed text-muted">{t.ux.whatNextGuide}</p>
+            <p className="text-xs leading-relaxed text-muted">{t.ux.privacyGuide}</p>
           </form>
         )}
       </aside>
@@ -208,7 +256,7 @@ async function MessageButton({ guide, t, locale }: { guide: Guide; t: Dictionary
   if (user?.guide?.id === guide.id) return null;
   if (!user) {
     return (
-      <Link href={`/${locale}/login`} className="btn-dark w-full">
+      <Link href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/guides/${guide.slug}`)}`} className="btn-dark w-full" data-track="guide_signin_to_message">
         <MessagesSquare className="size-5" aria-hidden /> {t.messages.signInToMessage}
       </Link>
     );
@@ -217,7 +265,7 @@ async function MessageButton({ guide, t, locale }: { guide: Guide; t: Dictionary
     <form action={startConversation}>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="guide_id" value={guide.id} />
-      <button className="btn-dark w-full">
+      <button className="btn-dark w-full" data-track="guide_message">
         <MessagesSquare className="size-5" aria-hidden /> {t.messages.messageGuide}
       </button>
     </form>
@@ -273,9 +321,9 @@ async function CallBooking({
                 ))}
               </select>
             </label>
-            <textarea name="preferred_times" className="field min-h-20 text-charcoal" placeholder={t.calls.times} required maxLength={500} />
-            <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} maxLength={160} />
-            <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} maxLength={2000} />
+            <textarea name="preferred_times" className="field min-h-20 text-charcoal" placeholder={t.calls.times} aria-label={t.calls.times} required maxLength={500} />
+            <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} aria-label={t.calls.contact} maxLength={160} />
+            <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={2000} />
             <button className="btn w-full">{t.calls.book}</button>
             <p className="text-xs text-white/70">{t.calls.payNote}</p>
           </form>
@@ -387,7 +435,7 @@ async function ReviewForm({
           ))}
         </div>
       </fieldset>
-      <textarea name="body" className="field min-h-28" placeholder={r.body} required minLength={10} maxLength={2000} defaultValue={own.data?.body ?? ''} />
+      <textarea name="body" className="field min-h-28" placeholder={r.body} aria-label={r.body} required minLength={10} maxLength={2000} defaultValue={own.data?.body ?? ''} />
       <button className="btn">{r.submit}</button>
     </form>
   );

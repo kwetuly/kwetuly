@@ -6,6 +6,8 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { signUp } from '../actions';
 import { SocialSignIn } from '@/components/social-sign-in';
+import { EVENTS } from '@rafrika/shared';
+import { LogEvent } from '@/components/analytics';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).join.title };
@@ -48,11 +50,15 @@ async function JoinForm({
   const selected = roles.some((r) => r.id === params.role) ? (params.role as string) : 'guide';
 
   if (params.sent) {
-    return <p className="mt-8 rounded-[5px] bg-mint p-6 text-lg font-semibold text-forest">{t.auth.checkEmail}</p>;
+    return <>
+      <LogEvent event={EVENTS.signupCompleted} props={{ role: selected, locale }} />
+      <p className="mt-8 rounded-[5px] bg-mint p-6 text-lg font-semibold text-forest">{t.auth.checkEmail}</p>
+    </>;
   }
 
   return (
     <div className="card mt-8 space-y-5">
+    <LogEvent event={EVENTS.signupStarted} props={{ role: selected, locale }} />
     <SocialSignIn locale={locale} t={t} role={selected} />
     <form action={signUp} className="space-y-5">
       {params.error && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}

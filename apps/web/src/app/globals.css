@@ -60,3 +60,35 @@ body {
   background-size: 22px 22px;
 }
 
+
+/* Keyboard users always see where they are: a green outline on anything focused with the keyboard. */
+:where(a, button, summary, [role='button'], [tabindex]:not([tabindex='-1']), input[type='checkbox'], input[type='radio'], select):focus-visible {
+  outline: 3px solid var(--color-leaf-dark);
+  outline-offset: 2px;
+  border-radius: var(--radius-brand);
+}
+.pattern-kanga :where(a, button):focus-visible,
+.bg-night :where(a, button):focus-visible {
+  outline-color: #fff;
+}
+
+/* People who ask their device for less motion get no animations or smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Room under the footer for the phone action bar, so it never covers the last links. */
+@media (width < 64rem) {
+  body:has([data-sticky-cta]) footer {
+    padding-bottom: 5rem;
+  }
+}

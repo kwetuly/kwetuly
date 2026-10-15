@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { BadgeCheck, Building2, MapPin } from 'lucide-react';
@@ -9,7 +10,7 @@ import { OperatorLogo } from '@/components/operator-logo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.tours.operatorsTitle, description: t.tours.operatorsSubtitle };
+  return pageMeta({ path: '/operators', title: t.tours.operatorsTitle, description: t.tours.operatorsSubtitle });
 }
 
 export default async function OperatorsPage() {

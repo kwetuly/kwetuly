@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Bookmark, Search, UsersRound } from 'lucide-react';
@@ -26,7 +27,7 @@ import { Icon } from '@/components/icon';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.tours.title, description: t.tours.subtitle };
+  return pageMeta({ path: '/tours', title: t.tours.title, description: t.tours.subtitle });
 }
 
 type Params = Record<string, string | string[] | undefined>;

@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, BadgeCheck, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
-import { GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
+import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
+import { LogEvent } from '@/components/analytics';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser, type CurrentUser } from '@/lib/auth';
@@ -50,6 +51,7 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
       <Link href={`/${locale}/requests`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-leaf-dark">
         <ArrowLeft className="size-4" aria-hidden /> {r.title}
       </Link>
+      {status.posted && <LogEvent event={EVENTS.tripRequestSent} props={{ locale }} />}
       {status.posted && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.posted}</p>}
       {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{r.error}</p>}
 

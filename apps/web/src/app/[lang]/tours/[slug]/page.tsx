@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
@@ -31,6 +32,7 @@ import {
   TRANSFER_MODES,
   TRAVEL_STYLES,
   TRIP_CIRCUITS,
+  EVENTS,
   formatPrice,
   straightLineKm,
   tourMatchesTheme,
@@ -50,6 +52,10 @@ import { OperatorLogo } from '@/components/operator-logo';
 import { AltitudeProfile, DayDetails, GoodToKnow, PlaceGuides } from '@/components/tour-extras';
 import { TrackView } from '@/components/recently-viewed';
 import { ShareButtons } from '@/components/share-buttons';
+import { LogEvent } from '@/components/analytics';
+import { JsonLd } from '@/components/json-ld';
+import { StickyCta } from '@/components/sticky-cta';
+import { SITE_URL } from '@/lib/site';
 import { enquireTrip, toggleSavedTour } from './actions';
 
 type Params = Promise<{ slug: string }>;
@@ -60,12 +66,13 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/tours/[slu
   const trip = await getTripForViewer(slug);
   if (!trip) notFound();
   const locale = hasLocale(lang) ? lang : defaultLocale;
-  return {
+  return pageMeta({
+    path: `/tours/${trip.slug}`,
     title: tripTitle(trip, locale),
     description: tripSummary(trip, locale),
-    openGraph: { images: [tourCoverUrl(trip)] },
-    robots: trip.status === 'published' ? undefined : { index: false },
-  };
+    image: tourCoverUrl(trip),
+    noindex: trip.status !== 'published',
+  });
 }
 
 export default async function TripPage({ params, searchParams }: PageProps<'/[lang]/tours/[slug]'>) {
@@ -95,6 +102,10 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
       {trip.status === 'published' && (
         <TrackView item={{ href: `/${locale}/tours/${trip.slug}`, title, subtitle: durationText(trip, tt), image: tourCoverUrl(trip, 300) }} />
       )}
+      <LogEvent event={EVENTS.tourViewed} props={{ tour: trip.slug, tour_type: trip.tour_type, locale }} />
+      {status.sent && <LogEvent event={EVENTS.enquirySent} props={{ kind: 'tour', tour: trip.slug, locale }} />}
+      {!status.sent && <StickyCta target="enquire" label={tt.enquireTitle} track="tour_sticky_enquire" />}
+      {trip.status === 'published' && <TourJsonLd trip={trip} title={title} stops={stops} locale={locale} now={now} listTitle={tt.title} />}
       <section className="relative text-white">
         <TripCover trip={trip} className="absolute inset-0" sizes="100vw" priority />
         <div className="absolute inset-0 bg-gradient-to-t from-shade via-shade/60 to-shade/10" />
@@ -253,7 +264,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
           </p>
         </div>
 
-        <aside id="enquire" className="h-fit space-y-4 lg:sticky lg:top-24">
+        <aside id="enquire" className="h-fit scroll-mt-24 space-y-4 lg:sticky lg:top-24">
           <EnquiryCard trip={trip} status={status} t={t} locale={locale} now={now} guides={team.guides} />
           <form action={toggleSavedTour}>
             <input type="hidden" name="locale" value={locale} />
@@ -488,11 +499,11 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
             <input type="hidden" name="slug" value={trip.slug} />
             <input type="hidden" name="trip_id" value={trip.id} />
             <input type="hidden" name="trip_title" value={trip.title_en} />
-            <input name="name" className="field" placeholder={t.profile.name} required maxLength={120} />
-            <input name="contact" className="field" placeholder={t.profile.contact} required maxLength={160} />
+            <input name="name" className="field" placeholder={t.profile.name} aria-label={t.profile.name} autoComplete="name" required maxLength={120} />
+            <input name="contact" className="field" placeholder={t.profile.contact} aria-label={t.profile.contact} required maxLength={160} />
             <div className="grid grid-cols-2 gap-2">
-              <input name="dates" className="field" placeholder={tt.dates} maxLength={120} />
-              <input name="group_size" type="number" min={1} max={99} className="field" placeholder={tt.groupSize} />
+              <input name="dates" className="field" placeholder={tt.dates} aria-label={tt.dates} maxLength={120} />
+              <input name="group_size" type="number" min={1} max={99} className="field" placeholder={tt.groupSize} aria-label={tt.groupSize} />
             </div>
             {guides.length > 0 && (
               <select name="guide" defaultValue="" className="field" aria-label={tt.meetGuides}>
@@ -502,11 +513,50 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
                 ))}
               </select>
             )}
-            <textarea name="message" className="field min-h-20" placeholder={t.profile.message} maxLength={1500} />
-            <button className="btn w-full">{tt.send}</button>
+            <textarea name="message" className="field min-h-20" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={1500} />
+            <button className="btn w-full" data-track="tour_send_enquiry">{tt.send}</button>
+            <p className="text-xs leading-relaxed text-white">{t.ux.whatNextTour}</p>
+            <p className="text-xs leading-relaxed text-white">{t.ux.privacyTour}</p>
           </form>
         )}
       </div>
     </div>
+  );
+}
+
+// Structured data for published tours. The price is only included while it is verified and valid.
+function TourJsonLd({ trip, title, stops, locale, now, listTitle }: { trip: Trip; title: string; stops: TourStop[]; locale: Locale; now: Date; listTitle: string }) {
+  const url = `${SITE_URL}/${locale}/tours/${trip.slug}`;
+  const price = verifiedPrice(trip, now);
+  return (
+    <JsonLd
+      data={[
+        {
+          '@context': 'https://schema.org',
+          '@type': 'TouristTrip',
+          name: title,
+          description: tripSummary(trip, locale),
+          url,
+          image: tourCoverUrl(trip),
+          touristType: trip.travel_styles,
+          provider: trip.tour_operators ? { '@type': 'Organization', name: trip.tour_operators.name } : { '@type': 'Organization', name: 'Rafrika' },
+          itinerary: stops.length
+            ? { '@type': 'ItemList', itemListElement: stops.map((s, i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'Place', name: s.name, geo: { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lng } } })) }
+            : undefined,
+          offers: price
+            ? { '@type': 'Offer', price: price.amount, priceCurrency: price.currency, url, priceValidUntil: trip.price_valid_until ?? undefined }
+            : undefined,
+        },
+        {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Rafrika', item: `${SITE_URL}/${locale}` },
+            { '@type': 'ListItem', position: 2, name: listTitle, item: `${SITE_URL}/${locale}/tours` },
+            { '@type': 'ListItem', position: 3, name: title },
+          ],
+        },
+      ]}
+    />
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -15,7 +16,9 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { approxTzs, formatUsd } from '@rafrika/shared';
+import { EVENTS, approxTzs, formatUsd } from '@rafrika/shared';
+import { LogEvent } from '@/components/analytics';
+import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
 import { depositState } from '@/lib/requests';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
@@ -26,12 +29,13 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/group-trip
   const { id } = await params;
   const trip = await getGroupTripForViewer(id);
   if (!trip) notFound();
-  return {
+  return pageMeta({
+    path: `/group-trips/${id}`,
     title: trip.title,
     description: trip.description.slice(0, 160),
-    robots: trip.status === 'approved' ? undefined : { index: false },
-    openGraph: { images: [photoUrl(specialtyPhoto(trip.specialty), 1200)] },
-  };
+    image: photoUrl(specialtyPhoto(trip.specialty), 1200),
+    noindex: trip.status !== 'approved',
+  });
 }
 
 export default async function GroupTripPage({ params, searchParams }: PageProps<'/[lang]/group-trips/[id]'>) {
@@ -56,8 +60,11 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
     ? (await (await createClient()).from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle()).data
     : null;
 
+  const joinable = trip.status === 'approved' && !trip.cancelled && !isOrganizer && spotsLeft(trip) > 0;
   return (
     <>
+      {status.sent && <LogEvent event={EVENTS.groupTripJoined} props={{ trip: trip.id, locale }} />}
+      {joinable && !status.sent && <StickyCta target="join" label={g.joinCta} track="group_sticky_join" />}
       <section className="relative isolate overflow-hidden bg-night text-white">
         <Image src={photoUrl(photo, 2000)} alt={photo.alt} fill priority sizes="100vw" className="-z-10 object-cover" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade via-shade/70 to-shade/20" />

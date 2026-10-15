@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MENU } from '@rafrika/shared';
@@ -8,11 +9,20 @@ import { siteStats } from '@/lib/guides';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
+import { pageMeta } from '@/lib/seo';
+import { SITE_URL } from '@/lib/site';
+import { JsonLd } from '@/components/json-ld';
 
 // Home cards stay even: long sections show their first links and a "See all" link.
 const HOME_CARD_LINKS = 5;
 // Totals only appear once they are big enough to mean something (no "3 guides" on launch day).
 const STATS_FROM = { guides: 10, reviews: 25 };
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  const meta = await pageMeta({ path: '', title: `Rafrika — ${t.home.title}`, description: t.home.subtitle });
+  return { ...meta, title: { absolute: `Rafrika — ${t.home.title}` } };
+}
 
 export default async function HomePage() {
   const [t, locale, stats] = await Promise.all([getDictionary(), getLocale(), siteStats()]);
@@ -20,6 +30,19 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          { '@context': 'https://schema.org', '@type': 'Organization', name: 'Rafrika', url: SITE_URL, logo: `${SITE_URL}/icon` },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Rafrika',
+            url: `${SITE_URL}/${locale}`,
+            inLanguage: locale,
+            potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/${locale}/tours?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+          },
+        ]}
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden bg-night text-white">
         <Image src={photoUrl(hero, 2000)} alt={hero.alt} fill priority sizes="100vw" className="-z-10 object-cover" />

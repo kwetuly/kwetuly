@@ -3,8 +3,9 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { specialtyPhoto, formatUsd } from '@rafrika/shared';
+import { EVENTS, specialtyPhoto, formatUsd } from '@rafrika/shared';
 import { photoSource } from '@/lib/photos';
+import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
@@ -60,6 +61,7 @@ export default function GroupTripScreen() {
         seats: Math.min(Math.max(parseInt(seats, 10) || 1, 1), Math.max(left, 1)),
         message: message.trim(),
       });
+      track(EVENTS.groupTripJoined, { trip: id });
       await queryClient.invalidateQueries({ queryKey: ['group-request', id] });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

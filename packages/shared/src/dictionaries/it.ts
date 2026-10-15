@@ -1,3 +1,4 @@
+import { ux_it } from './ux';
 import { en, type Dictionary } from './en';
 
 // Italian. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -648,6 +649,7 @@ export const it: Dictionary = {
     firstAidUpload: 'Certificato di primo soccorso (facoltativo)',
     recheckNote: 'Se carichi un nuovo documento, il nostro team lo verifica di nuovo.',
   },
+  ux: ux_it,
   footer: {
     tagline: 'La casa delle guide tanzaniane.',
     rights: 'Tutti i diritti riservati.',

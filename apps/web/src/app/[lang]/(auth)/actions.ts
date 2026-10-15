@@ -92,8 +92,33 @@ export async function signIn(formData: FormData) {
 
   if (error) redirect(`/${locale}/login?error=1`);
   // Return to where the person was going (e.g. a group chat invite), but only within this site.
-  const next = String(formData.get('next') ?? '');
-  redirect(next.startsWith(`/${locale}/`) && !next.startsWith('//') ? next : `/${locale}/dashboard`);
+  const next = safeNext(locale, formData.get('next'));
+  // Accounts with two-step sign-in still need their authenticator code.
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') redirect(`/${locale}/login/verify?next=${encodeURIComponent(next)}`);
+  redirect(next);
+}
+
+function safeNext(locale: string, value: FormDataEntryValue | null) {
+  const next = String(value ?? '');
+  return next.startsWith(`/${locale}/`) && !next.startsWith('//') ? next : `/${locale}/dashboard`;
+}
+
+// Second sign-in step: the 6-digit code from the person's authenticator app.
+export async function verifySignInCode(formData: FormData) {
+  const locale = localeFrom(formData);
+  const next = safeNext(locale, formData.get('next'));
+  const code = String(formData.get('code') ?? '').replace(/\s/g, '');
+  const back = `/${locale}/login/verify?next=${encodeURIComponent(next)}`;
+  if (!/^\d{6}$/.test(code)) redirect(`${back}&error=1`);
+
+  const supabase = await createClient();
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+  const factor = factors?.totp.find((f) => f.status === 'verified');
+  if (!factor) redirect(next);
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
+  if (error) redirect(`${back}&error=1`);
+  redirect(next);
 }
 
 export async function signOut(formData: FormData) {

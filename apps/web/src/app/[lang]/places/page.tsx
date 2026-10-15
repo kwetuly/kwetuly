@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Landmark } from 'lucide-react';
@@ -9,7 +10,7 @@ import { listPlaces } from '@/lib/trips';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.tours.placesTitle, description: t.tours.placesSubtitle };
+  return pageMeta({ path: '/places', title: t.tours.placesTitle, description: t.tours.placesSubtitle });
 }
 
 export default async function PlacesPage() {

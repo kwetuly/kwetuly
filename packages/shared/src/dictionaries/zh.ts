@@ -1,3 +1,4 @@
+import { ux_zh } from './ux';
 import { en, type Dictionary } from './en';
 
 // Simplified Chinese. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -641,6 +642,7 @@ export const zh: Dictionary = {
     firstAidUpload: '急救证书（可选）',
     recheckNote: '如果您上传新文件，我们的团队会重新核实。',
   },
+  ux: ux_zh,
   footer: {
     tagline: '坦桑尼亚导游之家。',
     rights: '版权所有。',

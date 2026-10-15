@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@rafrika/shared';
-import { Circle, CircleCheck } from 'lucide-react';
+import { Circle, CircleCheck, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser, type CurrentUser } from '@/lib/auth';
@@ -34,6 +34,9 @@ export default async function DashboardPage({ searchParams }: PageProps<'/[lang]
       <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <DashboardForRole t={t} locale={locale} searchParams={searchParams} />
       </Suspense>
+      <Link href={`/${locale}/security`} className="mt-6 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 text-sm font-semibold hover:border-leaf">
+        <ShieldCheck className="size-5 text-leaf-dark" aria-hidden /> {t.ux.securityLink}
+      </Link>
     </div>
   );
 }

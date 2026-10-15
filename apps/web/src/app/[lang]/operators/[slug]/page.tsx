@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
@@ -14,11 +15,13 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/operators/
   const { slug } = await params;
   const operator = await getOperatorForViewer(slug);
   if (!operator) notFound();
-  return {
+  return pageMeta({
+    path: `/operators/${operator.slug}`,
     title: operator.name,
-    description: operator.description ?? undefined,
-    robots: operator.status === 'published' ? undefined : { index: false },
-  };
+    description: operator.description,
+    image: operator.logo_url,
+    noindex: operator.status !== 'published',
+  });
 }
 
 export default async function OperatorPage({ params }: PageProps<'/[lang]/operators/[slug]'>) {

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/places/[sl
   const { slug } = await params;
   const place = await getPlaceForViewer(slug);
   if (!place) notFound();
-  return { title: place.name, description: place.summary, robots: place.status === 'published' ? undefined : { index: false } };
+  return pageMeta({ path: `/places/${place.slug}`, title: place.name, description: place.summary, noindex: place.status !== 'published' });
 }
 
 export default async function PlacePage({ params }: PageProps<'/[lang]/places/[slug]'>) {

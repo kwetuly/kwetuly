@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { EVENTS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted } from '@/components/ui';
 import { createRequest, today } from '@/lib/api-requests';
+import { track } from '@/lib/analytics';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space } from '@/theme';
@@ -74,6 +75,7 @@ export default function NewRequestScreen() {
         female_guide: f.female,
       });
       queryClient.invalidateQueries({ queryKey: ['my-requests'] });
+      track(EVENTS.tripRequestSent, {});
       router.replace({ pathname: '/request/[id]', params: { id, posted: '1' } });
     } catch {
       setMessage({ tone: 'error', text: r.error });

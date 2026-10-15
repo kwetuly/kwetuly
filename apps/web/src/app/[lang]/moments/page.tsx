@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Camera } from 'lucide-react';
@@ -10,7 +11,7 @@ import { listMoments, shortName } from '@/lib/chats';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.moments.title, description: t.moments.subtitle };
+  return pageMeta({ path: '/moments', title: t.moments.title, description: t.moments.subtitle });
 }
 
 // Public gallery: only items the traveller agreed to share, that Rafrika featured, and that

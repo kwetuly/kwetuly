@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/[section]/
   const { lang, section, item } = await params;
   const found = findMenuItem(section, item);
   const locale = hasLocale(lang) ? lang : defaultLocale;
-  return found ? { title: found.item.label[locale], description: found.item.blurb[locale] } : {};
+  return found ? pageMeta({ path: `/${section}/${item}`, title: found.item.label[locale], description: found.item.blurb[locale] }) : {};
 }
 
 export default function ItemPage(props: PageProps<'/[lang]/[section]/[item]'>) {

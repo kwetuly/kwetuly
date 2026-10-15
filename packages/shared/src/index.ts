@@ -11,3 +11,4 @@ export * from './money';
 export * from './guide-checks';
 export * from './tours';
 export * from './tour-map';
+export * from './analytics';

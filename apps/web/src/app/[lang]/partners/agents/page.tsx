@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ArrowRightLeft, BadgeCheck, Handshake, Languages, Sparkles, Zap } from 'lucide-react';
@@ -9,7 +10,7 @@ import { applyAsAgency } from './actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.partners.title, description: t.partners.subtitle };
+  return pageMeta({ path: '/partners/agents', title: t.partners.title, description: t.partners.subtitle });
 }
 
 const whyIcons = [BadgeCheck, Languages, Sparkles, Zap];

@@ -3,6 +3,7 @@ import { DefaultTheme, Stack, ThemeProvider, type Theme } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SystemUI from 'expo-system-ui';
 import { PushSetup } from '@/components/push-setup';
+import { useScreenTracking } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
 import { brand, colors } from '@/theme';
@@ -18,6 +19,7 @@ SystemUI.setBackgroundColorAsync(colors.background);
 
 function RootStack() {
   const { t } = useI18n();
+  useScreenTracking();
   return (
     <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal', headerTintColor: brand.leafDark }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

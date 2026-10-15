@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { normalizePhone } from '@rafrika/shared';
+import { EVENTS, normalizePhone } from '@rafrika/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { track } from '@/lib/analytics';
+import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { enabledProviders, signInWithProvider, type SocialProvider } from '@/lib/social';
 import { brand, colors, radius, space, textSize } from '@/theme';
@@ -33,15 +35,69 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'error' | 'ok'; text: string } | null>(null);
   const [providers, setProviders] = useState<SocialProvider[]>([]);
+  const [factorId, setFactorId] = useState<string | null>(null);
+  const [code, setCode] = useState('');
 
   useEffect(() => {
     enabledProviders().then(setProviders);
   }, []);
 
+  const done = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
+  async function verifyCode() {
+    if (!factorId) return;
+    setBusy(true);
+    setMessage(null);
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: code.replace(/\s/g, '') });
+    setBusy(false);
+    if (error) return setMessage({ tone: 'error', text: t.ux.codeError });
+    track(EVENTS.signinCompleted, { two_step: true });
+    done();
+  }
+
+  async function cancelCode() {
+    await supabase.auth.signOut();
+    setFactorId(null);
+    setCode('');
+  }
+
+  if (factorId) {
+    return (
+      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+        <Card>
+          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{t.ux.verifyTitle}</Text>
+          <Muted>{t.ux.verifyBody}</Muted>
+          {message && <Text selectable style={{ color: brand.danger, fontWeight: '600' }}>{message.text}</Text>}
+          <TextInput
+            value={code}
+            onChangeText={setCode}
+            placeholder={t.ux.code}
+            placeholderTextColor={colors.secondaryLabel}
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
+            maxLength={7}
+            autoFocus
+            accessibilityLabel={t.ux.code}
+            style={[input, { fontSize: 24, letterSpacing: 8, textAlign: 'center' }]}
+          />
+          <Button title={t.auth.signIn} onPress={verifyCode} loading={busy} />
+          <Button title={t.ux.cancel} variant="outline" onPress={cancelCode} />
+        </Card>
+      </ScrollView>
+    );
+  }
+
   async function social(provider: SocialProvider) {
     setMessage(null);
     const ok = await signInWithProvider(provider);
     if (!ok) return setMessage({ tone: 'error', text: t.auth.error });
+    const { data: current } = await supabase.auth.getSession();
+    if (needsSecondStep(current.session)) {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const factor = factors?.totp.find((f) => f.status === 'verified');
+      if (factor) return setFactorId(factor.id);
+    }
     // New social accounts still need an account type and phone number.
     const { data } = await supabase.from('profiles').select('onboarded_at').single();
     router.replace(data?.onboarded_at ? '/' : '/welcome');
@@ -51,11 +107,17 @@ export default function SignInScreen() {
     setMessage(null);
     if (mode === 'signIn') {
       setBusy(true);
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       setBusy(false);
-      if (error) setMessage({ tone: 'error', text: t.auth.error });
-      else if (router.canGoBack()) router.back();
-      else router.replace('/');
+      if (error) return setMessage({ tone: 'error', text: t.auth.error });
+      // Accounts with two-step sign-in also need the code from their authenticator app.
+      if (needsSecondStep(data.session)) {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const factor = factors?.totp.find((f) => f.status === 'verified');
+        if (factor) return setFactorId(factor.id);
+      }
+      track(EVENTS.signinCompleted, {});
+      done();
       return;
     }
 
@@ -73,6 +135,7 @@ export default function SignInScreen() {
       },
     });
     setBusy(false);
+    if (!error) track(EVENTS.signupCompleted, { role, locale });
     setMessage(error ? { tone: 'error', text: t.auth.error } : { tone: 'ok', text: t.app.checkEmail });
     if (!error) setMode('signIn');
   }
@@ -96,7 +159,7 @@ export default function SignInScreen() {
             {providers.map((p) => (
               <Button key={p} title={`${t.auth.continueWith} ${p === 'google' ? 'Google' : p === 'facebook' ? 'Facebook' : 'Apple'}`} variant="outline" onPress={() => social(p)} />
             ))}
-            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '700' }}>{t.auth.orEmail.toUpperCase()}</Text>
+            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '700' }}>{t.auth.orEmail}</Text>
           </Card>
         )}
 

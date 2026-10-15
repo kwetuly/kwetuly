@@ -3,6 +3,8 @@ import { ScrollView, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Field, FormMessage, Muted } from '@/components/ui';
 import { contactGuide } from '@/lib/api-more';
+import { track } from '@/lib/analytics';
+import { EVENTS } from '@rafrika/shared';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { colors, space, textSize } from '@/theme';
@@ -25,6 +27,7 @@ export default function ContactGuideScreen() {
     setBusy(true);
     try {
       await contactGuide({ guideId, userId: session?.user.id, name: fullName, contact, message: text });
+      track(EVENTS.enquirySent, { kind: 'guide', guide: guideId });
       setMessage({ tone: 'ok', text: p.sent });
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
     } catch {
@@ -45,6 +48,8 @@ export default function ContactGuideScreen() {
         <Field label={p.message} value={text} onChangeText={setText} multiline />
         <FormMessage message={message} />
         <Button title={p.send} onPress={submit} loading={busy} />
+        <Muted>{t.ux.whatNextGuide}</Muted>
+        <Muted>{t.ux.privacyGuide}</Muted>
       </Card>
     </ScrollView>
   );

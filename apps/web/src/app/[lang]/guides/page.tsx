@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { X } from 'lucide-react';
@@ -12,7 +13,7 @@ import { listGuides, type GuideFilters } from '@/lib/guides';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.guides.title };
+  return pageMeta({ path: '/guides', title: t.guides.title, description: t.home.subtitle });
 }
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

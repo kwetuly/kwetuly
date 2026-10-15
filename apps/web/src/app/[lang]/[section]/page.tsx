@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/[section]'
   const { lang, section: slug } = await params;
   const section = sections.find((s) => s.slug === slug);
   const locale = hasLocale(lang) ? lang : defaultLocale;
-  return section ? { title: section.label[locale], description: section.tagline[locale] } : {};
+  return section ? pageMeta({ path: `/${section.slug}`, title: section.label[locale], description: section.tagline[locale] }) : {};
 }
 
 export default function SectionPage(props: PageProps<'/[lang]/[section]'>) {

@@ -45,9 +45,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   };
 }
 
+/** True when the account has two-step sign-in on but this session has not entered the code yet. */
+export async function needsSecondStep(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return data?.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+}
+
 export async function requireUser(locale: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  if (await needsSecondStep()) redirect(`/${locale}/login/verify`);
   if (!user.onboarded) redirect(`/${locale}/welcome`);
   return user;
 }

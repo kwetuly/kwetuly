@@ -1,4 +1,5 @@
 // English is the source language: every other dictionary has the same shape.
+import { ux_en } from './ux';
 export const en = {
   nav: {
     guides: 'Find a guide',
@@ -797,6 +798,7 @@ export const en = {
     firstAidUpload: 'First-aid certificate (optional)',
     recheckNote: 'If you upload a new document, our team checks it again.',
   },
+  ux: ux_en,
   footer: {
     tagline: 'The home of Tanzanian guides.',
     rights: 'All rights reserved.',

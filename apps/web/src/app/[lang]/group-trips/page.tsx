@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus, UsersRound } from 'lucide-react';
@@ -11,7 +12,7 @@ import { listGroupTrips } from '@/lib/groups';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return { title: t.groups.title, description: t.groups.subtitle };
+  return pageMeta({ path: '/group-trips', title: t.groups.title, description: t.groups.subtitle });
 }
 
 export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang]/group-trips'>) {

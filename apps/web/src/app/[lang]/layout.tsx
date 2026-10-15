@@ -12,6 +12,7 @@ import { SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
 import { Icon } from '@/components/icon';
+import { Analytics } from '@/components/analytics';
 import { SITE_URL } from '@/lib/site';
 import { PHOTOS, photoUrl } from '@/lib/photos';
 import { itemHref } from '@/lib/menu';
@@ -43,6 +44,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   return (
     <html lang={LOCALE_TAGS[locale]} className={`${jakarta.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
+        <a href="#main" className="sr-only z-50 rounded-[5px] bg-leaf px-4 py-2 font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
+          {t.ux.skipToContent}
+        </a>
         <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-xl">
           <nav className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
             <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
@@ -68,7 +72,8 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main id="main" tabIndex={-1} className="flex-1 outline-none">{children}</main>
+        <Analytics locale={locale} />
         {/* The AI chat appears automatically once ANTHROPIC_API_KEY is set in .env.local. */}
         {process.env.ANTHROPIC_API_KEY && <Concierge labels={t.concierge} locale={locale} />}
 

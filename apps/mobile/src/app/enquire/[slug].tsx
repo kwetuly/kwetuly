@@ -4,6 +4,8 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { listTours } from '@/lib/api';
+import { track } from '@/lib/analytics';
+import { EVENTS } from '@rafrika/shared';
 import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -35,6 +37,7 @@ export default function EnquireScreen() {
     setBusy(true);
     try {
       await enquireTour({ tripId: tour!.id, tripTitle: tour!.title_en, userId: session?.user.id, name, contact, dates, people, message: note });
+      track(EVENTS.enquirySent, { kind: 'tour', tour: tour!.slug, locale });
       setMessage({ tone: 'ok', text: tt.sent });
       setTimeout(() => (router.canGoBack() ? router.back() : router.replace('/')), 1200);
     } catch {
@@ -57,6 +60,8 @@ export default function EnquireScreen() {
         <Field label={t.profile.message} value={note} onChangeText={setNote} multiline />
         <FormMessage message={message} />
         <Button title={tt.send} onPress={submit} loading={busy} />
+        <Muted>{t.ux.whatNextTour}</Muted>
+        <Muted>{t.ux.privacyTour}</Muted>
       </Card>
     </ScrollView>
   );
