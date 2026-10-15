@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
+import { UX_TEXT } from '@rafrika/shared';
 import { signIn } from '../actions';
 import { SocialSignIn } from '@/components/social-sign-in';
 
@@ -55,6 +56,7 @@ async function ErrorNote({
   message: string;
 }) {
   const params = await searchParams;
+  if (params.deleted) return <p role="status" className="mt-6 rounded-[5px] bg-mint p-4 font-semibold text-forest">{UX_TEXT[(await getLocale())].deleteDone}</p>;
   return params.error ? <p className="mt-6 rounded-[5px] bg-red-50 p-4 text-red-800">{message}</p> : null;
 }
 

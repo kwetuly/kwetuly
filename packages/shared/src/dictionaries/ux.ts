@@ -32,6 +32,12 @@ export const ux_en = {
   verifyBody: 'Open your authenticator app and enter the 6-digit code for Rafrika.',
   codeError: 'That code did not work. Check that the time on your phone is correct and try the newest code.',
   turnOffNote: 'To turn it off, first sign in with your code.',
+  deleteTitle: 'Delete my account',
+  deleteBody: 'This permanently removes your profile, guide profile, messages, chats, reviews, trip requests, saved tours and the photos and documents you uploaded. Payment records are kept for the accounts, without your name. This cannot be undone.',
+  deleteConfirm: 'To confirm, type your email address',
+  deleteButton: 'Delete my account permanently',
+  deleteMismatch: 'The email address does not match this account.',
+  deleteDone: 'Your account has been deleted.',
 };
 
 export const ux_sw = {
@@ -64,6 +70,12 @@ export const ux_sw = {
   verifyBody: 'Fungua programu yako ya uthibitisho na uweke namba ya tarakimu 6 ya Rafrika.',
   codeError: 'Namba hiyo haikufanya kazi. Hakikisha saa ya simu yako iko sahihi na ujaribu namba mpya zaidi.',
   turnOffNote: 'Ili kuzima, kwanza ingia kwa kutumia namba yako.',
+  deleteTitle: 'Futa akaunti yangu',
+  deleteBody: 'Hii inaondoa kabisa wasifu wako, wasifu wa mwongozaji, ujumbe, gumzo, maoni, maombi ya safari, safari ulizohifadhi na picha na nyaraka ulizopakia. Kumbukumbu za malipo zinahifadhiwa kwa ajili ya hesabu, bila jina lako. Huwezi kurudisha.',
+  deleteConfirm: 'Kuthibitisha, andika barua pepe yako',
+  deleteButton: 'Futa akaunti yangu kabisa',
+  deleteMismatch: 'Barua pepe hailingani na akaunti hii.',
+  deleteDone: 'Akaunti yako imefutwa.',
 };
 
 export const ux_fr = {
@@ -96,6 +108,12 @@ export const ux_fr = {
   verifyBody: 'Ouvrez votre application d’authentification et saisissez le code à 6 chiffres de Rafrika.',
   codeError: 'Ce code n’a pas fonctionné. Vérifiez l’heure de votre téléphone et essayez le code le plus récent.',
   turnOffNote: 'Pour la désactiver, connectez-vous d’abord avec votre code.',
+  deleteTitle: 'Supprimer mon compte',
+  deleteBody: 'Cela supprime définitivement votre profil, votre profil de guide, vos messages, discussions, avis, demandes de voyage, circuits enregistrés ainsi que les photos et documents envoyés. Les paiements sont conservés pour la comptabilité, sans votre nom. Action irréversible.',
+  deleteConfirm: 'Pour confirmer, saisissez votre adresse e-mail',
+  deleteButton: 'Supprimer définitivement mon compte',
+  deleteMismatch: 'L’adresse e-mail ne correspond pas à ce compte.',
+  deleteDone: 'Votre compte a été supprimé.',
 };
 
 export const ux_it = {
@@ -128,6 +146,12 @@ export const ux_it = {
   verifyBody: 'Apri la tua app di autenticazione e inserisci il codice a 6 cifre di Rafrika.',
   codeError: 'Il codice non ha funzionato. Controlla che l’ora del telefono sia corretta e prova il codice più recente.',
   turnOffNote: 'Per disattivarlo, accedi prima con il tuo codice.',
+  deleteTitle: 'Elimina il mio account',
+  deleteBody: 'Elimina per sempre il tuo profilo, il profilo da guida, messaggi, chat, recensioni, richieste di viaggio, tour salvati e le foto e i documenti caricati. I pagamenti restano registrati per la contabilità, senza il tuo nome. Non si può annullare.',
+  deleteConfirm: 'Per confermare, scrivi il tuo indirizzo email',
+  deleteButton: 'Elimina definitivamente il mio account',
+  deleteMismatch: 'L’indirizzo email non corrisponde a questo account.',
+  deleteDone: 'Il tuo account è stato eliminato.',
 };
 
 export const ux_de = {
@@ -160,6 +184,12 @@ export const ux_de = {
   verifyBody: 'Öffne deine Authenticator-App und gib den 6-stelligen Code für Rafrika ein.',
   codeError: 'Der Code hat nicht funktioniert. Prüfe die Uhrzeit auf deinem Handy und versuche den neuesten Code.',
   turnOffNote: 'Zum Ausschalten melde dich zuerst mit deinem Code an.',
+  deleteTitle: 'Mein Konto löschen',
+  deleteBody: 'Damit werden dein Profil, dein Guide-Profil, Nachrichten, Chats, Bewertungen, Reiseanfragen, gespeicherte Touren sowie hochgeladene Fotos und Dokumente endgültig gelöscht. Zahlungsbelege bleiben für die Buchhaltung erhalten, ohne deinen Namen. Das kann nicht rückgängig gemacht werden.',
+  deleteConfirm: 'Gib zur Bestätigung deine E-Mail-Adresse ein',
+  deleteButton: 'Mein Konto endgültig löschen',
+  deleteMismatch: 'Die E-Mail-Adresse passt nicht zu diesem Konto.',
+  deleteDone: 'Dein Konto wurde gelöscht.',
 };
 
 export const ux_pl = {
@@ -192,6 +222,12 @@ export const ux_pl = {
   verifyBody: 'Otwórz aplikację uwierzytelniającą i wpisz 6-cyfrowy kod dla Rafrika.',
   codeError: 'Ten kod nie zadziałał. Sprawdź, czy czas w telefonie jest poprawny, i spróbuj najnowszego kodu.',
   turnOffNote: 'Aby to wyłączyć, najpierw zaloguj się kodem.',
+  deleteTitle: 'Usuń moje konto',
+  deleteBody: 'To trwale usuwa Twój profil, profil przewodnika, wiadomości, czaty, opinie, prośby o wycieczkę, zapisane wycieczki oraz przesłane zdjęcia i dokumenty. Zapisy płatności zostają do celów księgowych, bez Twojego imienia. Tego nie można cofnąć.',
+  deleteConfirm: 'Aby potwierdzić, wpisz swój adres e-mail',
+  deleteButton: 'Trwale usuń moje konto',
+  deleteMismatch: 'Adres e-mail nie pasuje do tego konta.',
+  deleteDone: 'Twoje konto zostało usunięte.',
 };
 
 export const ux_zh = {
@@ -224,6 +260,12 @@ export const ux_zh = {
   verifyBody: '打开身份验证器应用，输入 Rafrika 的 6 位验证码。',
   codeError: '验证码无效。请检查手机时间是否正确，并尝试最新的验证码。',
   turnOffNote: '如需关闭，请先使用验证码登录。',
+  deleteTitle: '删除我的账户',
+  deleteBody: '这将永久删除您的个人资料、向导资料、消息、群聊、评价、行程请求、收藏的线路以及您上传的照片和文件。付款记录会为账务保留，但不含您的姓名。此操作无法撤销。',
+  deleteConfirm: '请输入您的邮箱地址以确认',
+  deleteButton: '永久删除我的账户',
+  deleteMismatch: '邮箱地址与此账户不符。',
+  deleteDone: '您的账户已删除。',
 };
 
 export const UX_TEXT = { en: ux_en, sw: ux_sw, fr: ux_fr, it: ux_it, de: ux_de, pl: ux_pl, zh: ux_zh };

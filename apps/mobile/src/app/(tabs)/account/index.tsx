@@ -128,6 +128,9 @@ export default function AccountScreen() {
           </Card>
 
           <Button title={t.nav.signOut} variant="dark" onPress={signOut} />
+          <Text accessibilityRole="link" onPress={() => router.push('/delete-account')} style={{ color: brand.danger, fontWeight: '700', textAlign: 'center', paddingVertical: space.md }}>
+            {t.ux.deleteTitle}
+          </Text>
         </>
       ) : (
         <View style={{ marginHorizontal: -16 }}>

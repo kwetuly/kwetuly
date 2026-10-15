@@ -1,34 +1,63 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Trash2 } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { TwoStepSetup } from '@/components/two-step-setup';
+import { deleteAccount } from './actions';
 
 export const metadata: Metadata = { robots: { index: false } };
 
-export default async function SecurityPage() {
+export default async function SecurityPage({ searchParams }: PageProps<'/[lang]/security'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-leaf-dark underline">{t.nav.dashboard}</Link>
       <h1 className="mt-3 text-3xl font-bold">{t.ux.securityTitle}</h1>
       <Suspense fallback={<div className="card mt-6 h-56 animate-pulse" />}>
-        <Settings t={t} locale={locale} />
+        <Settings t={t} locale={locale} searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Settings({ t, locale }: { t: Dictionary; locale: Locale }) {
-  await requireUser(locale);
+async function Settings({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [user, status] = await Promise.all([requireUser(locale), searchParams]);
   const { data } = await (await createClient()).auth.mfa.listFactors();
   const enabled = (data?.totp ?? []).some((f) => f.status === 'verified');
   return (
-    <div className="mt-6">
+    <div className="mt-6 space-y-6">
       <TwoStepSetup enabled={enabled} labels={t.ux} />
+
+      <section id="delete" className="card scroll-mt-28 space-y-4" aria-labelledby="delete-title">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-red-50 text-red-800">
+            <Trash2 className="size-5" aria-hidden />
+          </span>
+          <div>
+            <h2 id="delete-title" className="text-lg font-bold">{t.ux.deleteTitle}</h2>
+            <p className="mt-1 text-sm text-muted">{t.ux.deleteBody}</p>
+          </div>
+        </div>
+        {status.deleteError && (
+          <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">
+            {status.deleteError === '1' ? t.ux.deleteMismatch : t.ux.errorBody}
+          </p>
+        )}
+        <form action={deleteAccount} className="space-y-3">
+          <input type="hidden" name="locale" value={locale} />
+          <div>
+            <label className="label" htmlFor="delete-email">{t.ux.deleteConfirm}</label>
+            <input id="delete-email" name="email" type="email" required autoComplete="off" placeholder={user.email ?? ''} className="field" />
+          </div>
+          <button className="inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-red-700 px-6 py-2.5 font-semibold text-red-800 transition hover:bg-red-50">
+            {t.ux.deleteButton}
+          </button>
+        </form>
+      </section>
     </div>
   );
 }
