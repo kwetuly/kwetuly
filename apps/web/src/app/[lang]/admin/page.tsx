@@ -110,7 +110,7 @@ export default async function AdminPage() {
         <h1 className="text-3xl font-bold">{t.admin.title}</h1>
         <Link href={`/${locale}/admin/media`} className="btn-outline ml-auto px-4 py-2 text-sm">Shared media →</Link>
         <Link href={`/${locale}/admin/messages`} className="btn-outline px-4 py-2 text-sm">Message safety →</Link>
-        <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Trips catalogue →</Link>
+        <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Tours &amp; operators →</Link>
       </div>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <PendingList t={t} locale={locale} />

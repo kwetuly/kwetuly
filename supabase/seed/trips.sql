@@ -4,7 +4,7 @@
 
 insert into public.trips
   (slug, title_en, title_sw, summary_en, summary_sw, circuit, kind, categories, days, destinations, start_from,
-   highlights, itinerary, includes, excludes, best_months, operated_by, is_signature, promo_text, sort_order)
+   highlights, itinerary, includes, excludes, best_months, operated_by, tour_type, promo_text, sort_order)
 values
 
 -- ============================ NORTHERN CIRCUIT ============================
@@ -19,7 +19,7 @@ values
    {"day":4,"title":"Ngorongoro Crater and return","body":"Descend into the crater for a half-day game drive, then return to Arusha."}]',
  '{Licensed driver-guide and 4x4 safari vehicle,Park and crater fees,Accommodation and meals as listed,Drinking water on safari}',
  '{International flights and visa,Travel insurance,Tips for guides and crew,Drinks and personal items}',
- '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 10),
+ '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 10),
 
 ('northern-circuit-7-days', 'Northern Circuit Grand Safari', 'Safari Kubwa ya Kaskazini',
  'Tarangire elephants, Lake Manyara, three days in the Serengeti and the Ngorongoro Crater in one unhurried week.',
@@ -36,7 +36,7 @@ values
    {"day":7,"title":"Ngorongoro Crater","body":"Half-day in the crater, return to Arusha."}]',
  '{Licensed driver-guide and 4x4 safari vehicle,Park and crater fees,Accommodation and meals as listed,Drinking water on safari}',
  '{International flights and visa,Travel insurance,Tips for guides and crew,Drinks and personal items}',
- '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 11),
+ '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 11),
 
 ('migration-calving-safari-6-days', 'Great Migration Calving Safari', 'Safari ya Uhamaji: Msimu wa Kuzaa',
  'Thousands of wildebeest calves are born on the southern Serengeti and Ndutu plains early in the year, followed closely by predators.',
@@ -51,7 +51,7 @@ values
    {"day":6,"title":"Return to Arusha","body":"Morning at leisure and drive back."}]',
  '{Licensed driver-guide and 4x4 safari vehicle,Park and crater fees,Accommodation and meals as listed}',
  '{International flights and visa,Travel insurance,Tips for guides and crew,Drinks and personal items}',
- '{1,2,3}', 'partner', false, null, 12),
+ '{1,2,3}', 'partner', 'operator', null, 12),
 
 ('arusha-national-park-day', 'Arusha National Park Day Trip', 'Hifadhi ya Taifa Arusha kwa Siku Moja',
  'Walking safari with an armed ranger, Momella lakes and colobus monkeys in the forest, all close to Arusha town.',
@@ -60,7 +60,7 @@ values
  '{Walking safari with a park ranger,Colobus monkeys,Views of Mount Meru}',
  '[{"day":1,"title":"Arusha National Park","body":"Game drive past the Momella lakes, a ranger-led walk and a picnic lunch, back in Arusha by evening."}]',
  '{Guide and vehicle,Park fees,Ranger for the walk,Picnic lunch}',
- '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', false, null, 13),
+ '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', 'operator', null, 13),
 
 ('tarangire-day-trip', 'Tarangire Day Safari', 'Safari ya Siku Moja Tarangire',
  'A full day among giant baobabs and some of the largest elephant herds in northern Tanzania.',
@@ -68,7 +68,7 @@ values
  'northern', 'day_trip', '{safari}', 1, '{Tarangire National Park}', 'Arusha',
  '{Elephant herds,Baobab landscapes,Excellent birdlife}',
  '[{"day":1,"title":"Tarangire","body":"Early start from Arusha, full-day game drive with picnic lunch, return in the evening."}]',
- '{Guide and 4x4 vehicle,Park fees,Picnic lunch}', '{Tips,Drinks}', '{6,7,8,9,10}', 'partner', false, null, 14),
+ '{Guide and 4x4 vehicle,Park fees,Picnic lunch}', '{Tips,Drinks}', '{6,7,8,9,10}', 'partner', 'operator', null, 14),
 
 -- ============================ MOUNTAINS ============================
 ('kilimanjaro-machame-7-days', 'Kilimanjaro: Machame Route (7 days)', 'Kilimanjaro: Njia ya Machame (siku 7)',
@@ -85,7 +85,7 @@ values
    {"day":7,"title":"Mweka Gate","body":"Descend through the forest; certificates and celebration."}]',
  '{Licensed mountain guides and crew,Park fees and rescue fee,Camping equipment and meals on the mountain,Transfers to and from the gate}',
  '{International flights and visa,"Travel insurance with evacuation cover to 6,000 m",Tips for guides and porters,Personal gear (can be rented through Rafrika)}',
- '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 20),
+ '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 20),
 
 ('kilimanjaro-lemosho-8-days', 'Kilimanjaro: Lemosho Route (8 days)', 'Kilimanjaro: Njia ya Lemosho (siku 8)',
  'A quieter western approach with extra days on the mountain, giving one of the best chances to reach the summit.',
@@ -102,7 +102,7 @@ values
    {"day":8,"title":"Mweka Gate","body":"Descend and celebrate."}]',
  '{Licensed mountain guides and crew,Park fees and rescue fee,Camping equipment and meals on the mountain,Transfers to and from the gate}',
  '{International flights and visa,"Travel insurance with evacuation cover to 6,000 m",Tips for guides and porters,Personal gear}',
- '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 21),
+ '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 21),
 
 ('kilimanjaro-marangu-6-days', 'Kilimanjaro: Marangu Route (6 days)', 'Kilimanjaro: Njia ya Marangu (siku 6)',
  'The classic "Coca-Cola route" with hut accommodation instead of tents, and an extra acclimatisation day.',
@@ -117,7 +117,7 @@ values
    {"day":6,"title":"Marangu Gate","body":"Descend and celebrate."}]',
  '{Licensed mountain guides and crew,"Park, hut and rescue fees",Meals on the mountain,Transfers to and from the gate}',
  '{International flights and visa,"Travel insurance with evacuation cover to 6,000 m",Tips for guides and porters,Personal gear}',
- '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 22),
+ '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 22),
 
 ('mount-meru-4-days', 'Mount Meru Climb (4 days)', 'Kupanda Mlima Meru (siku 4)',
  'Tanzania''s second-highest mountain: a dramatic crater rim, wildlife on the lower slopes, and great Kilimanjaro acclimatisation.',
@@ -129,7 +129,7 @@ values
    {"day":3,"title":"Summit day","body":"Night climb along the crater rim to Socialist Peak, descend to Miriakamba."},
    {"day":4,"title":"Momella Gate","body":"Descend and transfer back."}]',
  '{Licensed guide and ranger,"Park, hut and rescue fees",Meals on the mountain,Transfers}',
- '{Travel insurance,Tips,Personal gear}', '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 23),
+ '{Travel insurance,Tips,Personal gear}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 23),
 
 ('ol-doinyo-lengai-natron-3-days', 'Ol Doinyo Lengai & Lake Natron', 'Ol Doinyo Lengai na Ziwa Natron',
  'Climb the Maasai "Mountain of God", an active volcano, at night and visit the flamingo lake and waterfalls of Natron.',
@@ -140,7 +140,7 @@ values
    {"day":2,"title":"Ol Doinyo Lengai","body":"Midnight start, summit at sunrise, descend; rest in the afternoon."},
    {"day":3,"title":"Natron flamingos and return","body":"Lake shore walk, return to Arusha."}]',
  '{Guide and vehicle,Local fees and village levies,Accommodation and meals}',
- '{Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', false, null, 24),
+ '{Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', 'operator', null, 24),
 
 -- ============================ CULTURAL & DAY TRIPS ============================
 ('materuni-waterfalls-coffee', 'Materuni Waterfalls & Coffee Farm', 'Maporomoko ya Materuni na Shamba la Kahawa',
@@ -149,7 +149,7 @@ values
  'northern', 'day_trip', '{cultural,walking}', 1, '{Materuni village,Kilimanjaro region}', 'Moshi',
  '{Materuni waterfall,Hands-on coffee experience,Local lunch with a Chagga family}',
  '[{"day":1,"title":"Materuni","body":"Village walk to the waterfall, swim if you dare, coffee from bean to cup and a local lunch."}]',
- '{Local guide,Transport from Moshi,Village fees,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', false, null, 30),
+ '{Local guide,Transport from Moshi,Village fees,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', 'operator', null, 30),
 
 ('chemka-hot-springs', 'Chemka Hot Springs', 'Chemchemi za Maji Moto Chemka',
  'Swim in clear, warm spring water among fig trees: the perfect recovery day after a climb or safari.',
@@ -157,7 +157,7 @@ values
  'northern', 'day_trip', '{cultural}', 1, '{Chemka (Kikuletwa) springs}', 'Moshi',
  '{Turquoise warm water,Rope swing,Relaxed recovery day}',
  '[{"day":1,"title":"Chemka","body":"Drive from Moshi or Arusha, swim and relax, local lunch, return in the afternoon."}]',
- '{Guide and transport,Entrance fee,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', false, null, 31),
+ '{Guide and transport,Entrance fee,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', 'operator', null, 31),
 
 ('mto-wa-mbu-village-bike', 'Mto wa Mbu Village & Bike Tour', 'Ziara ya Kijiji na Baiskeli Mto wa Mbu',
  'Cycle through banana farms and markets in one of Tanzania''s most diverse villages, part of the Cultural Tourism Programme.',
@@ -165,7 +165,7 @@ values
  'northern', 'day_trip', '{cultural}', 1, '{Mto wa Mbu}', 'Mto wa Mbu',
  '{Community-run cultural tourism,Banana beer and local lunch,Views of the Rift Valley escarpment}',
  '[{"day":1,"title":"Mto wa Mbu","body":"Bike or walk through farms, meet artisans and families, local lunch. Easy to combine with a Lake Manyara safari."}]',
- '{Local guide,Bike,Village development fee,Lunch}', '{Transport to Mto wa Mbu,Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', false, null, 32),
+ '{Local guide,Bike,Village development fee,Lunch}', '{Transport to Mto wa Mbu,Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', 'operator', null, 32),
 
 ('lake-eyasi-hadzabe-2-days', 'Lake Eyasi: Hadzabe & Datoga', 'Ziwa Eyasi: Wahadzabe na Wadatoga',
  'Spend a morning with Hadzabe hunter-gatherers and meet Datoga blacksmiths beside a remote soda lake.',
@@ -174,7 +174,7 @@ values
  '{Respectful visit with Hadzabe hunters at dawn,Datoga blacksmith workshop,Lake Eyasi landscapes}',
  '[{"day":1,"title":"Karatu to Lake Eyasi","body":"Afternoon visit to Datoga families and onion farms."},
    {"day":2,"title":"Hadzabe morning","body":"Pre-dawn walk with Hadzabe hunters, then return."}]',
- '{Guide and vehicle,Community fees,Accommodation and meals}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', false, null, 33),
+ '{Guide and vehicle,Community fees,Accommodation and meals}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', 'operator', null, 33),
 
 ('moshi-chagga-town-tour', 'Moshi Town & Chagga Heritage', 'Mji wa Moshi na Urithi wa Wachaga',
  'Markets, street food and Chagga history, including underground hideout caves used in past tribal wars.',
@@ -182,7 +182,7 @@ values
  'northern', 'day_trip', '{cultural,historical}', 1, '{Moshi,Marangu}', 'Moshi',
  '{Moshi central market,Chagga caves at Marangu,Local food tasting}',
  '[{"day":1,"title":"Moshi and Marangu","body":"Market walk and street food in Moshi, then Chagga caves and a village lunch in Marangu."}]',
- '{Local guide,Transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,4,5,6,7,8,9,10,11,12}', 'guide', false, null, 34),
+ '{Local guide,Transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,4,5,6,7,8,9,10,11,12}', 'guide', 'operator', null, 34),
 
 -- ============================ SOUTHERN CIRCUIT ============================
 ('nyerere-boat-walking-4-days', 'Nyerere National Park: Boat & Walking Safari', 'Hifadhi ya Nyerere: Safari ya Boti na Matembezi',
@@ -195,7 +195,7 @@ values
    {"day":3,"title":"Walking safari","body":"Morning walk with a ranger, afternoon drive."},
    {"day":4,"title":"Return to Dar es Salaam","body":"Morning activity and return."}]',
  '{Guide and vehicle,Park fees,Boat safari,Accommodation and meals}',
- '{Flights (quoted separately),Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', false, null, 40),
+ '{Flights (quoted separately),Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', 'operator', null, 40),
 
 ('ruaha-wilderness-5-days', 'Ruaha Wilderness Safari', 'Safari ya Pori la Ruaha',
  'Big lion prides, huge elephant herds and very few vehicles in one of Tanzania''s wildest parks.',
@@ -207,7 +207,7 @@ values
    {"day":3,"title":"Ruaha","body":"Optional walking safari."},
    {"day":4,"title":"Ruaha","body":"Explore the Mwagusi sand river area."},
    {"day":5,"title":"Depart","body":"Morning drive and departure."}]',
- '{Guide and vehicle,Park fees,Accommodation and meals}', '{Flights,Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', false, null, 41),
+ '{Guide and vehicle,Park fees,Accommodation and meals}', '{Flights,Travel insurance,Tips,Drinks}', '{6,7,8,9,10}', 'partner', 'operator', null, 41),
 
 ('mikumi-2-days', 'Mikumi Safari from Dar es Salaam', 'Safari ya Mikumi kutoka Dar es Salaam',
  'The easiest safari from Dar es Salaam: lions, elephants and giraffes on open plains a few hours by road.',
@@ -216,7 +216,7 @@ values
  '{Quick safari from Dar es Salaam,Open grassland game viewing,Good AFCON add-on}',
  '[{"day":1,"title":"Dar es Salaam to Mikumi","body":"Morning drive, afternoon game drive."},
    {"day":2,"title":"Mikumi and return","body":"Sunrise game drive, return to Dar es Salaam."}]',
- '{Guide and vehicle,Park fees,Accommodation and meals}', '{Tips,Drinks}', '{1,2,6,7,8,9,10,11,12}', 'partner', false, null, 42),
+ '{Guide and vehicle,Park fees,Accommodation and meals}', '{Tips,Drinks}', '{1,2,6,7,8,9,10,11,12}', 'partner', 'operator', null, 42),
 
 -- ============================ WESTERN CIRCUIT ============================
 ('mahale-chimpanzees-5-days', 'Mahale Mountains Chimpanzees', 'Sokwe wa Milima ya Mahale',
@@ -229,7 +229,7 @@ values
    {"day":3,"title":"Chimpanzee trek","body":"Second trek; afternoon on the lake."},
    {"day":4,"title":"Forest and lake","body":"Forest walk or dhow trip."},
    {"day":5,"title":"Fly out","body":"Boat and flight back."}]',
- '{Park fees,Chimpanzee trekking permits,Accommodation and meals}', '{Flights (quoted separately),Travel insurance,Tips}', '{7,8,9,10}', 'partner', false, null, 50),
+ '{Park fees,Chimpanzee trekking permits,Accommodation and meals}', '{Flights (quoted separately),Travel insurance,Tips}', '{7,8,9,10}', 'partner', 'operator', null, 50),
 
 -- ============================ COAST & ISLANDS ============================
 ('zanzibar-stone-town-spice', 'Stone Town & Spice Farm', 'Mji Mkongwe na Shamba la Viungo',
@@ -238,7 +238,7 @@ values
  'coast', 'day_trip', '{cultural,historical}', 1, '{Stone Town,Zanzibar}', 'Zanzibar',
  '{UNESCO World Heritage Stone Town,Spice farm tasting,Swahili lunch}',
  '[{"day":1,"title":"Stone Town and spices","body":"Morning walking tour of Stone Town, afternoon spice farm with a Swahili lunch."}]',
- '{Local guide,Transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', false, null, 60),
+ '{Local guide,Transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,11,12}', 'partner', 'operator', null, 60),
 
 ('zanzibar-beach-mnemba-4-days', 'Zanzibar Beach & Mnemba Snorkelling', 'Ufukwe wa Zanzibar na Kuogelea Mnemba',
  'White-sand beaches on the north-east coast, a dhow trip to Mnemba Atoll and lazy days by the Indian Ocean.',
@@ -249,7 +249,7 @@ values
    {"day":2,"title":"Mnemba Atoll","body":"Boat trip to snorkel with turtles and reef fish."},
    {"day":3,"title":"Beach day","body":"Free day; optional sunset dhow cruise."},
    {"day":4,"title":"Depart","body":"Transfer to the airport or ferry."}]',
- '{Airport transfers,Accommodation and breakfast,Snorkelling trip}', '{Flights,Travel insurance,Tips,Other meals}', '{1,2,6,7,8,9,10,12}', 'partner', false, null, 61),
+ '{Airport transfers,Accommodation and breakfast,Snorkelling trip}', '{Flights,Travel insurance,Tips,Other meals}', '{1,2,6,7,8,9,10,12}', 'partner', 'operator', null, 61),
 
 ('bagamoyo-history-day', 'Bagamoyo History Day Trip', 'Historia ya Bagamoyo kwa Siku Moja',
  'An old caravan and slave-trade town north of Dar es Salaam, with ruins, a museum and a fishing harbour.',
@@ -257,7 +257,7 @@ values
  'coast', 'day_trip', '{historical,cultural}', 1, '{Bagamoyo}', 'Dar es Salaam',
  '{Kaole ruins,Old German boma and caravan serai,Fish market}',
  '[{"day":1,"title":"Bagamoyo","body":"Drive from Dar es Salaam, guided heritage walk, seafood lunch, return."}]',
- '{Guide and transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,4,5,6,7,8,9,10,11,12}', 'partner', false, null, 62),
+ '{Guide and transport,Entrance fees,Lunch}', '{Tips}', '{1,2,3,4,5,6,7,8,9,10,11,12}', 'partner', 'operator', null, 62),
 
 ('kilwa-kisiwani-3-days', 'Kilwa Kisiwani Ruins', 'Magofu ya Kilwa Kisiwani',
  'The UNESCO-listed ruins of a medieval Swahili trading city, reached by dhow from Kilwa Masoko.',
@@ -267,7 +267,7 @@ values
  '[{"day":1,"title":"Travel to Kilwa Masoko","body":"Drive or fly south."},
    {"day":2,"title":"Kilwa Kisiwani","body":"Dhow to the island and guided tour of the ruins."},
    {"day":3,"title":"Return","body":"Morning at leisure, return to Dar es Salaam."}]',
- '{Guide,Dhow transfer,Site fees,Accommodation and breakfast}', '{Flights,Tips,Other meals}', '{6,7,8,9,10,11,12}', 'partner', false, null, 63),
+ '{Guide,Dhow transfer,Site fees,Accommodation and breakfast}', '{Flights,Tips,Other meals}', '{6,7,8,9,10,11,12}', 'partner', 'operator', null, 63),
 
 -- ============================ COMBOS ============================
 ('kili-safari-zanzibar-15-days', 'Kilimanjaro + Safari + Zanzibar', 'Kilimanjaro + Safari + Zanzibar',
@@ -283,7 +283,7 @@ values
    {"day":14,"title":"Fly to Zanzibar","body":"Beach and Stone Town."},
    {"day":15,"title":"Depart","body":"Fly home from Zanzibar."}]',
  '{Each part is delivered by a licensed operator; full list in the individual trips}',
- '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 70),
+ '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 70),
 
 ('safari-zanzibar-9-days', 'Safari + Zanzibar', 'Safari + Zanzibar',
  'Five days on the northern circuit followed by four days on the beach: the most popular first trip to Tanzania.',
@@ -295,7 +295,7 @@ values
    {"day":6,"title":"Fly to Zanzibar","body":"Light aircraft from Arusha or the Serengeti."},
    {"day":7,"title":"Zanzibar days","body":"Beach, Mnemba snorkelling and Stone Town."},
    {"day":9,"title":"Depart","body":"Fly home from Zanzibar."}]',
- '{Each part is delivered by a licensed operator}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 71),
+ '{Each part is delivered by a licensed operator}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 71),
 
 ('kili-cultural-immersion-10-days', 'Kilimanjaro + Cultural Immersion', 'Kilimanjaro + Utamaduni',
  'Climb Kilimanjaro, then slow down with a Chagga homestay, Materuni coffee and Maasai and Hadzabe visits.',
@@ -307,7 +307,7 @@ values
    {"day":8,"title":"Materuni homestay","body":"Coffee, waterfalls and a night with a Chagga family."},
    {"day":9,"title":"Lake Eyasi","body":"Drive to Lake Eyasi; Datoga visit."},
    {"day":10,"title":"Hadzabe morning and return","body":"Dawn with the Hadzabe, return to Arusha."}]',
- '{Each part is delivered by a licensed operator or a verified Rafrika guide}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', false, null, 72),
+ '{Each part is delivered by a licensed operator or a verified Rafrika guide}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 72),
 
 -- ============================ RAFRIKA SIGNATURE TRIPS (promo) ============================
 ('signature-guides-day-off', 'Rafrika Signature: A Guide''s Day Off', 'Rafrika Maalum: Siku ya Mapumziko ya Mwongozaji',
@@ -316,7 +316,7 @@ values
  'northern', 'day_trip', '{cultural,walking}', 1, '{Materuni village,Chemka springs,Moshi}', 'Moshi',
  '{Led by a verified Rafrika guide,Waterfall and coffee,Nyama choma lunch and hot-spring swim}',
  '[{"day":1,"title":"A guide''s favourite day","body":"Morning at Materuni waterfall and coffee farm, nyama choma lunch in a local spot, afternoon swim at Chemka hot springs."}]',
- '{Verified Rafrika guide,Transport,Entrance fees,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', true,
+ '{Verified Rafrika guide,Transport,Entrance fees,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', 'signature',
  'Designed by Rafrika guides. Share your photos with #RafrikaGuides.', 5),
 
 ('signature-walk-with-a-kili-guide', 'Rafrika Signature: Walk with a Kilimanjaro Veteran', 'Rafrika Maalum: Tembea na Mkongwe wa Kilimanjaro',
@@ -325,7 +325,7 @@ values
  'northern', 'day_trip', '{mountain,walking}', 1, '{Kilimanjaro National Park}', 'Moshi',
  '{Rainforest day hike towards Mandara Hut,Personal climb preparation and gear check,Stories from 300+ summits}',
  '[{"day":1,"title":"Kilimanjaro day hike","body":"Gear check and briefing in Moshi, day hike from Marangu Gate into the rainforest, lunch on the trail, debrief."}]',
- '{Veteran Rafrika guide,Park day fees,Transport,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,12}', 'guide', true,
+ '{Veteran Rafrika guide,Park day fees,Transport,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,12}', 'guide', 'signature',
  'Our founder''s favourite way to prepare climbers.', 6),
 
 ('signature-afcon-2027-fan-days', 'Rafrika Signature: AFCON 2027 Fan Days', 'Rafrika Maalum: Siku za Mashabiki AFCON 2027',
@@ -336,7 +336,7 @@ values
  '[{"day":1,"title":"City and match day","body":"Guided city tour and transfer to the stadium."},
    {"day":2,"title":"Safari or island","body":"Choose a Mikumi game drive or a Zanzibar Stone Town day."},
    {"day":3,"title":"Back for the next match","body":"Return in time for the next game."}]',
- '{Verified driver transfers,Local guide,Entrance and park fees for chosen options}', '{Match tickets,Flights,Tips}', '{6,7}', 'partner', true,
+ '{Verified driver transfers,Local guide,Entrance and park fees for chosen options}', '{Match tickets,Flights,Tips}', '{6,7}', 'partner', 'signature',
  'AFCON 2027, 19 June to 17 July. Venues and dates subject to CAF confirmation.', 7),
 
 ('signature-spice-stone-sea', 'Rafrika Signature: Spice, Stone & Sea', 'Rafrika Maalum: Viungo, Mawe na Bahari',
@@ -347,5 +347,5 @@ values
  '[{"day":1,"title":"Stone Town by night","body":"Evening walk and Forodhani food market with your storyteller guide."},
    {"day":2,"title":"Spice and cooking","body":"Spice farm visit and Swahili cooking class."},
    {"day":3,"title":"Sea","body":"Dhow trip to a sandbank with seafood lunch, then departure."}]',
- '{Storyteller guide,Cooking class,Dhow trip and lunch,Transfers on Zanzibar}', '{Flights,Accommodation (we can suggest homestays),Tips}', '{1,2,6,7,8,9,10,12}', 'partner', true,
+ '{Storyteller guide,Cooking class,Dhow trip and lunch,Transfers on Zanzibar}', '{Flights,Accommodation (we can suggest homestays),Tips}', '{1,2,6,7,8,9,10,12}', 'partner', 'signature',
  'A Rafrika original. Ask about honeymoon versions.', 8);

@@ -2,106 +2,176 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { TRIP_CIRCUITS, TRIP_KINDS } from '@rafrika/shared';
+import { TOUR_COLUMNS, TOUR_TYPES, TRIP_CIRCUITS, tourReadiness, verifiedPrice, type Tour } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { updateTrip } from './actions';
+import { today } from '@/lib/today';
+import { quickUpdateTour } from './actions';
 
-export const metadata: Metadata = { title: 'Admin: trips', robots: { index: false } };
+export const metadata: Metadata = { title: 'Admin: tours', robots: { index: false } };
 
-type AdminTrip = {
-  id: string;
-  slug: string;
-  title_en: string;
-  circuit: string;
-  kind: string;
-  days: number;
-  status: string;
-  operated_by: string;
-  price_from_usd: number | null;
-  is_signature: boolean;
-  trip_partners: { company_name: string; tala_licence: string | null; contact: string | null; commission_note: string | null } | null;
-};
+type AdminTour = Tour & { trip_stops: { count: number }[]; trip_guides: { count: number }[] };
+type Search = Promise<Record<string, string | string[] | undefined>>;
 
-export default async function AdminTripsPage() {
+// Prices and operator pages older than this are flagged as outdated.
+const STALE_DAYS = 180;
+
+export default async function AdminToursPage({ searchParams }: PageProps<'/[lang]/admin/trips'>) {
   const locale = await getLocale();
   await getDictionary();
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="flex flex-wrap items-center gap-4">
-        <h1 className="text-3xl font-bold">Trips</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-bold">Tours</h1>
         <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">← Guides & jobs</Link>
+        <Link href={`/${locale}/admin/operators`} className="btn-outline ml-auto px-4 py-2 text-sm">Tour operators →</Link>
+        <Link href={`/${locale}/admin/trips/new`} className="btn px-4 py-2 text-sm">New tour</Link>
       </div>
-      <p className="mt-2 text-sm text-muted">
-        Review each trip, set a price (or leave it empty for “price on request”), record the licensed partner that runs it, then publish.
-        Switch “Operated by” to Rafrika once the company holds its own licence.
+      <p className="mt-2 max-w-3xl text-sm text-muted">
+        Signature Trips are Rafrika’s own itineraries. Operator Tours link to a tour operator and their own page, with original summaries only.
+        Prices show only with the date you verified them; without one, travellers see “Price subject to confirmation”.
+        A tour can only be published once its itinerary, map stops, highlights, inclusions and best months are filled in.
       </p>
       <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
-        <TripList locale={locale} />
+        <TourList locale={locale} searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function TripList({ locale }: { locale: Locale }) {
+async function TourList({ locale, searchParams }: { locale: Locale; searchParams: Search }) {
   const user = await requireUser(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
+  const params = await searchParams;
+  const show = typeof params.show === 'string' ? params.show : 'all';
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from('trips')
-    .select('id, slug, title_en, circuit, kind, days, status, operated_by, price_from_usd, is_signature, trip_partners(company_name, tala_licence, contact, commission_note)')
-    .order('sort_order')
-    .returns<AdminTrip[]>();
-  const trips = data ?? [];
-  const counts = { published: trips.filter((x) => x.status === 'published').length, draft: trips.filter((x) => x.status === 'draft').length };
+  const [{ data }, now] = await Promise.all([
+    supabase
+      .from('trips')
+      .select(`${TOUR_COLUMNS}, trip_stops(count), trip_guides(count)`)
+      .order('status')
+      .order('sort_order')
+      .returns<AdminTour[]>(),
+    today(),
+  ]);
+  const all = data ?? [];
+  const staleBefore = new Date(now.getTime() - STALE_DAYS * 86_400_000);
+
+  const info = all.map((tour) => {
+    const counts = { stops: tour.trip_stops[0]?.count ?? 0, guides: tour.trip_guides[0]?.count ?? 0 };
+    const missing = tourReadiness(tour, counts).filter((x) => x.required && !x.ok);
+    const priceExpired = tour.price_from != null && verifiedPrice(tour, now) == null;
+    const stale =
+      priceExpired ||
+      (tour.price_verified_at != null && new Date(tour.price_verified_at) < staleBefore) ||
+      (tour.source_checked_at != null && new Date(tour.source_checked_at) < staleBefore);
+    return { tour, counts, missing, priceExpired, outdated: stale || tour.needs_review };
+  });
+
+  const filters: Record<string, (x: (typeof info)[number]) => boolean> = {
+    all: () => true,
+    published: (x) => x.tour.status === 'published',
+    draft: (x) => x.tour.status === 'draft',
+    archived: (x) => x.tour.status === 'archived',
+    signature: (x) => x.tour.tour_type === 'signature',
+    ready: (x) => x.tour.status === 'draft' && x.missing.length === 0,
+    review: (x) => x.outdated,
+  };
+  const labels: Record<string, string> = {
+    all: 'All',
+    published: 'Published',
+    draft: 'Drafts',
+    archived: 'Archived',
+    signature: 'Signature Trips',
+    ready: 'Ready to publish',
+    review: 'Needs review / outdated',
+  };
+  const rows = info.filter(filters[show] ?? filters.all);
 
   return (
     <>
-      <p className="mt-4 text-sm font-semibold">Published: {counts.published} · Drafts: {counts.draft}</p>
-      <div className="mt-6 space-y-4">
-        {trips.map((trip) => (
-          <form key={trip.id} id={trip.id} action={updateTrip} className="card grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr]">
-            <input type="hidden" name="locale" value={locale} />
-            <input type="hidden" name="trip_id" value={trip.id} />
-            <div>
-              <Link href={`/${locale}/tours/${trip.slug}`} className="font-bold hover:text-leaf-dark">{trip.title_en}</Link>
-              <p className="mt-1 text-xs text-muted">
-                {TRIP_CIRCUITS.find((c) => c.id === trip.circuit)?.en} · {TRIP_KINDS.find((k) => k.id === trip.kind)?.en} · {trip.days} days
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                <select name="status" defaultValue={trip.status} className="field w-auto py-2">
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                  <option value="archived">Archived</option>
-                </select>
-                <label className="flex items-center gap-1.5 font-semibold">
-                  <input type="checkbox" name="is_signature" defaultChecked={trip.is_signature} className="size-4 accent-leaf" /> Signature
-                </label>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <select name="operated_by" defaultValue={trip.operated_by} className="field py-2">
-                <option value="partner">Operated by licensed partner</option>
-                <option value="rafrika">Operated by Rafrika</option>
-                <option value="guide">Led by a Rafrika guide</option>
-              </select>
-              <input name="price_from_usd" type="number" min={0} step="1" defaultValue={trip.price_from_usd ?? ''} placeholder="Price from (USD)" className="field py-2" />
-            </div>
-            <div className="space-y-2 text-sm">
-              <input name="company_name" defaultValue={trip.trip_partners?.company_name ?? ''} placeholder="Partner company" className="field py-2" />
-              <input name="tala_licence" defaultValue={trip.trip_partners?.tala_licence ?? ''} placeholder="Partner TALA licence no." className="field py-2" />
-              <input name="contact" defaultValue={trip.trip_partners?.contact ?? ''} placeholder="Partner contact" className="field py-2" />
-              <input name="commission_note" defaultValue={trip.trip_partners?.commission_note ?? ''} placeholder="Commission / referral terms" className="field py-2" />
-            </div>
-            <div className="lg:col-span-3">
-              <button className="btn px-5 py-2 text-sm">Save</button>
-            </div>
-          </form>
+      <div className="mt-6 flex flex-wrap gap-2">
+        {Object.keys(filters).map((key) => (
+          <Link
+            key={key}
+            href={`/${locale}/admin/trips${key === 'all' ? '' : `?show=${key}`}`}
+            className={`rounded-[5px] px-3 py-1.5 text-sm font-semibold ${show === key ? 'bg-night text-white' : 'border border-line bg-white hover:border-leaf'}`}
+          >
+            {labels[key]} ({info.filter(filters[key]).length})
+          </Link>
         ))}
       </div>
+      {params.deleted && <p className="mt-4 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">Tour deleted.</p>}
+
+      <div className="mt-6 overflow-x-auto rounded-[5px] border border-line bg-white">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="border-b border-line bg-surface text-xs text-muted">
+            <tr>
+              <th className="p-3">Tour</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Price</th>
+              <th className="p-3">Map / guides</th>
+              <th className="p-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {rows.map(({ tour, counts, missing, priceExpired, outdated }) => (
+              <tr key={tour.id} id={tour.id} className="align-top">
+                <td className="p-3">
+                  <Link href={`/${locale}/admin/trips/${tour.id}`} className="font-bold hover:text-leaf-dark">{tour.title_en}</Link>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {TOUR_TYPES.find((x) => x.id === tour.tour_type)?.en} · {TRIP_CIRCUITS.find((c) => c.id === tour.circuit)?.en} · {tour.days} days
+                    {tour.tour_operators && ` · ${tour.tour_operators.name}`}
+                  </p>
+                  {missing.length > 0 && <p className="mt-1 text-xs text-muted">Missing: {missing.map((m) => m.label).join(', ')}</p>}
+                </td>
+                <td className="p-3">
+                  <span className={`rounded-[5px] px-2 py-0.5 text-xs font-bold ${tour.status === 'published' ? 'bg-mint text-forest' : tour.status === 'draft' ? 'bg-sand text-leaf-dark' : 'bg-surface text-muted'}`}>
+                    {tour.status}
+                  </span>
+                  {outdated && <span className="mt-1 block text-xs font-bold text-red-700">{tour.needs_review ? 'Flagged for review' : 'Outdated'}</span>}
+                </td>
+                <td className="p-3 text-xs">
+                  {tour.price_from == null ? (
+                    <span className="text-muted">Subject to confirmation</span>
+                  ) : (
+                    <>
+                      <span className="font-semibold">{tour.price_currency} {Number(tour.price_from).toLocaleString('en-US')}</span>
+                      <span className={`block ${priceExpired ? 'font-bold text-red-700' : 'text-muted'}`}>
+                        {priceExpired ? 'Expired' : `Checked ${tour.price_verified_at}`}
+                      </span>
+                    </>
+                  )}
+                </td>
+                <td className="p-3 text-xs text-muted">{counts.stops} stops · {counts.guides} guides</td>
+                <td className="p-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    <Link href={`/${locale}/admin/trips/${tour.id}`} className="rounded-[5px] bg-leaf px-2.5 py-1 text-xs font-bold text-white">Edit</Link>
+                    <Link href={`/${locale}/tours/${tour.slug}`} className="rounded-[5px] border border-line px-2.5 py-1 text-xs font-semibold">View</Link>
+                    <QuickAction id={tour.id} locale={locale} action={tour.needs_review ? 'unflag' : 'flag'} label={tour.needs_review ? 'Reviewed' : 'Flag'} />
+                    {tour.status === 'published' && <QuickAction id={tour.id} locale={locale} action="draft" label="Unpublish" />}
+                    {tour.status !== 'archived' && <QuickAction id={tour.id} locale={locale} action="archive" label="Archive" />}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
+  );
+}
+
+function QuickAction({ id, locale, action, label }: { id: string; locale: Locale; action: string; label: string }) {
+  return (
+    <form action={quickUpdateTour}>
+      <input type="hidden" name="locale" value={locale} />
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="action" value={action} />
+      <button className="rounded-[5px] border border-line px-2.5 py-1 text-xs font-semibold hover:border-leaf">{label}</button>
+    </form>
   );
 }

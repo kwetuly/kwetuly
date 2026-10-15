@@ -73,8 +73,8 @@ export async function contactGuide(input: { guideId: string; userId?: string; na
   check(error);
 }
 
-export async function enquireTour(input: { tripId: string; tripTitle: string; userId?: string; name: string; contact: string; dates: string; people: string; message: string }) {
-  const details = [`Trip: ${input.tripTitle}`, `Dates: ${input.dates || '-'}`, `People: ${input.people || '-'}`, input.message].filter(Boolean).join('\n');
+export async function enquireTour(input: { tripId: string; tripTitle: string; userId?: string; name: string; contact: string; dates: string; people: string; guide?: string; message: string }) {
+  const details = [`Trip: ${input.tripTitle}`, `Dates: ${input.dates || '-'}`, `People: ${input.people || '-'}`, input.guide && `Preferred guide: ${input.guide}`, input.message].filter(Boolean).join('\n');
   const { error } = await supabase.from('leads').insert({
     trip_id: input.tripId,
     traveler_id: input.userId ?? null,

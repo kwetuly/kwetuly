@@ -1,6 +1,7 @@
 // Data access for the app. Everything goes through Supabase with the signed-in user's session,
 // so row-level security decides what each person can see and do (exactly as on the website).
 import { randomUUID } from 'expo-crypto';
+import { STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Tour as SharedTour, type TourStop } from '@rafrika/shared';
 import { supabase } from './supabase';
 
 export type Guide = {
@@ -79,36 +80,84 @@ export async function listReviews(guideId: string): Promise<Review[]> {
 // ---------------------------------------------------------------------------
 // Tours (the trip catalogue) and group trips
 // ---------------------------------------------------------------------------
-export type Tour = {
+export type Tour = SharedTour;
+export type TourOperator = {
   id: string;
   slug: string;
-  title_en: string;
-  title_sw: string | null;
-  summary_en: string;
-  summary_sw: string | null;
-  circuit: string;
-  kind: string;
-  categories: string[];
-  days: number;
-  start_from: string | null;
-  highlights: string[];
-  itinerary: { day: string; title: string; body: string }[];
-  includes: string[];
-  excludes: string[];
-  price_from_usd: number | null;
-  is_signature: boolean;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  location: string | null;
+  licence_number: string | null;
+  licence_authority: string | null;
+  licence_checked_at: string | null;
+  tripadvisor_url: string | null;
+  tripadvisor_rating: number | null;
+  tripadvisor_reviews: number | null;
+  tripadvisor_checked_at: string | null;
+  verified_at: string | null;
 };
 
+/** Every published tour, Signature Trips first. Screens filter it in memory (the catalogue is small). */
 export async function listTours(): Promise<Tour[]> {
   return must(
     await supabase
       .from('trips')
-      .select('id, slug, title_en, title_sw, summary_en, summary_sw, circuit, kind, categories, days, start_from, highlights, itinerary, includes, excludes, price_from_usd, is_signature')
+      .select(TOUR_COLUMNS)
       .eq('status', 'published')
       .order('is_signature', { ascending: false })
       .order('sort_order', { ascending: true })
-      .limit(100),
-  ) as Tour[];
+      .limit(300),
+  ) as unknown as Tour[];
+}
+
+export async function getTourStops(tripId: string): Promise<TourStop[]> {
+  return must(await supabase.from('trip_stops').select(STOP_COLUMNS).eq('trip_id', tripId).order('position')) as TourStop[];
+}
+
+/** Guides assigned to the tour, or verified guides whose specialties fit it when none are assigned. */
+export async function getTourGuides(tripId: string, categories: string[]): Promise<{ assigned: boolean; guides: Guide[] }> {
+  const rows = must(await supabase.from('trip_guides').select(`position, guides(${GUIDE_COLUMNS})`).eq('trip_id', tripId).order('position')) as unknown as { guides: Guide | null }[];
+  const chosen = rows.map((r) => r.guides).filter((g): g is Guide => g != null && g.verification_status === 'approved');
+  if (chosen.length > 0) return { assigned: true, guides: chosen };
+  const specialties = guideSpecialtiesForTour(categories);
+  if (specialties.length === 0) return { assigned: false, guides: [] };
+  const guides = must(
+    await supabase
+      .from('guides')
+      .select(GUIDE_COLUMNS)
+      .eq('verification_status', 'approved')
+      .eq('visibility', 'public')
+      .overlaps('specialties', specialties)
+      .order('rating_count', { ascending: false })
+      .limit(4),
+  ) as unknown as Guide[];
+  return { assigned: false, guides };
+}
+
+export async function listSavedTourIds(userId: string): Promise<string[]> {
+  return (must(await supabase.from('saved_trips').select('trip_id').eq('user_id', userId)) as { trip_id: string }[]).map((r) => r.trip_id);
+}
+
+export async function setTourSaved(userId: string, tripId: string, saved: boolean) {
+  const { error } = saved
+    ? await supabase.from('saved_trips').upsert({ user_id: userId, trip_id: tripId })
+    : await supabase.from('saved_trips').delete().eq('user_id', userId).eq('trip_id', tripId);
+  if (error) throw new Error(error.message);
+}
+
+const OPERATOR_COLUMNS =
+  'id, slug, name, logo_url, description, website, contact_email, contact_phone, location, licence_number, licence_authority, licence_checked_at, tripadvisor_url, tripadvisor_rating, tripadvisor_reviews, tripadvisor_checked_at, verified_at';
+
+export async function listOperators(): Promise<TourOperator[]> {
+  return must(await supabase.from('tour_operators').select(OPERATOR_COLUMNS).eq('status', 'published').order('name')) as TourOperator[];
+}
+
+export async function getOperator(slug: string): Promise<TourOperator | null> {
+  return must(await supabase.from('tour_operators').select(OPERATOR_COLUMNS).eq('slug', slug).maybeSingle()) as TourOperator | null;
 }
 
 export type GroupTrip = {

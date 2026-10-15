@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
@@ -24,6 +25,7 @@ export async function enquireTrip(formData: FormData) {
     `Trip: ${field('trip_title', 160)}`,
     `Dates: ${field('dates', 120) || '-'}`,
     `People: ${field('group_size', 10) || '-'}`,
+    field('guide', 120) && `Preferred guide: ${field('guide', 120)}`,
     field('message', 1500),
   ]
     .filter(Boolean)
@@ -39,4 +41,27 @@ export async function enquireTrip(formData: FormData) {
   });
 
   redirect(`${back}?${error ? 'error' : 'sent'}=1#enquire`);
+}
+
+// Save or un-save a tour. Signed-out visitors go to sign in and come back to the tour.
+export async function toggleSavedTour(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const slug = String(formData.get('slug') ?? '').slice(0, 80);
+  const tripId = String(formData.get('trip_id') ?? '').slice(0, 40);
+  const back = `/${locale}/tours/${encodeURIComponent(slug)}`;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login?next=${encodeURIComponent(back)}`);
+
+  if (formData.get('saved') === '1') {
+    await supabase.from('saved_trips').delete().eq('user_id', user.id).eq('trip_id', tripId);
+  } else {
+    await supabase.from('saved_trips').upsert({ user_id: user.id, trip_id: tripId });
+  }
+  revalidatePath(back);
+  redirect(back);
 }

@@ -1,39 +1,14 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
-import type { Locale } from '@/i18n/config';
+import { STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tourSummary, tourTitle, type Tour, type TourStop } from '@rafrika/shared';
+import { GUIDE_COLUMNS, type Guide } from './guides';
 import { createClient } from './supabase/server';
 
-export type Trip = {
-  id: string;
-  slug: string;
-  title_en: string;
-  title_sw: string | null;
-  summary_en: string;
-  summary_sw: string | null;
-  circuit: string;
-  kind: 'day_trip' | 'multi_day' | 'combo';
-  categories: string[];
-  days: number;
-  destinations: string[];
-  start_from: string | null;
-  highlights: string[];
-  itinerary: { day: number; title: string; body: string }[];
-  includes: string[];
-  excludes: string[];
-  best_months: number[];
-  price_from_usd: number | null;
-  operated_by: 'partner' | 'rafrika' | 'guide';
-  is_signature: boolean;
-  promo_text: string | null;
-  status: 'draft' | 'published' | 'archived';
-};
-
-export const TRIP_COLUMNS =
-  'id, slug, title_en, title_sw, summary_en, summary_sw, circuit, kind, categories, days, destinations, start_from, highlights, itinerary, includes, excludes, best_months, price_from_usd, operated_by, is_signature, promo_text, status';
-
-export const tripTitle = (trip: Trip, locale: Locale) => (locale === 'sw' && trip.title_sw) || trip.title_en;
-export const tripSummary = (trip: Trip, locale: Locale) => (locale === 'sw' && trip.summary_sw) || trip.summary_en;
+// "Trip" is the table name; on the site they are tours.
+export type Trip = Tour;
+export const tripTitle = tourTitle;
+export const tripSummary = tourSummary;
 
 function publicClient() {
   return createSupabaseClient(
@@ -43,44 +18,151 @@ function publicClient() {
   );
 }
 
-export type TripFilters = { circuit?: string; kind?: string; category?: string; signature?: boolean };
-
-// Published trips only (enforced by row level security for anonymous visitors).
-export async function listTrips(filters: TripFilters): Promise<Trip[]> {
+/** Every published tour, Signature Trips first. The catalogue is small, so pages filter it in memory. */
+export async function listTours(): Promise<Tour[]> {
   'use cache';
   cacheTag('trips');
   cacheLife('minutes');
 
-  let query = publicClient()
+  const { data } = await publicClient()
     .from('trips')
-    .select(TRIP_COLUMNS)
+    .select(TOUR_COLUMNS)
     .eq('status', 'published')
     .order('is_signature', { ascending: false })
     .order('sort_order', { ascending: true })
-    .limit(100);
-  if (filters.circuit) query = query.eq('circuit', filters.circuit);
-  if (filters.kind) query = query.eq('kind', filters.kind);
-  if (filters.category) query = query.contains('categories', [filters.category]);
-  if (filters.signature) query = query.eq('is_signature', true);
-
-  const { data } = await query;
-  return (data ?? []) as Trip[];
+    .limit(300);
+  return (data ?? []) as unknown as Tour[];
 }
 
-async function getPublishedTrip(slug: string): Promise<Trip | null> {
+async function getPublishedTour(slug: string): Promise<Tour | null> {
   'use cache';
   cacheTag('trips', `trip:${slug}`);
   cacheLife('minutes');
 
-  const { data } = await publicClient().from('trips').select(TRIP_COLUMNS).eq('slug', slug).eq('status', 'published').maybeSingle();
-  return (data as Trip | null) ?? null;
+  const { data } = await publicClient().from('trips').select(TOUR_COLUMNS).eq('slug', slug).eq('status', 'published').maybeSingle();
+  return (data as unknown as Tour | null) ?? null;
 }
 
-// Published trip for everyone; admins can also preview drafts.
-export async function getTripForViewer(slug: string): Promise<Trip | null> {
-  const published = await getPublishedTrip(slug);
+/** Published tour for everyone; admins can also preview drafts and archived tours. */
+export async function getTripForViewer(slug: string): Promise<Tour | null> {
+  const published = await getPublishedTour(slug);
   if (published) return published;
   const supabase = await createClient();
-  const { data } = await supabase.from('trips').select(TRIP_COLUMNS).eq('slug', slug).maybeSingle();
-  return (data as Trip | null) ?? null;
+  const { data } = await supabase.from('trips').select(TOUR_COLUMNS).eq('slug', slug).maybeSingle();
+  return (data as unknown as Tour | null) ?? null;
+}
+
+async function publishedStops(tripId: string): Promise<TourStop[]> {
+  'use cache';
+  cacheTag('trips', `stops:${tripId}`);
+  cacheLife('minutes');
+
+  const { data } = await publicClient().from('trip_stops').select(STOP_COLUMNS).eq('trip_id', tripId).order('position');
+  return (data ?? []) as TourStop[];
+}
+
+/** Route stops in order. Drafts are read with the admin's session. */
+export async function getTourStops(tour: Pick<Tour, 'id' | 'status'>): Promise<TourStop[]> {
+  if (tour.status === 'published') return publishedStops(tour.id);
+  const supabase = await createClient();
+  const { data } = await supabase.from('trip_stops').select(STOP_COLUMNS).eq('trip_id', tour.id).order('position');
+  return (data ?? []) as TourStop[];
+}
+
+/**
+ * "Meet your guides": the guides an admin assigned to this tour, or, when there are none,
+ * verified guides whose specialties fit the tour (mountain guides for Kilimanjaro, and so on).
+ */
+export async function getTourGuides(tourId: string, categories: string[]): Promise<{ assigned: boolean; guides: Guide[] }> {
+  'use cache';
+  cacheTag('trips', 'guides', `tour-guides:${tourId}`);
+  cacheLife('minutes');
+
+  const client = publicClient();
+  const { data: assigned } = await client
+    .from('trip_guides')
+    .select(`position, guides(${GUIDE_COLUMNS})`)
+    .eq('trip_id', tourId)
+    .order('position');
+  const chosen = ((assigned ?? []) as unknown as { guides: Guide | null }[])
+    .map((row) => row.guides)
+    .filter((g): g is Guide => g != null && g.verification_status === 'approved' && g.visibility === 'public');
+  if (chosen.length > 0) return { assigned: true, guides: chosen };
+
+  const specialties = guideSpecialtiesForTour(categories);
+  if (specialties.length === 0) return { assigned: false, guides: [] };
+  const { data } = await client
+    .from('guides')
+    .select(GUIDE_COLUMNS)
+    .eq('verification_status', 'approved')
+    .eq('visibility', 'public')
+    .overlaps('specialties', specialties)
+    .order('rating_count', { ascending: false })
+    .order('plan', { ascending: false })
+    .limit(4);
+  return { assigned: false, guides: (data ?? []) as Guide[] };
+}
+
+/** Ids of the tours the signed-in visitor has saved (empty when signed out). */
+export async function savedTourIds(): Promise<Set<string>> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return new Set();
+  const { data } = await supabase.from('saved_trips').select('trip_id').eq('user_id', user.id);
+  return new Set((data ?? []).map((row) => row.trip_id as string));
+}
+
+// ---------------------------------------------------------------------------
+// Tour operators
+// ---------------------------------------------------------------------------
+export type TourOperator = {
+  id: string;
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  location: string | null;
+  licence_number: string | null;
+  licence_authority: string | null;
+  licence_checked_at: string | null;
+  tripadvisor_url: string | null;
+  tripadvisor_rating: number | null;
+  tripadvisor_reviews: number | null;
+  tripadvisor_checked_at: string | null;
+  verified_at: string | null;
+  status: 'draft' | 'published' | 'archived';
+};
+
+export const OPERATOR_COLUMNS =
+  'id, slug, name, logo_url, description, website, contact_email, contact_phone, location, licence_number, licence_authority, licence_checked_at, tripadvisor_url, tripadvisor_rating, tripadvisor_reviews, tripadvisor_checked_at, verified_at, status';
+
+export async function listOperators(): Promise<TourOperator[]> {
+  'use cache';
+  cacheTag('operators');
+  cacheLife('minutes');
+
+  const { data } = await publicClient().from('tour_operators').select(OPERATOR_COLUMNS).eq('status', 'published').order('name');
+  return (data ?? []) as TourOperator[];
+}
+
+async function getPublishedOperator(slug: string): Promise<TourOperator | null> {
+  'use cache';
+  cacheTag('operators', `operator:${slug}`);
+  cacheLife('minutes');
+
+  const { data } = await publicClient().from('tour_operators').select(OPERATOR_COLUMNS).eq('slug', slug).eq('status', 'published').maybeSingle();
+  return (data as TourOperator | null) ?? null;
+}
+
+export async function getOperatorForViewer(slug: string): Promise<TourOperator | null> {
+  const published = await getPublishedOperator(slug);
+  if (published) return published;
+  const supabase = await createClient();
+  const { data } = await supabase.from('tour_operators').select(OPERATOR_COLUMNS).eq('slug', slug).maybeSingle();
+  return (data as TourOperator | null) ?? null;
 }

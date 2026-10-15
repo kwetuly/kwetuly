@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { specialtyPhoto, tripPhoto, formatUsd, type Photo } from '@rafrika/shared';
+import { TOUR_TYPES, formatPrice, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@rafrika/shared';
 import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -54,12 +54,12 @@ export function GuideCard({ guide }: { guide: Guide }) {
   );
 }
 
-function PhotoHeader({ photo, label, price }: { photo: Photo; label: string; price?: string }) {
+function PhotoHeader({ photo, uri, label, price, tone = 'gold' }: { photo: Photo; uri?: string | null; label: string; price?: string; tone?: 'gold' | 'sand' }) {
   return (
     <View style={{ height: 160, marginHorizontal: -16, marginTop: -16, marginBottom: space.xxs, overflow: 'hidden', borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card }}>
-      <Image source={photoSource(photo, 900)} style={{ flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
+      <Image source={uri ? { uri } : photoSource(photo, 900)} style={{ flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
       <View style={{ position: 'absolute', top: 12, left: 12 }}>
-        <Badge label={label} tone="gold" />
+        <Badge label={label} tone={tone} />
       </View>
       {price && (
         <View style={{ position: 'absolute', bottom: 12, right: 12, backgroundColor: brand.night, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.sm }}>
@@ -109,18 +109,27 @@ export function GroupTripCard({ trip }: { trip: GroupTrip }) {
 
 export function TourCard({ tour }: { tour: Tour }) {
   const { t, locale } = useI18n();
-  const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
+  const price = verifiedPrice(tour, new Date());
+  const days = `${tour.days} ${tour.days === 1 ? t.tours.day : t.tours.days}`;
+  const nights = tour.nights ? ` / ${tour.nights} ${tour.nights === 1 ? t.tours.night : t.tours.nights}` : '';
   return (
     <Link href={`/tour/${tour.slug}`} asChild>
       <Pressable accessibilityRole="link">
         <Card>
           <PhotoHeader
             photo={tripPhoto(tour.slug, tour.categories)}
-            label={`${tour.days} ${tour.days === 1 ? t.tours.day : t.tours.days}`}
-            price={tour.price_from_usd != null ? `${t.tours.priceFrom} ${formatUsd(tour.price_from_usd)}` : undefined}
+            uri={tour.cover_url}
+            label={`${tour.is_signature ? '✦ ' : ''}${TOUR_TYPES.find((x) => x.id === tour.tour_type)?.[locale] ?? ''}`}
+            tone={tour.is_signature ? 'gold' : 'sand'}
+            price={price ? `${t.tours.priceFrom} ${formatPrice(price.amount, price.currency)}` : undefined}
           />
-          <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{title}</Text>
-          <Text numberOfLines={2} style={{ color: colors.secondaryLabel }}>{(locale === 'sw' && tour.summary_sw) || tour.summary_en}</Text>
+          <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{tourTitle(tour, locale)}</Text>
+          <Text numberOfLines={2} style={{ color: colors.secondaryLabel }}>{tourSummary(tour, locale)}</Text>
+          <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '600' }}>
+            {days}{nights}{tour.start_from ? ` · ${tour.start_from}` : ''}
+            {tour.tour_operators ? ` · ${tour.tour_operators.name}${tour.tour_operators.verified_at ? ' ✓' : ''}` : ''}
+          </Text>
+          {!price && <Text style={{ color: brand.leafDark, fontSize: textSize.caption, fontWeight: '700' }}>{t.tours.priceTbc}</Text>}
         </Card>
       </Pressable>
     </Link>
