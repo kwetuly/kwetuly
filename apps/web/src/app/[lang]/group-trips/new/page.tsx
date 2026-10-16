@@ -15,8 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewGroupTripPage({ searchParams }: PageProps<'/[lang]/group-trips/new'>) {
-  const [t, locale, params] = await Promise.all([getDictionary(), getLocale(), searchParams]);
-  const complete = params.complete === '1';
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <>
       <PhotoHero photo="giraffesBalloon">
@@ -24,8 +23,9 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
           <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf text-white">
             <Plus className="size-7" aria-hidden />
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold">{complete ? t.extras.completeTitle : t.groups.newTitle}</h1>
-          <p className="mt-3 max-w-2xl text-lg text-white/80">{complete ? t.extras.completeBody : t.groups.newBody}</p>
+          <Suspense fallback={<Heading title={t.groups.newTitle} body={t.groups.newBody} />}>
+            <HeroHeading searchParams={searchParams} t={t} />
+          </Suspense>
         </div>
       </PhotoHero>
       <div className="relative mx-auto -mt-16 max-w-4xl px-4 pb-16">
@@ -35,6 +35,23 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
       </div>
     </>
   );
+}
+
+function Heading({ title, body }: { title: string; body: string }) {
+  return (
+    <>
+      <h1 className="mt-5 text-4xl font-extrabold">{title}</h1>
+      <p className="mt-3 max-w-2xl text-lg text-white/80">{body}</p>
+    </>
+  );
+}
+
+/** "?complete=1" switches the heading, so it reads searchParams inside a Suspense boundary. */
+async function HeroHeading({ searchParams, t }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary }) {
+  const complete = (await searchParams).complete === '1';
+  return complete
+    ? <Heading title={t.extras.completeTitle} body={t.extras.completeBody} />
+    : <Heading title={t.groups.newTitle} body={t.groups.newBody} />;
 }
 
 async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary; locale: Locale }) {
