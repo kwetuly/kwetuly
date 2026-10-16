@@ -9,7 +9,7 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
-import { reviewGroupTrip, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from './actions';
+import { reviewGroupTrip, confirmPhone, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from './actions';
 import { PendingPackages } from './pending-packages';
 import { BusinessesAdmin } from './businesses-admin';
 
@@ -110,10 +110,14 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="text-3xl font-bold">{t.admin.title}</h1>
-        <Link href={`/${locale}/admin/media`} className="btn-outline ml-auto px-4 py-2 text-sm">Shared media →</Link>
-        <Link href={`/${locale}/admin/messages`} className="btn-outline px-4 py-2 text-sm">Message safety →</Link>
-        <Link href={`/${locale}/admin/commissions`} className="btn-outline px-4 py-2 text-sm">Commissions →</Link>
-        <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Tours &amp; operators →</Link>
+        <Link href={`/${locale}/admin/media`} className="btn-outline ml-auto px-4 py-2 text-sm">Shared media</Link>
+        <Link href={`/${locale}/admin/messages`} className="btn-outline px-4 py-2 text-sm">Message safety</Link>
+        <Link href={`/${locale}/admin/commissions`} className="btn-outline px-4 py-2 text-sm">Commissions</Link>
+        <Link href={`/${locale}/admin/news`} className="btn-outline px-4 py-2 text-sm">News</Link>
+        <Link href={`/${locale}/admin/listings`} className="btn-outline px-4 py-2 text-sm">Business listings</Link>
+        <Link href={`/${locale}/admin/shop`} className="btn-outline px-4 py-2 text-sm">Merchandise</Link>
+        <Link href={`/${locale}/admin/places`} className="btn-outline px-4 py-2 text-sm">Places</Link>
+        <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Tours &amp; operators</Link>
       </div>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <PendingList t={t} locale={locale} />
@@ -137,12 +141,18 @@ async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale 
   const supabase = await createClient();
   const { data } = await supabase
     .from('group_trips')
-    .select('id, title, description, company_name, region, start_date, end_date, price_per_person_usd, min_people, max_people, includes, guides(display_name, slug)')
+    .select('id, organizer_id, organizer_kind, already_going, title, description, company_name, region, start_date, end_date, price_per_person_usd, min_people, max_people, includes, guides(display_name, slug), group_trip_private(contact)')
     .eq('status', 'pending')
     .eq('cancelled', false)
     .order('created_at', { ascending: true })
-    .returns<{ id: string; title: string; description: string; company_name: string | null; region: string; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; includes: string | null; guides: { display_name: string; slug: string } | null }[]>();
+    .returns<{ id: string; organizer_id: string; organizer_kind: string; already_going: number; group_trip_private: { contact: string } | null; title: string; description: string; company_name: string | null; region: string; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; includes: string | null; guides: { display_name: string; slug: string } | null }[]>();
   const trips = data ?? [];
+  // Travellers' groups need a confirmed phone before approval: call the number, then confirm it here.
+  const ids = trips.filter((g) => g.organizer_kind === 'traveller').map((g) => g.organizer_id);
+  const { data: people } = ids.length
+    ? await supabase.from('profiles').select('id, full_name, phone, phone_verified_at').in('id', ids)
+    : { data: [] as { id: string; full_name: string | null; phone: string | null; phone_verified_at: string | null }[] };
+  const person = new Map((people ?? []).map((p) => [p.id, p]));
 
   return (
     <section id="groups" className="mt-12">
@@ -154,8 +164,16 @@ async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale 
             <div className="space-y-1 text-sm">
               <Link href={`/${locale}/group-trips/${g.id}`} className="text-base font-semibold underline">{g.title}</Link>
               <p>
-                {g.guides ? `Guide: ${g.guides.display_name}` : `Company: ${g.company_name}`} · {g.region} · {g.start_date} → {g.end_date}
+                {g.guides ? `Guide: ${g.guides.display_name}` : g.organizer_kind === 'traveller' ? `Traveller: ${person.get(g.organizer_id)?.full_name ?? '—'}` : `Company: ${g.company_name}`} · {g.region} · {g.start_date} → {g.end_date}
               </p>
+              {g.already_going > 0 && <p>Completing a group: {g.already_going} already going</p>}
+              {g.group_trip_private && <p>Contact given: {g.group_trip_private.contact}</p>}
+              {g.organizer_kind === 'traveller' && (
+                <p className={person.get(g.organizer_id)?.phone_verified_at ? 'font-semibold text-forest' : 'font-semibold text-red-800'}>
+                  Phone {person.get(g.organizer_id)?.phone ?? '—'}:{' '}
+                  {person.get(g.organizer_id)?.phone_verified_at ? 'confirmed' : 'not confirmed yet. Call this number, then press "Phone confirmed".'}
+                </p>
+              )}
               <p>${g.price_per_person_usd} per person · {g.min_people}–{g.max_people} people</p>
               <p className="whitespace-pre-line text-muted">{g.description}</p>
               {g.includes && <p className="text-muted">Includes: {g.includes}</p>}
@@ -166,6 +184,13 @@ async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale 
               <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
               <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
             </form>
+            {g.organizer_kind === 'traveller' && !person.get(g.organizer_id)?.phone_verified_at && (
+              <form action={confirmPhone} className="sm:col-span-2">
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="user_id" value={g.organizer_id} />
+                <button className="btn-outline px-4 py-2 text-sm">Phone confirmed</button>
+              </form>
+            )}
           </div>
         ))}
       </div>
@@ -184,11 +209,11 @@ async function Inbox({ locale }: { locale: Locale }) {
   const [leads, signups] = await Promise.all([
     supabase
       .from('leads')
-      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en)')
+      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en), providers(business_name, is_sample)')
       .is('guide_id', null)
       .order('created_at', { ascending: false })
       .limit(30)
-      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null }[]>(),
+      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null; providers: { business_name: string; is_sample: boolean } | null }[]>(),
     supabase
       .from('interest_signups')
       .select('id, section, item, kind, name, contact, business_name, message, locale, created_at')
@@ -204,7 +229,7 @@ async function Inbox({ locale }: { locale: Locale }) {
         <ul className="mt-4 space-y-3">
           {(leads.data ?? []).map((l) => (
             <li key={l.id} className="card p-4 text-sm">
-              <p className="font-semibold">{l.trips?.title_en ?? 'General enquiry'}</p>
+              <p className="font-semibold">{l.trips?.title_en ?? (l.providers ? `To ${l.providers.business_name}${l.providers.is_sample ? ' (sample listing)' : ''}` : 'General enquiry')}</p>
               <p>{l.traveler_name} · {l.traveler_contact}</p>
               {l.message && <p className="mt-1 whitespace-pre-line text-muted">{l.message}</p>}
               <p className="mt-1 text-xs text-muted">{when(l.created_at)}</p>

@@ -2,6 +2,7 @@ import { ux_it } from './ux';
 import { packages_it } from './packages';
 import { travel_it } from './travel';
 import { business_it } from './business';
+import { extras_it } from './extras';
 import { en, type Dictionary } from './en';
 
 // Italian. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -660,6 +661,7 @@ export const it: Dictionary = {
   packages: packages_it,
   travel: travel_it,
   business: business_it,
+  extras: extras_it,
   footer: {
     tagline: 'La casa delle guide tanzaniane.',
     rights: 'Tutti i diritti riservati.',

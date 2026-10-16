@@ -11,6 +11,16 @@ import type { Locale } from '@/i18n/config';
  */
 export function BusinessBadge({ business, t, locale, today, full }: { business: Business; t: Dictionary; locale: Locale; today: string; full?: boolean }) {
   const bt = t.business;
+  // Sample listings were added by Rafrika from public information; say so plainly.
+  if (business.is_sample) {
+    return full ? (
+      <p className="rounded-[5px] border border-gold bg-sand p-3 text-sm">
+        <span className="font-semibold">{t.extras.sampleBadge}.</span> {t.extras.sampleNote}
+      </p>
+    ) : (
+      <span className="rounded-[5px] bg-sand px-2 py-0.5 text-xs font-semibold text-charcoal">{t.extras.sampleBadge}</span>
+    );
+  }
   if (!hasValidBadge(business, today)) {
     return full ? (
       <p className="rounded-[5px] bg-surface p-3 text-sm text-muted">

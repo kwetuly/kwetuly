@@ -8,15 +8,17 @@ export const BUSINESS_TYPES = [
   { id: 'lodge', ...L('Lodge or camp', 'Loji au kambi', 'Lodge ou camp', 'Lodge o campo', 'Lodge oder Camp', 'Lodż lub obóz', '旅馆或营地') },
   { id: 'homestay', ...L('Homestay', 'Kukaa na familia', 'Chez l’habitant', 'Soggiorno in famiglia', 'Gastfamilie', 'Pobyt u rodziny', '民宿寄宿') },
   { id: 'hostel', ...L('Hostel', 'Hosteli', 'Auberge de jeunesse', 'Ostello', 'Hostel', 'Hostel', '青年旅舍') },
-  { id: 'rental', ...L('Holiday rental', 'Nyumba ya kupangisha', 'Location de vacances', 'Casa vacanze', 'Ferienwohnung', 'Apartament wakacyjny', '度假租房') },
+  { id: 'rental', ...L('Airbnb-style apartment', 'Apartimenti ya kupangisha', 'Appartement type Airbnb', 'Appartamento stile Airbnb', 'Apartment im Airbnb-Stil', 'Apartament w stylu Airbnb', '民宿公寓') },
   { id: 'curio_shop', ...L('Curio & art shop', 'Duka la sanaa na zawadi', 'Boutique d’art et souvenirs', 'Negozio di arte e souvenir', 'Kunst- & Souvenirladen', 'Sklep z rękodziełem', '工艺品与艺术品店') },
   { id: 'gem_shop', ...L('Tanzanite & gems', 'Tanzanite na vito', 'Tanzanite & pierres', 'Tanzanite e gemme', 'Tansanit & Edelsteine', 'Tanzanit i kamienie', '坦桑石与宝石') },
   { id: 'gear_rental', ...L('Gear rental', 'Kukodisha vifaa', 'Location d’équipement', 'Noleggio attrezzatura', 'Ausrüstungsverleih', 'Wypożyczalnia sprzętu', '装备租赁') },
   { id: 'transport', ...L('Transport', 'Usafiri', 'Transport', 'Trasporti', 'Transport', 'Transport', '交通') },
+  { id: 'car_hire', ...L('Car hire', 'Kukodi magari', 'Location de voitures', 'Noleggio auto', 'Autovermietung', 'Wynajem samochodów', '租车') },
   { id: 'restaurant', ...L('Restaurant', 'Mgahawa', 'Restaurant', 'Ristorante', 'Restaurant', 'Restauracja', '餐厅') },
   { id: 'spa', ...L('Massage & spa', 'Masaji na spa', 'Massage & spa', 'Massaggi e spa', 'Massage & Spa', 'Masaż i spa', '按摩与水疗') },
   { id: 'salon', ...L('Salon & barber', 'Saluni na kinyozi', 'Salon & barbier', 'Parrucchiere e barbiere', 'Salon & Barbier', 'Salon i fryzjer', '美发与理发') },
   { id: 'nightlife', ...L('Nightlife', 'Burudani ya usiku', 'Vie nocturne', 'Vita notturna', 'Nachtleben', 'Życie nocne', '夜生活') },
+  { id: 'merch', ...L('Rafrika Shop', 'Duka la Rafrika', 'Boutique Rafrika', 'Negozio Rafrika', 'Rafrika-Shop', 'Sklep Rafrika', 'Rafrika 商店') },
   { id: 'other', ...L('Other', 'Nyingine', 'Autre', 'Altro', 'Sonstiges', 'Inne', '其他') },
 ] as const;
 
@@ -45,7 +47,7 @@ export const BUSINESS_PAGES: Record<string, BusinessType[]> = {
   'transport/airport-transfers': ['transport'],
   'transport/regional': ['transport'],
   'transport/cross-border': ['transport'],
-  'transport/car-hire': ['transport'],
+  'transport/car-hire': ['car_hire', 'transport'],
   'local/massage': ['spa'],
   'local/salons': ['salon'],
   'local/food': ['restaurant'],
@@ -69,10 +71,12 @@ export type Business = {
   badge_valid_until: string | null;
   badge_requested_at: string | null;
   has_referral_agreement: boolean;
+  is_sample: boolean;
+  source_url: string | null;
 };
 
 export const BUSINESS_COLUMNS =
-  'id, business_name, business_type, story, base_region, location, website, photo_url, photos, languages, verification_status, badge_checks, badge_checked_at, badge_valid_until, badge_requested_at, has_referral_agreement';
+  'id, business_name, business_type, story, base_region, location, website, photo_url, photos, languages, verification_status, badge_checks, badge_checked_at, badge_valid_until, badge_requested_at, has_referral_agreement, is_sample, source_url';
 
 /** The badge only shows while it is valid and something was actually checked. `today` is YYYY-MM-DD. */
 export function hasValidBadge(b: Pick<Business, 'badge_checks' | 'badge_valid_until'>, today: string): boolean {

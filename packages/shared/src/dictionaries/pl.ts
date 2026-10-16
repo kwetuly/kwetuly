@@ -2,6 +2,7 @@ import { ux_pl } from './ux';
 import { packages_pl } from './packages';
 import { travel_pl } from './travel';
 import { business_pl } from './business';
+import { extras_pl } from './extras';
 import { en, type Dictionary } from './en';
 
 // Polish. Guide-only areas (Guide Hub, jobs, guide dashboard, admin) stay in English,
@@ -660,6 +661,7 @@ export const pl: Dictionary = {
   packages: packages_pl,
   travel: travel_pl,
   business: business_pl,
+  extras: extras_pl,
   footer: {
     tagline: 'Dom tanzańskich przewodników.',
     rights: 'Wszelkie prawa zastrzeżone.',

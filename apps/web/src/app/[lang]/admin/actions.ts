@@ -89,11 +89,23 @@ export async function reviewGroupTrip(formData: FormData) {
   if (user?.role !== 'admin') redirect(`/${locale}`);
 
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from('group_trips')
     .update({ status: formData.get('decision') === 'approve' ? 'approved' : 'rejected' })
     .eq('id', String(formData.get('group_trip_id') ?? ''));
   revalidateTag('groups', 'max');
+  // The database refuses to approve a traveller's group before their phone is confirmed.
+  redirect(`/${locale}/admin${error ? '?error=phone' : ''}#groups`);
+}
+
+// After calling a traveller organiser, mark their phone number as confirmed.
+export async function confirmPhone(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (user?.role !== 'admin') redirect(`/${locale}`);
+  const supabase = await createClient();
+  await supabase.from('profiles').update({ phone_verified_at: new Date().toISOString() }).eq('id', String(formData.get('user_id') ?? ''));
   redirect(`/${locale}/admin#groups`);
 }
 

@@ -74,11 +74,6 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Kili, safari or Zanzibar advice from a guide you choose', 'Ushauri wa Kili, safari au Zanzibar kutoka kwa mwongozaji unayemchagua', 'Conseils Kili, safari ou Zanzibar par le guide de votre choix', 'Consigli su Kili, safari o Zanzibar dalla guida che scegli', 'Tipps zu Kili, Safari oder Sansibar von einem Guide Ihrer Wahl', 'Porady o Kili, safari lub Zanzibarze od wybranego przewodnika', '由你选择的导游提供乞力马扎罗、游猎或桑给巴尔建议'),
       },
       {
-        slug: 'group-trips', icon: 'users-round', href: '/group-trips', status: 'live',
-        label: L('Join a group trip', 'Jiunge na kundi', 'Rejoindre un groupe', 'Unisciti a un gruppo', 'Gruppenreise beitreten', 'Dołącz do grupy', '加入拼团行程'),
-        blurb: L('Share a trip, split the cost', 'Shiriki safari, gawana gharama', 'Partagez un voyage, divisez les frais', 'Condividi il viaggio, dividi i costi', 'Reise teilen, Kosten teilen', 'Wspólna wyprawa, wspólne koszty', '同行出游，分摊费用'),
-      },
-      {
         slug: 'trip-requests', icon: 'gavel', href: '/requests/new', status: 'live',
         label: L('Post a trip request', 'Weka ombi la safari', 'Publier une demande de voyage', 'Pubblica una richiesta di viaggio', 'Reiseanfrage stellen', 'Dodaj zapytanie o wyprawę', '发布行程需求'),
         blurb: L('Describe your trip, verified guides send offers', 'Eleza safari yako, waongozaji wanakutumia ofa', 'Décrivez votre voyage, les guides vous font des offres', 'Descrivi il viaggio, le guide ti fanno offerte', 'Reise beschreiben, Guides schicken Angebote', 'Opisz wyprawę, przewodnicy przyślą oferty', '描述行程，认证导游为你报价'),
@@ -187,6 +182,42 @@ const SECTIONS: MenuSection[] = [
     ],
   },
   {
+    slug: 'groups',
+    icon: 'users-round',
+    label: L('Group trips', 'Safari za makundi', 'Voyages en groupe', 'Viaggi di gruppo', 'Gruppenreisen', 'Wyprawy grupowe', '拼团旅行'),
+    tagline: L(
+      'Travel together, share the cost',
+      'Safirini pamoja, gawaneni gharama',
+      'Voyagez ensemble, partagez les frais',
+      'Viaggiate insieme, dividete i costi',
+      'Gemeinsam reisen, Kosten teilen',
+      'Podróżujcie razem, dzielcie koszty',
+      '结伴出行，分摊费用',
+    ),
+    items: [
+      {
+        slug: 'join', icon: 'users-round', href: '/group-trips', status: 'live',
+        label: L('Join a group trip', 'Jiunge na kundi', 'Rejoindre un groupe', 'Unisciti a un gruppo', 'Gruppenreise beitreten', 'Dołącz do grupy', '加入拼团'),
+        blurb: L('Open departures with free spots', 'Safari zenye nafasi wazi', 'Départs avec des places libres', 'Partenze con posti liberi', 'Abfahrten mit freien Plätzen', 'Wyjazdy z wolnymi miejscami', '还有空位的出发团'),
+      },
+      {
+        slug: 'start', icon: 'sparkles', href: '/group-trips/new', status: 'live',
+        label: L('Start a new group', 'Anzisha kundi jipya', 'Créer un groupe', 'Crea un nuovo gruppo', 'Neue Gruppe starten', 'Załóż nową grupę', '发起新拼团'),
+        blurb: L('For guides, businesses and travellers', 'Kwa waongozaji, biashara na wasafiri', 'Pour guides, entreprises et voyageurs', 'Per guide, aziende e viaggiatori', 'Für Guides, Unternehmen und Reisende', 'Dla przewodników, firm i podróżników', '导游、企业和旅行者都可发起'),
+      },
+      {
+        slug: 'complete', icon: 'heart-handshake', href: '/group-trips/new?complete=1', status: 'live',
+        label: L('Complete your group', 'Kamilisha kundi lako', 'Complétez votre groupe', 'Completa il tuo gruppo', 'Gruppe vervollständigen', 'Uzupełnij swoją grupę', '补齐你的团'),
+        blurb: L('A few of you already going? Find more people', 'Mko wachache tayari? Pata watu zaidi', 'Déjà quelques-uns ? Trouvez d’autres voyageurs', 'Siete già in pochi? Trovate altri compagni', 'Schon ein paar dabei? Mehr Leute finden', 'Jest was kilkoro? Znajdź więcej osób', '已有几人？再找些同伴'),
+      },
+      {
+        slug: 'mine', icon: 'user-round', href: '/group-trips/mine', status: 'live',
+        label: L('My groups', 'Makundi yangu', 'Mes groupes', 'I miei gruppi', 'Meine Gruppen', 'Moje grupy', '我的拼团'),
+        blurb: L('Groups you organise or asked to join', 'Makundi unayoandaa au uliyoomba kujiunga', 'Groupes que vous organisez ou rejoignez', 'Gruppi che organizzi o a cui partecipi', 'Gruppen, die Sie organisieren oder angefragt haben', 'Grupy, które organizujesz lub do których dołączasz', '你发起或申请加入的拼团'),
+      },
+    ],
+  },
+  {
     slug: 'stay',
     icon: 'bed-double',
     label: L('Stays', 'Malazi', 'Hébergement', 'Alloggi', 'Unterkünfte', 'Noclegi', '住宿'),
@@ -217,7 +248,7 @@ const SECTIONS: MenuSection[] = [
       },
       {
         slug: 'rentals', icon: 'key-round',
-        label: L('Holiday rentals', 'Nyumba za kupangisha', 'Locations de vacances', 'Case vacanza', 'Ferienwohnungen', 'Apartamenty wakacyjne', '度假租房'),
+        label: L('Airbnb-style apartments', 'Apartimenti za kupangisha (kama Airbnb)', 'Appartements type Airbnb', 'Appartamenti stile Airbnb', 'Apartments im Airbnb-Stil', 'Apartamenty w stylu Airbnb', '民宿公寓（类似 Airbnb）'),
         blurb: L('Apartments and villas, Airbnb-style', 'Apartmenti na nyumba, kama Airbnb', 'Appartements et villas, façon Airbnb', 'Appartamenti e ville, stile Airbnb', 'Apartments und Villen, wie bei Airbnb', 'Apartamenty i wille w stylu Airbnb', '公寓和别墅，类似 Airbnb'),
       },
     ],
@@ -272,6 +303,11 @@ const SECTIONS: MenuSection[] = [
       '手工艺品、宝石和装备：送到酒店或到店自取',
     ),
     items: [
+      {
+        slug: 'rafrika', icon: 'shopping-bag', href: '/merch', status: 'live',
+        label: L('Rafrika merchandise', 'Bidhaa za Rafrika', 'Boutique Rafrika', 'Merchandising Rafrika', 'Rafrika-Merchandise', 'Gadżety Rafrika', 'Rafrika 周边'),
+        blurb: L('T-shirts, caps and more', 'Fulana, kofia na zaidi', 'T-shirts, casquettes et plus', 'T-shirt, cappellini e altro', 'T-Shirts, Caps und mehr', 'Koszulki, czapki i więcej', 'T 恤、帽子等'),
+      },
       {
         slug: 'art', icon: 'palette',
         label: L('Curio shops', 'Maduka ya sanaa na zawadi', 'Boutiques de souvenirs', 'Negozi di souvenir', 'Souvenirläden', 'Sklepy z pamiątkami', '工艺品店'),
@@ -346,6 +382,11 @@ const SECTIONS: MenuSection[] = [
     items: [
       VISA_ITEM,
       {
+        slug: 'news', icon: 'newspaper', href: '/news', status: 'live',
+        label: L('Travel news', 'Habari za safari', 'Actualités voyage', 'Notizie di viaggio', 'Reisenachrichten', 'Wiadomości podróżne', '旅行资讯'),
+        blurb: L('Rules, parks, events and getting around', 'Sheria, hifadhi, matukio na usafiri', 'Règles, parcs, événements et déplacements', 'Regole, parchi, eventi e spostamenti', 'Regeln, Parks, Events und Unterwegssein', 'Zasady, parki, wydarzenia i transport', '规定、公园、活动与出行'),
+      },
+      {
         slug: 'parks', icon: 'map', href: '/places', status: 'live',
         label: L('Parks & places', 'Hifadhi na maeneo', 'Parcs & lieux', 'Parchi e luoghi', 'Parks & Orte', 'Parki i miejsca', '公园与景点'),
         blurb: L('Fees, seasons and what to see', 'Ada, misimu na vitu vya kuona', 'Tarifs, saisons et choses à voir', 'Tariffe, stagioni e cosa vedere', 'Gebühren, Jahreszeiten und Sehenswertes', 'Opłaty, sezony i co zobaczyć', '门票、季节与看点'),
@@ -366,7 +407,7 @@ const SECTIONS: MenuSection[] = [
         blurb: L('Match-day transfers and city tours', 'Usafiri wa mechi na ziara za mji', 'Transferts les jours de match et visites de ville', 'Transfer nei giorni di gara e tour in città', 'Transfers an Spieltagen und Stadttouren', 'Transfery w dni meczów i zwiedzanie miast', '比赛日接送与城市游览'),
       },
       {
-        slug: 'invest', icon: 'trending-up',
+        slug: 'invest', icon: 'trending-up', href: '/invest', status: 'live',
         label: L('Invest in Tanzania', 'Wekeza Tanzania', 'Investir en Tanzanie', 'Investire in Tanzania', 'In Tansania investieren', 'Inwestuj w Tanzanii', '投资坦桑尼亚'),
         blurb: L('Tourism projects, introduced with TISEZA guidance', 'Miradi ya utalii, kwa mwongozo wa TISEZA', 'Projets touristiques, présentés avec l’appui de la TISEZA', 'Progetti turistici, presentati con il supporto di TISEZA', 'Tourismusprojekte, vorgestellt mit Unterstützung der TISEZA', 'Projekty turystyczne we współpracy z TISEZA', '旅游项目，在 TISEZA 指导下对接'),
       },
@@ -478,6 +519,7 @@ export const MENU: MenuSection[] = [
   bySlug('trips'),
   PREP_CALLS,
   TRIPS,
+  bySlug('groups'),
   bySlug('stay'),
   bySlug('transport'),
   bySlug('shop'),

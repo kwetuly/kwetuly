@@ -22,7 +22,7 @@ export default async function MyGroupTripsPage() {
   );
 }
 
-type Row = Pick<GroupTrip, 'id' | 'title' | 'start_date' | 'end_date' | 'seats_taken' | 'max_people' | 'status' | 'cancelled'>;
+type Row = Pick<GroupTrip, 'id' | 'title' | 'start_date' | 'end_date' | 'seats_taken' | 'already_going' | 'max_people' | 'status' | 'cancelled'>;
 
 async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   const user = await requireUser(locale);
@@ -31,13 +31,13 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   const [organised, joined] = await Promise.all([
     supabase
       .from('group_trips')
-      .select('id, title, start_date, end_date, seats_taken, max_people, status, cancelled')
+      .select('id, title, start_date, end_date, seats_taken, already_going, max_people, status, cancelled')
       .eq('organizer_id', user.id)
       .order('start_date', { ascending: false })
       .returns<Row[]>(),
     supabase
       .from('group_trip_members')
-      .select('status, group_trips(id, title, start_date, end_date, seats_taken, max_people, status, cancelled)')
+      .select('status, group_trips(id, title, start_date, end_date, seats_taken, already_going, max_people, status, cancelled)')
       .eq('traveler_id', user.id)
       .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
@@ -51,7 +51,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
       <Link href={`/${locale}/group-trips/${trip.id}`} className="card flex flex-wrap items-center justify-between gap-3 p-5 hover:border-leaf">
         <span>
           <span className="block font-bold">{trip.title}</span>
-          <span className="text-sm text-muted">{formatDates(trip as GroupTrip, locale)} · {trip.seats_taken}/{trip.max_people}</span>
+          <span className="text-sm text-muted">{formatDates(trip as GroupTrip, locale)} · {trip.seats_taken + trip.already_going}/{trip.max_people}</span>
         </span>
         {note && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
       </Link>

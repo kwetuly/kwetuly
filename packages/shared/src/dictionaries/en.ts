@@ -3,6 +3,7 @@ import { ux_en } from './ux';
 import { packages_en } from './packages';
 import { travel_en } from './travel';
 import { business_en } from './business';
+import { extras_en } from './extras';
 export const en = {
   nav: {
     guides: 'Find a guide',
@@ -821,6 +822,7 @@ export const en = {
   packages: packages_en,
   travel: travel_en,
   business: business_en,
+  extras: extras_en,
   footer: {
     tagline: 'The home of Tanzanian guides.',
     rights: 'All rights reserved.',

@@ -15,7 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function NewGroupTripPage({ searchParams }: PageProps<'/[lang]/group-trips/new'>) {
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const [t, locale, params] = await Promise.all([getDictionary(), getLocale(), searchParams]);
+  const complete = params.complete === '1';
   return (
     <>
       <PhotoHero photo="giraffesBalloon">
@@ -23,8 +24,8 @@ export default async function NewGroupTripPage({ searchParams }: PageProps<'/[la
           <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf text-white">
             <Plus className="size-7" aria-hidden />
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold">{t.groups.newTitle}</h1>
-          <p className="mt-3 max-w-2xl text-lg text-white/80">{t.groups.newBody}</p>
+          <h1 className="mt-5 text-4xl font-extrabold">{complete ? t.extras.completeTitle : t.groups.newTitle}</h1>
+          <p className="mt-3 max-w-2xl text-lg text-white/80">{complete ? t.extras.completeBody : t.groups.newBody}</p>
         </div>
       </PhotoHero>
       <div className="relative mx-auto -mt-16 max-w-4xl px-4 pb-16">
@@ -41,16 +42,25 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
   const g = t.groups;
   const asGuide = user?.guide?.status === 'approved';
   const asBusiness = user?.role === 'provider' || user?.role === 'admin';
+  const asTraveller = !!user && !asGuide && !asBusiness;
+  const complete = params.complete === '1';
 
-  if (!user || (!asGuide && !asBusiness)) {
+  if (!user) {
     return (
       <div className="card space-y-4">
-        <p className="text-lg">{g.whoCan}</p>
+        <p className="text-lg">{t.extras.whoCan}</p>
         <div className="flex flex-wrap gap-2">
-          {!user && <Link href={`/${locale}/login`} className="btn-outline">{t.nav.signIn}</Link>}
-          <Link href={`/${locale}/join?role=guide`} className="btn">{t.nav.join}</Link>
-          <Link href={`/${locale}/join?role=provider`} className="btn-dark">{g.businessSignUp}</Link>
+          <Link href={`/${locale}/login`} className="btn-outline">{t.nav.signIn}</Link>
+          <Link href={`/${locale}/join`} className="btn">{t.nav.signUp}</Link>
         </div>
+      </div>
+    );
+  }
+  if (asTraveller && !user.phone) {
+    return (
+      <div className="card space-y-4">
+        <p className="text-lg">{t.extras.phoneNeeded}</p>
+        <Link href={`/${locale}/dashboard`} className="btn w-fit">{t.extras.addPhone}</Link>
       </div>
     );
   }
@@ -60,7 +70,9 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
     <form action={createGroupTrip} className="card grid gap-4 sm:grid-cols-2">
       {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
-      {!asGuide && (
+      <input type="hidden" name="complete" value={complete ? '1' : ''} />
+      {asTraveller && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.travellerCheck}</p>}
+      {asBusiness && !asGuide && (
         <label className="block sm:col-span-2">
           <span className="label">{g.companyName}</span>
           <input name="company_name" className="field" required maxLength={120} />
@@ -111,6 +123,12 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
         <span className="label">{g.minPeopleField}</span>
         <input name="min_people" type="number" min={1} max={100} defaultValue={2} className="field" required />
       </label>
+      {complete && (
+        <label className="block">
+          <span className="label">{t.extras.alreadyGoing}</span>
+          <input name="already_going" type="number" min={1} max={99} defaultValue={2} className="field" required />
+        </label>
+      )}
       <label className="block">
         <span className="label">{g.maxPeople}</span>
         <input name="max_people" type="number" min={2} max={100} defaultValue={8} className="field" required />

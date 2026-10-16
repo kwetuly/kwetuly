@@ -2,6 +2,7 @@ import { ux_sw } from './ux';
 import { packages_sw } from './packages';
 import { travel_sw } from './travel';
 import { business_sw } from './business';
+import { extras_sw } from './extras';
 import type { Dictionary } from './en';
 
 // Swahili strings are a first draft and should be reviewed by a native speaker before launch.
@@ -823,6 +824,7 @@ export const sw: Dictionary = {
   packages: packages_sw,
   travel: travel_sw,
   business: business_sw,
+  extras: extras_sw,
   footer: {
     tagline: 'Nyumbani kwa waongozaji wa Tanzania.',
     rights: 'Haki zote zimehifadhiwa.',

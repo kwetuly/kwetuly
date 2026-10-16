@@ -22,17 +22,22 @@ const date = (formData: FormData, key: string) => {
 // The database re-checks who may organise and keeps every new trip pending until approved.
 export async function createGroupTrip(formData: FormData) {
   const locale = localeOf(formData);
-  const back = `/${locale}/group-trips/new`;
+  const back = `/${locale}/group-trips/new${formData.get('complete') === '1' ? '?complete=1&' : '?'}`;
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
 
   const asGuide = user.guide?.status === 'approved';
+  const asBusiness = user.role === 'provider' || user.role === 'admin';
+  // Travellers organise as themselves: no guide and no company. Completing a group means some
+  // people are already going; they count against the spots.
+  const alreadyGoing = formData.get('complete') === '1' ? int(formData, 'already_going') : 0;
   const specialty = field(formData, 'specialty', 30);
   const region = field(formData, 'region', 80);
   const trip = {
     organizer_id: user.id,
     guide_id: asGuide ? user.guide!.id : null,
-    company_name: asGuide ? null : field(formData, 'company_name', 120) || null,
+    company_name: !asGuide && asBusiness ? field(formData, 'company_name', 120) || null : null,
+    already_going: Number.isFinite(alreadyGoing) ? Math.min(Math.max(alreadyGoing, 0), 99) : 0,
     title: field(formData, 'title', 140),
     description: field(formData, 'description', 4000),
     specialty,
@@ -61,12 +66,13 @@ export async function createGroupTrip(formData: FormData) {
     trip.max_people >= 2 &&
     trip.min_people <= trip.max_people &&
     contact.length >= 3 &&
-    (trip.guide_id || trip.company_name);
-  if (!valid) redirect(`${back}?error=1`);
+    trip.already_going < trip.max_people &&
+    (trip.guide_id || trip.company_name || (!asBusiness && user.phone));
+  if (!valid) redirect(`${back}error=1`);
 
   const supabase = await createClient();
   const { data, error } = await supabase.from('group_trips').insert(trip).select('id').single();
-  if (error || !data) redirect(`${back}?error=1`);
+  if (error || !data) redirect(`${back}error=1`);
   await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
 
   redirect(`/${locale}/group-trips/${data.id}?created=1`);

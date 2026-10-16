@@ -8,7 +8,7 @@ import { ArrowLeft, CalendarDays, Languages, MapPin, Users } from 'lucide-react'
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser, type CurrentUser } from '@/lib/auth';
-import { getGroupTripForViewer, spotsLeft, type GroupMember, type GroupTrip } from '@/lib/groups';
+import { peopleIn, getGroupTripForViewer, spotsLeft, type GroupMember, type GroupTrip } from '@/lib/groups';
 import { photoUrl, specialtyPhoto } from '@/lib/photos';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
@@ -77,7 +77,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
             <span className="flex items-center gap-1.5"><CalendarDays className="size-4 text-gold" aria-hidden /> {formatDates(trip, locale)}</span>
             <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" aria-hidden /> {trip.region}</span>
-            <span className="flex items-center gap-1.5"><Users className="size-4 text-gold" aria-hidden /> {trip.seats_taken}/{trip.max_people}</span>
+            <span className="flex items-center gap-1.5"><Users className="size-4 text-gold" aria-hidden /> {peopleIn(trip)}/{trip.max_people}</span>
           </div>
         </div>
       </section>
@@ -94,6 +94,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           <dl className="grid gap-5 sm:grid-cols-2">
             {trip.meeting_point && <Fact label={g.meeting} value={trip.meeting_point} />}
             <Fact label={g.minPeople} value={`${trip.min_people} ${g.people}`} />
+            {trip.already_going > 0 && <Fact label={t.extras.alreadyGoing} value={String(trip.already_going)} />}
             {trip.languages.length > 0 && (
               <Fact label={t.guides.languages} value={trip.languages.map(languageName).join(', ')} icon={<Languages className="size-4 text-forest" aria-hidden />} />
             )}
@@ -155,6 +156,8 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
             <RatingSummary avg={trip.guides.rating_avg} count={trip.guides.rating_count} labels={t.reviews} />
           </span>
         </Link>
+      ) : trip.organizer_kind === 'traveller' ? (
+        <p className="mt-2 text-xl font-bold">{t.extras.byTraveller}</p>
       ) : (
         <p className="mt-2 text-xl font-bold">{trip.company_name}</p>
       )}
