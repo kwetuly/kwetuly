@@ -48,8 +48,12 @@ const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs fon
 export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
   return (
     <div className="flex flex-wrap gap-1.5">
-      {guide.verification_status === 'approved' && (
-        <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
+      {guide.is_sample ? (
+        <span className={`${pill} border border-gold bg-sand text-charcoal`}>{t.extras.sampleGuide}</span>
+      ) : (
+        guide.verification_status === 'approved' && (
+          <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
+        )
       )}
       {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-charcoal`}>{t.guides.pro}</span>}
       {guide.female_guide && (

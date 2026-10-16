@@ -57,6 +57,7 @@ import { JsonLd } from '@/components/json-ld';
 import { StickyCta } from '@/components/sticky-cta';
 import { SITE_URL } from '@/lib/site';
 import { enquireTrip, toggleSavedTour } from './actions';
+import { PrefillContact } from '@/components/prefill-contact';
 
 type Params = Promise<{ slug: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
@@ -507,6 +508,7 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
             <input type="hidden" name="trip_id" value={trip.id} />
             <input type="hidden" name="trip_title" value={trip.title_en} />
             <input name="name" className="field" placeholder={t.profile.name} aria-label={t.profile.name} autoComplete="name" required maxLength={120} />
+            <PrefillContact />
             <input name="contact" className="field" placeholder={t.profile.contact} aria-label={t.profile.contact} required maxLength={160} />
             <div className="grid grid-cols-2 gap-2">
               <input name="dates" className="field" placeholder={tt.dates} aria-label={tt.dates} maxLength={120} />

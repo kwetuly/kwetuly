@@ -11,6 +11,7 @@ import { getBusiness } from '@/lib/businesses';
 import { today } from '@/lib/today';
 import { BusinessBadge } from '@/components/business-card';
 import { askBusiness } from './actions';
+import { PrefillContact } from '@/components/prefill-contact';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/businesses/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -76,6 +77,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
             <label className="block">
               <span className="label">{t.profile.name}</span>
               <input className="field" name="name" required maxLength={120} autoComplete="name" />
+              <PrefillContact />
             </label>
             <label className="block">
               <span className="label">{t.profile.contact}</span>

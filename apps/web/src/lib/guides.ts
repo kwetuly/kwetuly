@@ -39,10 +39,11 @@ export type Guide = {
   licence_checked_at: string | null;
   first_aid_checked_at: string | null;
   first_aid_valid_until: string | null;
+  is_sample: boolean;
 };
 
 export const GUIDE_COLUMNS =
-  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until';
+  'id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, facebook_url, instagram_url, tiktok_url, visibility, verification_status, plan, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
 
 // Approved, public guides who offer 1-on-1 prep calls, optionally for one topic.
 export async function listCallGuides(topic?: string): Promise<Guide[]> {

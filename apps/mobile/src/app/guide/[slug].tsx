@@ -85,7 +85,7 @@ export default function GuideScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          <Badge label={`✓ ${t.guides.verified}`} />
+          {g.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : <Badge label={`✓ ${t.guides.verified}`} />}
           {checkLabels.map((label) => <Badge key={label} label={`✓ ${label}`} />)}
           {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
           {g.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
@@ -101,7 +101,7 @@ export default function GuideScreen() {
         )}
         {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => {
           track(EVENTS.enquiryStarted, { kind: 'guide', guide: g.slug, locale });
-          router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name } });
+          router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name, sample: g.is_sample ? '1' : '' } });
         }} />}
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>

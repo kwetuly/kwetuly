@@ -49,7 +49,7 @@ export function PackageCard({ p, t, locale, askHref, guide }: { p: GuidePackage;
             )}
             {p.max_group && (
               <span className="inline-flex items-center gap-1 text-muted">
-                <Users className="size-4" aria-hidden /> {pt.upTo.replace('{n}', String(p.max_group))}
+                <Users className="size-4" aria-hidden /> {p.max_group === 1 ? t.extras.justYou : pt.upTo.replace('{n}', String(p.max_group))}
               </span>
             )}
           </span>

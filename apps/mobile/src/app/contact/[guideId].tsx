@@ -11,7 +11,7 @@ import { brand, colors, space, textSize } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
 export default function ContactGuideScreen() {
-  const { guideId, name, packageId, packageTitle } = useLocalSearchParams<{ guideId: string; name?: string; packageId?: string; packageTitle?: string }>();
+  const { guideId, name, packageId, packageTitle, sample } = useLocalSearchParams<{ guideId: string; name?: string; packageId?: string; packageTitle?: string; sample?: string }>();
   const { t } = useI18n();
   const p = t.profile;
   const { session } = useSession();
@@ -42,7 +42,7 @@ export default function ContactGuideScreen() {
       <Stack.Title>{p.contactTitle}</Stack.Title>
       {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
       <Card>
-        {name && <Text style={{ fontWeight: '700', color: brand.forest }}>{p.askNote.replace('{name}', name)}</Text>}
+        {name && <Text style={{ fontWeight: '700', color: brand.forest }}>{sample === '1' ? t.extras.sampleGuideNote : p.askNote.replace('{name}', name)}</Text>}
         {packageTitle && <Text style={{ color: brand.forest, fontWeight: '700', backgroundColor: brand.mint, padding: space.md, borderRadius: 5 }}>{t.packages.about.replace('{title}', packageTitle)}</Text>}
         <Muted>{p.contactBody}</Muted>
         <Muted>{p.oneGroup}</Muted>

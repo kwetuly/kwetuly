@@ -36,10 +36,11 @@ export type Guide = {
   licence_checked_at: string | null;
   first_aid_checked_at: string | null;
   first_aid_valid_until: string | null;
+  is_sample: boolean;
 };
 
 const GUIDE_COLUMNS =
-  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until';
+  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
 
 export type GuideFilters = { specialty?: string; language?: string; expertise?: string; female?: boolean; partners?: boolean };
 

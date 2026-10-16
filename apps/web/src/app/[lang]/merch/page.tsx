@@ -7,6 +7,7 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getMerchShopId, listProducts, type Product } from '@/lib/merch';
 import { orderMerch } from './actions';
+import { PrefillContact } from '@/components/prefill-contact';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -102,6 +103,7 @@ async function Content({ searchParams, t, locale }: PageProps<'/[lang]/merch'> &
             <label className="block">
               <span className="label">{t.profile.name}</span>
               <input name="name" className="field" required maxLength={120} autoComplete="name" />
+              <PrefillContact />
             </label>
             <label className="block">
               <span className="label">{t.profile.contact}</span>

@@ -60,7 +60,7 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
     return (
       <div className="card space-y-4">
         <p className="text-lg">{t.extras.phoneNeeded}</p>
-        <Link href={`/${locale}/dashboard`} className="btn w-fit">{t.extras.addPhone}</Link>
+        <Link href={`/${locale}/dashboard?back=${encodeURIComponent(`/${locale}/group-trips/new${complete ? '?complete=1' : ''}`)}#details`} className="btn w-fit">{t.extras.addPhone}</Link>
       </div>
     );
   }
@@ -110,11 +110,14 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
         <span className="label">{g.price}</span>
         <input name="price" type="number" min={0} className="field" required />
       </label>
-      <label className="block">
-        <span className="label">{t.offers.deposit}</span>
-        <input name="deposit" type="number" min={0} max={100} defaultValue={30} className="field" />
-        <span className="mt-1 block text-xs text-muted">{t.offers.depositHint}</span>
-      </label>
+      {/* Deposits are paid out to guides and businesses only; travellers' groups share costs directly. */}
+      {!asTraveller && (
+        <label className="block">
+          <span className="label">{t.offers.deposit}</span>
+          <input name="deposit" type="number" min={0} max={100} defaultValue={30} className="field" />
+          <span className="mt-1 block text-xs text-muted">{t.offers.depositHint}</span>
+        </label>
+      )}
       <label className="block">
         <span className="label">{g.meetingPoint}</span>
         <input name="meeting_point" className="field" maxLength={200} />

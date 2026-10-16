@@ -38,7 +38,7 @@ export function GuideCard({ guide }: { guide: Guide }) {
             </View>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-            <Badge label={`✓ ${t.guides.verified}`} />
+            {guide.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : <Badge label={`✓ ${t.guides.verified}`} />}
             {guide.female_guide && <Badge label={t.guides.female} tone="sand" />}
             {guide.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
             {guide.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}

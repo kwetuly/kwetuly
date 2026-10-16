@@ -9,7 +9,7 @@ import { requireUser, type CurrentUser } from '@/lib/auth';
 import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
-import { saveGuideProfile } from './actions';
+import { saveGuideProfile, saveMyDetails } from './actions';
 import { BusinessListing } from './business-listing';
 import { GuideReferral } from './guide-referral';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
@@ -61,7 +61,8 @@ async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; lo
       </>
     );
   }
-  return <TravelerDashboard t={t} locale={locale} user={user} />;
+  const detail = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : '');
+  return <TravelerDashboard t={t} locale={locale} user={user} details={detail('details')} back={detail('back')} />;
 }
 
 async function GuideEditor({
@@ -332,7 +333,7 @@ type MyCall = {
   guides: { display_name: string; slug: string } | null;
 };
 
-async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: Locale; user: CurrentUser }) {
+async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictionary; locale: Locale; user: CurrentUser; details: string; back: string }) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('call_requests')
@@ -345,6 +346,7 @@ async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: L
   return (
     <>
       <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
+      <MyDetails t={t} locale={locale} user={user} status={details} back={back} />
       <section className="card mt-6">
         <h2 className="text-lg font-bold">{t.traveler.calls}</h2>
         {calls.length === 0 ? (
@@ -399,6 +401,31 @@ async function TravelerDashboard({ t, locale, user }: { t: Dictionary; locale: L
         {t.traveler.becomeGuide}
       </Link>
     </>
+  );
+}
+
+// Name and phone. Travellers need a phone to start a group, so the group form can send them here and back.
+async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; locale: Locale; user: CurrentUser; status: string; back: string }) {
+  const x = t.extras;
+  return (
+    <section id="details" className="card mt-6 scroll-mt-28">
+      <h2 className="text-lg font-bold">{x.detailsTitle}</h2>
+      {status === 'saved' && <p className="mt-2 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{x.detailsSaved}</p>}
+      {status === 'invalid' && <p className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{x.phoneInvalid}</p>}
+      <form action={saveMyDetails} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <input type="hidden" name="locale" value={locale} />
+        {back && <input type="hidden" name="back" value={back} />}
+        <label className="block">
+          <span className="label">{t.profile.name}</span>
+          <input name="full_name" className="field" maxLength={120} defaultValue={user.fullName ?? ''} autoComplete="name" />
+        </label>
+        <label className="block">
+          <span className="label">{x.phoneField}</span>
+          <input name="phone" type="tel" className="field" required maxLength={20} defaultValue={user.phone ?? ''} autoComplete="tel" />
+        </label>
+        <button className="btn px-5 py-2.5">{x.saveDetails}</button>
+      </form>
+    </section>
   );
 }
 

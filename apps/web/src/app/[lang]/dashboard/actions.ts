@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, normalizePhone } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { createClient } from '@/lib/supabase/server';
@@ -168,4 +168,21 @@ export async function saveGuideProfile(formData: FormData) {
   // On to the next step, or back to the overview after the last one.
   const next = step ? GUIDE_STEPS[GUIDE_STEPS.indexOf(step) + 1] : undefined;
   redirect(next ? `${back}?step=${next}` : `${back}?saved=1`);
+}
+
+// A traveller's own name and phone. Changing the phone clears its "confirmed" mark (database guard).
+export async function saveMyDetails(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/login`);
+  const phone = normalizePhone(String(formData.get('phone') ?? ''));
+  const back = String(formData.get('back') ?? '');
+  const next = back.startsWith(`/${locale}/`) && /^[/a-z0-9?=&-]+$/.test(back) ? back : `/${locale}/dashboard`;
+  if (!phone) redirect(`/${locale}/dashboard?details=invalid#details`);
+  await supabase.from('profiles').update({ full_name: text(formData, 'full_name', 120), phone }).eq('id', user.id);
+  redirect(next === `/${locale}/dashboard` ? `${next}?details=saved#details` : next);
 }

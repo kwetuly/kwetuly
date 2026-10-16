@@ -31,7 +31,7 @@ export function PackageCard({ p, guideId, guideName, guideSlug, showGuide }: { p
   const pt = t.packages;
   const [open, setOpen] = useState(false);
   const duration = packageDuration(p, pt);
-  const facts = [packagePrice(p, pt), duration, p.max_group ? pt.upTo.replace('{n}', String(p.max_group)) : null].filter(Boolean).join(' · ');
+  const facts = [packagePrice(p, pt), duration, p.max_group === 1 ? t.extras.justYou : p.max_group ? pt.upTo.replace('{n}', String(p.max_group)) : null].filter(Boolean).join(' · ');
 
   return (
     <Card style={open ? { borderColor: brand.leaf } : undefined}>
@@ -71,7 +71,7 @@ export function PackageCard({ p, guideId, guideName, guideSlug, showGuide }: { p
             title={pt.ask}
             onPress={() => {
               track(EVENTS.enquiryStarted, { kind: 'package', guide: guideSlug, locale });
-              router.push({ pathname: '/contact/[guideId]', params: { guideId, name: guideName, packageId: p.id, packageTitle: p.title } });
+              router.push({ pathname: '/contact/[guideId]', params: { guideId, name: guideName, packageId: p.id, packageTitle: p.title, sample: guideSlug.startsWith('sample-') ? '1' : '' } });
             }}
           />
         </View>

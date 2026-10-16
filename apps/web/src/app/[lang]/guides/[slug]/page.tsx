@@ -24,6 +24,7 @@ import { JsonLd } from '@/components/json-ld';
 import { StickyCta } from '@/components/sticky-cta';
 import { SITE_URL } from '@/lib/site';
 import { requestCall, requestGuide, submitReview } from './actions';
+import { PrefillContact } from '@/components/prefill-contact';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
@@ -202,7 +203,7 @@ async function Profile({
       )}
       <aside id="contact" className="card h-fit scroll-mt-28">
         <h2 className="text-lg font-semibold">{t.profile.askName.replace('{name}', guide.display_name)}</h2>
-        <p className="mt-1 text-sm font-semibold text-forest">{t.profile.askNote.replace('{name}', guide.display_name)}</p>
+        <p className="mt-1 text-sm font-semibold text-forest">{guide.is_sample ? t.extras.sampleGuideNote : t.profile.askNote.replace('{name}', guide.display_name)}</p>
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
         <p className="mt-1 text-sm text-muted">{t.profile.oneGroup}</p>
         {status.sent ? (
@@ -222,6 +223,7 @@ async function Profile({
             <label className="block">
               <span className="label">{t.profile.name}</span>
               <input className="field" name="name" required maxLength={120} autoComplete="name" />
+              <PrefillContact />
             </label>
             <label className="block">
               <span className="label">{t.profile.contact}</span>

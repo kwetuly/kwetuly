@@ -100,7 +100,7 @@ export default function NewGroupTripScreen() {
           max_people: max,
           languages: f.languages,
           includes: f.includes.trim() || null,
-          deposit_percent: Math.min(Math.max(parseInt(f.deposit, 10) || 0, 0), 100),
+          deposit_percent: asTraveller ? 0 : Math.min(Math.max(parseInt(f.deposit, 10) || 0, 0), 100),
         },
         f.contact.trim(),
       );
@@ -132,7 +132,7 @@ export default function NewGroupTripScreen() {
         <Field label={g.maxPeople} value={f.max} onChangeText={set('max')} keyboardType="number-pad" />
         <ChipSelect label={t.guides.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
         <Field label={g.includesField} value={f.includes} onChangeText={set('includes')} multiline />
-        <Field label={t.offers.deposit} value={f.deposit} onChangeText={set('deposit')} keyboardType="number-pad" hint={t.offers.depositHint} />
+        {!asTraveller && <Field label={t.offers.deposit} value={f.deposit} onChangeText={set('deposit')} keyboardType="number-pad" hint={t.offers.depositHint} />}
         <Field label={g.organiserContact} value={f.contact} onChangeText={set('contact')} keyboardType="phone-pad" />
         <FormMessage message={message} />
         <Button title={g.submit} onPress={submit} loading={busy} />
