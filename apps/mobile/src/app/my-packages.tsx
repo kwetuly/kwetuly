@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { Image } from 'expo-image';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@rafrika/shared';
 import { Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
@@ -23,11 +23,7 @@ async function pickPhoto() {
   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1, allowsEditing: true, aspect: [4, 3] });
   if (result.canceled) return null;
   const asset = result.assets[0];
-  const context = ImageManipulator.manipulate(asset.uri);
-  if (Math.max(asset.width, asset.height) > 1600) context.resize(asset.width >= asset.height ? { width: 1600 } : { height: 1600 });
-  const image = await context.renderAsync();
-  const saved = await image.saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-  return { uri: saved.uri, mimeType: 'image/jpeg' };
+  return cleanPhoto(asset, { maxSide: 1600 });
 }
 
 // The guide's own packages, the same as /dashboard/packages on the website.

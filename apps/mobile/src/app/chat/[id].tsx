@@ -9,11 +9,13 @@ import { deleteChatMessage, getGroupChat, listChatMessages, markChatRead, sendCh
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { shareLink, shareMediaFile } from '@/lib/share';
+import { cleanPhoto } from '@/lib/clean-photo';
 import { useLive } from '@/hooks/use-live';
 import { getChatMuted, setChatMuted } from '@/lib/api-requests';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const MAX_BYTES = 50 * 1024 * 1024;
+const PHOTO_SIDE = 2560; // px, same as the website
 
 type Picked = { uri: string; mimeType: string; kind: 'image' | 'video'; name: string };
 
@@ -49,12 +51,22 @@ export default function GroupChatScreen() {
 
   async function pick() {
     setError('');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.8, videoMaxDuration: 120 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 1, videoMaxDuration: 120 });
     if (result.canceled) return;
     const asset = result.assets[0];
-    if (asset.fileSize && asset.fileSize > MAX_BYTES) return setError(c.tooBig);
-    const kind = asset.type === 'video' ? 'video' : 'image';
-    setPicked({ uri: asset.uri, kind, mimeType: asset.mimeType ?? (kind === 'video' ? 'video/mp4' : 'image/jpeg'), name: asset.fileName ?? `rafrika.${kind === 'video' ? 'mp4' : 'jpg'}` });
+    if (asset.type === 'video') {
+      // Videos are uploaded as they are.
+      if (asset.fileSize && asset.fileSize > MAX_BYTES) return setError(c.tooBig);
+      return setPicked({ uri: asset.uri, kind: 'video', mimeType: asset.mimeType ?? 'video/mp4', name: asset.fileName ?? 'rafrika.mp4' });
+    }
+    // Photos can be shared publicly later, so save a new copy without the location and camera data.
+    // The picker's own copy keeps that data on Android. If the photo cannot be read, do not send it.
+    try {
+      const clean = await cleanPhoto(asset, { maxSide: PHOTO_SIDE, compress: 0.8 });
+      setPicked({ uri: clean.uri, kind: 'image', mimeType: clean.mimeType, name: (asset.fileName ?? 'rafrika').replace(/\.[^.]*$/, '') + '.jpg' });
+    } catch {
+      setError(c.uploadError);
+    }
   }
 
   async function send() {

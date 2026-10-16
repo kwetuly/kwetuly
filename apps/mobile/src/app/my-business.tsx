@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
+import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BUSINESS_TYPES, REGIONS, formatUsd, hasValidBadge, type BusinessType } from '@rafrika/shared';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
@@ -20,10 +20,7 @@ async function pickPhoto(): Promise<Upload | null> {
   const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
   if (result.canceled) return null;
   const asset = result.assets[0];
-  const context = ImageManipulator.manipulate(asset.uri);
-  if (Math.max(asset.width, asset.height) > 1600) context.resize(asset.width >= asset.height ? { width: 1600 } : { height: 1600 });
-  const saved = await (await context.renderAsync()).saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-  return { uri: saved.uri, mimeType: 'image/jpeg' };
+  return cleanPhoto(asset, { maxSide: 1600 });
 }
 
 // The owner's listing, the paid badge and enquiries, the same as the business dashboard on the website.

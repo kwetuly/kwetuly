@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { ImagePlus, Loader2, Send, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { cleanImage, needsCleaning } from '@/lib/clean-image';
 import { sendChatMessage } from '@/app/[lang]/chats/actions';
 
 type Labels = {
@@ -18,6 +19,9 @@ type Labels = {
 };
 
 const MAX_BYTES = 50 * 1024 * 1024;
+// Chat photos are redrawn before upload so their location and camera data are dropped. Very large
+// phone photos are shrunk to this size, which phone browsers can always draw.
+const CHAT_PHOTO_SIDE = 2560;
 
 // A successful send ends in a redirect; let Next.js handle it.
 export const isRedirect = (err: unknown) => typeof (err as { digest?: unknown })?.digest === 'string' && (err as { digest: string }).digest.startsWith('NEXT_REDIRECT');
@@ -56,10 +60,26 @@ export function ChatComposer({ chatId, locale, labels }: { chatId: string; local
 
     startTransition(async () => {
       if (file) {
-        const extension = (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
+        // Photos can be shared publicly later, so never upload the original with its hidden data.
+        // Videos are uploaded as they are.
+        let body: Blob = file;
+        if (needsCleaning(file)) {
+          try {
+            body = await cleanImage(file, { maxSide: CHAT_PHOTO_SIDE });
+          } catch {
+            setError(labels.uploadError);
+            return;
+          }
+        }
+        const extension =
+          body === file
+            ? (file.name.split('.').pop() ?? 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5)
+            : body.type === 'image/png'
+              ? 'png'
+              : 'jpg';
         const path = `${chatId}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await createClient().storage.from('chat-media').upload(path, file, {
-          contentType: file.type,
+        const { error: uploadError } = await createClient().storage.from('chat-media').upload(path, body, {
+          contentType: body.type || file.type,
           upsert: false,
         });
         if (uploadError) {

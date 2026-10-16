@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { cleanImage, needsCleaning } from '@/lib/clean-image';
 
 type Props = {
   /** Hidden form field that receives the storage path once the upload is done. */
@@ -17,24 +18,6 @@ type Props = {
 
 const MAX_SIDE = 1600; // px; photos are shrunk to this before upload
 const LIMIT = { avatars: 10, verification: 15 }; // MB, same as the storage buckets
-
-// Phone photos are often 5–12 MB. Shrink big images in the browser (keeps them sharp enough
-// for a profile or an ID check) so uploads are quick on mobile data.
-async function shrink(file: File): Promise<Blob> {
-  if (!file.type.startsWith('image/') || file.size < 800 * 1024) return file;
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * scale);
-    canvas.height = Math.round(bitmap.height * scale);
-    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
-    return blob && blob.size < file.size ? blob : file;
-  } catch {
-    return file;
-  }
-}
 
 // Uploads a file straight from the browser to Supabase Storage (the user's own folder), so large
 // files never pass through the website's server. The form only sends the resulting path.
@@ -59,7 +42,16 @@ export function DirectUpload({ name, bucket, userId, prefix, accept, labels }: P
     setPath('');
     if (!file) return setState('idle');
     setState('uploading');
-    const body = await shrink(file);
+    // Every photo is redrawn (shrunk to 1600px if bigger) so its location and camera data are never
+    // uploaded; this also keeps uploads quick on mobile data. If the browser cannot read it, stop.
+    let body: Blob = file;
+    if (needsCleaning(file)) {
+      try {
+        body = await cleanImage(file, { maxSide: MAX_SIDE });
+      } catch {
+        return setState('error');
+      }
+    }
     if (body.size > LIMIT[bucket] * 1024 * 1024) return setState('error');
     const type = body.type || file.type;
     const ext = type === 'application/pdf' ? 'pdf' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
