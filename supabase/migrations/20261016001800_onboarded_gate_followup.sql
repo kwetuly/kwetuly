@@ -1,4 +1,23 @@
 -- Security review of 5f9cb52 (2026-10-16): follow-ups M2, L4 and L2.
+-- Security review of 3c4ccb6 (2026-10-16): follow-ups M1 and L3 (added below, before this file was applied).
+--
+--   M1  complete_onboarding (SECURITY DEFINER, so a trusted caller) sets profiles.phone without
+--       touching phone_verified_at, and guard_profile_role only cleared phone_verified_at for
+--       untrusted callers. A confirmed number could therefore stay "confirmed" after it was replaced.
+--       guard_profile_role now also clears phone_verified_at for trusted callers whenever the phone
+--       changes and the same update does not set phone_verified_at itself. private.sync_phone_confirmed
+--       sets both together, and the admin "Phone confirmed" action changes only phone_verified_at, so
+--       both keep working. Everything else in the guard is the 20261016000500 version unchanged.
+--   L3  Three update policies that lacked the onboarding check get (select private.is_onboarded()):
+--       "Travelers and guides update their calls", "Posters and admins update jobs" and
+--       "Owners update own projects". The admin escape is kept.
+--   QA  A wrong invite code on an email/password sign-up no longer creates an account (and no
+--       confirmation email is sent): while invite-only is on, handle_new_user raises
+--       'invite_code_invalid' for sign-ups whose app_metadata provider is 'email' when the code does
+--       not redeem. The whole sign-up rolls back, including the code's use count. Social sign-ups
+--       (Google, Apple, Facebook) are unchanged: created unfinished, the welcome step asks for a code.
+--       Note: accounts created by an admin by email (dashboard or auth.admin.createUser) are email
+--       sign-ups too, so while invite-only is on they need a valid invite_code in user metadata.
 --
 --   M2  Five more places where a signed-in person creates content now also need a finished account
 --       ((select private.is_onboarded())): prep call requests, job posts, investment projects, message
@@ -19,6 +38,11 @@
 --       next to it.
 --   L4  re-run the policy section of 20261016001700_onboarded_gate_and_scrub.sql (drop + create).
 --   L2  re-create private.scrub_deleted_user() from 20261016001700_onboarded_gate_and_scrub.sql.
+--   M1  re-create public.guard_profile_role() from 20261016000500_traveller_groups_news_samples_merch.sql.
+--   L3  drop the three policies and re-create them from 20261012000500_calls_jobs_hub.sql (lines 101,
+--       164) and 20261012000000_initial_schema.sql (line 472, with private.is_admin() in place of the
+--       old public.is_admin()).
+--   QA  re-create public.handle_new_user() from 20261016001700_onboarded_gate_and_scrub.sql.
 
 -- ---------------------------------------------------------------------------
 -- M2. Insert policies that were missing the onboarding check.
@@ -289,3 +313,111 @@ $$;
 
 revoke execute on function private.scrub_deleted_user() from public, anon, authenticated;
 -- The trigger auth_users_scrub_before_delete (20261016001200) already calls this function.
+
+-- ---------------------------------------------------------------------------
+-- M1. Profile guard: a confirmed phone stays confirmed only while it is unchanged, for every caller.
+--   Untrusted callers: exactly as before (role locked, onboarded_at and phone_verified_at follow the
+--   old row, phone_verified_at cleared when the phone changes).
+--   Trusted callers (admins, SECURITY DEFINER functions such as complete_onboarding): if the phone
+--   changes and the same update leaves phone_verified_at as it was, phone_verified_at is cleared.
+--   An update that sets both (private.sync_phone_confirmed) keeps the new value.
+-- ---------------------------------------------------------------------------
+create or replace function public.guard_profile_role()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if not private.is_trusted() then
+    if new.role is distinct from old.role then
+      raise exception 'Only admins can change roles';
+    end if;
+    new.onboarded_at := old.onboarded_at;
+    -- A confirmed number stays confirmed only while it is unchanged.
+    if new.phone is distinct from old.phone then
+      new.phone_verified_at := null;
+    else
+      new.phone_verified_at := old.phone_verified_at;
+    end if;
+  elsif new.phone is distinct from old.phone
+        and new.phone_verified_at is not distinct from old.phone_verified_at then
+    -- Trusted callers too: a new number is not confirmed unless this same update confirms it.
+    new.phone_verified_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------------------------
+-- L3. Update policies that were missing the onboarding check. Admins keep their escape.
+-- ---------------------------------------------------------------------------
+
+-- call_requests (20261012000500_calls_jobs_hub.sql). No separate WITH CHECK, as in the original.
+drop policy "Travelers and guides update their calls" on public.call_requests;
+create policy "Travelers and guides update their calls" on public.call_requests
+  for update to authenticated
+  using (
+    ((traveler_id = (select auth.uid())
+      or exists (select 1 from public.guides g where g.id = guide_id and g.owner_id = (select auth.uid())))
+     and (select private.is_onboarded()))
+    or private.is_admin());
+
+-- jobs (20261012000500_calls_jobs_hub.sql)
+drop policy "Posters and admins update jobs" on public.jobs;
+create policy "Posters and admins update jobs" on public.jobs
+  for update to authenticated
+  using ((posted_by = (select auth.uid()) and (select private.is_onboarded())) or private.is_admin())
+  with check ((posted_by = (select auth.uid()) and (select private.is_onboarded())) or private.is_admin());
+
+-- investment_projects (20261012000000_initial_schema.sql; public.is_admin() is now private.is_admin())
+drop policy "Owners update own projects" on public.investment_projects;
+create policy "Owners update own projects" on public.investment_projects
+  for update to authenticated
+  using ((submitted_by = (select auth.uid()) and (select private.is_onboarded())) or private.is_admin())
+  with check ((submitted_by = (select auth.uid()) and (select private.is_onboarded())) or private.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- QA. New accounts: an email/password sign-up with a wrong invite code is refused while invite-only
+-- is on, so no account is created and no confirmation email goes out. Otherwise the same as
+-- 20261016001700 (social sign-ups still fail closed into the welcome step; the warning for unexpected
+-- errors still logs only the error code and message, never the code, email or phone).
+-- ---------------------------------------------------------------------------
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  requested text := new.raw_user_meta_data ->> 'role';
+  phone text := coalesce(new.phone, new.raw_user_meta_data ->> 'phone');
+  invited boolean := true;
+begin
+  if private.invite_only() then
+    begin
+      invited := private.redeem_invite(new.raw_user_meta_data ->> 'invite_code', new.id);
+    exception when others then
+      raise warning 'handle_new_user: invite redemption failed for user % (%: %)', new.id, sqlstate, sqlerrm;
+      invited := false;
+    end;
+    -- Email/password sign-ups must bring a valid code; the sign-up is rolled back otherwise.
+    if not invited and coalesce(new.raw_app_meta_data ->> 'provider', '') = 'email' then
+      raise exception 'invite_code_invalid' using errcode = 'P0001', hint = 'A valid invite code is needed while Rafrika is invite-only.';
+    end if;
+  end if;
+
+  insert into public.profiles (id, full_name, phone, role, preferred_language, onboarded_at)
+  values (
+    new.id,
+    -- Google and Apple send "full_name" or "name"; Facebook sends "name".
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'),
+    phone,
+    -- Without a valid invite the account stays a traveller until the welcome step.
+    case when invited and requested in ('traveler', 'provider', 'investor', 'guide')
+         then requested::public.user_role else 'traveler' end,
+    coalesce(new.raw_user_meta_data ->> 'preferred_language', 'en'),
+    case when invited and requested is not null and phone is not null then now() end
+  );
+  return new;
+end;
+$$;

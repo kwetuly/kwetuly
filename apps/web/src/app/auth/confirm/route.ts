@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
-import { RECOVERY_COOKIE, recoveryCookieOptions, signRecoveryCookie, verifiedSessionId } from '@/lib/recovery';
+import { RECOVERY_COOKIE, recoveryCookieOptions, signRecoveryCookie, verifiedSession } from '@/lib/recovery';
 import { localeOfPath, safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
 
@@ -33,20 +33,23 @@ export async function GET(request: NextRequest) {
   const target = error
     ? isRecovery
       ? `/${locale}/forgot-password?error=link`
-      : `/${locale}/login?error=1`
+      : `/${locale}/login?error=link`
     : type === 'recovery'
       ? `/${locale}/reset-password`
       : next;
 
   // Only a reset link that just signed someone in may set a new password (checked in updatePassword).
-  // Reset links arrive as ?type=recovery&token_hash=..., or (PKCE) as ?code= with the reset page as next.
+  // The cookie is issued only when the link itself proves it was a reset link, never because of `next`:
+  //   - ?token_hash=...&type=recovery, verified with verifyOtp as a recovery token, or
+  //   - ?code=... (PKCE), when Supabase Auth recorded "recovery" in the new session's amr.
   // The cookie is signed on the server and bound to this user and this new session (see lib/recovery).
   const cookieStore = await cookies();
-  const sessionId =
-    !error && isRecovery && data.user && data.session
-      ? await verifiedSessionId(supabase, data.session.access_token)
-      : null;
-  const signed = sessionId && data.user ? signRecoveryCookie(data.user.id, sessionId) : null;
+  const session =
+    !error && data.user && data.session ? await verifiedSession(supabase, data.session.access_token) : null;
+  const provenRecovery =
+    session !== null
+    && (code ? session.amrMethods.includes('recovery') : Boolean(tokenHash) && type === 'recovery');
+  const signed = provenRecovery && session && data.user ? signRecoveryCookie(data.user.id, session.sessionId) : null;
   if (signed) {
     cookieStore.set(RECOVERY_COOKIE, signed, recoveryCookieOptions);
   } else {

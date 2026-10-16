@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
-import { inviteCodeInput, inviteRequired, isInviteError } from '@/lib/invite';
+import { inviteCodeInput, inviteRequired, isInviteError, isSignUpInviteError } from '@/lib/invite';
 import { normalizePhone } from '@/lib/phone';
 import { RECOVERY_COOKIE, recoveryUserId } from '@/lib/recovery';
 import { safeLocalPath } from '@/lib/safe-next';
@@ -28,8 +28,7 @@ export async function signUp(formData: FormData) {
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
 
   // Invite-only soft launch: the database redeems the code when the account is created
-  // (handle_new_user). A wrong code still creates the account, but it stays unfinished and the
-  // welcome step asks for a valid code before the person can use Rafrika.
+  // (handle_new_user). A wrong code is refused there, so no account is created and no email is sent.
   const inviteCode = inviteCodeInput(formData.get('invite_code'));
   if (!inviteCode && (await inviteRequired())) redirect(`/${locale}/join?role=${role}&error=invite`);
   if (!phone) redirect(`/${locale}/join?role=${role}&error=phone`);
@@ -45,6 +44,9 @@ export async function signUp(formData: FormData) {
     },
   });
 
+  if (error && inviteCode && isSignUpInviteError(error) && (await inviteRequired())) {
+    redirect(`/${locale}/join?role=${role}&error=invite`);
+  }
   if (error) redirect(`/${locale}/join?role=${role}&error=1`);
   redirect(`/${locale}/join?role=${role}&sent=1`);
 }

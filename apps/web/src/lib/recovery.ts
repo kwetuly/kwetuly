@@ -78,11 +78,25 @@ function recentRecoveryAmr(amr: unknown): boolean {
   );
 }
 
-/** Session id of a verified access token (pass the token straight after a sign-in). */
-export async function verifiedSessionId(supabase: AuthClient, accessToken?: string): Promise<string | null> {
+/**
+ * Session id and sign-in methods (amr) of a verified access token (pass the token straight after a
+ * sign-in), or null when the token cannot be verified.
+ */
+export async function verifiedSession(
+  supabase: AuthClient,
+  accessToken?: string,
+): Promise<{ sessionId: string; amrMethods: string[] } | null> {
   const { data, error } = await supabase.auth.getClaims(accessToken);
-  const sessionId = data?.claims?.session_id;
-  return !error && typeof sessionId === 'string' && sessionId ? sessionId : null;
+  const claims = data?.claims;
+  const sessionId = claims?.session_id;
+  if (error || typeof sessionId !== 'string' || !sessionId) return null;
+  const amrMethods = Array.isArray(claims?.amr)
+    ? (claims.amr as unknown[]).flatMap((entry) =>
+        typeof entry === 'object' && entry !== null && typeof (entry as { method?: unknown }).method === 'string'
+          ? [(entry as { method: string }).method]
+          : [])
+    : [];
+  return { sessionId, amrMethods };
 }
 
 /**

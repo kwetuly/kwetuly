@@ -34,6 +34,19 @@ export function isInviteError(error: { message?: string } | null): boolean {
   return Boolean(error?.message?.includes('invite_code_invalid'));
 }
 
+/**
+ * True when an email sign-up was refused because of the invite code. handle_new_user raises
+ * 'invite_code_invalid', but Supabase Auth reports any error from that trigger only as a generic
+ * "Database error saving new user" (status 500, code unexpected_failure). Call this only while
+ * invite-only is on and a code was sent, where the code is by far the likeliest cause.
+ */
+export function isSignUpInviteError(error: { message?: string; code?: string; status?: number } | null): boolean {
+  if (!error) return false;
+  return isInviteError(error)
+    || error.code === 'unexpected_failure'
+    || Boolean(error.message?.includes('Database error saving new user'));
+}
+
 // No 0/O or 1/I/L, so codes read out over the phone survive. 12 characters ≈ 60 bits.
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 

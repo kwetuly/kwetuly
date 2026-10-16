@@ -104,7 +104,7 @@ function hasUncheckedDocument(g: PendingGuide) {
   return DOCUMENTS.some((doc) => g.guide_private?.[doc.path] && !g[doc.check]);
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: PageProps<'/[lang]/admin'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -125,7 +125,7 @@ export default async function AdminPage() {
         <PendingPackages t={t} locale={locale} />
         <BusinessesAdmin t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
-        <PendingGroupTrips t={t} locale={locale} />
+        <PendingGroupTrips t={t} locale={locale} searchParams={searchParams} />
         <Payments t={t} locale={locale} />
         <LatestRequests t={t} locale={locale} />
         <Inbox locale={locale} />
@@ -136,7 +136,7 @@ export default async function AdminPage() {
 }
 
 // Group trips wait here until approved. Check the organiser, dates, price and what is included.
-async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale }) {
+async function PendingGroupTrips({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
@@ -154,10 +154,20 @@ async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale 
     ? await supabase.from('profiles').select('id, full_name, phone, phone_verified_at').in('id', ids)
     : { data: [] as { id: string; full_name: string | null; phone: string | null; phone_verified_at: string | null }[] };
   const person = new Map((people ?? []).map((p) => [p.id, p]));
+  const { error: errorParam } = await searchParams;
+  const notice =
+    errorParam === 'phone_changed'
+      ? 'Not confirmed: the organiser’s phone number changed after this page was loaded (or none was shown). Check the new number below, call it, then press "Phone confirmed" again.'
+      : errorParam === 'phone_confirm'
+        ? 'Could not save the phone confirmation. Please try again.'
+        : errorParam === 'phone'
+          ? 'Not approved: the traveller organiser’s phone number is not confirmed yet.'
+          : null;
 
   return (
     <section id="groups" className="mt-12">
       <h2 className="text-2xl font-bold">Group trips ({trips.length})</h2>
+      {notice && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{notice}</p>}
       {trips.length === 0 && <p className="mt-3 text-muted">—</p>}
       <div className="mt-4 space-y-4">
         {trips.map((g) => (
@@ -189,6 +199,7 @@ async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale 
               <form action={confirmPhone} className="sm:col-span-2">
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="user_id" value={g.organizer_id} />
+                <input type="hidden" name="phone" value={person.get(g.organizer_id)?.phone ?? ''} />
                 <button className="btn-outline px-4 py-2 text-sm">Phone confirmed</button>
               </form>
             )}

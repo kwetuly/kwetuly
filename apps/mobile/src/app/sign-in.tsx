@@ -136,8 +136,8 @@ export default function SignInScreen() {
     const normalized = normalizePhone(phone);
     if (!normalized) return setMessage({ tone: 'error', text: t.auth.phoneError });
     if (!fullName.trim() || password.length < 8) return setMessage({ tone: 'error', text: t.auth.error });
-    // Invite-only: the database checks the code when the account is created. A wrong code leaves the
-    // account unfinished, and the welcome step asks for a valid one.
+    // Invite-only: the database checks the code when the account is created. A wrong code is refused
+    // there, so no account is created and no email is sent.
     const invite = inviteCode.trim().slice(0, 200);
     if (inviteOnly && !invite) return setMessage({ tone: 'error', text: t.auth.inviteError });
     setBusy(true);
@@ -152,7 +152,19 @@ export default function SignInScreen() {
     });
     setBusy(false);
     if (!error) track(EVENTS.signupCompleted, { role, locale });
-    setMessage(error ? { tone: 'error', text: t.auth.error } : { tone: 'ok', text: t.app.checkEmail });
+    // Supabase Auth reports the database's refusal of the code only as a generic sign-up failure
+    // ("Database error saving new user", code unexpected_failure).
+    const inviteRefused = Boolean(
+      error && inviteOnly && invite
+      && (error.code === 'unexpected_failure'
+          || error.message.includes('Database error saving new user')
+          || error.message.includes('invite_code_invalid')),
+    );
+    setMessage(
+      inviteRefused ? { tone: 'error', text: t.auth.inviteError }
+      : error ? { tone: 'error', text: t.auth.error }
+      : { tone: 'ok', text: t.app.checkEmail },
+    );
     if (!error) setMode('signIn');
   }
 

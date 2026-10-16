@@ -98,14 +98,25 @@ export async function reviewGroupTrip(formData: FormData) {
   redirect(`/${locale}/admin${error ? '?error=phone' : ''}#groups`);
 }
 
-// After calling a traveller organiser, mark their phone number as confirmed.
+// After calling a traveller organiser, mark their phone number as confirmed. Only the number the
+// admin saw (and called) is confirmed: if the organiser changed it meanwhile, nothing is updated.
 export async function confirmPhone(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
   if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
+  const userId = String(formData.get('user_id') ?? '');
+  const shown = String(formData.get('phone') ?? '').trim();
+  if (!userId || !shown || shown.length > 32) redirect(`/${locale}/admin?error=phone_changed#groups`);
   const supabase = await createClient();
-  await supabase.from('profiles').update({ phone_verified_at: new Date().toISOString() }).eq('id', String(formData.get('user_id') ?? ''));
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ phone_verified_at: new Date().toISOString() })
+    .eq('id', userId)
+    .eq('phone', shown)
+    .select('id');
+  if (error) redirect(`/${locale}/admin?error=phone_confirm#groups`);
+  if (!data?.length) redirect(`/${locale}/admin?error=phone_changed#groups`);
   redirect(`/${locale}/admin#groups`);
 }
 
