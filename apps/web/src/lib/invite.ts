@@ -43,7 +43,6 @@ export function isInviteError(error: { message?: string } | null): boolean {
 export function isSignUpInviteError(error: { message?: string; code?: string; status?: number } | null): boolean {
   if (!error) return false;
   return isInviteError(error)
-    || error.code === 'unexpected_failure'
     || Boolean(error.message?.includes('Database error saving new user'));
 }
 

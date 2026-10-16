@@ -156,8 +156,7 @@ export default function SignInScreen() {
     // ("Database error saving new user", code unexpected_failure).
     const inviteRefused = Boolean(
       error && inviteOnly && invite
-      && (error.code === 'unexpected_failure'
-          || error.message.includes('Database error saving new user')
+      && (error.message.includes('Database error saving new user')
           || error.message.includes('invite_code_invalid')),
     );
     setMessage(

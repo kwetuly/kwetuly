@@ -2,7 +2,7 @@ Rafrika - Walter's to-do (2026-10-16)
 
 TODAY (about 1 hour)
 1. GitHub: create a free account at github.com if you don't have one, then tell Claude. Claude creates the private repo and uploads the code; you only sign in once.
-2. Supabase: in Claude Code type /mcp and sign in to Supabase, so the team can hide the samples and check the live database.
+2. Supabase connection: done (Claude can reach the live database; samples are hidden).
 3. Supabase dashboard > Authentication: turn on "Leaked password protection" and "Secure password change".
 4. Vercel: create an account at vercel.com (Pro plan, about US$20/month). Tell Claude when done.
    When the website is set up there, the hosting settings need RECOVERY_COOKIE_SECRET: a long random
