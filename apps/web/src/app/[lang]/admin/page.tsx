@@ -407,6 +407,9 @@ type PaymentRow = {
   provider_reference: string | null;
   provider_channel: string | null;
   payout_done: boolean;
+  // Added by 20261016001100_security_review_fixes.sql; optional until that migration is applied.
+  payout_by?: string | null;
+  payout_at?: string | null;
   created_at: string;
 };
 
@@ -417,13 +420,14 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('payments')
-    .select('id, user_id, payee_user_id, description, amount_tzs, amount_usd, status, provider_reference, provider_channel, payout_done, created_at')
+    // '*' keeps this list working before and after the payout_by / payout_at columns exist.
+    .select('*')
     .neq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(50)
     .returns<PaymentRow[]>();
   const rows = data ?? [];
-  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id]).filter(Boolean) as string[])];
+  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id, r.payout_by ?? null]).filter(Boolean) as string[])];
   const { data: people } = ids.length
     ? await supabase.from('profiles').select('id, full_name, phone').in('id', ids).returns<{ id: string; full_name: string | null; phone: string | null }[]>()
     : { data: [] };
@@ -450,6 +454,11 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
               </p>
               <p>From: {who(p.user_id)}</p>
               <p className="font-semibold">{a.payee}: {who(p.payee_user_id)}</p>
+              {p.payout_done && p.payout_at && (
+                <p className="text-muted">
+                  {a.paidOut}: {new Date(p.payout_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {who(p.payout_by ?? null)}
+                </p>
+              )}
             </div>
             {p.status === 'paid' && (
               <form action={setPaidOut}>

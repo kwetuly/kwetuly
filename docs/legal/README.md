@@ -45,6 +45,10 @@ Section numbers are only given where a source reported them, and none have been 
 | apps/web/src/lib/analytics.ts comment | "no consent banner is needed" | Not confirmed under Tanzanian law | Advocate question |
 | Home stats (line ~291) | "verified guides" count | Must not count sample guides | Confirm the count excludes `is_sample` |
 
+## Open questions
+
+- **Retention periods built into the database (migration 20261016001200_account_deletion_cleanup.sql, not yet applied).** Sent and skipped email/WhatsApp alerts (which hold the email address or phone number and a message preview) are deleted after 30 days; failed alerts, and alerts given up on after 5 attempts, after 90 days. When an account is deleted, the person's enquiries are kept for the guide or business but their name, contact and message are blanked; alerts addressed to them, or copying their contact details, are emptied; and "coming soon" sign-ups with their email or phone are deleted. Payment records are kept with the person removed (for accounting). Advocate: are 30 and 90 days acceptable under the Personal Data Protection Act, 2022, how long must payment and enquiry records be kept (tax, consumer disputes), and should the privacy policy state these periods?
+
 ## Before any of this goes live
 
 1. Advocate reviews all six drafts and answers the open questions at the end of each.
