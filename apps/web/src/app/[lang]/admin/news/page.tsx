@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { REGIONS } from '@rafrika/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { NEWS_COLUMNS, type TravelNews } from '@/lib/news';
 import { createClient } from '@/lib/supabase/server';
 import { deleteFieldNews, deleteTravelNews, saveTravelNews } from './actions';
@@ -67,7 +67,7 @@ function NewsForm({ locale, item }: { locale: Locale; item?: TravelNews }) {
 }
 
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return <p className="mt-6">Admins only.</p>;
   const params = await searchParams;
   const supabase = await createClient();

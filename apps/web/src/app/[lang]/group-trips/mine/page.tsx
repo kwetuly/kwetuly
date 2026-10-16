@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { businessApproval, requireUser } from '@/lib/auth';
 import type { GroupTrip } from '@/lib/groups';
 import { createClient } from '@/lib/supabase/server';
 import { formatDates } from '@/components/group-trip-card';
@@ -26,6 +26,7 @@ type Row = Pick<GroupTrip, 'id' | 'title' | 'start_date' | 'end_date' | 'seats_t
 
 async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   const user = await requireUser(locale);
+  const business = await businessApproval(user);
   const g = t.groups;
   const supabase = await createClient();
   const [organised, joined] = await Promise.all([
@@ -80,7 +81,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
         )}
       </section>
       {/* Only verified guides and business accounts can organise. */}
-      {(user.guide?.status === 'approved' || user.role === 'provider' || user.role === 'admin') && (
+      {(user.guide?.status === 'approved' || business === 'approved' || user.role === 'admin') && (
         <Link href={`/${locale}/group-trips/new`} className="btn">{g.start}</Link>
       )}
     </div>

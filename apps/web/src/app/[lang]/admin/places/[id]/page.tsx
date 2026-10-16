@@ -5,7 +5,7 @@ import { Suspense, type ReactNode } from 'react';
 import { PLACE_COLUMNS, PLACE_KINDS, type Place } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { savePlace } from '../actions';
 
@@ -25,7 +25,7 @@ export default async function EditPlacePage({ params, searchParams }: PageProps<
 }
 
 async function Editor({ locale, params, searchParams }: { locale: Locale; params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const [{ id }, status] = await Promise.all([params, searchParams]);
   const isNew = id === 'new';

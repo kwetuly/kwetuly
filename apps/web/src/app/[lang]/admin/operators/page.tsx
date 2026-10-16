@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { BadgeCheck } from 'lucide-react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Admin: tour operators', robots: { index: false } };
@@ -34,7 +34,7 @@ export default async function AdminOperatorsPage() {
 }
 
 async function List({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const supabase = await createClient();
   const { data } = await supabase

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { shortName, signMedia, type ChatMessage } from '@/lib/chats';
 import { setFeatured } from '../actions';
@@ -33,7 +33,7 @@ export default async function AdminMediaPage() {
 }
 
 async function Library({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const supabase = await createClient();
   const { data } = await supabase

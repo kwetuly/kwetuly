@@ -5,7 +5,7 @@ import { Suspense } from 'react';
 import { TOUR_COLUMNS, TOUR_TYPES, TRIP_CIRCUITS, tourReadiness, verifiedPrice, type Tour } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { today } from '@/lib/today';
 import { quickUpdateTour } from './actions';
@@ -43,7 +43,7 @@ export default async function AdminToursPage({ searchParams }: PageProps<'/[lang
 }
 
 async function TourList({ locale, searchParams }: { locale: Locale; searchParams: Search }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const params = await searchParams;
   const show = typeof params.show === 'string' ? params.show : 'all';

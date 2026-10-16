@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { resolveReport, unlockConversation } from './actions';
 
@@ -43,7 +43,7 @@ export default async function AdminMessagesPage() {
 }
 
 async function Moderation({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const supabase = await createClient();
 

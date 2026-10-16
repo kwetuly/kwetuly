@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { createGroupTrip, getMyGuide } from '@/lib/api-more';
+import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { colors, space } from '@/theme';
@@ -22,7 +23,8 @@ export default function NewGroupTripScreen() {
   const profile = useProfile();
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const asGuide = mine.data?.guide?.verification_status === 'approved';
-  const asBusiness = profile.data?.role === 'provider' || profile.data?.role === 'admin';
+  const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
+  const asBusiness = approvedBusiness || profile.data?.role === 'admin';
   // Travellers organise as themselves once their account has a phone; Rafrika calls it before approving.
   const asTraveller = !asGuide && !asBusiness;
 
@@ -48,7 +50,15 @@ export default function NewGroupTripScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  if (!userId || mine.isLoading || profile.isLoading) return <ScreenState loading />;
+  if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState loading />;
+  // Business accounts organise only once Rafrika has approved their listing.
+  if (!asGuide && businessWaiting) {
+    return (
+      <Card style={{ margin: space.lg }}>
+        <Muted>{t.business.waitApproval}</Muted>
+      </Card>
+    );
+  }
   if (asTraveller && !profile.data?.phone) {
     return (
       <Card style={{ margin: space.lg }}>

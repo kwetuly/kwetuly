@@ -184,10 +184,11 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
   const supabase = await createClient();
   const { data: mine } = await supabase
     .from('group_trip_members')
-    .select('id, status, seats')
+    // '*' so this keeps working before the price_per_person_usd column (20261016001400) exists.
+    .select('*')
     .eq('group_trip_id', trip.id)
     .eq('traveler_id', user.id)
-    .maybeSingle<{ id: string; status: GroupMember['status']; seats: number }>();
+    .maybeSingle<{ id: string; status: GroupMember['status']; seats: number; price_per_person_usd?: number | null }>();
 
   if (mine?.status === 'accepted') {
     const [{ data: contact }, paid] = await Promise.all([
@@ -203,7 +204,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
         <PayDeposit
           kind="group"
           id={mine.id}
-          totalUsd={trip.price_per_person_usd * mine.seats}
+          totalUsd={(mine.price_per_person_usd ?? trip.price_per_person_usd) * mine.seats}
           percent={trip.deposit_percent}
           paid={paid.paid}
           paidOut={paid.paidOut}

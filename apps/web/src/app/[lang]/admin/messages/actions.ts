@@ -2,14 +2,14 @@
 
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 async function adminLocale(formData: FormData) {
   const value = String(formData.get('locale') ?? '');
   const locale = hasLocale(value) ? value : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   return locale;
 }
 

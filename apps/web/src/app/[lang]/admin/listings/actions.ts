@@ -4,14 +4,14 @@ import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { BUSINESS_TYPES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 async function adminOnly(formData: FormData): Promise<{ locale: Locale; userId: string }> {
   const value = String(formData.get('locale') ?? '');
   const locale = hasLocale(value) ? value : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   return { locale, userId: user.id };
 }
 

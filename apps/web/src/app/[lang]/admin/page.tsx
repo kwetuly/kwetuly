@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
@@ -26,7 +26,7 @@ type PendingJob = {
 };
 
 async function PendingJobs({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase
@@ -136,7 +136,7 @@ export default async function AdminPage() {
 
 // Group trips wait here until approved. Check the organiser, dates, price and what is included.
 async function PendingGroupTrips({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase
@@ -203,7 +203,7 @@ const when = (iso: string) =>
 
 // Trip enquiries (not addressed to a single guide) and sign-ups from partner and coming-soon pages.
 async function Inbox({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   // Enquiries to sample guides have no guide to read them, so they come here too.
@@ -262,7 +262,7 @@ async function Inbox({ locale }: { locale: Locale }) {
 }
 
 async function RecentReviews({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase
@@ -301,7 +301,7 @@ async function RecentReviews({ locale }: { locale: Locale }) {
 }
 
 async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
 
   const supabase = await createClient();
@@ -415,7 +415,7 @@ type PaymentRow = {
 
 // Deposits paid through Selcom. Rafrika pays them out to the guide or company, then ticks them here.
 async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase
@@ -478,7 +478,7 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
 }
 
 async function LatestRequests({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase

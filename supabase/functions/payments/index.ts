@@ -31,7 +31,7 @@ const json = (body: unknown, status = 200) =>
 // ---------------------------------------------------------------------------
 type Fields = Record<string, string | number>;
 
-async function selcom(path: string, method: 'GET' | 'POST', data: Fields) {
+async function selcom(path: string, method: 'GET' | 'POST' | 'DELETE', data: Fields) {
   // ISO 8601 in Tanzania time, e.g. 2026-10-14T09:30:00+03:00
   const timestamp = new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 19) + '+03:00';
   const signed = `timestamp=${timestamp}` + Object.entries(data).map(([k, v]) => `&${k}=${v}`).join('');
@@ -47,7 +47,7 @@ async function selcom(path: string, method: 'GET' | 'POST', data: Fields) {
     Timestamp: timestamp,
     'Cache-Control': 'no-cache',
   };
-  const url = method === 'GET' ? `${API}${path}?${new URLSearchParams(Object.entries(data).map(([k, v]) => [k, String(v)]))}` : `${API}${path}`;
+  const url = method === 'POST' ? `${API}${path}` : `${API}${path}?${new URLSearchParams(Object.entries(data).map(([k, v]) => [k, String(v)]))}`;
   const res = await fetch(url, { method, headers, body: method === 'POST' ? JSON.stringify(data) : undefined });
   const body = await res.json().catch(() => ({}));
   if (!res.ok || (body.resultcode && body.resultcode !== '000')) {
@@ -67,14 +67,24 @@ const admin = () => createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE
 type Admin = ReturnType<typeof admin>;
 
 // Ask Selcom for the real result and record it (used by the webhook, the return page and the app).
+// A completed order is marked paid only when Selcom reports exactly the shillings we asked for, in TZS;
+// anything else is held as 'review' for an admin to check, never 'paid'.
 async function refresh(db: Admin, orderId: string) {
-  const { data: payment } = await db.from('payments').select('id, status').eq('order_id', orderId).maybeSingle();
+  const { data: payment } = await db.from('payments').select('id, status, amount_tzs').eq('order_id', orderId).maybeSingle();
   if (!payment) return null;
   if (payment.status !== 'pending') return payment.status as string;
   const result = await selcom('checkout/order-status', 'GET', { order_id: orderId });
   const order = result.data?.[0] ?? {};
   const state = String(order.payment_status ?? '').toUpperCase();
-  const status = state === 'COMPLETED' ? 'paid' : ['CANCELLED', 'USERCANCELLED', 'REJECTED'].includes(state) ? 'failed' : 'pending';
+  let status = state === 'COMPLETED' ? 'paid' : ['CANCELLED', 'USERCANCELLED', 'REJECTED'].includes(state) ? 'failed' : 'pending';
+  if (status === 'paid') {
+    const amount = Number(String(order.amount ?? '').replace(/,/g, ''));
+    const currency = String(order.currency ?? 'TZS').toUpperCase();
+    if (!Number.isFinite(amount) || amount !== payment.amount_tzs || currency !== 'TZS') {
+      status = 'review';
+      console.error(`Deposit ${orderId}: Selcom amount or currency does not match the order; held for review`);
+    }
+  }
   if (status !== 'pending') {
     await db
       .from('payments')
@@ -95,17 +105,29 @@ async function refresh(db: Admin, orderId: string) {
 // ---------------------------------------------------------------------------
 type Order = { payee: string; description: string; usd: number; offerId?: string; memberId?: string };
 
+// Deposits go only to approved guides (offering as themselves) or to owners of an approved,
+// non-sample business listing.
+async function offererApproved(db: Admin, userId: string, guideId: string | null) {
+  if (guideId) {
+    const { data } = await db.from('guides').select('id').eq('id', guideId).eq('owner_id', userId).eq('verification_status', 'approved').maybeSingle();
+    return Boolean(data);
+  }
+  const { data } = await db.from('providers').select('id').eq('owner_id', userId).eq('verification_status', 'approved').eq('is_sample', false).limit(1);
+  return (data ?? []).length > 0;
+}
+
 async function loadOrder(db: Admin, userId: string, kind: string, id: string): Promise<Order | string> {
   if (kind === 'offer') {
     const { data: offer } = await db
       .from('trip_offers')
-      .select('id, status, offered_by, price_total_usd, deposit_percent, trip_requests!inner(traveler_id, title)')
+      .select('id, status, offered_by, guide_id, price_total_usd, deposit_percent, trip_requests!inner(traveler_id, title)')
       .eq('id', id)
       .maybeSingle();
     const request = offer?.trip_requests as unknown as { traveler_id: string; title: string } | undefined;
     if (!offer || request?.traveler_id !== userId) return 'not_found';
     if (offer.status !== 'accepted') return 'not_accepted';
     if (!offer.deposit_percent) return 'no_deposit';
+    if (!(await offererApproved(db, offer.offered_by, offer.guide_id))) return 'not_approved';
     return {
       payee: offer.offered_by,
       description: `Deposit: ${request.title}`.slice(0, 200),
@@ -116,17 +138,24 @@ async function loadOrder(db: Admin, userId: string, kind: string, id: string): P
   if (kind === 'group') {
     const { data: member } = await db
       .from('group_trip_members')
-      .select('id, status, seats, traveler_id, group_trips!inner(organizer_id, title, price_per_person_usd, deposit_percent)')
+      .select('id, status, seats, traveler_id, price_per_person_usd, group_trips!inner(organizer_id, guide_id, organizer_kind, status, cancelled, title, deposit_percent)')
       .eq('id', id)
       .maybeSingle();
-    const trip = member?.group_trips as unknown as { organizer_id: string; title: string; price_per_person_usd: number; deposit_percent: number } | undefined;
+    const trip = member?.group_trips as unknown as
+      | { organizer_id: string; guide_id: string | null; organizer_kind: string; status: string; cancelled: boolean; title: string; deposit_percent: number }
+      | undefined;
     if (!member || member.traveler_id !== userId || !trip) return 'not_found';
     if (member.status !== 'accepted') return 'not_accepted';
-    if (!trip.deposit_percent || !trip.price_per_person_usd) return 'no_deposit';
+    // Only approved, running groups organised by a guide or a business take deposits; never traveller-run groups.
+    if (trip.status !== 'approved' || trip.cancelled || trip.organizer_kind === 'traveller') return 'no_deposit';
+    // Charge the price saved on the member row when they were accepted, not today's price.
+    const price = member.price_per_person_usd as number | null;
+    if (!trip.deposit_percent || !price) return 'no_deposit';
+    if (!(await offererApproved(db, trip.organizer_id, trip.guide_id))) return 'not_approved';
     return {
       payee: trip.organizer_id,
       description: `Deposit: ${trip.title} (${member.seats})`.slice(0, 200),
-      usd: Math.round(trip.price_per_person_usd * member.seats * trip.deposit_percent) / 100,
+      usd: Math.round(price * member.seats * trip.deposit_percent) / 100,
       memberId: member.id,
     };
   }
@@ -137,12 +166,28 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
   const order = await loadOrder(db, user.id, kind, id);
   if (typeof order === 'string') return json({ error: order }, order === 'not_found' ? 404 : 400);
 
-  const paid = await db
-    .from('payments')
-    .select('id', { count: 'exact', head: true })
-    .eq(order.offerId ? 'trip_offer_id' : 'group_member_id', (order.offerId ?? order.memberId)!)
-    .eq('status', 'paid');
-  if ((paid.count ?? 0) > 0) return json({ error: 'already_paid' }, 409);
+  const target = order.offerId ? 'trip_offer_id' : 'group_member_id';
+  const targetId = (order.offerId ?? order.memberId)!;
+  const settled = await db.from('payments').select('status').eq(target, targetId).in('status', ['paid', 'review']);
+  if (settled.data?.some((p) => p.status === 'paid')) return json({ error: 'already_paid' }, 409);
+  if (settled.data?.length) return json({ error: 'under_review' }, 409);
+
+  // Never leave two payable orders open: settle or cancel the earlier one at Selcom first.
+  const { data: open } = await db.from('payments').select('order_id').eq(target, targetId).eq('status', 'pending');
+  for (const earlier of open ?? []) {
+    try {
+      const state = await refresh(db, earlier.order_id);
+      if (state === 'paid') return json({ error: 'already_paid' }, 409);
+      if (state === 'review') return json({ error: 'under_review' }, 409);
+      if (state === 'pending') {
+        await selcom('checkout/cancel-order', 'DELETE', { order_id: earlier.order_id });
+        await db.from('payments').update({ status: 'failed' }).eq('order_id', earlier.order_id).eq('status', 'pending');
+      }
+    } catch (err) {
+      console.error(err);
+      return json({ error: 'pending_order', order_id: earlier.order_id }, 409);
+    }
+  }
 
   const { data: profile } = await db.from('profiles').select('full_name, phone').eq('id', user.id).single();
   const phone = selcomPhone(profile?.phone ?? null);
@@ -163,7 +208,8 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
     amount_tzs: tzs,
     order_id: orderId,
   });
-  if (error) return json({ error: 'save_failed' }, 500);
+  // 23505: another checkout for this deposit started at the same moment (only one pending order is allowed).
+  if (error) return error.code === '23505' ? json({ error: 'pending_order' }, 409) : json({ error: 'save_failed' }, 500);
 
   try {
     const result = await selcom('checkout/create-order-minimal', 'POST', {

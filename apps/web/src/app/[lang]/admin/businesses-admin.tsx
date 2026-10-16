@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { BADGE_CHECKS, BUSINESS_TYPES } from '@rafrika/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { getBadgeFee } from '@/lib/businesses';
 import { createClient } from '@/lib/supabase/server';
 import { grantBadge, reviewBusiness, setBadgeFee } from './actions';
@@ -23,7 +23,7 @@ type AdminBusiness = {
 
 // Business listings waiting for approval, badge check requests, and the yearly badge fee.
 export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const columns = 'id, business_name, business_type, base_region, location, story, website, photo_url, verification_status, badge_requested_at, provider_private(whatsapp_number, licence_document_path)';

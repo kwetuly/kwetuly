@@ -46,6 +46,7 @@ const ownerEn = {
   referralPending: 'Your code appears once your profile is approved.',
   referralSales: 'Sales with your code',
   referralNone: 'No sales with your code yet.',
+  waitApproval: 'You can send offers on trip requests and run group trips once Rafrika approves your business listing. Finish your listing on your dashboard so we can review it.',
 };
 
 type OwnerTexts = typeof ownerEn;
@@ -95,6 +96,7 @@ const ownerSw: OwnerTexts = {
   referralPending: 'Namba yako itaonekana wasifu wako ukishakubaliwa.',
   referralSales: 'Mauzo kwa namba yako',
   referralNone: 'Bado hakuna mauzo kwa namba yako.',
+  waitApproval: 'Utaweza kutuma ofa kwa maombi ya safari na kuendesha safari za kikundi baada ya Rafrika kukubali tangazo la biashara yako. Kamilisha tangazo lako kwenye dashibodi yako ili tulikague.',
 };
 
 export const business_en = {

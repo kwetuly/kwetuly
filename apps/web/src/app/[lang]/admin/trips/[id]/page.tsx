@@ -23,7 +23,7 @@ import {
 } from '@rafrika/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { DirectUpload } from '@/components/direct-upload';
 import { tourCoverUrl } from '@/components/trip-card';
@@ -68,7 +68,7 @@ const BLANK: Partial<Tour> = {
 };
 
 async function Editor({ locale, params, searchParams }: { locale: Locale; params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') redirect(`/${locale}`);
   const [{ id }, status] = await Promise.all([params, searchParams]);
   const isNew = id === 'new';

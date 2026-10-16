@@ -3,7 +3,7 @@
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,7 +24,7 @@ export async function saveOperator(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const text = (key: string, max: number) => String(formData.get(key) ?? '').trim().slice(0, max);
   const nullable = (key: string, max: number) => text(key, max) || null;
@@ -110,7 +110,7 @@ export async function deleteOperator(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const id = String(formData.get('id') ?? '').slice(0, 40);
   if (String(formData.get('confirm') ?? '').trim() !== String(formData.get('slug') ?? '')) {
     redirect(`/${locale}/admin/operators/${id}?error=${encodeURIComponent('Type the web address exactly to delete this operator.')}`);

@@ -3,6 +3,7 @@ import { Link, Stack, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, listMyJoinedTrips, listMyOrganisedTrips, type OrganisedTrip } from '@/lib/api-more';
+import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { formatDateRange } from '@/lib/labels';
@@ -17,7 +18,8 @@ export default function MyGroupTripsScreen() {
   const organised = useQuery({ queryKey: ['my-organised', userId], queryFn: () => listMyOrganisedTrips(userId!), enabled: !!userId });
   const joined = useQuery({ queryKey: ['my-joined', userId], queryFn: () => listMyJoinedTrips(userId!), enabled: !!userId });
   const guide = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
-  const canOrganise = guide.data?.guide?.verification_status === 'approved' || profile.data?.role === 'provider' || profile.data?.role === 'admin';
+  const { approvedBusiness } = useCanOffer();
+  const canOrganise = guide.data?.guide?.verification_status === 'approved' || approvedBusiness || profile.data?.role === 'admin';
 
   const state = (trip: OrganisedTrip) => (trip.cancelled ? g.cancelledTrip : trip.status === 'pending' ? g.statusPending : trip.status === 'rejected' ? g.statusRejected : null);
   const requestLabel: Record<string, string> = { requested: g.stateRequested, accepted: g.stateAccepted, declined: g.stateDeclined };

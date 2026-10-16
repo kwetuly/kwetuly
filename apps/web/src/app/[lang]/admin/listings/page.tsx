@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { BUSINESS_TYPES, REGIONS } from '@rafrika/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { deleteAllSamples, deleteListing, saveListing } from './actions';
 
@@ -97,7 +97,7 @@ function ListingForm({ locale, item }: { locale: Locale; item?: Listing }) {
 }
 
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return <p className="mt-6">Admins only.</p>;
   const params = await searchParams;
   const type = typeof params.type === 'string' ? params.type : '';

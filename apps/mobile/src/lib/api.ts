@@ -200,10 +200,12 @@ export async function getGroupTrip(id: string): Promise<GroupTrip | null> {
   return must(await supabase.from('group_trips').select(GROUP_COLUMNS).eq('id', id).maybeSingle()) as unknown as GroupTrip | null;
 }
 
-export type MyGroupRequest = { id: string; status: 'requested' | 'accepted' | 'declined' | 'cancelled'; seats: number } | null;
+/** price_per_person_usd: the price saved when the request was accepted (charged for the deposit). */
+export type MyGroupRequest = { id: string; status: 'requested' | 'accepted' | 'declined' | 'cancelled'; seats: number; price_per_person_usd?: number | null } | null;
 
 export async function getMyGroupRequest(tripId: string, userId: string): Promise<MyGroupRequest> {
-  return must(await supabase.from('group_trip_members').select('id, status, seats').eq('group_trip_id', tripId).eq('traveler_id', userId).maybeSingle()) as MyGroupRequest;
+  // '*' so this keeps working before the price_per_person_usd column (20261016001400) exists.
+  return must(await supabase.from('group_trip_members').select('*').eq('group_trip_id', tripId).eq('traveler_id', userId).maybeSingle()) as MyGroupRequest;
 }
 
 /** The organiser's contact; the database only returns it to accepted travellers. */

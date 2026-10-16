@@ -263,7 +263,7 @@ function MyOffer({ req }: { req: TripRequest }) {
   const { session } = useSession();
   const userId = session!.user.id;
   const queryClient = useQueryClient();
-  const { canOffer, guideId, loading } = useCanOffer();
+  const { canOffer, businessWaiting, guideId, loading } = useCanOffer();
   const mine = useQuery({ queryKey: ['my-offer', req.id, userId], queryFn: () => getMyOffer(req.id, userId) });
   const offer = mine.data ?? null;
 
@@ -287,7 +287,7 @@ function MyOffer({ req }: { req: TripRequest }) {
   }, [offer]);
 
   if (loading || mine.isLoading) return <ScreenState loading />;
-  if (!canOffer && !offer) return <Muted>{o.whoCan}</Muted>;
+  if (!canOffer && !offer) return <Muted>{businessWaiting ? t.business.waitApproval : o.whoCan}</Muted>;
 
   const editable = canOffer && req.status === 'open' && (!offer || offer.status === 'sent' || offer.status === 'withdrawn');
   const banner = offer ? { accepted: o.accepted, declined: o.declined, withdrawn: o.withdrawn, sent: '' }[offer.status] : '';

@@ -66,3 +66,43 @@ export async function requireHubAccess(locale: string): Promise<CurrentUser> {
   if (!user.canUseHub) redirect(`/${locale}/dashboard`);
   return user;
 }
+
+/**
+ * Admins must use two-step sign-in. 'setup' when the account has no authenticator yet,
+ * 'verify' when it has one but this session has not entered the code, 'ok' when the session is aal2.
+ * The database checks the same thing (private.is_admin() needs an aal2 session).
+ */
+export async function adminSecondStep(): Promise<'ok' | 'setup' | 'verify'> {
+  if (await needsSecondStep()) return 'verify';
+  const supabase = await createClient();
+  const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (data?.currentLevel === 'aal2') return 'ok';
+  return data?.nextLevel === 'aal2' ? 'verify' : 'setup';
+}
+
+/** For admin server actions: an admin account whose session has passed two-step sign-in. */
+export async function isAdminSession(user: CurrentUser | null): Promise<boolean> {
+  if (user?.role !== 'admin') return false;
+  return (await adminSecondStep()) === 'ok';
+}
+
+/** Admin pages: everyone else goes home; admins without two-step go to set it up or enter the code. */
+export async function requireAdmin(locale: string): Promise<CurrentUser> {
+  const user = await requireUser(locale);
+  if (user.role !== 'admin') redirect(`/${locale}`);
+  const step = await adminSecondStep();
+  if (step === 'verify') redirect(`/${locale}/login/verify?next=${encodeURIComponent(`/${locale}/admin`)}`);
+  if (step === 'setup') redirect(`/${locale}/security?admin=two-step`);
+  return user;
+}
+
+/**
+ * Business accounts may make offers and run group trips only once Rafrika has approved one of
+ * their listings (the database checks the same). 'none' for accounts that are not businesses.
+ */
+export async function businessApproval(user: CurrentUser | null): Promise<'approved' | 'waiting' | 'none'> {
+  if (user?.role !== 'provider') return 'none';
+  const supabase = await createClient();
+  const { data } = await supabase.from('providers').select('id').eq('owner_id', user.id).eq('verification_status', 'approved').eq('is_sample', false).limit(1);
+  return data && data.length > 0 ? 'approved' : 'waiting';
+}

@@ -3,7 +3,7 @@
 import { revalidateTag, updateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function reviewGuide(formData: FormData) {
@@ -12,7 +12,7 @@ export async function reviewGuide(formData: FormData) {
 
   // Re-check the role here; the database policies enforce it again.
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const guideId = String(formData.get('guide_id') ?? '');
   const action = String(formData.get('decision') ?? '');
@@ -54,7 +54,7 @@ export async function setReviewHidden(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
   await supabase
@@ -70,7 +70,7 @@ export async function setFeatured(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
   await supabase
@@ -86,7 +86,7 @@ export async function reviewGroupTrip(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -103,7 +103,7 @@ export async function confirmPhone(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const supabase = await createClient();
   await supabase.from('profiles').update({ phone_verified_at: new Date().toISOString() }).eq('id', String(formData.get('user_id') ?? ''));
   redirect(`/${locale}/admin#groups`);
@@ -113,7 +113,7 @@ export async function reviewJob(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
   await supabase
@@ -128,7 +128,7 @@ export async function setPaidOut(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
   await supabase
@@ -143,7 +143,7 @@ export async function reviewPackage(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const approve = formData.get('decision') === 'approve';
   const note = String(formData.get('note') ?? '').trim().slice(0, 500);
@@ -161,7 +161,7 @@ export async function reviewBusiness(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const approve = formData.get('decision') === 'approve';
   const supabase = await createClient();
   await supabase
@@ -178,7 +178,7 @@ export async function grantBadge(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const allowed = ['licence', 'tourism_licence', 'identity', 'photos', 'visit'];
   const checks = formData.getAll('checks').map(String).filter((c) => allowed.includes(c));
   const now = new Date();
@@ -206,7 +206,7 @@ export async function setBadgeFee(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const amount = Number.parseFloat(String(formData.get('amount_usd') ?? ''));
   const supabase = await createClient();
   await supabase
@@ -221,7 +221,7 @@ export async function saveAgreement(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const pct = (key: string) => {
     const n = Number.parseFloat(String(formData.get(key) ?? ''));
     return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : 0;
@@ -245,7 +245,7 @@ export async function setSalesStatus(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   const month = String(formData.get('month') ?? '');
   const status = formData.get('status') === 'paid' ? 'paid' : 'invoiced';
   if (!/^\d{4}-\d{2}$/.test(month)) redirect(`/${locale}/admin/commissions`);

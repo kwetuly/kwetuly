@@ -116,7 +116,7 @@ export default function GroupTripScreen() {
             <>
               <Text style={{ fontWeight: '700', color: brand.forest }}>✓ {g10n.accepted}</Text>
               {contact.data && <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
-              <PayDeposit kind="group" id={mine.data.id} totalUsd={g.price_per_person_usd * mine.data.seats} percent={g.deposit_percent} />
+              <PayDeposit kind="group" id={mine.data.id} totalUsd={(mine.data.price_per_person_usd ?? g.price_per_person_usd) * mine.data.seats} percent={g.deposit_percent} />
             </>
           ) : mine.data?.status === 'requested' ? (
             <>

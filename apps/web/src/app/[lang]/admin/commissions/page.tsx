@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { commissionSplit } from '@rafrika/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { saveAgreement, setSalesStatus } from '../actions';
 
@@ -30,7 +30,7 @@ export default async function CommissionsPage({ searchParams }: PageProps<'/[lan
 }
 
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return <p className="mt-6">Admins only.</p>;
   const params = await searchParams;
   const month = typeof params.month === 'string' && /^\d{4}-\d{2}$/.test(params.month) ? params.month : new Date().toISOString().slice(0, 7);

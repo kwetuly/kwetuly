@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const localeOf = (formData: FormData): Locale => {
@@ -27,7 +27,10 @@ export async function createGroupTrip(formData: FormData) {
   if (!user) redirect(`/${locale}/login`);
 
   const asGuide = user.guide?.status === 'approved';
-  const asBusiness = user.role === 'provider' || user.role === 'admin';
+  const business = await businessApproval(user);
+  // Business accounts organise only once Rafrika has approved their listing.
+  if (!asGuide && business === 'waiting') redirect(`${back}error=1`);
+  const asBusiness = business === 'approved' || user.role === 'admin';
   // Travellers organise as themselves: no guide and no company. Completing a group means some
   // people are already going; they count against the spots.
   const alreadyGoing = formData.get('complete') === '1' ? int(formData, 'already_going') : 0;

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { PRODUCT_COLUMNS, type Product } from '@/lib/merch';
 import { createClient } from '@/lib/supabase/server';
 import { createMerchShop, deleteProduct, saveProduct } from './actions';
@@ -62,7 +62,7 @@ function ProductForm({ locale, item }: { locale: Locale; item?: Product }) {
 }
 
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return <p className="mt-6">Admins only.</p>;
   const params = await searchParams;
   const supabase = await createClient();

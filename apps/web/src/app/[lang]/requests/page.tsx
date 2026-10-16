@@ -5,7 +5,7 @@ import { CalendarDays, Gavel, Plus, Users } from 'lucide-react';
 import { formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser } from '@/lib/auth';
 import { REQUEST_COLUMNS, type TripOffer, type TripRequest } from '@/lib/requests';
 import { createClient } from '@/lib/supabase/server';
 import { PhotoHero } from '@/components/photo-hero';
@@ -46,7 +46,8 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
       </div>
     );
   }
-  const canOffer = user.role === 'admin' || user.role === 'provider' || user.guide?.status === 'approved';
+  const business = await businessApproval(user);
+  const canOffer = user.role === 'admin' || business === 'approved' || user.guide?.status === 'approved';
   const supabase = await createClient();
   const [{ data: mine }, { data: open }, { data: myOffers }] = await Promise.all([
     supabase.from('trip_requests').select(REQUEST_COLUMNS).eq('traveler_id', user.id).order('created_at', { ascending: false }).returns<TripRequest[]>(),
@@ -84,6 +85,14 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
           </ul>
         )}
       </section>
+
+      {business === 'waiting' && !canOffer && (
+        <section className="card space-y-3">
+          <h2 className="text-2xl font-bold">{o.boardTitle}</h2>
+          <p>{t.business.waitApproval}</p>
+          <Link href={`/${locale}/dashboard`} className="btn-outline w-fit">{t.nav.dashboard}</Link>
+        </section>
+      )}
 
       {canOffer && (
         <section>

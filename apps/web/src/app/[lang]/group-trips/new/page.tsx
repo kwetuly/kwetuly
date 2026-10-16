@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createGroupTrip } from '../actions';
 
@@ -58,7 +58,8 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
   const g = t.groups;
   const asGuide = user?.guide?.status === 'approved';
-  const asBusiness = user?.role === 'provider' || user?.role === 'admin';
+  const business = await businessApproval(user);
+  const asBusiness = business === 'approved' || user?.role === 'admin';
   const asTraveller = !!user && !asGuide && !asBusiness;
   const complete = params.complete === '1';
 
@@ -70,6 +71,14 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
           <Link href={`/${locale}/login`} className="btn-outline">{t.nav.signIn}</Link>
           <Link href={`/${locale}/join`} className="btn">{t.nav.signUp}</Link>
         </div>
+      </div>
+    );
+  }
+  if (!asGuide && business === 'waiting') {
+    return (
+      <div className="card space-y-4">
+        <p className="text-lg">{t.business.waitApproval}</p>
+        <Link href={`/${locale}/dashboard`} className="btn-outline w-fit">{t.nav.dashboard}</Link>
       </div>
     );
   }

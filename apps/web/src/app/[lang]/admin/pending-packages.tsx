@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { reviewPackage } from './actions';
 
@@ -11,7 +11,7 @@ type PendingPackage = GuidePackage & { guides: { display_name: string; slug: str
 // Guide packages wait here until approved. Check that the price, length and description are
 // realistic and that the guide is allowed to run this kind of trip.
 export async function PendingPackages({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireUser(locale);
+  const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
   const { data } = await supabase

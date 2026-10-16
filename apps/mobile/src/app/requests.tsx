@@ -18,7 +18,7 @@ export default function RequestsScreen() {
   const o = t.offers;
   const { session } = useSession();
   const userId = session?.user.id;
-  const { canOffer } = useCanOffer();
+  const { canOffer, businessWaiting } = useCanOffer();
   const mine = useQuery({ queryKey: ['my-requests', userId], queryFn: () => listMyRequests(userId!), enabled: !!userId });
   const lowest = useQuery({ queryKey: ['my-requests-lowest', mine.data?.map((req) => req.id).join(',')], queryFn: () => lowestOffers((mine.data ?? []).map((req) => req.id)), enabled: !!mine.data?.length });
   const open = useQuery({ queryKey: ['open-requests', userId], queryFn: () => listOpenRequests(userId!), enabled: !!userId && canOffer });
@@ -75,6 +75,15 @@ export default function RequestsScreen() {
       <ScreenState loading={mine.isLoading} error={mine.error} onRetry={() => mine.refetch()} />
       {mine.data?.length === 0 && <Muted>{r.none}</Muted>}
       {mine.data?.map((req) => row(req))}
+
+      {businessWaiting && (
+        <>
+          <SectionTitle>{o.boardTitle}</SectionTitle>
+          <Card>
+            <Text style={{ color: colors.label }}>{t.business.waitApproval}</Text>
+          </Card>
+        </>
+      )}
 
       {canOffer && (
         <>

@@ -30,6 +30,18 @@ async function Settings({ t, locale, searchParams }: { t: Dictionary; locale: Lo
   const enabled = (data?.totp ?? []).some((f) => f.status === 'verified');
   return (
     <div className="mt-6 space-y-6">
+      {status.admin === 'two-step' && user.role === 'admin' && (
+        // Admin area texts are English only, like the rest of /admin.
+        <p role="alert" className="rounded-[5px] border border-gold bg-gold/10 p-4 text-sm">
+          {enabled ? (
+            <>
+              Two-step sign-in is on. <Link href={`/${locale}/admin`} className="font-semibold text-leaf-dark underline">Open the admin pages</Link>
+            </>
+          ) : (
+            'Admin pages need two-step sign-in. Turn it on below with an authenticator app (for example Google Authenticator or Microsoft Authenticator), then open the admin pages again.'
+          )}
+        </p>
+      )}
       <TwoStepSetup enabled={enabled} labels={t.ux} />
 
       <section id="delete" className="card scroll-mt-28 space-y-4" aria-labelledby="delete-title">

@@ -7,7 +7,7 @@ import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
 import { LogEvent } from '@/components/analytics';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser, type CurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser, type CurrentUser } from '@/lib/auth';
 import { depositState, getRequest, listOffers, offerName, paidDeposits, today, type TripOffer, type TripRequest } from '@/lib/requests';
 import { paymentsConfig } from '@/lib/payments';
 import { BookingTicket } from '@/components/booking-ticket';
@@ -44,7 +44,8 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
   const isOwner = request.traveler_id === user.id;
   const offers = await listOffers(request.id);
   const myOffer = offers.find((o) => o.offered_by === user.id) ?? null;
-  const canOffer = !isOwner && (user.role === 'admin' || user.role === 'provider' || user.guide?.status === 'approved');
+  const business = await businessApproval(user);
+  const canOffer = !isOwner && (user.role === 'admin' || business === 'approved' || user.guide?.status === 'approved');
 
   return (
     <>
@@ -56,6 +57,8 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
       {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{r.error}</p>}
 
       <RequestSummary request={request} isOwner={isOwner} t={t} locale={locale} />
+
+      {!isOwner && !canOffer && !myOffer && business === 'waiting' && <p className="card mt-6">{t.business.waitApproval}</p>}
 
       {isOwner ? (
         <OffersForTraveller request={request} offers={offers} status={status} t={t} locale={locale} />

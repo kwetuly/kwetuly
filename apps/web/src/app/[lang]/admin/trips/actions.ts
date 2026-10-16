@@ -18,7 +18,7 @@ import {
   type Tour,
 } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const STATUSES = ['draft', 'published', 'archived'] as const;
@@ -34,7 +34,7 @@ async function requireAdmin(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const user = await getCurrentUser();
-  if (user?.role !== 'admin') redirect(`/${locale}`);
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
   return { locale, userId: user.id };
 }
 
