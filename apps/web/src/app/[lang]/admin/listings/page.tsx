@@ -116,7 +116,9 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
     <>
       {params.saved && <p className="mt-4 rounded-[5px] bg-mint p-3 font-semibold text-forest">Saved.</p>}
       {params.deleted && <p className="mt-4 rounded-[5px] bg-mint p-3 font-semibold text-forest">Deleted.</p>}
-      {params.error && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Could not save. Check the name, type and region (links must start with https://).</p>}
+      {params.error === 'confirm' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Nothing was deleted. Type DELETE exactly to confirm.</p>}
+      {params.error && params.error !== 'confirm' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Could not save. Check the name, type and region (links must start with https://).</p>}
+      {(params.samples_deleted || params.samples_failed) && <SampleReport params={params} />}
 
       <nav className="mt-6 flex flex-wrap gap-2 text-sm">
         <Link href={`/${locale}/admin/listings`} className={!type ? 'btn px-3 py-1.5 text-sm' : 'btn-outline px-3 py-1.5 text-sm'}>All</Link>
@@ -177,5 +179,22 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
         </form>
       )}
     </>
+  );
+}
+
+// Result of "Delete all samples": rows removed per table, and where it stopped if a step failed.
+function SampleReport({ params }: { params: Record<string, string | string[] | undefined> }) {
+  const n = (key: string) => {
+    const value = Number(params[`n_${key}`]);
+    return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
+  };
+  const failed = typeof params.samples_failed === 'string' ? params.samples_failed.slice(0, 40) : '';
+  const counts = `Sample listings: ${n('providers')}. Sample group trips: ${n('group_trips')}. Sample guides: ${n('guides')}. Their packages: ${n('packages')}.`;
+  return failed ? (
+    <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">
+      Stopped: removing {failed} failed, so the remaining samples were left in place. Already removed: {counts} Check the server log and try again.
+    </p>
+  ) : (
+    <p role="status" className="mt-4 rounded-[5px] bg-mint p-3 font-semibold text-forest">Samples removed. {counts}</p>
   );
 }

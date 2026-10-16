@@ -37,6 +37,9 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
           <input className="field" id="password" name="password" type="password" required autoComplete="current-password" />
         </div>
         <button className="btn w-full">{t.auth.signIn}</button>
+        <p className="text-sm">
+          <Link href={`/${locale}/forgot-password`} className="font-semibold text-forest">{t.ux.forgotLink}</Link>
+        </p>
       </form>
       </div>
 

@@ -1,11 +1,12 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
 import { normalizePhone } from '@/lib/phone';
+import { safeLocalPath } from '@/lib/safe-next';
+import { SITE_URL } from '@/lib/site';
 
 function localeFrom(formData: FormData) {
   const value = String(formData.get('locale') ?? '');
@@ -26,14 +27,13 @@ export async function signUp(formData: FormData) {
   if (!phone) redirect(`/${locale}/join?role=${role}&error=phone`);
   if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?role=${role}&error=1`);
 
-  const origin = (await headers()).get('origin') ?? '';
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name: fullName, role, phone, preferred_language: locale },
-      emailRedirectTo: `${origin}/auth/confirm?next=/${locale}/dashboard`,
+      emailRedirectTo: `${SITE_URL}/auth/confirm?next=/${locale}/dashboard`,
     },
   });
 
@@ -50,12 +50,11 @@ export async function signInWithProvider(formData: FormData) {
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : '';
 
-  const origin = (await headers()).get('origin') ?? '';
   const next = `/${locale}/welcome${role ? `?role=${role}` : ''}`;
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: providerValue as SocialProvider,
-    options: { redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}` },
+    options: { redirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(next)}` },
   });
 
   if (error || !data.url) redirect(`/${locale}/login?error=1`);
@@ -100,8 +99,8 @@ export async function signIn(formData: FormData) {
 }
 
 function safeNext(locale: string, value: FormDataEntryValue | null) {
-  const next = String(value ?? '');
-  return next.startsWith(`/${locale}/`) && !next.startsWith('//') ? next : `/${locale}/dashboard`;
+  const next = safeLocalPath(value, `/${locale}/dashboard`);
+  return next.startsWith(`/${locale}/`) ? next : `/${locale}/dashboard`;
 }
 
 // Second sign-in step: the 6-digit code from the person's authenticator app.
@@ -126,4 +125,39 @@ export async function signOut(formData: FormData) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect(`/${locale}`);
+}
+
+// "Forgot password?": email a reset link. The reply is the same whether or not an account exists,
+// so the form cannot be used to find out who has an account.
+export async function requestPasswordReset(formData: FormData) {
+  const locale = localeFrom(formData);
+  const email = String(formData.get('email') ?? '').trim().slice(0, 320);
+  const back = `/${locale}/forgot-password`;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect(`${back}?error=email`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(`/${locale}/reset-password`)}`,
+  });
+  // Too many requests is the only error worth telling people about; it does not reveal accounts.
+  if (error?.status === 429) redirect(`${back}?error=wait`);
+  if (error && error.status !== 400 && error.status !== 404 && error.status !== 422) redirect(`${back}?error=1`);
+  redirect(`${back}?sent=1`);
+}
+
+// "Set a new password", reached from the reset email (the link signs the person in first).
+export async function updatePassword(formData: FormData) {
+  const locale = localeFrom(formData);
+  const password = String(formData.get('password') ?? '');
+  const confirm = String(formData.get('confirm') ?? '');
+  const back = `/${locale}/reset-password`;
+  if (password.length < 8 || password.length > 72) redirect(`${back}?error=short`);
+  if (password !== confirm) redirect(`${back}?error=match`);
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/${locale}/forgot-password?error=link`);
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) redirect(`${back}?error=${error.code === 'same_password' ? 'same' : error.code === 'weak_password' ? 'weak' : '1'}`);
+  redirect(`${back}?done=1`);
 }
