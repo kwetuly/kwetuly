@@ -234,7 +234,7 @@ export const pl: Dictionary = {
   home: {
     eyebrow: 'Karibu Tanzania',
     title: 'Tanzania jest tak dobra, jak Twój przewodnik. Wybierz więc swojego.',
-    subtitle: 'Każde safari, wejście na szczyt i wycieczka zależą od jednej osoby. Poznaj ją najpierw: zobacz sprawdzoną licencję i prawdziwe opinie, zapytaj o wszystko, potem zdecyduj.',
+    subtitle: 'Każde safari, wejście na szczyt i wycieczka zależą od jednej osoby. Poznaj ją najpierw: zobacz, co sprawdziła Rafrika, przeczytaj prawdziwe opinie, zapytaj o wszystko, potem zdecyduj.',
     search: 'Poznaj swojego przewodnika',
     specialtyLabel: 'Co chcesz robić?',
     languageLabel: 'Język',
@@ -248,7 +248,7 @@ export const pl: Dictionary = {
     story: 'Większość podróżnych poznaje przewodnika pierwszego ranka, gdy już zapłacili. Na Rafrika poznajesz go wcześniej. Czytasz, co inni podróżni napisali o nim, a nie o firmie, i zadajesz pytania w swoim języku. Gdy przylatujesz, czeka na Ciebie ktoś, kogo już znasz.',
     why: [
       { title: 'Poznaj przewodnika, zanim zapłacisz', body: 'Zadawaj pytania i ustalaj plan bezpośrednio z przewodnikiem. Pytanie jest bezpłatne.' },
-      { title: 'Sprawdzone przez Rafrika', body: 'Sprawdzamy rejestrację turystyczną każdego przewodnika, zanim się pojawi, a profil pokazuje, które kontrole licencji, tożsamości i pierwszej pomocy przeszedł.' },
+      { title: 'Co sprawdziła Rafrika', body: 'Profil każdego przewodnika pokazuje, które kontrole licencji, tożsamości i pierwszej pomocy przeprowadziła Rafrika i kiedy. Jeśli jeszcze nie sprawdziliśmy dokumentu, profil to mówi.' },
       { title: 'Opinie należą do przewodnika', body: 'Opinie idą za przewodnikiem, nie za biurem, więc dobra praca nigdy nie przepada.' },
       { title: 'W Twoim języku', body: 'Filtruj według języka: polski, angielski, francuski, niemiecki, włoski, suahili i inne.' },
     ],

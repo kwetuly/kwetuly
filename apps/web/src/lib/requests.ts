@@ -38,13 +38,22 @@ export type TripOffer = {
   status: 'sent' | 'accepted' | 'declined' | 'withdrawn';
   chat_id: string | null;
   created_at: string;
-  guides: { display_name: string; slug: string; photo_url: string | null; rating_avg: number | null; rating_count: number } | null;
+  guides: {
+    display_name: string;
+    slug: string;
+    photo_url: string | null;
+    rating_avg: number | null;
+    rating_count: number;
+    identity_checked_at: string | null;
+    licence_checked_at: string | null;
+    first_aid_checked_at: string | null;
+  } | null;
 };
 
 export const REQUEST_COLUMNS =
   'id, traveler_id, traveler_name, title, details, specialty, expertise, regions, start_date, end_date, flexible_dates, adults, children, budget_per_person_usd, languages, female_guide, status, offers_count, created_at';
 export const OFFER_COLUMNS =
-  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, created_at, guides(display_name, slug, photo_url, rating_avg, rating_count)';
+  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, created_at, guides(display_name, slug, photo_url, rating_avg, rating_count, identity_checked_at, licence_checked_at, first_aid_checked_at)';
 
 export const isUuid = (value: string) => /^[0-9a-f-]{36}$/i.test(value);
 export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Rafrika partner';

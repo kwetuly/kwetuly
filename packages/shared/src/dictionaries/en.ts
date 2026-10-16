@@ -298,7 +298,7 @@ export const en = {
   home: {
     eyebrow: 'Karibu Tanzania',
     title: 'Tanzania is only as good as your guide. So choose yours.',
-    subtitle: 'Every safari, climb and day trip comes down to one person. Meet that person first: see their checked licence and real reviews, ask them anything, then decide.',
+    subtitle: 'Every safari, climb and day trip comes down to one person. Meet that person first: see what Rafrika checked and read real reviews, ask them anything, then decide.',
     search: 'Meet your guide',
     specialtyLabel: 'What do you want to do?',
     languageLabel: 'Language',
@@ -312,7 +312,7 @@ export const en = {
     story: 'Most travellers meet their guide on the first morning, after they have already paid. On Rafrika you meet them first. You read what other travellers said about them, not about a company, and you ask your questions in your own language. When you arrive, someone you already know is waiting.',
     why: [
       { title: 'Meet your guide before you pay', body: 'Ask questions and agree on the plan with the guide directly. Asking is free.' },
-      { title: 'Checked by Rafrika', body: 'We check every guide’s tourism registration before they appear, and their profile shows which licence, identity and first-aid checks they have passed.' },
+      { title: 'See what Rafrika checked', body: 'Each guide’s profile shows which licence, identity and first-aid checks Rafrika has done, and when. If we have not checked a document yet, the profile says so.' },
       { title: 'Reviews that belong to the guide', body: 'Feedback follows the guide, not the company, so great work is never lost.' },
       { title: 'Speak your language', body: 'Filter by language: Kiswahili, English, French, German, Chinese and more.' },
     ],

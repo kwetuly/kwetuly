@@ -8,11 +8,14 @@ import { signIn } from '../actions';
 type Labels = { email: string; password: string; signIn: string; forgot: string; wrong: string; error: string };
 
 // Email and password sign-in. A wrong password keeps the email that was typed.
-export function LoginForm({ locale, labels, next }: { locale: string; labels: Labels; next?: ReactNode }) {
+// `notice` is the note from the link that brought people here (an expired email link, a deleted
+// account); it gives way to the form's own error once they try to sign in.
+export function LoginForm({ locale, labels, next, notice }: { locale: string; labels: Labels; next?: ReactNode; notice?: ReactNode }) {
   const [state, action] = useActionState(signIn, null);
 
   return (
     <form action={action} className="space-y-4">
+      {!state && notice}
       {state && (
         <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">
           {state.error === 'credentials' ? labels.wrong : labels.error}

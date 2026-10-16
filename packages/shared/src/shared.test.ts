@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { safeProps } from './analytics';
 import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
+import { hasRecordedCheck } from './guide-checks';
 import { filterTours, formatPrice, readTourFilters, verifiedPrice, type Tour } from './tours';
 
 describe('analytics', () => {
@@ -101,5 +102,14 @@ describe('referral commission', () => {
   it('splits a sale by the agreement and pays nothing without one', () => {
     expect(commissionSplit(100000, { rafrika_pct: 10, guide_pct: 5 })).toEqual({ rafrika: 10000, guide: 5000 });
     expect(commissionSplit(100000, null)).toEqual({ rafrika: 0, guide: 0 });
+  });
+});
+
+describe('verified guide', () => {
+  const none = { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null };
+  it('needs at least one recorded check', () => {
+    expect(hasRecordedCheck(none)).toBe(false);
+    expect(hasRecordedCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(true);
+    expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(true);
   });
 });

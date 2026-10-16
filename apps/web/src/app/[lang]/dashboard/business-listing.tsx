@@ -137,7 +137,7 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
               ) : (
                 <form action={requestBadge}>
                   <input type="hidden" name="locale" value={locale} />
-                  <button className="btn">{bt.badgeRequest}</button>
+                  <SubmitButton className="btn">{bt.badgeRequest}</SubmitButton>
                 </form>
               )}
             </>

@@ -18,21 +18,27 @@ function localeFrom(formData: FormData) {
 
 const SIGNUP_ROLES = ['traveler', 'guide', 'provider'] as const;
 
-export async function signUp(formData: FormData) {
+export type SignUpState = { error: 'invite' | 'phone' | 'other'; role: string; fullName: string; phone: string; email: string } | null;
+
+// Used with useActionState: a refused sign-up comes back as state, so the form keeps the name, phone
+// and email the person typed (never the password or invite code) and nothing personal goes in the URL.
+export async function signUp(_previous: SignUpState, formData: FormData): Promise<SignUpState> {
   const locale = localeFrom(formData);
   const email = String(formData.get('email') ?? '').trim();
   const password = String(formData.get('password') ?? '');
   const fullName = String(formData.get('full_name') ?? '').trim();
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
-  const phone = normalizePhone(String(formData.get('phone') ?? ''));
+  const phoneInput = String(formData.get('phone') ?? '').trim();
+  const phone = normalizePhone(phoneInput);
+  const keep = { role, fullName: fullName.slice(0, 120), phone: phoneInput.slice(0, 40), email: email.slice(0, 320) };
 
   // Invite-only soft launch: the database redeems the code when the account is created
   // (handle_new_user). A wrong code is refused there, so no account is created and no email is sent.
   const inviteCode = inviteCodeInput(formData.get('invite_code'));
-  if (!inviteCode && (await inviteRequired())) redirect(`/${locale}/join?role=${role}&error=invite`);
-  if (!phone) redirect(`/${locale}/join?role=${role}&error=phone`);
-  if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?role=${role}&error=1`);
+  if (!inviteCode && (await inviteRequired())) return { error: 'invite', ...keep };
+  if (!phone) return { error: 'phone', ...keep };
+  if (!email || password.length < 8 || !fullName) return { error: 'other', ...keep };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -44,10 +50,8 @@ export async function signUp(formData: FormData) {
     },
   });
 
-  if (error && inviteCode && isSignUpInviteError(error) && (await inviteRequired())) {
-    redirect(`/${locale}/join?role=${role}&error=invite`);
-  }
-  if (error) redirect(`/${locale}/join?role=${role}&error=1`);
+  if (error && inviteCode && isSignUpInviteError(error) && (await inviteRequired())) return { error: 'invite', ...keep };
+  if (error) return { error: 'other', ...keep };
   redirect(`/${locale}/join?role=${role}&sent=1`);
 }
 

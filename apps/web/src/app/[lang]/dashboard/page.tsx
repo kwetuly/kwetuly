@@ -350,6 +350,8 @@ async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictio
 
   return (
     <>
+      {/* The page metadata says "My profile"; travellers' tab title matches their heading instead. */}
+      <title>{`${t.traveler.title} · Rafrika`}</title>
       <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
       <MyDetails t={t} locale={locale} user={user} status={details} back={back} />
       <section className="card mt-6">

@@ -17,14 +17,15 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
     <div className="mx-auto max-w-md px-4 py-12">
       <h1 className="text-3xl font-bold">{t.auth.signInTitle}</h1>
 
-      <Suspense fallback={null}>
-        <ErrorNote searchParams={searchParams} message={t.auth.error} linkExpired={t.ux.linkExpired} />
-      </Suspense>
-
       <div className="card mt-6 space-y-4">
       <SocialSignIn locale={locale} t={t} />
       <LoginForm
         locale={locale}
+        notice={
+          <Suspense fallback={null}>
+            <ErrorNote searchParams={searchParams} message={t.auth.error} linkExpired={t.ux.linkExpired} />
+          </Suspense>
+        }
         labels={{
           email: t.auth.email,
           password: t.ux.passwordLabel,
@@ -60,9 +61,9 @@ async function ErrorNote({
   linkExpired: string;
 }) {
   const params = await searchParams;
-  if (params.deleted) return <p role="status" className="mt-6 rounded-[5px] bg-mint p-4 font-semibold text-forest">{UX_TEXT[(await getLocale())].deleteDone}</p>;
+  if (params.deleted) return <p role="status" className="rounded-[5px] bg-mint p-4 font-semibold text-forest">{UX_TEXT[(await getLocale())].deleteDone}</p>;
   if (!params.error) return null;
-  return <p role="alert" className="mt-6 rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'link' ? linkExpired : message}</p>;
+  return <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'link' ? linkExpired : message}</p>;
 }
 
 async function NextField({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

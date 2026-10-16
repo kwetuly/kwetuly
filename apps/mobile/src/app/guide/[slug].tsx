@@ -13,7 +13,7 @@ import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 import { GuidePackages } from '@/components/guide-packages';
 import { getGuidePackages } from '@/lib/packages';
 
-import { EVENTS, formatUsd } from '@rafrika/shared';
+import { EVENTS, formatUsd, hasRecordedCheck } from '@rafrika/shared';
 import { track } from '@/lib/analytics';
 import { brand, colors, space, textSize } from '@/theme';
 
@@ -88,7 +88,13 @@ export default function GuideScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-          {g.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : <Badge label={`✓ ${t.guides.verified}`} />}
+          {g.is_sample ? (
+            <Badge label={t.extras.sampleGuide} tone="sand" />
+          ) : hasRecordedCheck(g) ? (
+            <Badge label={`✓ ${t.guides.verified}`} />
+          ) : g.verification_status === 'approved' ? (
+            <Badge label={t.extras.approvedGuide} tone="sand" />
+          ) : null}
           {checkLabels.map((label) => <Badge key={label} label={`✓ ${label}`} />)}
           {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
           {g.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
@@ -99,6 +105,7 @@ export default function GuideScreen() {
             .filter(Boolean)
             .join(' · ')}
         </Muted>
+        {(g.years_experience != null || !!g.summits) && <Muted>{t.extras.ownFigures}</Muted>}
         {!isMe && g.call_enabled && (
           <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${formatUsd(g.call_price_usd)}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
         )}
@@ -109,7 +116,7 @@ export default function GuideScreen() {
         <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>
 
-      <GuideChecksCard guide={g} />
+      <GuideChecksCard guide={g} approved={g.verification_status === 'approved' && !g.is_sample} />
 
       {g.bio && (
         <Card>

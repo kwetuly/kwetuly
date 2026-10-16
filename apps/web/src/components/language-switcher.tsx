@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { Check, Globe } from 'lucide-react';
+import { UX_TEXT } from '@rafrika/shared';
 import { LOCALE_NAMES, localePrefix, locales, type Locale } from '@/i18n/config';
 
 // Globe button that opens the list of site languages, each written in its own language.
@@ -24,7 +25,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
     <details ref={ref} className="relative">
       <summary
         className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-[5px] border border-line px-2 text-xs font-bold uppercase sm:h-auto sm:gap-1.5 sm:px-3 sm:py-1.5 hover:border-forest [&::-webkit-details-marker]:hidden"
-        aria-label="Language"
+        aria-label={UX_TEXT[current].languageLabel}
       >
         <Globe className="size-4" aria-hidden /> {current}
       </summary>

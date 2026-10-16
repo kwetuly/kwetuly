@@ -12,7 +12,8 @@ const ICONS: Record<GuideCheckId, GlyphName> = {
 };
 
 // "What Rafrika checked": each check in plain words, with the date. The documents themselves stay private.
-export function GuideChecksCard({ guide }: { guide: GuideCheckFields }) {
+// `approved`: Rafrika approved the profile, which is said plainly when no document has been checked yet.
+export function GuideChecksCard({ guide, approved }: { guide: GuideCheckFields; approved?: boolean }) {
   const { t, locale } = useI18n();
   const c = t.checks;
   const checks = guideChecks(guide);
@@ -27,7 +28,7 @@ export function GuideChecksCard({ guide }: { guide: GuideCheckFields }) {
     <Card>
       <SectionTitle>{c.title}</SectionTitle>
       {checks.length === 0 ? (
-        <Muted>{c.none}</Muted>
+        <Muted>{approved ? t.extras.approvedGuideBody : c.none}</Muted>
       ) : (
         <>
           <Muted>{c.intro}</Muted>

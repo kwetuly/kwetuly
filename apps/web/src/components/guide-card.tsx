@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BadgeCheck, Handshake, Languages, MapPin, Venus } from 'lucide-react';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, hasRecordedCheck } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Guide } from '@/lib/guides';
@@ -45,14 +45,18 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
 // Badges for who the guide is: verified, Pro, female guide, works with agencies.
 const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs font-bold';
 
-export function GuideBadges({ guide, t }: { guide: Guide; t: Dictionary }) {
+// "Verified guide" only once Rafrika has recorded at least one document check. On the profile page
+// (`showApproved`), an approved guide without checks gets a neutral label that links to the explanation.
+export function GuideBadges({ guide, t, showApproved }: { guide: Guide; t: Dictionary; showApproved?: boolean }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {guide.is_sample ? (
         <span className={`${pill} border border-gold bg-sand text-charcoal`}>{t.extras.sampleGuide}</span>
+      ) : guide.verification_status !== 'approved' ? null : hasRecordedCheck(guide) ? (
+        <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
       ) : (
-        guide.verification_status === 'approved' && (
-          <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
+        showApproved && (
+          <a href="#checks" className={`${pill} border border-line bg-white text-charcoal hover:underline`}>{t.extras.approvedGuide}</a>
         )
       )}
       {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-charcoal`}>{t.guides.pro}</span>}
@@ -85,7 +89,7 @@ export function GuideCard({ guide, locale, t }: { guide: Guide; locale: Locale; 
           <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
             <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" aria-hidden /> {guide.base_region}</span>
             {guide.years_experience ? <span>{guide.years_experience} {t.guides.years}</span> : null}
-            {guide.summits ? <span>{guide.summits} {t.guides.summits}</span> : null}
+            {guide.summits ? <span>{guide.summits} {t.guides.summits} ({t.extras.ownFigure})</span> : null}
           </p>
         </div>
       </div>

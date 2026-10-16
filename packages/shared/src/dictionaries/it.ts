@@ -234,7 +234,7 @@ export const it: Dictionary = {
   home: {
     eyebrow: 'Karibu Tanzania',
     title: 'Un viaggio in Tanzania vale quanto la tua guida. Quindi scegli la tua.',
-    subtitle: 'Ogni safari, scalata e gita dipende da una sola persona. Conoscila prima: guarda la licenza verificata e le recensioni vere, chiedi tutto, poi decidi.',
+    subtitle: 'Ogni safari, scalata e gita dipende da una sola persona. Conoscila prima: guarda cosa ha verificato Rafrika e le recensioni vere, chiedi tutto, poi decidi.',
     search: 'Conosci la tua guida',
     specialtyLabel: 'Cosa vuoi fare?',
     languageLabel: 'Lingua',
@@ -248,7 +248,7 @@ export const it: Dictionary = {
     story: 'Quasi tutti i viaggiatori conoscono la loro guida la prima mattina, dopo aver già pagato. Su Rafrika la conosci prima. Leggi cosa hanno detto altri viaggiatori di lei, non di un’agenzia, e fai le tue domande nella tua lingua. Quando arrivi, ad aspettarti c’è qualcuno che conosci già.',
     why: [
       { title: 'Conosci la guida prima di pagare', body: 'Fai domande e concorda il programma direttamente con la guida. Chiedere è gratis.' },
-      { title: 'Verificata da Rafrika', body: 'Controlliamo la registrazione turistica di ogni guida prima che compaia, e il profilo mostra quali controlli di licenza, identità e primo soccorso ha superato.' },
+      { title: 'Cosa ha verificato Rafrika', body: 'Il profilo di ogni guida mostra quali controlli di licenza, identità e primo soccorso ha fatto Rafrika, e quando. Se non abbiamo ancora verificato un documento, il profilo lo dice.' },
       { title: 'Le recensioni sono della guida', body: 'Le recensioni seguono la guida, non l’agenzia: il buon lavoro non va mai perso.' },
       { title: 'Nella tua lingua', body: 'Filtra per lingua: italiano, inglese, francese, tedesco, cinese, kiswahili e altre.' },
     ],

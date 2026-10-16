@@ -39,13 +39,21 @@ export type TripOffer = {
   valid_until: string | null;
   status: 'sent' | 'accepted' | 'declined' | 'withdrawn';
   chat_id: string | null;
-  guides: { display_name: string; slug: string; rating_avg: number | null; rating_count: number } | null;
+  guides: {
+    display_name: string;
+    slug: string;
+    rating_avg: number | null;
+    rating_count: number;
+    identity_checked_at: string | null;
+    licence_checked_at: string | null;
+    first_aid_checked_at: string | null;
+  } | null;
 };
 
 const REQUEST_COLUMNS =
   'id, traveler_id, traveler_name, title, details, specialty, expertise, regions, start_date, end_date, flexible_dates, adults, children, budget_per_person_usd, languages, female_guide, status, offers_count, created_at';
 const OFFER_COLUMNS =
-  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, guides(display_name, slug, rating_avg, rating_count)';
+  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, guides(display_name, slug, rating_avg, rating_count, identity_checked_at, licence_checked_at, first_aid_checked_at)';
 
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);

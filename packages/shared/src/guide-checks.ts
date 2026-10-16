@@ -27,6 +27,14 @@ export function guideChecks(guide: GuideCheckFields, today = new Date()): GuideC
   return checks;
 }
 
+/**
+ * "Verified guide" is only shown once Rafrika has recorded at least one document check
+ * (identity, licence or first aid). An approved profile with no checks is not "verified".
+ */
+export function hasRecordedCheck(guide: Pick<GuideCheckFields, 'identity_checked_at' | 'licence_checked_at' | 'first_aid_checked_at'>) {
+  return !!(guide.identity_checked_at || guide.licence_checked_at || guide.first_aid_checked_at);
+}
+
 export type DocumentStatus = 'checked' | 'waiting' | 'missing' | 'expired';
 
 /** Where one private document stands, for the guide's own dashboard. */

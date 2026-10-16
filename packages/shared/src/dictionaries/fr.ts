@@ -234,7 +234,7 @@ export const fr: Dictionary = {
   home: {
     eyebrow: 'Karibu Tanzania',
     title: 'Un voyage en Tanzanie vaut ce que vaut votre guide. Alors choisissez-le.',
-    subtitle: 'Chaque safari, ascension ou excursion repose sur une seule personne. Rencontrez-la d’abord : consultez sa licence vérifiée et de vrais avis, posez vos questions, puis décidez.',
+    subtitle: 'Chaque safari, ascension ou excursion repose sur une seule personne. Rencontrez-la d’abord : voyez ce que Rafrika a vérifié, lisez de vrais avis, posez vos questions, puis décidez.',
     search: 'Rencontrez votre guide',
     specialtyLabel: 'Que voulez-vous faire ?',
     languageLabel: 'Langue',
@@ -248,7 +248,7 @@ export const fr: Dictionary = {
     story: 'La plupart des voyageurs rencontrent leur guide le premier matin, après avoir déjà payé. Sur Rafrika, vous le rencontrez avant. Vous lisez ce que d’autres voyageurs disent de lui, pas d’une agence, et vous posez vos questions dans votre langue. À votre arrivée, quelqu’un que vous connaissez déjà vous attend.',
     why: [
       { title: 'Rencontrez votre guide avant de payer', body: 'Posez vos questions et convenez du programme directement avec le guide. Demander est gratuit.' },
-      { title: 'Vérifié par Rafrika', body: 'Nous vérifions l’enregistrement touristique de chaque guide avant sa mise en ligne, et son profil indique les contrôles de licence, d’identité et de premiers secours qu’il a passés.' },
+      { title: 'Ce que Rafrika a vérifié', body: 'Le profil de chaque guide indique les contrôles de licence, d’identité et de premiers secours effectués par Rafrika, et à quelle date. Si nous n’avons pas encore vérifié un document, le profil le dit.' },
       { title: 'Les avis appartiennent au guide', body: 'Les avis suivent le guide, pas l’agence : le bon travail n’est jamais perdu.' },
       { title: 'Dans votre langue', body: 'Filtrez par langue : français, anglais, italien, allemand, chinois, kiswahili et plus.' },
     ],

@@ -4,6 +4,7 @@ import type { Locale } from '@/i18n/config';
 import { depositPayable, depositUsd, paymentsEnabled } from '@/lib/payments';
 import { createClient } from '@/lib/supabase/server';
 import { startPayment } from '@/app/[lang]/payments/actions';
+import { SubmitButton } from './submit-button';
 
 type Props = {
   kind: 'offer' | 'group';
@@ -78,7 +79,7 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
       </p>
       <p className="text-sm opacity-80">{p.body}</p>
       {error && <p className="rounded-[5px] bg-red-50 p-2 text-sm text-red-800">{errorText(error, p)}</p>}
-      <button className="btn w-full">{p.cta}</button>
+      <SubmitButton className="btn w-full">{p.cta}</SubmitButton>
       <p className="text-xs opacity-70">{p.direct}</p>
     </form>
   );

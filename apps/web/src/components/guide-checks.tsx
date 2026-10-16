@@ -35,7 +35,8 @@ export async function GuideCheckPills({ guide, t }: { guide: GuideCheckFields; t
 }
 
 // "What Rafrika checked": each check in plain words, with the date. The documents themselves stay private.
-export async function GuideChecksSection({ guide, t, locale }: { guide: GuideCheckFields; t: Dictionary; locale: Locale }) {
+// `approved`: Rafrika approved the profile, which is said plainly when no document has been checked yet.
+export async function GuideChecksSection({ guide, t, locale, approved }: { guide: GuideCheckFields; t: Dictionary; locale: Locale; approved?: boolean }) {
   const c = t.checks;
   const checks = guideChecks(guide, await today());
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' });
@@ -43,7 +44,7 @@ export async function GuideChecksSection({ guide, t, locale }: { guide: GuideChe
     <section id="checks" className="mt-8 scroll-mt-28">
       <h2 className="text-lg font-semibold">{c.title}</h2>
       {checks.length === 0 ? (
-        <p className="mt-2 text-sm text-muted">{c.none}</p>
+        <p className="mt-2 text-sm text-muted">{approved ? t.extras.approvedGuideBody : c.none}</p>
       ) : (
         <>
           <p className="mt-1 text-sm text-muted">{c.intro}</p>

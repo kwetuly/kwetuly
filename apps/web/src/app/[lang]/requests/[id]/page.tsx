@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, BadgeCheck, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
-import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
+import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd, hasRecordedCheck } from '@rafrika/shared';
 import { LogEvent } from '@/components/analytics';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -140,7 +140,7 @@ function OfferRow({ offer, rate, t, locale, children }: { offer: TripOffer; rate
             <p className="text-lg font-bold">{offer.company_name}</p>
           )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-            {offer.guides && (
+            {offer.guides && hasRecordedCheck(offer.guides) && (
               <span className="inline-flex items-center gap-1 rounded-[5px] bg-mint px-2 py-0.5 text-xs font-bold text-forest">
                 <BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}
               </span>

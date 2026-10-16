@@ -2,6 +2,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { reportSale } from './business-actions';
+import { SubmitButton } from '@/components/submit-button';
 
 type Sale = { id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: 'reported' | 'invoiced' | 'paid'; note: string | null };
 
@@ -45,7 +46,7 @@ export async function BusinessSales({ providerId, t, locale, status }: { provide
           <span className="label">{bt.noteField}</span>
           <input className="field" name="note" maxLength={500} />
         </label>
-        <button className="btn sm:col-span-4 sm:w-fit">{bt.reportSale}</button>
+        <SubmitButton className="btn sm:col-span-4 sm:w-fit">{bt.reportSale}</SubmitButton>
       </form>
       {(sales ?? []).length === 0 ? (
         <p className="text-sm text-muted">{bt.salesNone}</p>

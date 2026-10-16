@@ -2,7 +2,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 
 // Invite code input for the invite-only soft launch. Shown only while the invite_only site setting is on;
 // the code itself is checked by the database (handle_new_user and complete_onboarding).
-export function InviteCodeField({ t, invalid }: { t: Dictionary; invalid: boolean }) {
+export function InviteCodeField({ t, invalid }: { t: { auth: Pick<Dictionary['auth'], 'inviteCode' | 'inviteError' | 'inviteHint'> }; invalid: boolean }) {
   return (
     <div>
       <label className="label" htmlFor="invite_code">{t.auth.inviteCode}</label>

@@ -7,7 +7,7 @@ import { BUSINESS_TYPES, ORDER_TYPES } from '@rafrika/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getBusiness } from '@/lib/businesses';
+import { getBusiness, listBusinesses } from '@/lib/businesses';
 import { today } from '@/lib/today';
 import { BusinessBadge } from '@/components/business-card';
 import { askBusiness } from './actions';
@@ -21,7 +21,17 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/businesses
   return pageMeta({ path: `/businesses/${id}`, title: business.business_name, description: business.story?.slice(0, 160) ?? business.base_region, image: business.photo_url ?? undefined });
 }
 
+// Cache Components needs at least one sample id to check the page at build time. Unknown ids
+// are still rendered on request; the cached lookup below answers them with a real 404.
+export async function generateStaticParams() {
+  const [first] = await listBusinesses(BUSINESS_TYPES.map((b) => b.id));
+  return [{ id: first?.id ?? '00000000-0000-0000-0000-000000000000' }];
+}
+
 export default async function BusinessPage(props: PageProps<'/[lang]/businesses/[id]'>) {
+  // Checked before the Suspense boundary so a missing business returns HTTP 404, not 200.
+  const { id } = await props.params;
+  if (!(await getBusiness(id))) notFound();
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<div className="mx-auto h-96 max-w-5xl animate-pulse px-4 py-10" />}>
@@ -67,7 +77,8 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
 
       <aside id="ask" className="card h-fit scroll-mt-28">
         <h2 className="text-lg font-semibold">{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', business.business_name)}</h2>
-        <p className="mt-1 text-sm text-muted">{isShop ? bt.orderBody : bt.askBody}</p>
+        {/* Sample listings: the business has not joined, so the message goes to Rafrika. */}
+        <p className="mt-1 text-sm text-muted">{business.is_sample ? bt.askBodySample : isShop ? bt.orderBody : bt.askBody}</p>
         {status.sent ? (
           <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{bt.sent}</p>
         ) : (

@@ -34,6 +34,7 @@ import {
   TRIP_CIRCUITS,
   EVENTS,
   formatPrice,
+  hasRecordedCheck,
   straightLineKm,
   tourMatchesTheme,
   verifiedPrice,
@@ -430,7 +431,7 @@ function MeetGuides({ guides, assigned, t, locale }: { guides: Guide[]; assigned
               <div className="min-w-0 text-sm">
                 <p className="flex items-center gap-1 font-bold group-hover:text-leaf-dark">
                   {g.display_name}
-                  {g.verification_status === 'approved' && <BadgeCheck className="size-4 shrink-0 text-leaf-dark" aria-label={t.guides.verified} />}
+                  {g.verification_status === 'approved' && hasRecordedCheck(g) && <BadgeCheck className="size-4 shrink-0 text-leaf-dark" aria-label={t.guides.verified} />}
                 </p>
                 <p className="truncate text-xs text-muted">{g.specialties.slice(0, 2).map((s) => specialtyName(s, locale)).join(', ')}</p>
                 <p className="truncate text-xs text-muted">

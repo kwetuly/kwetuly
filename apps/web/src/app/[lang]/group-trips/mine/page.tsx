@@ -47,17 +47,31 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
       .order('created_at', { ascending: false })
       .returns<{ status: string; group_trips: Row | null }[]>(),
   ]);
-  const requestLabel: Record<string, string> = { requested: g.stateRequested, accepted: g.stateAccepted, declined: g.stateDeclined };
-  const tripState = (trip: Row) => (trip.cancelled ? g.cancelledTrip : trip.status === 'pending' ? g.statusPending : trip.status === 'rejected' ? g.statusRejected : null);
+  // Status labels: refusals and cancellations in a warning style, waiting in neutral, accepted in green.
+  type Note = { text: string; tone: 'warn' | 'wait' | 'ok' };
+  const toneClass: Record<Note['tone'], string> = { warn: 'bg-red-50 text-red-800', wait: 'bg-sand text-charcoal', ok: 'bg-mint text-forest' };
+  const requestLabel: Record<string, Note> = {
+    requested: { text: g.stateRequested, tone: 'wait' },
+    accepted: { text: g.stateAccepted, tone: 'ok' },
+    declined: { text: g.stateDeclined, tone: 'warn' },
+  };
+  const tripState = (trip: Row): Note | null =>
+    trip.cancelled
+      ? { text: g.cancelledTrip, tone: 'warn' }
+      : trip.status === 'pending'
+        ? { text: g.statusPending, tone: 'wait' }
+        : trip.status === 'rejected'
+          ? { text: g.statusRejected, tone: 'warn' }
+          : null;
 
-  const item = (trip: Row, note?: string | null, organiser = false) => (
+  const item = (trip: Row, note?: Note | null, organiser = false) => (
     <li key={trip.id}>
       <Link href={`/${locale}/group-trips/${trip.id}`} className="card flex flex-wrap items-center justify-between gap-3 p-5 hover:border-leaf">
         <span>
           <span className="block font-bold">{trip.title}</span>
           <span className="text-sm text-muted">{formatDates(trip as GroupTrip, locale)} · {trip.seats_taken + trip.already_going}/{trip.max_people}</span>
         </span>
-        {note && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
+        {note && <span className={`rounded-[5px] px-3 py-1 text-xs font-semibold ${toneClass[note.tone]}`}>{note.text}</span>}
       </Link>
       {/* A rejected trip says "please contact Rafrika": give the organiser the way to do it. */}
       {organiser && trip.status === 'rejected' && !trip.cancelled && SUPPORT_EMAIL && (

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { approxTzs, formatUsd, type Dictionary, type Locale } from '@rafrika/shared';
+import { approxTzs, formatUsd, hasRecordedCheck, type Dictionary, type Locale } from '@rafrika/shared';
 import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
 import { SignInPrompt } from '@/components/sign-in-prompt';
@@ -134,7 +134,7 @@ function OfferRow({ offer }: { offer: TripOffer }) {
             <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
           )}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm }}>
-            {offer.guides && <Badge label={`✓ ${t.guides.verified}`} />}
+            {offer.guides && hasRecordedCheck(offer.guides) && <Badge label={`✓ ${t.guides.verified}`} />}
             {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
           </View>
         </View>

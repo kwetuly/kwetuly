@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { TOUR_TYPES, formatPrice, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@rafrika/shared';
+import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@rafrika/shared';
 import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -38,7 +38,7 @@ export function GuideCard({ guide }: { guide: Guide }) {
             </View>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-            {guide.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : <Badge label={`✓ ${t.guides.verified}`} />}
+            {guide.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : hasRecordedCheck(guide) ? <Badge label={`✓ ${t.guides.verified}`} /> : null}
             {guide.female_guide && <Badge label={t.guides.female} tone="sand" />}
             {guide.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
             {guide.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}

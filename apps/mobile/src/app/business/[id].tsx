@@ -74,7 +74,8 @@ export default function BusinessScreen() {
 
       <Card>
         <SectionTitle>{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', b.business_name)}</SectionTitle>
-        <Muted>{isShop ? bt.orderBody : bt.askBody}</Muted>
+        {/* Sample listings: the business has not joined, so the message goes to Rafrika. */}
+        <Muted>{b.is_sample ? bt.askBodySample : isShop ? bt.orderBody : bt.askBody}</Muted>
         <Field label={t.profile.name} value={name} onChangeText={setName} />
         <Field label={t.profile.contact} value={contact} onChangeText={setContact} autoCapitalize="none" />
         {isShop && (

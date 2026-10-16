@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { MENU } from '@rafrika/shared';
+import { MENU, UX_TEXT } from '@rafrika/shared';
 import type { Locale } from '@/i18n/config';
 import { itemHref } from '@/lib/menu';
 import { Icon } from './icon';
@@ -16,6 +16,42 @@ import { Logo } from './logo';
 export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLabel: string; account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
+  const ux = UX_TEXT[locale];
+
+  // Opening moves focus into the drawer; closing hands it back to the menu button, so keyboard and
+  // screen-reader users keep their place.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open) closeButton.current?.focus();
+    else if (wasOpen.current) menuButton.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
+  // Esc closes the drawer; Tab and Shift+Tab stay inside it while it is open.
+  function onDialogKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (event.key !== 'Tab' || !dialog.current) return;
+    const focusable = Array.from(
+      dialog.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])'),
+    ).filter((el) => el.offsetParent !== null);
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || !dialog.current.contains(document.activeElement))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
     <>
@@ -79,28 +115,39 @@ export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLa
       </ul>
 
       <button
+        ref={menuButton}
         type="button"
         onClick={() => setOpen(true)}
         className="flex size-10 shrink-0 items-center justify-center rounded-[5px] border border-line xl:hidden"
-        aria-label="Open menu"
+        aria-label={ux.openMenu}
+        aria-haspopup="dialog"
+        aria-expanded={open}
       >
-        <Menu className="size-5" />
+        <Menu className="size-5" aria-hidden />
       </button>
 
       {/* Portal to <body>: the header's backdrop blur would otherwise trap a fixed overlay inside it. */}
       {open &&
         createPortal(
-        <div className="fixed inset-0 z-50 flex flex-col bg-night text-white xl:hidden" role="dialog" aria-modal="true">
+        <div
+          ref={dialog}
+          className="fixed inset-0 z-50 flex flex-col bg-night text-white xl:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label={ux.menuLabel}
+          onKeyDown={onDialogKeyDown}
+        >
           <CloseOnNavigate onNavigate={setOpen} />
           <div className="flex items-center justify-between px-4 py-4">
             <Logo tone="light" className="text-2xl" />
             <button
+              ref={closeButton}
               type="button"
               onClick={() => setOpen(false)}
               className="flex size-10 items-center justify-center rounded-[5px] bg-white/10"
-              aria-label="Close menu"
+              aria-label={ux.closeMenu}
             >
-              <X className="size-5" />
+              <X className="size-5" aria-hidden />
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 pb-10">

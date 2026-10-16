@@ -130,7 +130,7 @@ async function Profile({
               <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
             </a>
             <div className="mt-3">
-              <GuideBadges guide={guide} t={t} />
+              <GuideBadges guide={guide} t={t} showApproved />
             </div>
             <div className="mt-2">
               <GuideCheckPills guide={guide} t={t} />
@@ -141,6 +141,7 @@ async function Profile({
         <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-1 text-sm font-medium text-muted">
           {facts.map((fact) => <li key={fact}>{fact}</li>)}
         </ul>
+        {(guide.years_experience != null || !!guide.summits) && <p className="mt-1 text-xs text-muted">{t.extras.ownFigures}</p>}
 
         <section className="mt-8 grid gap-6 sm:grid-cols-2">
           <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
@@ -156,7 +157,7 @@ async function Profile({
           />
         </section>
 
-        <GuideChecksSection guide={guide} t={t} locale={locale} />
+        <GuideChecksSection guide={guide} t={t} locale={locale} approved={guide.verification_status === 'approved' && !guide.is_sample} />
 
         {guide.bio && (
           <section className="mt-8">

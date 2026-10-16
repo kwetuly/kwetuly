@@ -300,7 +300,7 @@ export const sw: Dictionary = {
   home: {
     eyebrow: 'Karibu Tanzania',
     title: 'Safari yako ni nzuri kama mwongozaji wako. Basi chagua wako.',
-    subtitle: 'Kila safari, kupanda mlima na matembezi ya siku hutegemea mtu mmoja. Mfahamu kwanza: angalia leseni iliyothibitishwa na maoni halisi, muulize chochote, kisha uamue.',
+    subtitle: 'Kila safari, kupanda mlima na matembezi ya siku hutegemea mtu mmoja. Mfahamu kwanza: angalia Rafrika ilichokagua na maoni halisi, muulize chochote, kisha uamue.',
     search: 'Mfahamu mwongozaji wako',
     specialtyLabel: 'Unataka kufanya nini?',
     languageLabel: 'Lugha',
@@ -314,7 +314,7 @@ export const sw: Dictionary = {
     story: 'Wasafiri wengi hukutana na mwongozaji wao asubuhi ya kwanza, baada ya kulipa. Kwenye Rafrika unakutana naye kwanza. Unasoma wasafiri wengine walisema nini kumhusu yeye, si kuhusu kampuni, na unauliza maswali kwa lugha yako. Ukifika, anakusubiri mtu unayemfahamu tayari.',
     why: [
       { title: 'Mfahamu mwongozaji kabla ya kulipa', body: 'Uliza maswali na mkubaliane mpango moja kwa moja na mwongozaji. Kuuliza ni bure.' },
-      { title: 'Imekaguliwa na Rafrika', body: 'Tunakagua usajili wa utalii wa kila mwongozaji kabla hajaonekana, na wasifu wake unaonyesha ukaguzi wa leseni, utambulisho na huduma ya kwanza alioupita.' },
+      { title: 'Ona Rafrika ilichokagua', body: 'Wasifu wa kila mwongozaji unaonyesha ukaguzi wa leseni, utambulisho na huduma ya kwanza ambao Rafrika imefanya, na lini. Kama bado hatujakagua hati, wasifu unasema hivyo.' },
       { title: 'Maoni ni mali ya mwongozaji', body: 'Maoni yanamfuata mwongozaji, si kampuni, hivyo kazi nzuri haipotei.' },
       { title: 'Ongea lugha yako', body: 'Chagua kwa lugha: Kiswahili, Kiingereza, Kifaransa, Kijerumani, Kichina na zaidi.' },
     ],

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageStatus } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
@@ -37,13 +38,8 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
   const pt = t.packages;
   const supabase = await createClient();
   const { data: guide } = await supabase.from('guides').select('id').eq('owner_id', user.id).maybeSingle<{ id: string }>();
-  if (!guide) {
-    return (
-      <p className="card">
-        <Link href={`/${locale}/dashboard`} className="font-semibold text-forest underline">{t.dashboard.title}</Link>
-      </p>
-    );
-  }
+  // Packages are for guides only; everyone else goes back to their own dashboard.
+  if (!guide) redirect(`/${locale}/dashboard`);
   const { data } = await supabase.from('guide_packages').select(PACKAGE_COLUMNS).eq('guide_id', guide.id).order('sort_order').order('created_at');
   const packages = (data ?? []) as GuidePackage[];
   const editing = typeof params.edit === 'string' ? packages.find((p) => p.id === params.edit) : undefined;
