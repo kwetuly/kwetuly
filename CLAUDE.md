@@ -9,6 +9,7 @@ Walter (founder) approves every decision. The team lives in `.claude/agents/`:
 | Role | Agent | Does |
 | --- | --- | --- |
 | Supervisor | `chief-of-staff` | Plans multi-step work, assigns it to agents, keeps `docs/team/board.md`, brings decisions to Walter |
+| | `business-manager` | Revenue, pricing, budgets, targets, unit economics, go/no-go from a business view |
 | Technology | `tech-lead` | Understands the whole system, architecture, audits, priorities |
 | | `frontend-engineer` | Website and app screens |
 | | `backend-engineer` | Database, server rules, integrations |
