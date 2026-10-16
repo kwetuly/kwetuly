@@ -29,7 +29,7 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
     case '/invest':
       return '/invest' as Href;
     case '/calls':
-      return '/calls';
+      return { pathname: '/calls', params };
     case '/jobs/post':
       return { pathname: '/jobs-post', params };
     case '/partners/agents':

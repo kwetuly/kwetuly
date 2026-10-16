@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { CALL_TOPICS } from '@rafrika/shared';
 import { GuideCard } from '@/components/cards';
@@ -12,7 +12,8 @@ import { brand, colors, space } from '@/theme';
 // Guides who offer 1-on-1 prep calls, optionally by topic. Booking happens on the guide's profile.
 export default function CallsScreen() {
   const { t, locale } = useI18n();
-  const [topic, setTopic] = useState<string | undefined>();
+  // The menu can open this screen on one topic (e.g. Kilimanjaro prep).
+  const [topic, setTopic] = useState<string | undefined>(useLocalSearchParams<{ topic?: string }>().topic || undefined);
   const guides = useQuery({ queryKey: ['call-guides', topic], queryFn: () => listCallGuides(topic) });
 
   return (

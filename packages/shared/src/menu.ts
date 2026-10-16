@@ -3,6 +3,7 @@
 // Labels are in the order en, sw, fr, it, de, pl, zh (see locales.ts).
 
 import { GUIDE_EXPERTISE } from './expertise';
+import { CALL_TOPICS } from './guides';
 import { L, type Label } from './locales';
 
 export type MenuItem = {
@@ -490,8 +491,25 @@ const PLAN: MenuSection = {
 export const ALL_SECTIONS: MenuSection[] = [...SECTIONS, PLAN, PARTNERS];
 
 const bySlug = (slug: string) => ALL_SECTIONS.find((s) => s.slug === slug)!;
+const CALL_TOPIC_ICONS: Record<(typeof CALL_TOPICS)[number]['id'], string> = {
+  kilimanjaro: 'mountain',
+  safari: 'binoculars',
+  zanzibar: 'globe',
+  culture: 'users',
+  meru: 'route',
+  itinerary: 'map',
+};
+
+const CALL_TOPIC_BLURBS: Record<(typeof CALL_TOPICS)[number]['id'], Label> = {
+  kilimanjaro: L('Routes, training, altitude and kit', 'Njia, mazoezi, mwinuko na vifaa', 'Itinéraires, entraînement, altitude et équipement', 'Percorsi, allenamento, quota e attrezzatura', 'Routen, Training, Höhe und Ausrüstung', 'Trasy, trening, wysokość i sprzęt', '路线、训练、高原与装备'),
+  safari: L('Parks, seasons and what to expect', 'Hifadhi, misimu na cha kutarajia', 'Parcs, saisons et à quoi s’attendre', 'Parchi, stagioni e cosa aspettarsi', 'Parks, Jahreszeiten und was Sie erwartet', 'Parki, sezony i czego się spodziewać', '公园、季节与行前须知'),
+  zanzibar: L('Beaches, Stone Town and getting around', 'Fukwe, Mji Mkongwe na usafiri', 'Plages, Stone Town et déplacements', 'Spiagge, Stone Town e spostamenti', 'Strände, Stone Town und Unterwegssein', 'Plaże, Stone Town i poruszanie się', '海滩、石头城与出行'),
+  culture: L('Greetings, dress, gifts and respect', 'Salamu, mavazi, zawadi na heshima', 'Salutations, tenue, cadeaux et respect', 'Saluti, abbigliamento, regali e rispetto', 'Begrüßung, Kleidung, Geschenke und Respekt', 'Powitania, ubiór, prezenty i szacunek', '问候、着装、礼物与尊重'),
+  meru: L('Mount Meru, Ol Doinyo Lengai and more', 'Mlima Meru, Ol Doinyo Lengai na mingine', 'Mont Meru, Ol Doinyo Lengai et plus', 'Monte Meru, Ol Doinyo Lengai e altro', 'Mount Meru, Ol Doinyo Lengai und mehr', 'Góra Meru, Ol Doinyo Lengai i inne', '梅鲁山、伦盖火山等'),
+  itinerary: L('Plan your whole trip with a local', 'Panga safari nzima na mwenyeji', 'Organisez tout le voyage avec un local', 'Organizza tutto il viaggio con un locale', 'Die ganze Reise mit einem Einheimischen planen', 'Zaplanuj całą podróż z miejscowym', '与当地人一起规划整个行程'),
+};
+
 // Prep calls are a main selling point, so they get their own link in the main menu.
-// A section with one item shows as a plain link in the menu.
 const PREP_CALLS: MenuSection = {
   slug: 'calls',
   icon: 'video',
@@ -505,7 +523,17 @@ const PREP_CALLS: MenuSection = {
     'Porozmawiaj z lokalnym przewodnikiem przed rezerwacją',
     '预订前先和当地导游聊一聊',
   ),
-  items: [bySlug('trips').items.find((i) => i.slug === 'calls')!],
+  items: [
+    { ...bySlug('trips').items.find((i) => i.slug === 'calls')!, label: L('All prep calls', 'Simu zote za maandalizi', 'Tous les appels', 'Tutte le chiamate', 'Alle Gespräche', 'Wszystkie rozmowy', '全部咨询') },
+    ...CALL_TOPICS.map((topic): MenuItem => ({
+      slug: `calls-${topic.id}`,
+      icon: CALL_TOPIC_ICONS[topic.id],
+      href: `/calls?topic=${topic.id}`,
+      status: 'live',
+      label: L(topic.en, topic.sw, topic.fr, topic.it, topic.de, topic.pl, topic.zh),
+      blurb: CALL_TOPIC_BLURBS[topic.id],
+    })),
+  ],
 };
 
 /** Trips are what the "Experiences" section holds; the menu calls them trips. */
