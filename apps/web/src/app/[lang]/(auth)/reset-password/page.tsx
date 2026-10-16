@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
+import { RECOVERY_COOKIE } from '@/lib/recovery';
 import { createClient } from '@/lib/supabase/server';
 import { updatePassword } from '../actions';
 
@@ -44,7 +46,8 @@ async function NewPassword({
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const fromResetLink = Boolean(user) && (await cookies()).get(RECOVERY_COOKIE)?.value === user?.id;
+  if (!fromResetLink) {
     // Opened without a valid reset link (or it expired): offer a new one, never a dead end.
     return (
       <div className="mt-6 space-y-4">
@@ -59,6 +62,7 @@ async function NewPassword({
     match: t.ux.passwordMatch,
     same: t.ux.passwordSame,
     weak: t.ux.passwordWeak,
+    reauth: t.ux.passwordReauth,
   };
   const error = typeof params.error === 'string' ? (errors[params.error] ?? t.ux.passwordError) : null;
 

@@ -1,11 +1,13 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
 import { inviteCodeInput, inviteRequired, isInviteError } from '@/lib/invite';
 import { normalizePhone } from '@/lib/phone';
+import { RECOVERY_COOKIE } from '@/lib/recovery';
 import { safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
 
@@ -168,7 +170,23 @@ export async function updatePassword(formData: FormData) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/forgot-password?error=link`);
+  // Only right after a reset link for this same account (cookie set by /auth/confirm).
+  const cookieStore = await cookies();
+  if (cookieStore.get(RECOVERY_COOKIE)?.value !== user.id) {
+    cookieStore.delete(RECOVERY_COOKIE);
+    redirect(`/${locale}/forgot-password?error=link`);
+  }
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect(`${back}?error=${error.code === 'same_password' ? 'same' : error.code === 'weak_password' ? 'weak' : '1'}`);
+  if (error) {
+    const reason =
+      error.code === 'same_password' ? 'same'
+      : error.code === 'weak_password' ? 'weak'
+      : error.code === 'reauthentication_needed' ? 'reauth'
+      : '1';
+    redirect(`${back}?error=${reason}`);
+  }
+  cookieStore.delete(RECOVERY_COOKIE);
+  // Sign out every other device: whoever else had the old password or a session is logged out.
+  await supabase.auth.signOut({ scope: 'others' });
   redirect(`${back}?done=1`);
 }
