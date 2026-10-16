@@ -26,6 +26,12 @@ function expertiseItem(e: (typeof GUIDE_EXPERTISE)[number]): MenuItem {
   return { slug: e.id.replace(/_/g, '-'), icon: e.icon, href: `/guides?expertise=${e.id}`, status: 'live', label: e.label, blurb: e.blurb };
 }
 
+const VISA_ITEM: MenuItem = {
+  slug: 'visa-insurance', icon: 'badge-check', href: '/travel-info', status: 'live',
+  label: L('Visa & insurance', 'Viza na bima', 'Visa & assurance', 'Visto e assicurazione', 'Visum & Versicherung', 'Wiza i ubezpieczenie', '签证与保险'),
+  blurb: L('Official links and the new insurance rule', 'Viungo rasmi na sheria mpya ya bima', 'Liens officiels et nouvelle règle d’assurance', 'Link ufficiali e nuova regola sull’assicurazione', 'Offizielle Links und die neue Versicherungspflicht', 'Oficjalne linki i nowy obowiązek ubezpieczenia', '官方链接与新的保险规定'),
+};
+
 const SECTIONS: MenuSection[] = [
   {
     // URL slug is "trips" because /guides/[slug] is used for guide profiles.
@@ -183,7 +189,7 @@ const SECTIONS: MenuSection[] = [
   {
     slug: 'stay',
     icon: 'bed-double',
-    label: L('Stay', 'Malazi', 'Hébergement', 'Alloggi', 'Unterkünfte', 'Noclegi', '住宿'),
+    label: L('Stays', 'Malazi', 'Hébergement', 'Alloggi', 'Unterkünfte', 'Noclegi', '住宿'),
     tagline: L(
       'Places to sleep, checked by guides',
       'Malazi yaliyokaguliwa na waongozaji',
@@ -255,30 +261,20 @@ const SECTIONS: MenuSection[] = [
   {
     slug: 'shop',
     icon: 'shopping-bag',
-    label: L('Gear & Shop', 'Vifaa na Duka', 'Équipement', 'Attrezzatura', 'Ausrüstung', 'Sprzęt i sklep', '装备与商店'),
+    label: L('Shop', 'Duka', 'Boutique', 'Negozio', 'Shop', 'Sklep', '商店'),
     tagline: L(
-      'Rent gear, and take a piece of Tanzania home',
-      'Kodi vifaa, na beba kipande cha Tanzania nyumbani',
-      'Louez votre équipement et rapportez un morceau de Tanzanie',
-      'Noleggia l’attrezzatura e porta a casa un pezzo di Tanzania',
-      'Ausrüstung leihen und ein Stück Tansania mit nach Hause nehmen',
-      'Wypożycz sprzęt i zabierz kawałek Tanzanii do domu',
-      '租借装备，把坦桑尼亚带回家',
+      'Crafts, gems and gear: delivered to your hotel or ready to collect',
+      'Sanaa, vito na vifaa: vinaletwa hotelini au unachukua dukani',
+      'Artisanat, pierres et matériel : livrés à votre hôtel ou à retirer',
+      'Artigianato, gemme e attrezzatura: consegnati in hotel o da ritirare',
+      'Kunsthandwerk, Edelsteine und Ausrüstung: ins Hotel geliefert oder zum Abholen',
+      'Rękodzieło, kamienie i sprzęt: z dostawą do hotelu lub do odbioru',
+      '手工艺品、宝石和装备：送到酒店或到店自取',
     ),
     items: [
       {
-        slug: 'rent-gear', icon: 'repeat',
-        label: L('Rent gear locally', 'Kodi vifaa hapa', 'Louer sur place', 'Noleggio sul posto', 'Vor Ort leihen', 'Wypożycz na miejscu', '当地租借装备'),
-        blurb: L('Sleeping bags, jackets, poles, boots', 'Mifuko ya kulalia, jaketi, fimbo, viatu', 'Sacs de couchage, vestes, bâtons, chaussures', 'Sacchi a pelo, giacche, bastoncini, scarponi', 'Schlafsäcke, Jacken, Stöcke, Stiefel', 'Śpiwory, kurtki, kije, buty', '睡袋、外套、登山杖、登山鞋'),
-      },
-      {
-        slug: 'buy-gear', icon: 'tent',
-        label: L('Buy before you fly', 'Nunua kabla ya kusafiri', 'Achetez avant de partir', 'Acquista prima di partire', 'Vor der Reise kaufen', 'Kup przed wylotem', '出发前选购'),
-        blurb: L('Guide-approved packing lists', 'Orodha za vifaa zilizoidhinishwa na waongozaji', 'Listes d’équipement validées par les guides', 'Liste di cosa portare approvate dalle guide', 'Packlisten, von Guides empfohlen', 'Listy rzeczy zatwierdzone przez przewodników', '导游推荐的行李清单'),
-      },
-      {
         slug: 'art', icon: 'palette',
-        label: L('Art & crafts', 'Sanaa na kazi za mikono', 'Art & artisanat', 'Arte e artigianato', 'Kunst & Handwerk', 'Sztuka i rękodzieło', '艺术与手工艺品'),
+        label: L('Curio shops', 'Maduka ya sanaa na zawadi', 'Boutiques de souvenirs', 'Negozi di souvenir', 'Souvenirläden', 'Sklepy z pamiątkami', '工艺品店'),
         blurb: L('Tingatinga, Makonde carvings, beadwork', 'Tingatinga, vinyago vya Makonde, shanga', 'Tingatinga, sculptures Makonde, perles', 'Tingatinga, sculture Makonde, perline', 'Tingatinga, Makonde-Schnitzereien, Perlenarbeiten', 'Tingatinga, rzeźby Makonde, koraliki', '廷加廷加画、马孔德木雕、串珠'),
       },
       {
@@ -286,22 +282,42 @@ const SECTIONS: MenuSection[] = [
         label: L('Tanzanite & gems', 'Tanzanite na vito', 'Tanzanite & pierres', 'Tanzanite e gemme', 'Tansanit & Edelsteine', 'Tanzanit i kamienie', '坦桑石与宝石'),
         blurb: L('Licensed dealers only, with certificates', 'Wauzaji wenye leseni tu, pamoja na vyeti', 'Uniquement des vendeurs agréés, avec certificat', 'Solo rivenditori autorizzati, con certificato', 'Nur lizenzierte Händler, mit Zertifikat', 'Tylko licencjonowani sprzedawcy, z certyfikatem', '仅限持证商家，附证书'),
       },
+      {
+        slug: 'buy-gear', icon: 'tent',
+        label: L('Buy before you fly', 'Nunua kabla ya kusafiri', 'Achetez avant de partir', 'Acquista prima di partire', 'Vor der Reise kaufen', 'Kup przed wylotem', '出发前选购'),
+        blurb: L('Guide-approved packing lists', 'Orodha za vifaa zilizoidhinishwa na waongozaji', 'Listes d’équipement validées par les guides', 'Liste di cosa portare approvate dalle guide', 'Packlisten, von Guides empfohlen', 'Listy rzeczy zatwierdzone przez przewodników', '导游推荐的行李清单'),
+      },
+      {
+        slug: 'rent-gear', icon: 'repeat',
+        label: L('Gear rental', 'Kukodi vifaa', 'Location de matériel', 'Noleggio attrezzatura', 'Ausrüstungsverleih', 'Wypożyczalnia sprzętu', '装备租赁'),
+        blurb: L('Sleeping bags, jackets, poles, boots', 'Mifuko ya kulalia, jaketi, fimbo, viatu', 'Sacs de couchage, vestes, bâtons, chaussures', 'Sacchi a pelo, giacche, bastoncini, scarponi', 'Schlafsäcke, Jacken, Stöcke, Stiefel', 'Śpiwory, kurtki, kije, buty', '睡袋、外套、登山杖、登山鞋'),
+      },
     ],
   },
   {
     slug: 'local',
     icon: 'sparkles',
-    label: L('Local life', 'Maisha ya mtaani', 'Vie locale', 'Vita locale', 'Lokales Leben', 'Lokalne życie', '当地生活'),
+    label: L('Going out', 'Viwanja vya starehe', 'Sorties', 'Uscire', 'Ausgehen', 'Wyjścia', '休闲去处'),
     tagline: L(
-      'Where locals go, recommended by guides',
-      'Wanakoenda wenyeji, kwa mapendekezo ya waongozaji',
-      'Là où vont les locaux, recommandé par les guides',
-      'Dove vanno i locali, consigliato dalle guide',
-      'Wo Einheimische hingehen, von Guides empfohlen',
-      'Tam, gdzie chodzą miejscowi, polecane przez przewodników',
-      '当地人常去的地方，导游推荐',
+      'Bars, clubs, food spots and places to unwind',
+      'Baa, klabu, vyakula na sehemu za kupumzika',
+      'Bars, clubs, bonnes tables et lieux pour se détendre',
+      'Bar, club, posti dove mangiare e rilassarsi',
+      'Bars, Clubs, Essen und Orte zum Entspannen',
+      'Bary, kluby, jedzenie i miejsca na relaks',
+      '酒吧、夜店、美食和放松好去处',
     ),
     items: [
+      {
+        slug: 'hot-spots', icon: 'music',
+        label: L('Bars, clubs & hotspots', 'Baa, klabu na sehemu maarufu', 'Bars, clubs & lieux branchés', 'Bar, club e locali di tendenza', 'Bars, Clubs & Hotspots', 'Bary, kluby i modne miejsca', '酒吧、夜店与热门去处'),
+        blurb: L('Live music, clubs, rooftops', 'Muziki, klabu, sehemu za juu', 'Concerts, clubs, rooftops', 'Musica dal vivo, club, rooftop', 'Livemusik, Clubs, Rooftops', 'Muzyka na żywo, kluby, tarasy', '现场音乐、俱乐部、屋顶酒吧'),
+      },
+      {
+        slug: 'food', icon: 'utensils-crossed',
+        label: L('Swahili food spots', 'Vyakula vya Kiswahili', 'Cuisine swahilie', 'Cucina swahili', 'Swahili-Küche', 'Kuchnia suahili', '斯瓦希里美食'),
+        blurb: L('Nyama choma, pilau, street food', 'Nyama choma, pilau, vyakula vya mtaani', 'Nyama choma, pilau, cuisine de rue', 'Nyama choma, pilau, street food', 'Nyama Choma, Pilau, Streetfood', 'Nyama choma, pilau, jedzenie uliczne', '烤肉、香料饭、街头小吃'),
+      },
       {
         slug: 'massage', icon: 'flower-2',
         label: L('Massage & spa', 'Masaji na spa', 'Massage & spa', 'Massaggi e spa', 'Massage & Spa', 'Masaż i spa', '按摩与水疗'),
@@ -312,32 +328,28 @@ const SECTIONS: MenuSection[] = [
         label: L('Salons & barbers', 'Saluni na kinyozi', 'Salons & barbiers', 'Saloni e barbieri', 'Salons & Barbiere', 'Salony i fryzjerzy', '美发与理发'),
         blurb: L('Braids, cuts and beauty', 'Kusuka, kunyoa na urembo', 'Tresses, coupes et beauté', 'Treccine, tagli e bellezza', 'Zöpfe, Haarschnitte und Beauty', 'Warkoczyki, strzyżenie i uroda', '编发、剪发与美容'),
       },
-      {
-        slug: 'food', icon: 'utensils-crossed',
-        label: L('Swahili food spots', 'Vyakula vya Kiswahili', 'Cuisine swahilie', 'Cucina swahili', 'Swahili-Küche', 'Kuchnia suahili', '斯瓦希里美食'),
-        blurb: L('Nyama choma, pilau, street food', 'Nyama choma, pilau, vyakula vya mtaani', 'Nyama choma, pilau, cuisine de rue', 'Nyama choma, pilau, street food', 'Nyama Choma, Pilau, Streetfood', 'Nyama choma, pilau, jedzenie uliczne', '烤肉、香料饭、街头小吃'),
-      },
-      {
-        slug: 'hot-spots', icon: 'music',
-        label: L('Nightlife & hot spots', 'Starehe na sehemu maarufu', 'Vie nocturne & bons plans', 'Vita notturna e locali', 'Nachtleben & Hotspots', 'Życie nocne i modne miejsca', '夜生活与热门去处'),
-        blurb: L('Live music, clubs, rooftops', 'Muziki, klabu, sehemu za juu', 'Concerts, clubs, rooftops', 'Musica dal vivo, club, rooftop', 'Livemusik, Clubs, Rooftops', 'Muzyka na żywo, kluby, tarasy', '现场音乐、俱乐部、屋顶酒吧'),
-      },
     ],
   },
   {
     slug: 'discover',
     icon: 'book-open',
-    label: L('Discover', 'Gundua', 'Découvrir', 'Scopri', 'Entdecken', 'Odkrywaj', '探索'),
+    label: L('Information', 'Taarifa', 'Informations', 'Informazioni', 'Informationen', 'Informacje', '旅行信息'),
     tagline: L(
-      'Stories, events and opportunities',
-      'Hadithi, matukio na fursa',
-      'Histoires, événements et opportunités',
-      'Storie, eventi e opportunità',
-      'Geschichten, Events und Chancen',
-      'Historie, wydarzenia i możliwości',
-      '故事、活动与机会',
+      'Visa, insurance, parks, events and stories',
+      'Viza, bima, hifadhi, matukio na hadithi',
+      'Visa, assurance, parcs, événements et récits',
+      'Visto, assicurazione, parchi, eventi e storie',
+      'Visum, Versicherung, Parks, Events und Geschichten',
+      'Wiza, ubezpieczenie, parki, wydarzenia i historie',
+      '签证、保险、公园、活动与故事',
     ),
     items: [
+      VISA_ITEM,
+      {
+        slug: 'parks', icon: 'map', href: '/places', status: 'live',
+        label: L('Parks & places', 'Hifadhi na maeneo', 'Parcs & lieux', 'Parchi e luoghi', 'Parks & Orte', 'Parki i miejsca', '公园与景点'),
+        blurb: L('Fees, seasons and what to see', 'Ada, misimu na vitu vya kuona', 'Tarifs, saisons et choses à voir', 'Tariffe, stagioni e cosa vedere', 'Gebühren, Jahreszeiten und Sehenswertes', 'Opłaty, sezony i co zobaczyć', '门票、季节与看点'),
+      },
       {
         slug: 'stories', icon: 'book-open',
         label: L('Guide stories', 'Hadithi za waongozaji', 'Récits de guides', 'Storie delle guide', 'Guide-Geschichten', 'Historie przewodników', '导游故事'),
@@ -425,11 +437,7 @@ const PLAN: MenuSection = {
     '签证、保险、交通、装备与当地建议',
   ),
   items: [
-    {
-      slug: 'visa-insurance', icon: 'badge-check', href: '/travel-info', status: 'live',
-      label: L('Visa & insurance', 'Viza na bima', 'Visa & assurance', 'Visto e assicurazione', 'Visum & Versicherung', 'Wiza i ubezpieczenie', '签证与保险'),
-      blurb: L('Official links and the new insurance rule', 'Viungo rasmi na sheria mpya ya bima', 'Liens officiels et nouvelle règle d’assurance', 'Link ufficiali e nuova regola sull’assicurazione', 'Offizielle Links und die neue Versicherungspflicht', 'Oficjalne linki i nowy obowiązek ubezpieczenia', '官方链接与新的保险规定'),
-    },
+    VISA_ITEM,
     ...['transport', 'shop', 'local', 'discover'].map((slug): MenuItem => {
       const section = SECTIONS.find((s) => s.slug === slug)!;
       return { slug: `${slug}-all`, icon: section.icon, href: `/${slug}`, status: 'live', label: section.label, blurb: section.tagline };
@@ -441,73 +449,22 @@ const PLAN: MenuSection = {
 export const ALL_SECTIONS: MenuSection[] = [...SECTIONS, PLAN, PARTNERS];
 
 const bySlug = (slug: string) => ALL_SECTIONS.find((s) => s.slug === slug)!;
-const itemOf = (section: string, item: string): MenuItem => {
-  const found = bySlug(section).items.find((i) => i.slug === item)!;
-  return { ...found, href: found.href ?? `/${section}/${item}`, status: 'live' };
-};
-
-// Shortcuts for the main menu: the selling points travellers should see without opening anything.
+// Prep calls are a main selling point, so they get their own link in the main menu.
 // A section with one item shows as a plain link in the menu.
-const SHORTCUTS: Record<string, MenuSection> = {
-  calls: {
-    slug: 'calls',
-    icon: 'video',
-    label: L('1-on-1 calls', 'Simu na mwongozaji', 'Appels 1-à-1', 'Chiamate 1:1', '1:1-Gespräche', 'Rozmowy 1:1', '一对一通话'),
-    tagline: L(
-      'Talk to a local guide before you book',
-      'Ongea na mwongozaji wa ndani kabla ya kulipia',
-      'Parlez à un guide local avant de réserver',
-      'Parla con una guida locale prima di prenotare',
-      'Sprechen Sie vor der Buchung mit einem lokalen Guide',
-      'Porozmawiaj z lokalnym przewodnikiem przed rezerwacją',
-      '预订前先和当地导游聊一聊',
-    ),
-    items: [itemOf('trips', 'calls')],
-  },
-  gear: {
-    slug: 'gear',
-    icon: 'repeat',
-    label: L('Gear rental', 'Kukodi vifaa', 'Location de matériel', 'Noleggio attrezzatura', 'Ausrüstungsverleih', 'Wypożyczalnia sprzętu', '装备租赁'),
-    tagline: bySlug('shop').items.find((i) => i.slug === 'rent-gear')!.blurb,
-    items: [itemOf('shop', 'rent-gear')],
-  },
-  curio: {
-    slug: 'curio',
-    icon: 'palette',
-    label: L('Curio shop', 'Duka la sanaa', 'Artisanat', 'Artigianato', 'Kunsthandwerk', 'Rękodzieło', '手工艺品'),
-    tagline: L(
-      'Order to your hotel, or reserve and collect in the shop',
-      'Agiza ufikishiwe hotelini, au weka oda uchukue dukani',
-      'Commandez avec livraison à votre hôtel, ou réservez et passez en boutique',
-      'Ordina con consegna in hotel, o prenota e ritira in negozio',
-      'Ins Hotel liefern lassen oder reservieren und im Laden abholen',
-      'Zamów z dostawą do hotelu albo zarezerwuj i odbierz w sklepie',
-      '下单送到酒店，或预订后到店自取',
-    ),
-    items: [itemOf('shop', 'art'), itemOf('shop', 'tanzanite')],
-  },
-  visa: {
-    slug: 'visa',
-    icon: 'badge-check',
-    label: L('Visa & insurance', 'Viza na bima', 'Visa & assurance', 'Visto e assicurazione', 'Visum & Versicherung', 'Wiza i ubezpieczenie', '签证与保险'),
-    tagline: bySlug('plan').items.find((i) => i.slug === 'visa-insurance')!.blurb,
-    items: [itemOf('plan', 'visa-insurance')],
-  },
-  more: {
-    slug: 'more',
-    icon: 'sparkles',
-    label: L('More', 'Zaidi', 'Plus', 'Altro', 'Mehr', 'Więcej', '更多'),
-    tagline: L(
-      'Local life, stories and packing lists',
-      'Maisha ya mtaani, hadithi na orodha za vifaa',
-      'Vie locale, récits et listes d’équipement',
-      'Vita locale, storie e liste di cosa portare',
-      'Lokales Leben, Geschichten und Packlisten',
-      'Lokalne życie, historie i listy rzeczy',
-      '当地生活、故事与行李清单',
-    ),
-    items: [...bySlug('plan').items.filter((i) => ['local-all', 'discover-all'].includes(i.slug)), itemOf('shop', 'buy-gear')],
-  },
+const PREP_CALLS: MenuSection = {
+  slug: 'calls',
+  icon: 'video',
+  label: L('Prep calls', 'Simu za maandalizi', 'Appels de préparation', 'Chiamate di preparazione', 'Vorbereitungsgespräche', 'Rozmowy przygotowawcze', '行前咨询'),
+  tagline: L(
+    'Talk to a local guide before you book',
+    'Ongea na mwongozaji wa ndani kabla ya kulipia',
+    'Parlez à un guide local avant de réserver',
+    'Parla con una guida locale prima di prenotare',
+    'Sprechen Sie vor der Buchung mit einem lokalen Guide',
+    'Porozmawiaj z lokalnym przewodnikiem przed rezerwacją',
+    '预订前先和当地导游聊一聊',
+  ),
+  items: [bySlug('trips').items.find((i) => i.slug === 'calls')!],
 };
 
 /** Trips are what the "Experiences" section holds; the menu calls them trips. */
@@ -519,14 +476,13 @@ const TRIPS: MenuSection = {
 /** The main menu: the selling points are visible at the top; the rest sits one step deeper. */
 export const MENU: MenuSection[] = [
   bySlug('trips'),
-  SHORTCUTS.calls,
+  PREP_CALLS,
   TRIPS,
   bySlug('stay'),
   bySlug('transport'),
-  SHORTCUTS.gear,
-  SHORTCUTS.curio,
-  SHORTCUTS.visa,
-  SHORTCUTS.more,
+  bySlug('shop'),
+  bySlug('local'),
+  bySlug('discover'),
   PARTNERS,
 ];
 

@@ -84,10 +84,6 @@ export const SECTION_PHOTOS: Record<string, PhotoKey> = {
   local: 'darStreet',
   discover: 'flamingos',
   calls: 'saddleHikers',
-  gear: 'kiliCamp',
-  curio: 'basketMarket',
-  visa: 'darAerial',
-  more: 'darStreet',
   plan: 'mountMeru',
 };
 
