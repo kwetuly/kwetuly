@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
 import { inviteCodeInput, inviteRequired, isInviteError } from '@/lib/invite';
 import { normalizePhone } from '@/lib/phone';
-import { RECOVERY_COOKIE } from '@/lib/recovery';
+import { RECOVERY_COOKIE, recoveryUserId } from '@/lib/recovery';
 import { safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
 
@@ -168,11 +168,12 @@ export async function updatePassword(formData: FormData) {
   if (password !== confirm) redirect(`${back}?error=match`);
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect(`/${locale}/forgot-password?error=link`);
-  // Only right after a reset link for this same account (cookie set by /auth/confirm).
+  // Only within 15 minutes of a reset link, in the session that link created: the verified token
+  // must show a recent "recovery"/"otp" sign-in AND the server-signed cookie from /auth/confirm must
+  // match this user and session. A session on its own (stolen or left open) cannot change the password.
   const cookieStore = await cookies();
-  if (cookieStore.get(RECOVERY_COOKIE)?.value !== user.id) {
+  const userId = await recoveryUserId(supabase, cookieStore.get(RECOVERY_COOKIE)?.value);
+  if (!userId) {
     cookieStore.delete(RECOVERY_COOKIE);
     redirect(`/${locale}/forgot-password?error=link`);
   }

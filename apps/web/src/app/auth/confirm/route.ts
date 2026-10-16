@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
-import { RECOVERY_COOKIE, recoveryCookieOptions } from '@/lib/recovery';
+import { RECOVERY_COOKIE, recoveryCookieOptions, signRecoveryCookie, verifiedSessionId } from '@/lib/recovery';
 import { localeOfPath, safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     ? await supabase.auth.exchangeCodeForSession(code)
     : tokenHash && type
       ? await supabase.auth.verifyOtp({ type, token_hash: tokenHash })
-      : { data: { user: null }, error: new Error('Missing confirmation token') };
+      : { data: { user: null, session: null }, error: new Error('Missing confirmation token') };
 
   // Password reset links always end on the "Set a new password" page.
   const isRecovery = type === 'recovery' || next.startsWith(`/${locale}/reset-password`);
@@ -40,9 +40,15 @@ export async function GET(request: NextRequest) {
 
   // Only a reset link that just signed someone in may set a new password (checked in updatePassword).
   // Reset links arrive as ?type=recovery&token_hash=..., or (PKCE) as ?code= with the reset page as next.
+  // The cookie is signed on the server and bound to this user and this new session (see lib/recovery).
   const cookieStore = await cookies();
-  if (!error && isRecovery && data.user) {
-    cookieStore.set(RECOVERY_COOKIE, data.user.id, recoveryCookieOptions);
+  const sessionId =
+    !error && isRecovery && data.user && data.session
+      ? await verifiedSessionId(supabase, data.session.access_token)
+      : null;
+  const signed = sessionId && data.user ? signRecoveryCookie(data.user.id, sessionId) : null;
+  if (signed) {
+    cookieStore.set(RECOVERY_COOKIE, signed, recoveryCookieOptions);
   } else {
     cookieStore.delete(RECOVERY_COOKIE);
   }

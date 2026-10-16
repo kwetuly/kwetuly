@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { RECOVERY_COOKIE } from '@/lib/recovery';
+import { RECOVERY_COOKIE, recoveryUserId } from '@/lib/recovery';
 import { createClient } from '@/lib/supabase/server';
 import { updatePassword } from '../actions';
 
@@ -45,8 +45,8 @@ async function NewPassword({
   }
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const fromResetLink = Boolean(user) && (await cookies()).get(RECOVERY_COOKIE)?.value === user?.id;
+  // Same check as updatePassword (lib/recovery): a recent reset link, in this session.
+  const fromResetLink = Boolean(await recoveryUserId(supabase, (await cookies()).get(RECOVERY_COOKIE)?.value));
   if (!fromResetLink) {
     // Opened without a valid reset link (or it expired): offer a new one, never a dead end.
     return (
