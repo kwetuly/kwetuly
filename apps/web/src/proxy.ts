@@ -43,7 +43,7 @@ function groupTripMissing(request: NextRequest) {
   const match = /^\/([a-z]{2})\/group-trips\/([^/]+)\/?$/.exec(request.nextUrl.pathname);
   if (!match || !hasLocale(match[1]) || match[2] === 'new' || match[2] === 'mine') return undefined;
   const [, lang, id] = match;
-  const notFound = () => NextResponse.rewrite(new URL(`/${lang}/not-found`, request.url), { status: 404 });
+  const notFound = () => NextResponse.rewrite(new URL(`/${lang}/not-found`, request.url), { status: 404, request: { headers: request.headers } });
   return async (supabase: Parameters<NonNullable<Parameters<typeof updateSession>[2]>>[0]) => {
     if (!/^[0-9a-f-]{36}$/i.test(id)) return notFound();
     const { data, error } = await supabase.from('group_trips').select('id').eq('id', id).maybeSingle();

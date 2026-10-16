@@ -113,8 +113,9 @@ export async function signIn(_previous: SignInState, formData: FormData): Promis
   // Return to where the person was going (e.g. a group chat invite), but only within this site.
   const next = safeNext(locale, formData.get('next'));
   // Accounts with two-step sign-in still need their authenticator code.
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') redirect(`/${locale}/login/verify?next=${encodeURIComponent(next)}`);
+  // If the level can't be read, ask for the code anyway rather than skip it.
+  const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aalError || (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2')) redirect(`/${locale}/login/verify?next=${encodeURIComponent(next)}`);
   redirect(next);
 }
 
