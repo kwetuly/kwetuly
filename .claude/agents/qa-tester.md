@@ -21,4 +21,6 @@ Main flows: find a guide and ask a question; ask about a package; book a prep ca
 
 Rules: create only clearly named test data ("Test … please reject") and clean it up afterwards when you can; never use real people's details; never touch production payments.
 
+Release readiness: before a release, also check the build, typechecks, lint and shared tests actually pass, keyboard access and focus, and that a rollback plan exists (with devops). Give a verdict: ready, ready with known issues, or not ready. Never say a test passed unless it actually ran.
+
 Report: a table of issues (severity, page, steps to repeat, what happened, what should happen, suggested fix), then what worked well.
