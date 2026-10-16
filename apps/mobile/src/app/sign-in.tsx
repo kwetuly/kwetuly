@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { EVENTS, normalizePhone } from '@rafrika/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { getInviteOnly } from '@/lib/api-more';
 import { track } from '@/lib/analytics';
 import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
@@ -37,9 +38,12 @@ export default function SignInScreen() {
   const [providers, setProviders] = useState<SocialProvider[]>([]);
   const [factorId, setFactorId] = useState<string | null>(null);
   const [code, setCode] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [inviteOnly, setInviteOnly] = useState(false);
 
   useEffect(() => {
     enabledProviders().then(setProviders);
+    getInviteOnly().then(setInviteOnly, () => setInviteOnly(false));
   }, []);
   useEffect(() => {
     if (mode === 'join') track(EVENTS.signupStarted, { role, locale });
@@ -122,6 +126,9 @@ export default function SignInScreen() {
         if (factor) return setFactorId(factor.id);
       }
       track(EVENTS.signinCompleted, {});
+      // Accounts that have not finished sign-up (e.g. no valid invite code yet) go to the welcome step.
+      const { data: profile } = await supabase.from('profiles').select('onboarded_at').single();
+      if (profile && !profile.onboarded_at) return router.replace('/welcome');
       done();
       return;
     }
@@ -129,12 +136,16 @@ export default function SignInScreen() {
     const normalized = normalizePhone(phone);
     if (!normalized) return setMessage({ tone: 'error', text: t.auth.phoneError });
     if (!fullName.trim() || password.length < 8) return setMessage({ tone: 'error', text: t.auth.error });
+    // Invite-only: the database checks the code when the account is created. A wrong code leaves the
+    // account unfinished, and the welcome step asks for a valid one.
+    const invite = inviteCode.trim().slice(0, 200);
+    if (inviteOnly && !invite) return setMessage({ tone: 'error', text: t.auth.inviteError });
     setBusy(true);
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
-        data: { full_name: fullName.trim(), role, phone: normalized, preferred_language: locale },
+        data: { full_name: fullName.trim(), role, phone: normalized, preferred_language: locale, ...(invite ? { invite_code: invite } : {}) },
         // The confirmation link opens the website, which confirms the account.
         emailRedirectTo: `${SITE_URL}/auth/confirm?next=/${locale}/dashboard`,
       },
@@ -181,6 +192,23 @@ export default function SignInScreen() {
               <TextInput value={fullName} onChangeText={setFullName} placeholder={t.auth.fullName} placeholderTextColor={colors.secondaryLabel} autoComplete="name" textContentType="name" style={input} />
               <TextInput value={phone} onChangeText={setPhone} placeholder={t.auth.phone} placeholderTextColor={colors.secondaryLabel} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" style={input} />
               <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.auth.phoneHint}</Text>
+              {inviteOnly && (
+                <>
+                  <TextInput
+                    value={inviteCode}
+                    onChangeText={setInviteCode}
+                    placeholder={t.auth.inviteCode}
+                    placeholderTextColor={colors.secondaryLabel}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    maxLength={200}
+                    accessibilityLabel={t.auth.inviteCode}
+                    style={input}
+                  />
+                  <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.auth.inviteHint}</Text>
+                </>
+              )}
             </>
           )}
           <TextInput value={email} onChangeText={setEmail} placeholder={t.auth.email} placeholderTextColor={colors.secondaryLabel} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={input} />

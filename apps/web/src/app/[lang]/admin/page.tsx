@@ -117,6 +117,7 @@ export default async function AdminPage() {
         <Link href={`/${locale}/admin/listings`} className="btn-outline px-4 py-2 text-sm">Business listings</Link>
         <Link href={`/${locale}/admin/shop`} className="btn-outline px-4 py-2 text-sm">Merchandise</Link>
         <Link href={`/${locale}/admin/places`} className="btn-outline px-4 py-2 text-sm">Places</Link>
+        <Link href={`/${locale}/admin/invites`} className="btn-outline px-4 py-2 text-sm">Invite codes</Link>
         <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Tours &amp; operators</Link>
       </div>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>

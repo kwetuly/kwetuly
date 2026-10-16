@@ -52,7 +52,7 @@ async function WelcomeForm({
     <form action={completeOnboarding} className="card mt-8 space-y-5">
       {params.error && params.error !== 'invite' && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
-      {inviteRequired() && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
+      {(await inviteRequired()) && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
       <fieldset>
         <legend className="label">{t.auth.welcomeRole}</legend>
         <div className="grid gap-3 sm:grid-cols-3">

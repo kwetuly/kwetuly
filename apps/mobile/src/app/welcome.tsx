@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Chip, Field, FormMessage, Muted } from '@/components/ui';
-import { completeOnboarding } from '@/lib/api-more';
+import { completeOnboarding, getInviteOnly } from '@/lib/api-more';
 import { useProfile } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { colors, space } from '@/theme';
@@ -18,6 +18,8 @@ export default function WelcomeScreen() {
   const [role, setRole] = useState<(typeof ROLES)[number]>('traveler');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const inviteOnly = useQuery({ queryKey: ['invite-only'], queryFn: getInviteOnly });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
@@ -29,11 +31,12 @@ export default function WelcomeScreen() {
     setBusy(true);
     setMessage(null);
     try {
-      await completeOnboarding(role, phone, name);
+      await completeOnboarding(role, phone, name, inviteCode);
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
       router.replace(role === 'guide' ? '/profile-edit' : '/');
     } catch (e) {
-      setMessage({ tone: 'error', text: e instanceof Error && e.message === 'phone' ? t.auth.phoneError : t.auth.error });
+      const reason = e instanceof Error ? e.message : '';
+      setMessage({ tone: 'error', text: reason === 'phone' ? t.auth.phoneError : reason === 'invite' ? t.auth.inviteError : t.auth.error });
     } finally {
       setBusy(false);
     }
@@ -51,6 +54,7 @@ export default function WelcomeScreen() {
           ))}
         </View>
         <Muted>{t.join[role].body}</Muted>
+        {inviteOnly.data && <Field label={t.auth.inviteCode} value={inviteCode} onChangeText={setInviteCode} autoCapitalize="none" hint={t.auth.inviteHint} />}
         <Field label={t.auth.fullName} value={name} onChangeText={setName} />
         <Field label={t.auth.phone} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+255 712 345 678" hint={t.auth.phoneHint} />
         <FormMessage message={message} />

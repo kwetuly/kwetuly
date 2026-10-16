@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
-import { inviteCodeAccepted } from '@/lib/invite';
+import { inviteCodeInput, inviteRequired, isInviteError } from '@/lib/invite';
 import { normalizePhone } from '@/lib/phone';
 import { safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
@@ -25,8 +25,11 @@ export async function signUp(formData: FormData) {
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
 
-  // Invite-only soft launch: a valid code is needed while SIGNUP_INVITE_CODES is set.
-  if (!inviteCodeAccepted(formData.get('invite_code'))) redirect(`/${locale}/join?role=${role}&error=invite`);
+  // Invite-only soft launch: the database redeems the code when the account is created
+  // (handle_new_user). A wrong code still creates the account, but it stays unfinished and the
+  // welcome step asks for a valid code before the person can use Rafrika.
+  const inviteCode = inviteCodeInput(formData.get('invite_code'));
+  if (!inviteCode && (await inviteRequired())) redirect(`/${locale}/join?role=${role}&error=invite`);
   if (!phone) redirect(`/${locale}/join?role=${role}&error=phone`);
   if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?role=${role}&error=1`);
 
@@ -35,7 +38,7 @@ export async function signUp(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName, role, phone, preferred_language: locale },
+      data: { full_name: fullName, role, phone, preferred_language: locale, ...(inviteCode ? { invite_code: inviteCode } : {}) },
       emailRedirectTo: `${SITE_URL}/auth/confirm?next=/${locale}/dashboard`,
     },
   });
@@ -70,9 +73,9 @@ export async function completeOnboarding(formData: FormData) {
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
-  // New social accounts land here before they can use Rafrika (requireUser sends them back until
-  // onboarding is done), so the invite code is checked here too. Existing accounts never see this step.
-  if (!inviteCodeAccepted(formData.get('invite_code'))) redirect(`/${locale}/welcome?role=${role}&error=invite`);
+  // New accounts land here before they can use Rafrika (requireUser sends them back until onboarding
+  // is done). complete_onboarding checks the invite code in the database while the gate is on.
+  const inviteCode = inviteCodeInput(formData.get('invite_code'));
   if (!phone) redirect(`/${locale}/welcome?role=${role}&error=phone`);
 
   const supabase = await createClient();
@@ -80,7 +83,9 @@ export async function completeOnboarding(formData: FormData) {
     p_role: role,
     p_phone: phone,
     p_full_name: String(formData.get('full_name') ?? '').trim().slice(0, 120),
+    p_invite_code: inviteCode || null,
   });
+  if (isInviteError(error)) redirect(`/${locale}/welcome?role=${role}&error=invite`);
   if (error) redirect(`/${locale}/welcome?role=${role}&error=1`);
 
   // New guides go straight to their profile editor.

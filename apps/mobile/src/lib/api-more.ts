@@ -130,11 +130,21 @@ export async function registerInterest(input: { section: string; item: string; k
 // ---------------------------------------------------------------------------
 // Social sign-up: finish the account (type and phone)
 // ---------------------------------------------------------------------------
-export async function completeOnboarding(role: string, phone: string, fullName: string) {
+// While Rafrika is invite-only, the database refuses to finish an account without a valid invite
+// code (error 'invite'). Accounts that already used a code at sign-up are not asked again.
+export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '') {
   const normalized = normalizePhone(phone);
   if (!normalized) throw new Error('phone');
-  const { error } = await supabase.rpc('complete_onboarding', { p_role: role, p_phone: normalized, p_full_name: fullName });
+  const code = inviteCode.trim().slice(0, 200);
+  const { error } = await supabase.rpc('complete_onboarding', { p_role: role, p_phone: normalized, p_full_name: fullName, p_invite_code: code || null });
+  if (error?.message.includes('invite_code_invalid')) throw new Error('invite');
   check(error);
+}
+
+/** True while sign-up needs an invite code (site setting 'invite_only'). */
+export async function getInviteOnly(): Promise<boolean> {
+  const { data } = await supabase.from('site_settings').select('value').eq('key', 'invite_only').maybeSingle<{ value: { enabled?: boolean } }>();
+  return data?.value?.enabled === true;
 }
 
 // ---------------------------------------------------------------------------

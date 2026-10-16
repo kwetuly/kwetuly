@@ -1,7 +1,7 @@
 import type { Dictionary } from '@/i18n/dictionaries';
 
-// Invite code input for the invite-only soft launch. Shown only while SIGNUP_INVITE_CODES is set;
-// the code itself is checked on the server (lib/invite.ts).
+// Invite code input for the invite-only soft launch. Shown only while the invite_only site setting is on;
+// the code itself is checked by the database (handle_new_user and complete_onboarding).
 export function InviteCodeField({ t, invalid }: { t: Dictionary; invalid: boolean }) {
   return (
     <div>
