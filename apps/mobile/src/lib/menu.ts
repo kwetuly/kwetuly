@@ -41,6 +41,11 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
     default:
       // A whole section (e.g. "/transport"): its own screen with all its links.
       if (/^\/[a-z-]+$/.test(path) && ALL_SECTIONS.some((s) => `/${s.slug}` === path)) return { pathname: '/section/[slug]', params: { slug: path.slice(1) } };
+      // An item of another section (e.g. "/shop/art" from the menu's Curio shop shortcut).
+      {
+        const match = /^\/([a-z-]+)\/([a-z0-9-]+)$/.exec(path);
+        if (match && ALL_SECTIONS.some((s) => s.slug === match[1])) return { pathname: '/soon/[section]/[item]', params: { section: match[1], item: match[2] } };
+      }
       return { pathname: '/soon/[section]/[item]', params: { section: section.slug, item: item.slug } };
   }
 }

@@ -111,6 +111,12 @@ export const business_en = {
   askBody: 'Your message goes to the business through Rafrika. Contact details are shared once you agree.',
   sent: 'Sent. The business will reply to the contact you gave.',
   commissionNote: 'Rafrika and guides may earn a commission when you buy here.',
+  orderTitle: 'Order from {name}',
+  orderBody: 'Tell the shop what you want. They confirm the price and how to pay before anything is sent. You pay the shop directly.',
+  orderDeliver: 'Deliver to my hotel',
+  orderCollect: 'Hold it, I’ll collect it',
+  orderWhere: 'Hotel or address, and dates you are there',
+  orderWhat: 'What would you like? (item, size, how many)',
 };
 
 export type BusinessText = typeof business_en;
@@ -129,6 +135,12 @@ export const business_sw: BusinessText = {
   askBody: 'Ujumbe wako unafika kwa biashara kupitia Rafrika. Mawasiliano hushirikiwa mkikubaliana.',
   sent: 'Imetumwa. Biashara itakujibu kupitia mawasiliano uliyotoa.',
   commissionNote: 'Rafrika na waongozaji wanaweza kupata kamisheni ukinunua hapa.',
+  orderTitle: 'Agiza kutoka {name}',
+  orderBody: 'Iambie duka unachotaka. Watathibitisha bei na namna ya kulipa kabla ya kutuma chochote. Unalipa duka moja kwa moja.',
+  orderDeliver: 'Niletee hotelini',
+  orderCollect: 'Niwekee, nitakuja kuchukua',
+  orderWhere: 'Hoteli au anwani, na tarehe utakazokuwepo',
+  orderWhat: 'Unataka nini? (bidhaa, saizi, idadi)',
 };
 
 export const business_fr: BusinessText = {
@@ -145,6 +157,12 @@ export const business_fr: BusinessText = {
   askBody: 'Votre message est transmis à l’établissement via Rafrika. Les coordonnées sont partagées une fois que vous êtes d’accord.',
   sent: 'Envoyé. L’établissement répondra au contact que vous avez donné.',
   commissionNote: 'Rafrika et les guides peuvent toucher une commission sur vos achats ici.',
+  orderTitle: 'Commander chez {name}',
+  orderBody: 'Dites à la boutique ce que vous voulez. Elle confirme le prix et le mode de paiement avant tout envoi. Vous payez la boutique directement.',
+  orderDeliver: 'Livrer à mon hôtel',
+  orderCollect: 'Le mettre de côté, je passe le chercher',
+  orderWhere: 'Hôtel ou adresse, et dates de séjour',
+  orderWhat: 'Que souhaitez-vous ? (article, taille, quantité)',
 };
 
 export const business_it: BusinessText = {
@@ -161,6 +179,12 @@ export const business_it: BusinessText = {
   askBody: 'Il tuo messaggio arriva all’attività tramite Rafrika. I contatti vengono condivisi quando vi accordate.',
   sent: 'Inviato. L’attività risponderà al contatto che hai indicato.',
   commissionNote: 'Rafrika e le guide possono ricevere una commissione sui tuoi acquisti qui.',
+  orderTitle: 'Ordina da {name}',
+  orderBody: 'Di’ al negozio cosa desideri. Conferma il prezzo e come pagare prima di spedire qualsiasi cosa. Paghi direttamente il negozio.',
+  orderDeliver: 'Consegna al mio hotel',
+  orderCollect: 'Tienilo da parte, passo a ritirarlo',
+  orderWhere: 'Hotel o indirizzo, e date di permanenza',
+  orderWhat: 'Cosa desideri? (articolo, taglia, quantità)',
 };
 
 export const business_de: BusinessText = {
@@ -177,6 +201,12 @@ export const business_de: BusinessText = {
   askBody: 'Ihre Nachricht erreicht das Unternehmen über Rafrika. Kontaktdaten werden geteilt, sobald Sie sich einig sind.',
   sent: 'Gesendet. Das Unternehmen antwortet an den angegebenen Kontakt.',
   commissionNote: 'Rafrika und Guides können eine Provision erhalten, wenn Sie hier kaufen.',
+  orderTitle: 'Bei {name} bestellen',
+  orderBody: 'Sagen Sie dem Laden, was Sie möchten. Er bestätigt Preis und Zahlungsweise, bevor etwas verschickt wird. Sie bezahlen den Laden direkt.',
+  orderDeliver: 'An mein Hotel liefern',
+  orderCollect: 'Zurücklegen, ich hole es ab',
+  orderWhere: 'Hotel oder Adresse und Ihre Aufenthaltsdaten',
+  orderWhat: 'Was möchten Sie? (Artikel, Größe, Anzahl)',
 };
 
 export const business_pl: BusinessText = {
@@ -193,6 +223,12 @@ export const business_pl: BusinessText = {
   askBody: 'Twoja wiadomość trafia do firmy przez Rafrika. Dane kontaktowe są udostępniane po porozumieniu.',
   sent: 'Wysłano. Firma odpowie na podany kontakt.',
   commissionNote: 'Rafrika i przewodnicy mogą otrzymać prowizję od Twoich zakupów tutaj.',
+  orderTitle: 'Zamów w {name}',
+  orderBody: 'Napisz sklepowi, czego chcesz. Sklep potwierdzi cenę i sposób płatności, zanim cokolwiek wyśle. Płacisz bezpośrednio sklepowi.',
+  orderDeliver: 'Dostawa do mojego hotelu',
+  orderCollect: 'Odłóżcie, odbiorę osobiście',
+  orderWhere: 'Hotel lub adres oraz daty pobytu',
+  orderWhat: 'Co chcesz zamówić? (produkt, rozmiar, ilość)',
 };
 
 export const business_zh: BusinessText = {
@@ -209,4 +245,10 @@ export const business_zh: BusinessText = {
   askBody: '你的消息会通过 Rafrika 发送给商家。双方达成一致后再交换联系方式。',
   sent: '已发送。商家会通过你留下的联系方式回复。',
   commissionNote: '你在这里消费时，Rafrika 和向导可能获得佣金。',
+  orderTitle: '向 {name} 下单',
+  orderBody: '告诉店家你想要什么。店家会在发货前确认价格和付款方式。你直接向店家付款。',
+  orderDeliver: '送到我的酒店',
+  orderCollect: '帮我留着，我到店自取',
+  orderWhere: '酒店或地址，以及你在当地的日期',
+  orderWhat: '你想要什么？（商品、尺寸、数量）',
 };

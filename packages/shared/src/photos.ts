@@ -83,6 +83,12 @@ export const SECTION_PHOTOS: Record<string, PhotoKey> = {
   shop: 'basketMarket',
   local: 'darStreet',
   discover: 'flamingos',
+  calls: 'saddleHikers',
+  gear: 'kiliCamp',
+  curio: 'basketMarket',
+  visa: 'darAerial',
+  more: 'darStreet',
+  plan: 'mountMeru',
 };
 
 // Cover photo for each trip; falls back to the first category.

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ExternalLink, MapPin } from 'lucide-react';
-import { BUSINESS_TYPES } from '@rafrika/shared';
+import { BUSINESS_TYPES, ORDER_TYPES } from '@rafrika/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -33,6 +33,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
   const [business, status, now] = await Promise.all([getBusiness(id), searchParams, today()]);
   if (!business) notFound();
   const bt = t.business;
+  const isShop = ORDER_TYPES.includes(business.business_type);
   const photos = [business.photo_url, ...business.photos].filter((p): p is string => !!p).slice(0, 7);
 
   return (
@@ -63,8 +64,8 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
       </div>
 
       <aside id="ask" className="card h-fit scroll-mt-28">
-        <h2 className="text-lg font-semibold">{bt.askTitle.replace('{name}', business.business_name)}</h2>
-        <p className="mt-1 text-sm text-muted">{bt.askBody}</p>
+        <h2 className="text-lg font-semibold">{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', business.business_name)}</h2>
+        <p className="mt-1 text-sm text-muted">{isShop ? bt.orderBody : bt.askBody}</p>
         {status.sent ? (
           <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{bt.sent}</p>
         ) : (
@@ -80,8 +81,24 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
               <span className="label">{t.profile.contact}</span>
               <input className="field" name="contact" required maxLength={160} />
             </label>
+            {isShop && (
+              <>
+                <fieldset className="space-y-2">
+                  {(['deliver', 'collect'] as const).map((mode) => (
+                    <label key={mode} className="flex items-center gap-2 text-sm">
+                      <input type="radio" name="order_mode" value={mode} defaultChecked={mode === 'deliver'} className="size-4 accent-forest" />
+                      {mode === 'deliver' ? bt.orderDeliver : bt.orderCollect}
+                    </label>
+                  ))}
+                </fieldset>
+                <label className="block">
+                  <span className="label">{bt.orderWhere}</span>
+                  <input className="field" name="order_where" maxLength={300} />
+                </label>
+              </>
+            )}
             <label className="block">
-              <span className="label">{t.profile.message}</span>
+              <span className="label">{isShop ? bt.orderWhat : t.profile.message}</span>
               <textarea className="field min-h-28" name="message" required maxLength={2000} />
             </label>
             <button className="btn w-full" data-track="business_send_enquiry">{t.profile.send}</button>

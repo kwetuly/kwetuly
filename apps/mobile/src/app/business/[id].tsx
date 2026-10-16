@@ -4,9 +4,9 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { BUSINESS_TYPES } from '@rafrika/shared';
+import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@rafrika/shared';
 import { BusinessBadge } from '@/components/business-card';
-import { Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
@@ -23,19 +23,23 @@ export default function BusinessScreen() {
   const [name, setName] = useState(profile.data?.full_name ?? '');
   const [contact, setContact] = useState(profile.data?.phone ?? session?.user.email ?? '');
   const [text, setText] = useState('');
+  const [mode, setMode] = useState<OrderMode>('deliver');
+  const [where, setWhere] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const b = business.data;
   if (!b) return <ScreenState loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;
+  const isShop = ORDER_TYPES.includes(b.business_type);
   const photos = [b.photo_url, ...b.photos].filter((p): p is string => !!p).slice(0, 7);
 
   async function send() {
     if (!name.trim() || !contact.trim() || !text.trim()) return setMessage({ tone: 'error', text: t.auth.error });
     setBusy(true);
     try {
-      await askBusiness({ providerId: b!.id, userId: session?.user.id, name, contact, message: text });
+      await askBusiness({ providerId: b!.id, userId: session?.user.id, name, contact, message: isShop ? orderMessage(mode, where.trim(), text.trim()) : text });
       setText('');
+      setWhere('');
       setMessage({ tone: 'ok', text: bt.sent });
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
@@ -65,11 +69,20 @@ export default function BusinessScreen() {
       {b.website && <Button title={bt.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(b.website!)} />}
 
       <Card>
-        <SectionTitle>{bt.askTitle.replace('{name}', b.business_name)}</SectionTitle>
-        <Muted>{bt.askBody}</Muted>
+        <SectionTitle>{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', b.business_name)}</SectionTitle>
+        <Muted>{isShop ? bt.orderBody : bt.askBody}</Muted>
         <Field label={t.profile.name} value={name} onChangeText={setName} />
         <Field label={t.profile.contact} value={contact} onChangeText={setContact} autoCapitalize="none" />
-        <Field label={t.profile.message} value={text} onChangeText={setText} multiline />
+        {isShop && (
+          <>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+              <Chip label={bt.orderDeliver} active={mode === 'deliver'} onPress={() => setMode('deliver')} />
+              <Chip label={bt.orderCollect} active={mode === 'collect'} onPress={() => setMode('collect')} />
+            </View>
+            <Field label={bt.orderWhere} value={where} onChangeText={setWhere} />
+          </>
+        )}
+        <Field label={isShop ? bt.orderWhat : t.profile.message} value={text} onChangeText={setText} multiline />
         <FormMessage message={message} />
         <Button title={t.profile.send} onPress={send} loading={busy} />
       </Card>

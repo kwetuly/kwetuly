@@ -18,7 +18,18 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
   return (
     <>
       <ul className="hidden items-center gap-0.5 whitespace-nowrap xl:flex">
-        {MENU.map((section) => (
+        {MENU.map((section) =>
+          section.items.length === 1 ? (
+            <li key={section.slug}>
+              <Link
+                href={itemHref(locale, section, section.items[0])}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal"
+              >
+                <Icon name={section.icon} className="size-4 text-leaf-dark" />
+                {section.label[locale]}
+              </Link>
+            </li>
+          ) : (
           <li key={section.slug} className="group relative">
             <button
               type="button"
@@ -61,7 +72,8 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
               </div>
             </div>
           </li>
-        ))}
+          ),
+        )}
       </ul>
 
       <button
@@ -91,6 +103,21 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
           <nav className="flex-1 overflow-y-auto px-4 pb-10">
             {MENU.map((section) => {
               const isOpen = expanded === section.slug;
+              if (section.items.length === 1)
+                return (
+                  <div key={section.slug} className="border-b border-white/10">
+                    <Link
+                      href={itemHref(locale, section, section.items[0])}
+                      onClick={() => setOpen(false)}
+                      className="flex w-full items-center gap-3 py-4 text-lg font-semibold"
+                    >
+                      <span className="flex size-9 items-center justify-center rounded-[5px] bg-leaf text-white">
+                        <Icon name={section.icon} className="size-5" />
+                      </span>
+                      {section.label[locale]}
+                    </Link>
+                  </div>
+                );
               return (
                 <div key={section.slug} className="border-b border-white/10">
                   <button

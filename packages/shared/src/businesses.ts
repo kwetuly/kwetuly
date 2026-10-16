@@ -85,3 +85,13 @@ export function commissionSplit(amount: number, agreement: { rafrika_pct: number
   const round = (n: number) => Math.round(n);
   return { rafrika: round((amount * Number(agreement.rafrika_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
 }
+
+/** Shops where travellers can order for delivery to their hotel, or reserve and collect. */
+export const ORDER_TYPES: readonly string[] = ['curio_shop', 'gem_shop', 'gear_rental'];
+export type OrderMode = 'deliver' | 'collect';
+
+/** The order request as the shop owner reads it (owners work in English or Kiswahili). */
+export function orderMessage(mode: OrderMode, where: string, what: string): string {
+  const how = mode === 'deliver' ? `Order: deliver to ${where || '(not given)'}` : `Order: hold for collection${where ? ` (${where})` : ''}`;
+  return [how, '', what].join('\n');
+}

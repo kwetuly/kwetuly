@@ -441,9 +441,94 @@ const PLAN: MenuSection = {
 export const ALL_SECTIONS: MenuSection[] = [...SECTIONS, PLAN, PARTNERS];
 
 const bySlug = (slug: string) => ALL_SECTIONS.find((s) => s.slug === slug)!;
+const itemOf = (section: string, item: string): MenuItem => {
+  const found = bySlug(section).items.find((i) => i.slug === item)!;
+  return { ...found, href: found.href ?? `/${section}/${item}`, status: 'live' };
+};
 
-/** The main menu: five clear choices. Everything else sits one step deeper, on the section pages. */
-export const MENU: MenuSection[] = [bySlug('trips'), bySlug('safaris'), bySlug('stay'), PLAN, PARTNERS];
+// Shortcuts for the main menu: the selling points travellers should see without opening anything.
+// A section with one item shows as a plain link in the menu.
+const SHORTCUTS: Record<string, MenuSection> = {
+  calls: {
+    slug: 'calls',
+    icon: 'video',
+    label: L('1-on-1 calls', 'Simu na mwongozaji', 'Appels 1-à-1', 'Chiamate 1:1', '1:1-Gespräche', 'Rozmowy 1:1', '一对一通话'),
+    tagline: L(
+      'Talk to a local guide before you book',
+      'Ongea na mwongozaji wa ndani kabla ya kulipia',
+      'Parlez à un guide local avant de réserver',
+      'Parla con una guida locale prima di prenotare',
+      'Sprechen Sie vor der Buchung mit einem lokalen Guide',
+      'Porozmawiaj z lokalnym przewodnikiem przed rezerwacją',
+      '预订前先和当地导游聊一聊',
+    ),
+    items: [itemOf('trips', 'calls')],
+  },
+  gear: {
+    slug: 'gear',
+    icon: 'repeat',
+    label: L('Gear rental', 'Kukodi vifaa', 'Location de matériel', 'Noleggio attrezzatura', 'Ausrüstungsverleih', 'Wypożyczalnia sprzętu', '装备租赁'),
+    tagline: bySlug('shop').items.find((i) => i.slug === 'rent-gear')!.blurb,
+    items: [itemOf('shop', 'rent-gear')],
+  },
+  curio: {
+    slug: 'curio',
+    icon: 'palette',
+    label: L('Curio shop', 'Duka la sanaa', 'Artisanat', 'Artigianato', 'Kunsthandwerk', 'Rękodzieło', '手工艺品'),
+    tagline: L(
+      'Order to your hotel, or reserve and collect in the shop',
+      'Agiza ufikishiwe hotelini, au weka oda uchukue dukani',
+      'Commandez avec livraison à votre hôtel, ou réservez et passez en boutique',
+      'Ordina con consegna in hotel, o prenota e ritira in negozio',
+      'Ins Hotel liefern lassen oder reservieren und im Laden abholen',
+      'Zamów z dostawą do hotelu albo zarezerwuj i odbierz w sklepie',
+      '下单送到酒店，或预订后到店自取',
+    ),
+    items: [itemOf('shop', 'art'), itemOf('shop', 'tanzanite')],
+  },
+  visa: {
+    slug: 'visa',
+    icon: 'badge-check',
+    label: L('Visa & insurance', 'Viza na bima', 'Visa & assurance', 'Visto e assicurazione', 'Visum & Versicherung', 'Wiza i ubezpieczenie', '签证与保险'),
+    tagline: bySlug('plan').items.find((i) => i.slug === 'visa-insurance')!.blurb,
+    items: [itemOf('plan', 'visa-insurance')],
+  },
+  more: {
+    slug: 'more',
+    icon: 'sparkles',
+    label: L('More', 'Zaidi', 'Plus', 'Altro', 'Mehr', 'Więcej', '更多'),
+    tagline: L(
+      'Local life, stories and packing lists',
+      'Maisha ya mtaani, hadithi na orodha za vifaa',
+      'Vie locale, récits et listes d’équipement',
+      'Vita locale, storie e liste di cosa portare',
+      'Lokales Leben, Geschichten und Packlisten',
+      'Lokalne życie, historie i listy rzeczy',
+      '当地生活、故事与行李清单',
+    ),
+    items: [...bySlug('plan').items.filter((i) => ['local-all', 'discover-all'].includes(i.slug)), itemOf('shop', 'buy-gear')],
+  },
+};
+
+/** Trips are what the "Experiences" section holds; the menu calls them trips. */
+const TRIPS: MenuSection = {
+  ...bySlug('safaris'),
+  label: L('Trips', 'Safari', 'Voyages', 'Viaggi', 'Reisen', 'Wyprawy', '行程'),
+};
+
+/** The main menu: the selling points are visible at the top; the rest sits one step deeper. */
+export const MENU: MenuSection[] = [
+  bySlug('trips'),
+  SHORTCUTS.calls,
+  TRIPS,
+  bySlug('stay'),
+  bySlug('transport'),
+  SHORTCUTS.gear,
+  SHORTCUTS.curio,
+  SHORTCUTS.visa,
+  SHORTCUTS.more,
+  PARTNERS,
+];
 
 // The Guide Hub menu is only shown to verified guides (and admins).
 // Guides work in Kiswahili or English, so other languages reuse the English wording.
