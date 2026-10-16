@@ -1,0 +1,58 @@
+import type { GlyphName } from '@/components/glyph';
+
+// The shared menu names its icons the website way (lucide names). Here each one maps to the
+// matching native icon: SF Symbols on iOS, Material Symbols on Android.
+const ICONS: Record<string, GlyphName> = {
+  compass: { ios: 'safari', android: 'explore' },
+  users: { ios: 'person.2', android: 'group' },
+  venus: { ios: 'figure.stand.dress', android: 'woman' },
+  languages: { ios: 'character.bubble', android: 'translate' },
+  'heart-handshake': { ios: 'heart.circle', android: 'volunteer_activism' },
+  video: { ios: 'video', android: 'videocam' },
+  'users-round': { ios: 'person.3', android: 'groups' },
+  gavel: { ios: 'hammer', android: 'gavel' },
+  binoculars: { ios: 'binoculars', android: 'visibility' },
+  mountain: { ios: 'mountain.2', android: 'landscape' },
+  globe: { ios: 'globe.europe.africa', android: 'public' },
+  sun: { ios: 'sun.max', android: 'wb_sunny' },
+  route: { ios: 'point.topleft.down.to.point.bottomright.curvepath', android: 'route' },
+  sparkles: { ios: 'sparkles', android: 'auto_awesome' },
+  crown: { ios: 'crown', android: 'workspace_premium' },
+  map: { ios: 'map', android: 'map' },
+  'building-2': { ios: 'building.2', android: 'apartment' },
+  'bed-double': { ios: 'bed.double', android: 'hotel' },
+  house: { ios: 'house', android: 'home' },
+  backpack: { ios: 'backpack', android: 'backpack' },
+  'key-round': { ios: 'key', android: 'key' },
+  car: { ios: 'car', android: 'directions_car' },
+  'plane-landing': { ios: 'airplane.arrival', android: 'flight_land' },
+  key: { ios: 'car.side', android: 'car_rental' },
+  'shopping-bag': { ios: 'bag', android: 'shopping_bag' },
+  repeat: { ios: 'arrow.2.squarepath', android: 'autorenew' },
+  tent: { ios: 'tent', android: 'camping' },
+  palette: { ios: 'paintpalette', android: 'palette' },
+  gem: { ios: 'diamond', android: 'diamond' },
+  'flower-2': { ios: 'leaf', android: 'spa' },
+  scissors: { ios: 'scissors', android: 'content_cut' },
+  'utensils-crossed': { ios: 'fork.knife', android: 'restaurant' },
+  music: { ios: 'music.note', android: 'music_note' },
+  'book-open': { ios: 'book', android: 'menu_book' },
+  camera: { ios: 'camera', android: 'photo_camera' },
+  trophy: { ios: 'trophy', android: 'emoji_events' },
+  'trending-up': { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up' },
+  handshake: { ios: 'briefcase', android: 'handshake' },
+  plane: { ios: 'airplane', android: 'flight' },
+  'arrow-right-left': { ios: 'arrow.left.arrow.right', android: 'swap_horiz' },
+  'badge-check': { ios: 'checkmark.seal', android: 'verified' },
+  briefcase: { ios: 'briefcase', android: 'work' },
+  store: { ios: 'storefront', android: 'storefront' },
+  newspaper: { ios: 'newspaper', android: 'newspaper' },
+  'layout-dashboard': { ios: 'square.grid.2x2', android: 'dashboard' },
+  mail: { ios: 'envelope', android: 'mail' },
+  'messages-square': { ios: 'bubble.left.and.bubble.right', android: 'forum' },
+  'user-round': { ios: 'person.crop.circle', android: 'account_circle' },
+};
+
+const FALLBACK: GlyphName = { ios: 'circle.grid.2x2', android: 'apps' };
+
+export const menuIcon = (name: string): GlyphName => ICONS[name] ?? FALLBACK;

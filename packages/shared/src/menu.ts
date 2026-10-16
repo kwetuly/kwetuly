@@ -222,13 +222,13 @@ const SECTIONS: MenuSection[] = [
     icon: 'bed-double',
     label: L('Stays', 'Malazi', 'Hébergement', 'Alloggi', 'Unterkünfte', 'Noclegi', '住宿'),
     tagline: L(
-      'Places to sleep, checked by guides',
-      'Malazi yaliyokaguliwa na waongozaji',
-      'Des hébergements vérifiés par nos guides',
-      'Alloggi verificati dalle guide',
-      'Unterkünfte, von Guides geprüft',
-      'Noclegi sprawdzone przez przewodników',
-      '经导游核实的住宿',
+      'Places to sleep across Tanzania',
+      'Malazi kote Tanzania',
+      'Où dormir partout en Tanzanie',
+      'Dove dormire in tutta la Tanzania',
+      'Unterkünfte in ganz Tansania',
+      'Noclegi w całej Tanzanii',
+      '坦桑尼亚各地住宿',
     ),
     items: [
       {

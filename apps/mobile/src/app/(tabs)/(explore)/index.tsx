@@ -4,10 +4,12 @@ import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@rafrika/shared';
 import { GroupTripCard } from '@/components/cards';
+import { Glyph } from '@/components/glyph';
 import { Chip, SectionTitle } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
+import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -89,22 +91,28 @@ export default function ExploreScreen() {
         )}
       </View>
 
-      {/* Everything on Rafrika: the same sections as the website menu */}
+      {/* Everything on Rafrika: the same sections as the website menu, as icon tiles. */}
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.explore.title}</SectionTitle>
-        {MENU.map((section) => (
-          <View key={section.slug} style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, padding: space.lg, gap: space.sm }}>
-            <Text style={{ fontWeight: '800', fontSize: textSize.headline, color: colors.label }}>{section.label[locale]}</Text>
-            <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>{section.tagline[locale]}</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-              {section.items.map((item) => (
-                <Link key={item.slug} href={appHref(section, item)} asChild>
-                  <Chip label={item.status === 'live' ? item.label[locale] : `${item.label[locale]} · ${t.nav.soon}`} />
-                </Link>
-              ))}
-            </View>
-          </View>
-        ))}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+          {MENU.map((section) => (
+            <Link
+              key={section.slug}
+              href={section.items.length === 1 ? appHref(section, section.items[0]) : { pathname: '/section/[slug]', params: { slug: section.slug } }}
+              asChild
+            >
+              <Pressable accessibilityRole="link" style={{ width: '47%', flexGrow: 1 }}>
+                <View style={{ minHeight: 128, backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, padding: space.lg, gap: space.sm }}>
+                  <View style={{ width: 44, height: 44, borderRadius: radius.button, backgroundColor: brand.leaf, alignItems: 'center', justifyContent: 'center' }}>
+                    <Glyph name={menuIcon(section.icon)} size={22} color={brand.onDark} />
+                  </View>
+                  <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{section.label[locale]}</Text>
+                  <Text numberOfLines={2} style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{section.tagline[locale]}</Text>
+                </View>
+              </Pressable>
+            </Link>
+          ))}
+        </View>
       </View>
 
       {/* Why Rafrika */}
