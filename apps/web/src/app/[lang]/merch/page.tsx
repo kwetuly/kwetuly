@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShoppingBag } from 'lucide-react';
+import { MERCH_ENABLED } from '@rafrika/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -10,6 +12,7 @@ import { orderMerch } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
 
 export async function generateMetadata(): Promise<Metadata> {
+  if (!MERCH_ENABLED) return {};
   const t = await getDictionary();
   return pageMeta({ path: '/merch', title: t.extras.merchTitle, description: t.extras.merchSubtitle });
 }
@@ -18,6 +21,8 @@ const tzs = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
 
 // Rafrika t-shirts, caps and more. Products and prices are managed in /admin/shop.
 export default async function MerchPage(props: PageProps<'/[lang]/merch'>) {
+  // Hidden during the invite-only soft launch (MERCH_ENABLED in packages/shared/src/menu.ts).
+  if (!MERCH_ENABLED) notFound();
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const x = t.extras;
   return (

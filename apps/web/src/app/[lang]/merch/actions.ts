@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { orderMessage } from '@rafrika/shared';
+import { MERCH_ENABLED, orderMessage } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getMerchShopId } from '@/lib/merch';
 import { createClient } from '@/lib/supabase/server';
@@ -12,6 +12,8 @@ export async function orderMerch(formData: FormData) {
   const value = String(formData.get('locale') ?? '');
   const locale = hasLocale(value) ? value : defaultLocale;
   const text = (key: string, max: number) => String(formData.get(key) ?? '').trim().slice(0, max);
+  // The shop is off during the invite-only soft launch: refuse the order and send people home.
+  if (!MERCH_ENABLED) redirect(`/${locale}`);
   const back = `/${locale}/merch`;
   const product = text('product', 120);
   const size = text('size', 20);

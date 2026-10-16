@@ -4,10 +4,12 @@ import { locales } from '@/i18n/config';
 import { listGuides } from '@/lib/guides';
 import { listOperators, listPlaces, listTours } from '@/lib/trips';
 import { listGroupTrips } from '@/lib/groups';
-import { SITE_URL } from '@/lib/site';
+import { INDEXING_ON, SITE_URL } from '@/lib/site';
 
 // Every public page in every language: home, sections, menu pages, published trips and public guides.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Empty while Rafrika is invite-only (NEXT_PUBLIC_INDEXING not "on").
+  if (!INDEXING_ON) return [];
   const [guides, trips, groups, operators, places] = await Promise.all([listGuides({}), listTours(), listGroupTrips(), listOperators(), listPlaces()]);
 
   const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/operators', '/places', '/moments', '/join']);

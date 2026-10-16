@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
+import { inviteCodeAccepted } from '@/lib/invite';
 import { normalizePhone } from '@/lib/phone';
 import { safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
@@ -24,6 +25,8 @@ export async function signUp(formData: FormData) {
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
 
+  // Invite-only soft launch: a valid code is needed while SIGNUP_INVITE_CODES is set.
+  if (!inviteCodeAccepted(formData.get('invite_code'))) redirect(`/${locale}/join?role=${role}&error=invite`);
   if (!phone) redirect(`/${locale}/join?role=${role}&error=phone`);
   if (!email || password.length < 8 || !fullName) redirect(`/${locale}/join?role=${role}&error=1`);
 
@@ -67,6 +70,9 @@ export async function completeOnboarding(formData: FormData) {
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
+  // New social accounts land here before they can use Rafrika (requireUser sends them back until
+  // onboarding is done), so the invite code is checked here too. Existing accounts never see this step.
+  if (!inviteCodeAccepted(formData.get('invite_code'))) redirect(`/${locale}/welcome?role=${role}&error=invite`);
   if (!phone) redirect(`/${locale}/welcome?role=${role}&error=phone`);
 
   const supabase = await createClient();

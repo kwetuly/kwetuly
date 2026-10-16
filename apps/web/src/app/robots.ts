@@ -1,8 +1,10 @@
 import type { MetadataRoute } from 'next';
-import { SITE_URL } from '@/lib/site';
+import { INDEXING_ON, SITE_URL } from '@/lib/site';
 
 // Private areas (accounts, messages, admin, Guide Hub) are kept out of search results.
+// While Rafrika is invite-only (NEXT_PUBLIC_INDEXING not "on") the whole site is.
 export default function robots(): MetadataRoute.Robots {
+  if (!INDEXING_ON) return { rules: { userAgent: '*', disallow: '/' } };
   return {
     rules: {
       userAgent: '*',

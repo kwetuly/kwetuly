@@ -6,6 +6,13 @@ import { GUIDE_EXPERTISE } from './expertise';
 import { CALL_TOPICS } from './guides';
 import { L, type Label } from './locales';
 
+/**
+ * Rafrika merchandise shop: the menu item, the website's /merch page and order action, and the
+ * app's merch screen. Off during the invite-only soft launch; set to true to bring it all back.
+ * The admin page /admin/shop stays available either way.
+ */
+export const MERCH_ENABLED: boolean = false;
+
 export type MenuItem = {
   slug: string;
   icon: string; // icon name, mapped to an icon component in each app
@@ -304,11 +311,13 @@ const SECTIONS: MenuSection[] = [
       '手工艺品、宝石和装备：送到酒店或到店自取',
     ),
     items: [
-      {
-        slug: 'rafrika', icon: 'shopping-bag', href: '/merch', status: 'live',
-        label: L('Rafrika merchandise', 'Bidhaa za Rafrika', 'Boutique Rafrika', 'Merchandising Rafrika', 'Rafrika-Merchandise', 'Gadżety Rafrika', 'Rafrika 周边'),
-        blurb: L('T-shirts, caps and more', 'Fulana, kofia na zaidi', 'T-shirts, casquettes et plus', 'T-shirt, cappellini e altro', 'T-Shirts, Caps und mehr', 'Koszulki, czapki i więcej', 'T 恤、帽子等'),
-      },
+      ...(MERCH_ENABLED
+        ? [{
+          slug: 'rafrika', icon: 'shopping-bag', href: '/merch', status: 'live',
+          label: L('Rafrika merchandise', 'Bidhaa za Rafrika', 'Boutique Rafrika', 'Merchandising Rafrika', 'Rafrika-Merchandise', 'Gadżety Rafrika', 'Rafrika 周边'),
+          blurb: L('T-shirts, caps and more', 'Fulana, kofia na zaidi', 'T-shirts, casquettes et plus', 'T-shirt, cappellini e altro', 'T-Shirts, Caps und mehr', 'Koszulki, czapki i więcej', 'T 恤、帽子等'),
+        } satisfies MenuItem]
+        : []),
       {
         slug: 'art', icon: 'palette',
         label: L('Curio shops', 'Maduka ya sanaa na zawadi', 'Boutiques de souvenirs', 'Negozi di souvenir', 'Souvenirläden', 'Sklepy z pamiątkami', '工艺品店'),

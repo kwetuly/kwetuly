@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { LOCALE_TAGS, locales, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/dictionaries';
 import { PHOTOS, photoUrl } from '@/lib/photos';
+import { INDEXING_ON } from '@/lib/site';
 
 type PageMeta = { path: string; title: string; description?: string | null; image?: string | null; noindex?: boolean; type?: 'website' | 'article' | 'profile' };
 
@@ -32,6 +33,7 @@ export async function pageMeta({ path, title, description, image, noindex, type 
       images: [{ url: image ?? photoUrl(PHOTOS.safariSunset, 1200), width: 1200, height: 800 }],
     },
     twitter: { card: 'summary_large_image', title, description: desc },
-    robots: noindex ? { index: false } : undefined,
+    // Only set robots when needed: an undefined value would override the layout's invite-only noindex.
+    ...(!INDEXING_ON ? { robots: { index: false, follow: false } } : noindex ? { robots: { index: false } } : {}),
   };
 }

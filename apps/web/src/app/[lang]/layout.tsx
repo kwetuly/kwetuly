@@ -13,7 +13,7 @@ import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
 import { Icon } from '@/components/icon';
 import { Analytics } from '@/components/analytics';
-import { SITE_URL } from '@/lib/site';
+import { INDEXING_ON, SITE_URL } from '@/lib/site';
 import { PHOTOS, photoUrl } from '@/lib/photos';
 import { itemHref } from '@/lib/menu';
 
@@ -34,6 +34,8 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     openGraph: { siteName: 'Rafrika', type: 'website', images: [{ url: photoUrl(PHOTOS.safariSunset, 1200), width: 1200, height: 800 }] },
     twitter: { card: 'summary_large_image' },
+    // Invite-only soft launch: keep every page out of search results until NEXT_PUBLIC_INDEXING=on.
+    ...(INDEXING_ON ? {} : { robots: { index: false, follow: false } }),
   };
 }
 

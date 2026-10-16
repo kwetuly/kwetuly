@@ -4,6 +4,8 @@ import { Suspense } from 'react';
 import { Briefcase, Compass, Plane } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
+import { inviteRequired } from '@/lib/invite';
+import { InviteCodeField } from '@/components/invite-code-field';
 import { signUp } from '../actions';
 import { SocialSignIn } from '@/components/social-sign-in';
 import { EVENTS } from '@rafrika/shared';
@@ -61,8 +63,9 @@ async function JoinForm({
     <LogEvent event={EVENTS.signupStarted} props={{ role: selected, locale }} />
     <SocialSignIn locale={locale} t={t} role={selected} />
     <form action={signUp} className="space-y-5">
-      {params.error && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
+      {params.error && params.error !== 'invite' && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
+      {inviteRequired() && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
       <fieldset className="grid gap-3 sm:grid-cols-3">
         {roles.map(({ id, Icon }) => (
           <label key={id} className="cursor-pointer">
