@@ -64,6 +64,16 @@ export async function deleteAllSamples(formData: FormData) {
   if (formData.get('confirm') !== 'DELETE') redirect(`/${locale}/admin/listings?error=confirm`);
   const supabase = await createClient();
   await supabase.from('providers').delete().eq('is_sample', true);
+  // Sample guides take their packages with them; their sample group trips go first.
+  const { data: guides } = await supabase.from('guides').select('id').eq('is_sample', true);
+  const ids = (guides ?? []).map((g) => g.id as string);
+  if (ids.length) {
+    await supabase.from('group_trips').delete().in('guide_id', ids);
+    await supabase.from('guides').delete().in('id', ids);
+  }
+  revalidateTag('guides', 'max');
+  revalidateTag('packages', 'max');
+  revalidateTag('groups', 'max');
   revalidateTag('businesses', 'max');
   redirect(`/${locale}/admin/listings?deleted=1`);
 }

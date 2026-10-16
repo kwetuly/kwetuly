@@ -170,7 +170,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
         <form action={deleteAllSamples} className="card mt-10 flex flex-wrap items-end gap-3 border-red-200">
           <input type="hidden" name="locale" value={locale} />
           <label className="block">
-            <span className="label">Before launch: type DELETE to remove every sample listing</span>
+            <span className="label">Before launch: type DELETE to remove every sample listing, sample guide, package and group trip</span>
             <input name="confirm" className="field w-48" />
           </label>
           <button className="btn-outline border-red-800 px-4 py-2 text-sm text-red-800">Delete all samples</button>

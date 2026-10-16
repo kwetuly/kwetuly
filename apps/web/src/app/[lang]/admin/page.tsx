@@ -206,14 +206,17 @@ async function Inbox({ locale }: { locale: Locale }) {
   const user = await requireUser(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
+  // Enquiries to sample guides have no guide to read them, so they come here too.
+  const { data: sampleGuides } = await supabase.from('guides').select('id').eq('is_sample', true);
+  const sampleIds = (sampleGuides ?? []).map((g) => g.id as string);
   const [leads, signups] = await Promise.all([
     supabase
       .from('leads')
-      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en), providers(business_name, is_sample)')
-      .is('guide_id', null)
+      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en), providers(business_name, is_sample), guides(display_name)')
+      .or(sampleIds.length ? `guide_id.is.null,guide_id.in.(${sampleIds.join(',')})` : 'guide_id.is.null')
       .order('created_at', { ascending: false })
       .limit(30)
-      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null; providers: { business_name: string; is_sample: boolean } | null }[]>(),
+      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null; providers: { business_name: string; is_sample: boolean } | null; guides: { display_name: string } | null }[]>(),
     supabase
       .from('interest_signups')
       .select('id, section, item, kind, name, contact, business_name, message, locale, created_at')
@@ -229,7 +232,7 @@ async function Inbox({ locale }: { locale: Locale }) {
         <ul className="mt-4 space-y-3">
           {(leads.data ?? []).map((l) => (
             <li key={l.id} className="card p-4 text-sm">
-              <p className="font-semibold">{l.trips?.title_en ?? (l.providers ? `To ${l.providers.business_name}${l.providers.is_sample ? ' (sample listing)' : ''}` : 'General enquiry')}</p>
+              <p className="font-semibold">{l.trips?.title_en ?? (l.guides ? `To ${l.guides.display_name}` : l.providers ? `To ${l.providers.business_name}${l.providers.is_sample ? ' (sample listing)' : ''}` : 'General enquiry')}</p>
               <p>{l.traveler_name} · {l.traveler_contact}</p>
               {l.message && <p className="mt-1 whitespace-pre-line text-muted">{l.message}</p>}
               <p className="mt-1 text-xs text-muted">{when(l.created_at)}</p>
