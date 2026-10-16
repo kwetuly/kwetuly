@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { approxTzs, formatUsd, type Dictionary, type Locale } from '@rafrika/shared';
 import { BookingTicket } from '@/components/booking-ticket';
@@ -26,6 +26,7 @@ import {
 } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -37,6 +38,8 @@ export default function RequestScreen() {
   const request = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id), enabled: !!userId });
   const offers = useQuery({ queryKey: ['offers', id], queryFn: () => listOffers(id), enabled: !!userId });
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(`/request/${id}`)} />;
   if (!userId) return <SignInPrompt />;
   if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
   const req = request.data;

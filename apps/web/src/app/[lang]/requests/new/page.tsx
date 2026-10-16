@@ -5,7 +5,8 @@ import { Gavel } from 'lucide-react';
 import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getCurrentUser, welcomePath } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createRequest } from '../actions';
 
@@ -53,6 +54,8 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       </div>
     );
   }
+  // Unfinished accounts (no invite code yet) go to the welcome step first, then come back here.
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/requests/new${typeof params.specialty === 'string' ? `?specialty=${encodeURIComponent(params.specialty)}` : ''}`));
 
   const today = new Date().toISOString().slice(0, 10);
   const preset = typeof params.specialty === 'string' ? params.specialty : 'safari';

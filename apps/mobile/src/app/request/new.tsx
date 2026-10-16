@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { EVENTS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { SignInPrompt } from '@/components/sign-in-prompt';
@@ -9,6 +9,7 @@ import { createRequest, today } from '@/lib/api-requests';
 import { track } from '@/lib/analytics';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
@@ -41,6 +42,8 @@ export default function NewRequestScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/request/new')} />;
   if (!userId) return <SignInPrompt />;
 
   async function submit() {

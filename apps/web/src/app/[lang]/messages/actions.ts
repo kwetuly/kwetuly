@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 function localeFrom(formData: FormData) {
@@ -18,6 +19,7 @@ export async function startConversation(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `/${locale}/messages`);
 
   const { data: existing } = await supabase
     .from('conversations')
@@ -49,6 +51,7 @@ export async function sendMessage(formData: FormData): Promise<{ ok: false } | v
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, back);
 
   // The database hides contact details and alerts the other person.
   const { error } = await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, body });

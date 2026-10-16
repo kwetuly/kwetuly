@@ -7,7 +7,8 @@ import type { Locale } from '@/i18n/config';
 import { inviteRequired } from '@/lib/invite';
 import { InviteCodeField } from '@/components/invite-code-field';
 import { getCurrentUser } from '@/lib/auth';
-import { completeOnboarding } from '../actions';
+import { safeLocalPath } from '@/lib/safe-next';
+import { finishWelcome } from './actions';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.welcomeTitle, robots: { index: false } };
@@ -45,13 +46,17 @@ async function WelcomeForm({
 }) {
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
   if (!user) redirect(`/${locale}/login`);
-  if (user.onboarded) redirect(`/${locale}/dashboard`);
+  // Where the person was going before the welcome step (only pages on this site, in this language).
+  const wanted = safeLocalPath(params.next, '');
+  const next = wanted.startsWith(`/${locale}/`) && !wanted.startsWith(`/${locale}/welcome`) ? wanted : '';
+  if (user.onboarded) redirect(next || `/${locale}/dashboard`);
   const selected = roles.some((r) => r.id === params.role) ? (params.role as string) : 'traveler';
 
   return (
-    <form action={completeOnboarding} className="card mt-8 space-y-5">
+    <form action={finishWelcome} className="card mt-8 space-y-5">
       {params.error && params.error !== 'invite' && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
+      {next && <input type="hidden" name="next" value={next} />}
       {(await inviteRequired()) && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
       <fieldset>
         <legend className="label">{t.auth.welcomeRole}</legend>

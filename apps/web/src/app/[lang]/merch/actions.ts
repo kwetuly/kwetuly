@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { MERCH_ENABLED, orderMessage } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getMerchShopId } from '@/lib/merch';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 // A merchandise order: delivered to the traveller's hotel, or held for collection. Rafrika confirms
@@ -31,6 +32,8 @@ export async function orderMerch(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // An enquiry linked to an account needs a finished account (the database checks the same).
+  if (user) await requireOnboarded(user.id, locale, `${back}#order`);
   const { error } = await supabase.from('leads').insert({
     provider_id: shopId,
     traveler_id: user?.id ?? null,

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { reviewStatus, submitReview } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space, textSize } from '@/theme';
 
 // Only travellers with a confirmed call or booking with this guide can review (checked by the database too).
@@ -31,6 +32,8 @@ export default function ReviewScreen() {
     }
   }, [status.data?.own]);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/review/${guideId}`, { name }))} />;
   if (!userId) {
     return (
       <View style={{ padding: space.lg }}>

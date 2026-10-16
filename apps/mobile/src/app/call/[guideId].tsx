@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
@@ -8,6 +8,7 @@ import { getGuide } from '@/lib/api';
 import { requestCall } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space, textSize } from '@/theme';
 
 // Request a paid 1-on-1 prep call with a guide; the guide confirms a time and sends a video link.
@@ -26,6 +27,8 @@ export default function CallScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/call/${guideId}`, { slug }))} />;
   if (!session) {
     return (
       <Card style={{ margin: space.lg }}>

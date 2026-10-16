@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, Scr
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { GuideReferralCard } from '@/components/referral';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -186,6 +187,8 @@ export default function ProfileEditScreen() {
     }
   }, [mine.data, mine.isSuccess, profile.data]);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;
   if (!userId || mine.isLoading) return <ScreenState loading />;
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);

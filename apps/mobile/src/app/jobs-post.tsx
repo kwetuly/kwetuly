@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@rafrika/shared';
 import { Button, Card, Chip, ChipSelect, Field, FormMessage, Muted } from '@/components/ui';
 import { postJob } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
@@ -36,6 +37,8 @@ export default function JobsPostScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const handover = kind === 'handover';
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(handover ? '/jobs-post?kind=handover' : '/jobs-post')} />;
   if (!session) {
     return (
       <Card style={{ margin: space.lg }}>

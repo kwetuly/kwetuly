@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function enquireTrip(formData: FormData) {
@@ -21,6 +22,8 @@ export async function enquireTrip(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // An enquiry linked to an account needs a finished account (the database checks the same).
+  if (user) await requireOnboarded(user.id, locale, `${back}#enquire`);
   const details = [
     `Trip: ${field('trip_title', 160)}`,
     `Dates: ${field('dates', 120) || '-'}`,

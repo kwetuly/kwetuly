@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { listTours } from '@/lib/api';
@@ -9,6 +9,7 @@ import { EVENTS } from '@rafrika/shared';
 import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space, textSize } from '@/theme';
 
 // "Plan this trip": an enquiry to Rafrika about a catalogue tour.
@@ -29,6 +30,8 @@ export default function EnquireScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(`/enquire/${slug}`)} />;
   if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} />;
   const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
 

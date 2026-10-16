@@ -9,6 +9,7 @@ import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui'
 import { getMyGuide, listMyCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { welcomeHref } from '@/lib/onboarding';
 import { registerForPush, signOut, type PushState } from '@/lib/push';
 import { SITE_URL } from '@/lib/supabase';
 import { brand, colors, space, textSize } from '@/theme';
@@ -122,7 +123,12 @@ export default function AccountScreen() {
             ))}
             <Button title={t.traveler.findCall} variant="outline" onPress={() => router.push('/calls')} />
             {!myGuide && role !== 'guide' && (
-              <Text style={{ color: brand.forest, fontWeight: '700' }} onPress={() => router.push('/profile-edit')}>
+              <Text
+                accessibilityRole="link"
+                style={{ color: brand.forest, fontWeight: '700' }}
+                // Unfinished accounts cannot save a guide profile or upload a photo yet: finish the welcome step as a guide first.
+                onPress={() => router.push(profile.data && !profile.data.onboarded_at ? welcomeHref('/profile-edit', 'guide') : '/profile-edit')}
+              >
                 {t.traveler.becomeGuide}
               </Text>
             )}

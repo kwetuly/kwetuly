@@ -52,12 +52,31 @@ export async function needsSecondStep(): Promise<boolean> {
   return data?.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
 }
 
-export async function requireUser(locale: string): Promise<CurrentUser> {
+/**
+ * The welcome step for accounts that have not finished it (e.g. no invite code yet). `next` is the
+ * page they wanted, so the welcome step can send them back there afterwards.
+ */
+export function welcomePath(locale: string, next?: string): string {
+  return `/${locale}/welcome${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+}
+
+/** `next`: the page to come back to after the welcome step. */
+export async function requireUser(locale: string, next?: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
   if (await needsSecondStep()) redirect(`/${locale}/login/verify`);
-  if (!user.onboarded) redirect(`/${locale}/welcome`);
+  if (!user.onboarded) redirect(welcomePath(locale, next));
   return user;
+}
+
+/**
+ * For server actions that create content. The database refuses content from accounts that have not
+ * finished the welcome step, so send them there first instead of showing an error; they come back to `back`.
+ */
+export async function requireOnboarded(userId: string, locale: string, back: string): Promise<void> {
+  const supabase = await createClient();
+  const { data } = await supabase.from('profiles').select('onboarded_at').eq('id', userId).maybeSingle();
+  if (!data?.onboarded_at) redirect(welcomePath(locale, back));
 }
 
 // Guide Hub pages: verified guides and admins only. Everyone else goes to their dashboard.

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { getCurrentUser, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Join group chat', robots: { index: false } };
@@ -36,7 +36,7 @@ async function Join({ params, t, locale }: { params: Promise<{ code: string }>; 
       </div>
     );
   }
-  if (!user.onboarded) redirect(`/${locale}/welcome`);
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/chats/join/${encodeURIComponent(code)}`));
 
   const supabase = await createClient();
   const { data, error } = /^[0-9a-f]{18}$/.test(code) ? await supabase.rpc('join_group_chat', { p_code: code }) : { data: null, error: true };

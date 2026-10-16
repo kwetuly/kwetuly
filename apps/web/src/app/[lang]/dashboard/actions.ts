@@ -5,6 +5,7 @@ import { revalidateTag } from 'next/cache';
 import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, normalizePhone } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 /** A path the browser uploaded into this user's own storage folder, e.g. "<user id>/avatar-1791234567890.jpg". */
@@ -53,6 +54,7 @@ export async function saveGuideProfile(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, back);
 
   const allowed = <T extends string>(values: FormDataEntryValue[], list: readonly T[]) =>
     values.map(String).filter((v): v is T => (list as readonly string[]).includes(v));

@@ -5,7 +5,8 @@ import { ArrowRightLeft, Briefcase } from 'lucide-react';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { getCurrentUser, welcomePath } from '@/lib/auth';
 import { postJob } from './actions';
 import { PhotoHero } from '@/components/photo-hero';
 
@@ -80,6 +81,8 @@ async function JobForm({
       </div>
     );
   }
+  // Unfinished accounts (no invite code yet) go to the welcome step first, then come back here.
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/jobs/post${handover ? '?kind=handover' : ''}`));
 
   return (
     <form action={postJob} className="card grid gap-4 sm:grid-cols-2">

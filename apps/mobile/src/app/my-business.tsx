@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, Scr
 import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { BusinessSalesCard } from '@/components/referral';
 import { brand, colors, space } from '@/theme';
@@ -35,6 +36,8 @@ export default function MyBusinessScreen() {
   const fee = useQuery({ queryKey: ['badge-fee'], queryFn: getBadgeFee });
   const enquiries = useQuery({ queryKey: ['business-enquiries', mine.data?.id], queryFn: () => listBusinessEnquiries(mine.data!.id), enabled: !!mine.data });
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/my-business')} />;
   if (!userId) return <SignInPrompt />;
   if (mine.isLoading) return <ScreenState loading />;
   return <Editor key={mine.data?.id ?? 'new'} business={mine.data ?? null} userId={userId} defaultPhone={profile.data?.phone ?? ''} fee={fee.data ?? null} enquiries={enquiries.data ?? []} onSaved={() => queryClient.invalidateQueries({ queryKey: ['my-business'] })} t={t} locale={locale} bt={bt} />;

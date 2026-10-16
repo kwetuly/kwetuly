@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
-import { businessApproval, getCurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const localeOf = (formData: FormData): Locale => {
@@ -25,6 +25,7 @@ export async function createGroupTrip(formData: FormData) {
   const back = `/${locale}/group-trips/new${formData.get('complete') === '1' ? '?complete=1&' : '?'}`;
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/group-trips/new${formData.get('complete') === '1' ? '?complete=1' : ''}`));
 
   const asGuide = user.guide?.status === 'approved';
   const business = await businessApproval(user);
@@ -88,6 +89,7 @@ export async function requestToJoin(formData: FormData) {
   const back = `/${locale}/group-trips/${tripId}`;
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `${back}#join`);
 
   const request = {
     traveler_name: field(formData, 'name', 120),
@@ -116,6 +118,7 @@ export async function cancelMyRequest(formData: FormData) {
   const tripId = field(formData, 'group_trip_id', 40);
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `/${locale}/group-trips/${tripId}#join`);
 
   const supabase = await createClient();
   await supabase

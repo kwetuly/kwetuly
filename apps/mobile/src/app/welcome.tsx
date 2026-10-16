@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card, Chip, Field, FormMessage, Muted } from '@/components/ui';
 import { completeOnboarding, getInviteOnly } from '@/lib/api-more';
 import { useProfile } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { safeNext } from '@/lib/onboarding';
 import { colors, space } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
 
 // One-time step after signing up with Google / Facebook / Apple: account type, name and phone.
+// Also where unfinished accounts are sent from a form; `next` is the screen they wanted.
 export default function WelcomeScreen() {
   const { t } = useI18n();
+  const params = useLocalSearchParams<{ next?: string; role?: string }>();
+  const next = safeNext(params.next);
   const profile = useProfile();
   const queryClient = useQueryClient();
-  const [role, setRole] = useState<(typeof ROLES)[number]>('traveler');
+  const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES.find((r) => r === params.role) ?? 'traveler');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [inviteCode, setInviteCode] = useState('');
@@ -33,7 +37,7 @@ export default function WelcomeScreen() {
     try {
       await completeOnboarding(role, phone, name, inviteCode);
       await queryClient.invalidateQueries({ queryKey: ['profile'] });
-      router.replace(role === 'guide' ? '/profile-edit' : '/');
+      router.replace(next ?? (role === 'guide' ? '/profile-edit' : '/'));
     } catch (e) {
       const reason = e instanceof Error ? e.message : '';
       setMessage({ tone: 'error', text: reason === 'phone' ? t.auth.phoneError : reason === 'invite' ? t.auth.inviteError : t.auth.error });

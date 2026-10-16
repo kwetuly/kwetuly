@@ -4,6 +4,7 @@ import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { CALL_TOPICS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function requestCall(formData: FormData) {
@@ -17,6 +18,7 @@ export async function requestCall(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `${back}#call`);
 
   const field = (key: string, max: number) => String(formData.get(key) ?? '').trim().slice(0, max);
   const topic = field('topic', 60);
@@ -52,6 +54,9 @@ export async function requestGuide(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // An enquiry linked to an account needs a finished account (the database checks the same).
+  if (user) await requireOnboarded(user.id, locale, `${back}#contact`);
+
   // The package the traveller asked about, when they came from "Ask about this package".
   const packageId = String(formData.get('package_id') ?? '');
   const { error } = await supabase.from('leads').insert({
@@ -80,6 +85,7 @@ export async function submitReview(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `${back}#reviews`);
 
   const rating = Number.parseInt(String(formData.get('rating') ?? ''), 10);
   const body = String(formData.get('body') ?? '').trim().slice(0, 2000);

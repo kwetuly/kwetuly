@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Field, FormMessage, Muted } from '@/components/ui';
 import { contactGuide } from '@/lib/api-more';
 import { track } from '@/lib/analytics';
 import { EVENTS } from '@rafrika/shared';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space, textSize } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
@@ -21,6 +22,9 @@ export default function ContactGuideScreen() {
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/contact/${guideId}`, { name, packageId, packageTitle, sample }))} />;
 
   async function submit() {
     if (!fullName.trim() || !contact.trim() || !text.trim()) return setMessage({ tone: 'error', text: t.auth.error });

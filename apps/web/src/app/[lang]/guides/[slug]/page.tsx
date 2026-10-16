@@ -11,6 +11,7 @@ import { CALL_TOPICS, EVENTS, formatUsd } from '@rafrika/shared';
 import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
+import { FinishSetup } from '@/components/finish-setup';
 import { topicName } from '@/lib/labels';
 import { GuideAvatar, GuideBadges, GuideCard, expertiseOf, languageName, specialtyName } from '@/components/guide-card';
 import { TrackView } from '@/components/recently-viewed';
@@ -276,6 +277,7 @@ async function MessageButton({ guide, t, locale }: { guide: Guide; t: Dictionary
       </Link>
     );
   }
+  if (!user.onboarded) return <FinishSetup t={t} locale={locale} next={`/${locale}/guides/${guide.slug}`} />;
   return (
     <form action={startConversation}>
       <input type="hidden" name="locale" value={locale} />
@@ -322,6 +324,8 @@ async function CallBooking({
               <Link href={`/${locale}/join?role=traveler`} className="btn">{t.nav.signUp}</Link>
             </div>
           </div>
+        ) : !user.onboarded ? (
+          <FinishSetup t={t} locale={locale} next={`/${locale}/guides/${guide.slug}#call`} dark />
         ) : (
           <form action={requestCall} className="space-y-3">
             {status.callError && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
@@ -417,6 +421,7 @@ async function ReviewForm({
       </Link>
     );
   }
+  if (!user.onboarded) return <FinishSetup t={t} locale={locale} next={`/${locale}/guides/${guide.slug}#reviews`} className="mt-5" />;
 
   const supabase = await createClient();
   const [calls, conversations, own] = await Promise.all([

@@ -1,5 +1,5 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { Link, Stack, router } from 'expo-router';
+import { Redirect, Link, Stack, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Badge, Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { SignInPrompt } from '@/components/sign-in-prompt';
@@ -7,6 +7,7 @@ import { useCanOffer } from '@/hooks/use-can-offer';
 import { listMyOffers, listMyRequests, listOpenRequests, lowestOffers, type TripRequest } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, specialtyName } from '@/lib/labels';
 
 import { formatUsd } from '@rafrika/shared';
@@ -24,6 +25,8 @@ export default function RequestsScreen() {
   const open = useQuery({ queryKey: ['open-requests', userId], queryFn: () => listOpenRequests(userId!), enabled: !!userId && canOffer });
   const offers = useQuery({ queryKey: ['my-offers', userId], queryFn: () => listMyOffers(userId!), enabled: !!userId && canOffer });
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/requests')} />;
   if (!userId) return <SignInPrompt />;
 
   const row = (req: TripRequest, showName?: boolean) => (

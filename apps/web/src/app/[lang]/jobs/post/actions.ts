@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 export async function postJob(formData: FormData) {
@@ -17,6 +18,7 @@ export async function postJob(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `/${locale}/jobs/post${handover ? '?kind=handover' : ''}`);
 
   const field = (key: string, max: number) => String(formData.get(key) ?? '').trim().slice(0, max);
   const date = (key: string) => (/^\d{4}-\d{2}-\d{2}$/.test(field(key, 10)) ? field(key, 10) : null);

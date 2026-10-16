@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Pressable, Switch, Text, TextInput, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChatMedia } from '@/components/chat-media';
@@ -8,6 +8,7 @@ import { ScreenState, ErrorText } from '@/components/ui';
 import { deleteChatMessage, getGroupChat, listChatMessages, markChatRead, sendChatMessage, setObjection, setShareConsent, type ChatMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { shareLink, shareMediaFile } from '@/lib/share';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useLive } from '@/hooks/use-live';
@@ -108,6 +109,8 @@ export default function GroupChatScreen() {
   const time = new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' });
   const members = chat.data?.members ?? [];
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(`/chat/${id}`)} />;
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90} style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Title>{chat.data?.chat?.name ?? c.title}</Stack.Title>

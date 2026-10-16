@@ -13,6 +13,7 @@ import { Button, Card, Muted, ScreenState, SectionTitle, ErrorText } from '@/com
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,7 @@ export default function GroupTripScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
+  const needsSetup = useNeedsSetup();
   if (!trip.data) return <ScreenState loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
   const g = trip.data;
   const g10n = t.groups;
@@ -52,6 +54,7 @@ export default function GroupTripScreen() {
 
   async function join() {
     if (!userId) return router.push('/sign-in');
+    if (needsSetup) return router.push(welcomeHref(`/group-trip/${id}`));
     setBusy(true);
     setError('');
     try {

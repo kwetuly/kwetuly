@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
@@ -8,6 +8,7 @@ import { createGroupTrip, getMyGuide } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
@@ -50,6 +51,8 @@ export default function NewGroupTripScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState loading />;
   // Business accounts organise only once Rafrika has approved their listing.
   if (!asGuide && businessWaiting) {

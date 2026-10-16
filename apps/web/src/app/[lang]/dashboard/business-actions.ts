@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
 import { BUSINESS_TYPES, REGIONS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const text = (formData: FormData, key: string, max: number) => {
@@ -27,6 +28,7 @@ export async function saveBusiness(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `${back}#business`);
 
   const name = text(formData, 'business_name', 120);
   const type = String(formData.get('business_type') ?? '');
@@ -77,6 +79,7 @@ export async function requestBadge(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `/${locale}/dashboard#badge`);
   await supabase.from('providers').update({ badge_requested_at: new Date().toISOString() }).eq('owner_id', user.id);
   redirect(`/${locale}/dashboard#badge`);
 }
@@ -91,6 +94,7 @@ export async function reportSale(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, `${back}#sales`);
   const { data: business } = await supabase.from('providers').select('id').eq('owner_id', user.id).maybeSingle<{ id: string }>();
   const code = String(formData.get('code') ?? '').trim().toUpperCase();
   const amount = Number.parseFloat(String(formData.get('amount_tzs') ?? ''));

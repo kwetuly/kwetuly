@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
 import { PACKAGE_KINDS } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const text = (formData: FormData, key: string, max: number) => {
@@ -36,6 +37,7 @@ export async function savePackage(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/${locale}/login`);
+  await requireOnboarded(user.id, locale, back);
   const { data: guide } = await supabase.from('guides').select('id').eq('owner_id', user.id).maybeSingle<{ id: string }>();
   if (!guide) redirect(`/${locale}/dashboard`);
 

@@ -5,7 +5,8 @@ import { Plus } from 'lucide-react';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { businessApproval, getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { businessApproval, getCurrentUser, welcomePath } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createGroupTrip } from '../actions';
 
@@ -68,12 +69,14 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       <div className="card space-y-4">
         <p className="text-lg">{t.extras.whoCan}</p>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/${locale}/login`} className="btn-outline">{t.nav.signIn}</Link>
+          <Link href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/group-trips/new${complete ? '?complete=1' : ''}`)}`} className="btn-outline">{t.nav.signIn}</Link>
           <Link href={`/${locale}/join`} className="btn">{t.nav.signUp}</Link>
         </div>
       </div>
     );
   }
+  // Unfinished accounts (no invite code yet) go to the welcome step first, then come back here.
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/group-trips/new${complete ? '?complete=1' : ''}`));
   if (!asGuide && business === 'waiting') {
     return (
       <div className="card space-y-4">

@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, BadgeCheck, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
 import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd } from '@rafrika/shared';
 import { LogEvent } from '@/components/analytics';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { businessApproval, getCurrentUser, type CurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser, welcomePath, type CurrentUser } from '@/lib/auth';
 import { depositState, getRequest, listOffers, offerName, paidDeposits, today, type TripOffer, type TripRequest } from '@/lib/requests';
 import { paymentsConfig } from '@/lib/payments';
 import { BookingTicket } from '@/components/booking-ticket';
@@ -38,6 +38,7 @@ async function View({ params, searchParams, t, locale }: { params: Promise<{ id:
   if (!user) {
     return <Link href={`/${locale}/login?next=/${locale}/requests/${id}`} className="btn-outline">{t.nav.signIn}</Link>;
   }
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/requests/${id}`));
   if (!request) notFound();
 
   const r = t.requests;

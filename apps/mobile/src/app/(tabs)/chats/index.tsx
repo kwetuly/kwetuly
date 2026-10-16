@@ -7,6 +7,7 @@ import { Avatar, Badge, Button, Card, ScreenState, SectionTitle, ErrorText } fro
 import { conversationView, createGroupChat, joinGroupChat, listConversations, listGroupChats } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const inputStyle = {
@@ -32,6 +33,7 @@ export default function ChatsScreen() {
   const [busy, setBusy] = useState<'create' | 'join' | null>(null);
   const [error, setError] = useState('');
 
+  const needsSetup = useNeedsSetup();
   if (!userId) {
     return (
       <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }}>
@@ -43,6 +45,7 @@ export default function ChatsScreen() {
 
   async function create() {
     if (!name.trim()) return;
+    if (needsSetup) return router.push(welcomeHref('/chats'));
     setBusy('create');
     setError('');
     try {
@@ -59,6 +62,7 @@ export default function ChatsScreen() {
 
   async function join() {
     if (!code.trim()) return;
+    if (needsSetup) return router.push(welcomeHref('/chats'));
     setBusy('join');
     setError('');
     try {

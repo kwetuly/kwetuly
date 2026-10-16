@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitl
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 // A listed business, its badge (if any) and a question form, like /businesses/[id] on the website.
@@ -29,12 +30,15 @@ export default function BusinessScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const b = business.data;
+  const needsSetup = useNeedsSetup();
   if (!b) return <ScreenState loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;
   const isShop = ORDER_TYPES.includes(b.business_type);
   const photos = [b.photo_url, ...b.photos].filter((p): p is string => !!p).slice(0, 7);
 
   async function send() {
     if (!name.trim() || !contact.trim() || !text.trim()) return setMessage({ tone: 'error', text: t.auth.error });
+    // An enquiry from a signed-in account needs a finished account (the database checks the same).
+    if (needsSetup) return router.push(welcomeHref(`/business/${b!.id}`));
     setBusy(true);
     try {
       await askBusiness({ providerId: b!.id, userId: session?.user.id, name, contact, message: isShop ? orderMessage(mode, where.trim(), text.trim()) : text });

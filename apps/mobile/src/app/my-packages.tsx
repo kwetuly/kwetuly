@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
@@ -10,6 +10,7 @@ import { Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState
 import { getMyGuide } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { deletePackage, listMyPackages, savePackage } from '@/lib/packages';
 import { brand, colors, radius, space, textSize } from '@/theme';
@@ -44,6 +45,8 @@ export default function MyPackagesScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
 
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/my-packages')} />;
   if (!userId) return <SignInPrompt />;
   if (mine.isLoading || packages.isLoading) return <ScreenState loading />;
   if (!guideId) return <ScreenState empty emptyText={t.dashboard.statusPending} />;

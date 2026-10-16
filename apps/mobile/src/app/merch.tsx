@@ -8,6 +8,7 @@ import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitl
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, listProducts } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const tzs = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
@@ -39,6 +40,8 @@ function MerchScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const data = shop.data;
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref('/merch')} />;
   if (!data) return <ScreenState loading={shop.isLoading} error={shop.error} onRetry={() => shop.refetch()} />;
   const chosen = data.products.find((p) => p.id === product) ?? null;
 

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { orderMessage } from '@rafrika/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
+import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 // A traveller's question to a listed business. It lands in the business's dashboard.
@@ -24,6 +25,8 @@ export async function askBusiness(formData: FormData) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // An enquiry linked to an account needs a finished account (the database checks the same).
+  if (user) await requireOnboarded(user.id, locale, `${back}#ask`);
   const { error } = await supabase.from('leads').insert({
     provider_id: providerId,
     traveler_id: user?.id ?? null,

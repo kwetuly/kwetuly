@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScreenState } from '@/components/ui';
 import { conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { useLive } from '@/hooks/use-live';
 import { reportMessage } from '@/lib/api-more';
 import { brand, colors, radius, space, textSize } from '@/theme';
@@ -32,6 +33,9 @@ export default function ConversationScreen() {
   useEffect(() => {
     if (view) markConversationRead(id, view.isTraveler);
   }, [id, view, messages.data?.length]);
+
+  const needsSetup = useNeedsSetup();
+  if (needsSetup) return <Redirect href={welcomeHref(`/conversation/${id}`)} />;
 
   async function send() {
     const text = body.trim();

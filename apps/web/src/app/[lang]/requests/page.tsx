@@ -5,7 +5,8 @@ import { CalendarDays, Gavel, Plus, Users } from 'lucide-react';
 import { formatUsd } from '@rafrika/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { businessApproval, getCurrentUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { businessApproval, getCurrentUser, welcomePath } from '@/lib/auth';
 import { REQUEST_COLUMNS, type TripOffer, type TripRequest } from '@/lib/requests';
 import { createClient } from '@/lib/supabase/server';
 import { PhotoHero } from '@/components/photo-hero';
@@ -46,6 +47,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
       </div>
     );
   }
+  if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/requests`));
   const business = await businessApproval(user);
   const canOffer = user.role === 'admin' || business === 'approved' || user.guide?.status === 'approved';
   const supabase = await createClient();

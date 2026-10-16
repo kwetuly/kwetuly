@@ -6,6 +6,7 @@ import { Avatar, Badge, BottomBar, Button, Card, Muted, ScreenState, SectionTitl
 import { getGuide, listReviews, openConversation } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
@@ -44,6 +45,7 @@ export default function GuideScreen() {
   }, [guideSlug, locale]);
   const checkLabels = useCheckLabels(guide.data ?? { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null, first_aid_valid_until: null });
 
+  const needsSetup = useNeedsSetup();
   if (!guide.data) {
     return <ScreenState loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} empty emptyText={t.guides.empty} />;
   }
@@ -52,6 +54,7 @@ export default function GuideScreen() {
 
   async function message() {
     if (!session) return router.push('/sign-in');
+    if (needsSetup) return router.push(welcomeHref(`/guide/${g.slug}`));
     track(EVENTS.enquiryStarted, { kind: 'message', guide: g.slug, locale });
     setOpening(true);
     try {

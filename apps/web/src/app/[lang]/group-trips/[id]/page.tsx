@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarDays, Languages, MapPin, Users } from 'lucide-react'
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser, type CurrentUser } from '@/lib/auth';
+import { FinishSetup } from '@/components/finish-setup';
 import { peopleIn, getGroupTripForViewer, spotsLeft, type GroupMember, type GroupTrip } from '@/lib/groups';
 import { photoUrl, specialtyPhoto } from '@/lib/photos';
 import { createClient } from '@/lib/supabase/server';
@@ -179,6 +180,12 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
         </div>
       </div>
     );
+  }
+  // Unfinished accounts (no invite code yet) cannot ask to join until they finish the welcome step.
+  if (!user.onboarded) {
+    return open && spotsLeft(trip) > 0
+      ? <FinishSetup t={t} locale={locale} next={`/${locale}/group-trips/${trip.id}#join`} dark />
+      : <p className="font-semibold text-white/80">{trip.cancelled ? g.cancelledTrip : g.closed}</p>;
   }
 
   const supabase = await createClient();
