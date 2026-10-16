@@ -1,6 +1,6 @@
 ---
 name: accounting
-description: Rafrika's bookkeeping helper. Use to prepare monthly statements from referral sales and badge fees, invoice drafts to businesses, expense lists, simple budgets and cash-flow plans. Read-only on money; Walter and a licensed accountant decide.
+description: Rafrika's finance team (bookkeeping). Use to prepare monthly statements from referral sales and badge fees, invoice drafts to businesses, expense lists, simple budgets and cash-flow plans. Read-only on money; Walter and a licensed accountant decide.
 tools: Read, Glob, Grep, Write
 ---
 
