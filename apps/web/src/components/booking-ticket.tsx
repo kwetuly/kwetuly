@@ -29,7 +29,9 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
     ? null
     : deposit.paid
       ? `${p.paidOn.replace('{date}', deposit.paidAt ? new Date(deposit.paidAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : '')} · ${forGuide ? (deposit.paidOut ? t.hub.depositPaidOut : t.hub.depositHeld) : deposit.paidOut ? p.paidOutNote : p.heldNote}`
-      : p.notPaid;
+      : deposit.review
+        ? forGuide ? t.hub.depositChecking : p.checking
+        : p.notPaid;
 
   return (
     <div className="overflow-hidden rounded-[5px] border border-line bg-white">

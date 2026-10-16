@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, SearchCheck, XCircle } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -51,7 +51,9 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
   }
 
   let state = payment.status;
-  if (state === 'pending') {
+  // Failed orders are asked about too: one Rafrika gave up on may still have been paid at Selcom,
+  // and the Edge Function then holds it for review.
+  if (state === 'pending' || state === 'failed') {
     const result = await callPayments({ action: 'status', order_id: orderId }, session.session?.access_token).catch(() => ({ status: 'pending' }));
     state = result.status ?? 'pending';
   }
@@ -64,17 +66,20 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
   const view =
     state === 'paid'
       ? { icon: <CheckCircle2 className="size-10 text-forest" aria-hidden />, text: p.paid }
-      : state === 'failed'
-        ? { icon: <XCircle className="size-10 text-red-700" aria-hidden />, text: p.failed }
-        : { icon: <Clock className="size-10 text-leaf-dark" aria-hidden />, text: p.pending };
+      : state === 'review'
+        ? { icon: <SearchCheck className="size-10 text-leaf-dark" aria-hidden />, text: p.review, note: p.reviewNote }
+        : state === 'failed'
+          ? { icon: <XCircle className="size-10 text-red-700" aria-hidden />, text: p.failed }
+          : { icon: <Clock className="size-10 text-leaf-dark" aria-hidden />, text: p.pending };
 
   return (
     <div className="card space-y-4 text-center">
       <div className="flex justify-center">{view.icon}</div>
       <h1 className="text-2xl font-extrabold">{view.text}</h1>
+      {'note' in view && <p>{view.note}</p>}
       <p className="text-muted">{payment.description} · TZS {payment.amount_tzs.toLocaleString(locale)}</p>
       <div className="flex flex-wrap justify-center gap-2">
-        {state === 'pending' && <Link href={`/${locale}/payments/return?order=${orderId}`} className="btn-outline">{p.checkAgain}</Link>}
+        {(state === 'pending' || state === 'review') && <Link href={`/${locale}/payments/return?order=${orderId}`} className="btn-outline">{p.checkAgain}</Link>}
         <Link href={back} className="btn">{p.back}</Link>
       </div>
     </div>

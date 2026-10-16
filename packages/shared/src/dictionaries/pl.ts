@@ -595,6 +595,12 @@ export const pl: Dictionary = {
     paidOutNote: 'Przekazano przewodnikowi.',
     notPaid: 'Zaliczka jeszcze nie zapłacona.',
     paidOn: 'Zapłacono {date}',
+    review: 'Sprawdzamy tę płatność',
+    reviewNote: 'Odpowiedź Selcom nie zgadza się z tym, czego oczekiwaliśmy, więc zespół Rafrika sprawdza tę płatność ręcznie. Nie płać ponownie. Damy znać, gdy będzie sprawdzona.',
+    checking: 'Sprawdzana przez Rafrika. Nie płać ponownie.',
+    underReview: 'Sprawdzamy płatność za tę zaliczkę. Nie płać ponownie. Damy znać, gdy będzie sprawdzona.',
+    pendingOrder: 'Rozpoczęta płatność jest wciąż otwarta w Selcom. Dokończ ją tam albo spróbuj ponownie za około godzinę.',
+    notApproved: 'Ten przewodnik lub firma nie może jeszcze przyjmować zaliczek przez Rafrika. Zapłać bezpośrednio, jak ustalono.',
   },
   alerts: {
     mute: 'Wycisz powiadomienia',

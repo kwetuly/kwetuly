@@ -36,5 +36,19 @@ export async function paymentsEnabled(): Promise<boolean> {
   return (await paymentsConfig()).enabled;
 }
 
+// Reasons the Edge Function gives when a deposit cannot be paid online at all: the Pay box is hidden.
+const NOT_PAYABLE = new Set(['not_found', 'not_accepted', 'no_deposit', 'not_approved', 'already_paid', 'bad_request']);
+
+/**
+ * Whether the signed-in traveller can pay this deposit now: 'pay', 'review' (a payment is being
+ * checked), or 'hidden' (unapproved guide or business, admin-made offer, unapproved or cancelled group).
+ * If the check itself fails, show the box; checkout runs the same rules again.
+ */
+export async function depositPayable(kind: 'offer' | 'group', id: string, accessToken?: string): Promise<'pay' | 'review' | 'hidden'> {
+  const result = await callPayments({ action: 'check', kind, id }, accessToken).catch(() => ({}) as { error?: string });
+  if (result.error === 'under_review') return 'review';
+  return result.error && NOT_PAYABLE.has(result.error) ? 'hidden' : 'pay';
+}
+
 /** Deposit in US dollars, as the Edge Function computes it (it converts to shillings). */
 export const depositUsd = (total: number, percent: number) => Math.round(total * percent) / 100;

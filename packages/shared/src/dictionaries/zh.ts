@@ -590,6 +590,12 @@ export const zh: Dictionary = {
     paidOutNote: '已支付给你的导游。',
     notPaid: '订金尚未支付。',
     paidOn: '{date} 已支付',
+    review: '我们正在核对这笔付款',
+    reviewNote: 'Selcom 返回的结果与预期不符，Rafrika 团队正在人工核对这笔付款。请不要重复付款。核对完成后我们会通知你。',
+    checking: 'Rafrika 正在核对。请不要重复付款。',
+    underReview: '我们正在核对这笔订金的付款。请不要重复付款。核对完成后我们会通知你。',
+    pendingOrder: '你之前发起的付款在 Selcom 仍未关闭。请在那里完成付款，或约一小时后再试。',
+    notApproved: '该导游或商家暂时无法通过 Rafrika 收取订金。请按约定直接付款给对方。',
   },
   alerts: {
     mute: '关闭提醒',

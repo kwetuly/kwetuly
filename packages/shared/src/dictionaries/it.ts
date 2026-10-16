@@ -595,6 +595,12 @@ export const it: Dictionary = {
     paidOutNote: 'Pagato alla tua guida.',
     notPaid: 'Acconto non ancora pagato.',
     paidOn: 'Pagato il {date}',
+    review: 'Stiamo verificando questo pagamento',
+    reviewNote: 'La risposta di Selcom non corrisponde a quanto previsto, quindi il team Rafrika sta verificando il pagamento a mano. Non pagare di nuovo. Ti avviseremo appena verificato.',
+    checking: 'In verifica da parte di Rafrika. Non pagare di nuovo.',
+    underReview: 'Stiamo verificando un pagamento per questo acconto. Non pagare di nuovo. Ti avviseremo appena verificato.',
+    pendingOrder: 'Un pagamento che hai iniziato è ancora aperto su Selcom. Completalo lì, oppure riprova tra circa un’ora.',
+    notApproved: 'Questa guida o attività non può ancora ricevere acconti tramite Rafrika. Pagala direttamente come concordato.',
   },
   alerts: {
     mute: 'Silenzia avvisi',

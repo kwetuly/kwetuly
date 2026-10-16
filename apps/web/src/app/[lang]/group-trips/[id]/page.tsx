@@ -207,6 +207,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
           totalUsd={(mine.price_per_person_usd ?? trip.price_per_person_usd) * mine.seats}
           percent={trip.deposit_percent}
           paid={paid.paid}
+          review={paid.review}
           paidOut={paid.paidOut}
           back={`/${locale}/group-trips/${trip.id}`}
           error={typeof status.payError === 'string' ? status.payError : undefined}

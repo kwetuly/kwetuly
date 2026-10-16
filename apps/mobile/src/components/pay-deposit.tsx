@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@/components/ui';
-import { depositState, payDeposit, paymentsEnabled } from '@/lib/api-requests';
+import { depositPayable, depositState, payDeposit, paymentsEnabled } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';
 import { brand, textSize } from '@/theme';
 
 type Props = { kind: 'offer' | 'group'; id: string; totalUsd: number; percent: number };
 
-// Deposit for an accepted offer or group-trip spot, paid on Selcom's page. Hidden until Selcom is set up.
+// Deposit for an accepted offer or group-trip spot, paid on Selcom's page. Hidden until Selcom is set
+// up, and hidden when this deposit cannot be paid online (the Edge Function's own rules decide).
 export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const { t, locale } = useI18n();
   const p = t.payments;
@@ -16,6 +17,11 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const column = kind === 'offer' ? 'trip_offer_id' : 'group_member_id';
   const enabled = useQuery({ queryKey: ['payments-enabled'], queryFn: paymentsEnabled, staleTime: 10 * 60_000 });
   const paid = useQuery({ queryKey: ['deposit-state', id], queryFn: () => depositState(column, id) });
+  const payable = useQuery({
+    queryKey: ['deposit-payable', id],
+    queryFn: () => depositPayable(kind, id),
+    enabled: Boolean(enabled.data) && percent > 0 && paid.data?.paid === false && !paid.data.review,
+  });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
@@ -27,15 +33,34 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
       </Text>
     );
   }
-  if (!enabled.data) return null;
+  const checking = (
+    <Card style={{ backgroundColor: brand.sand }}>
+      <Text style={{ fontWeight: '800', color: brand.ink }}>{p.review}</Text>
+      <Text selectable style={{ color: brand.ink, opacity: 0.8 }}>{p.underReview}</Text>
+    </Card>
+  );
+  if (paid.data?.review) return checking;
+  if (!enabled.data || !payable.data || payable.data === 'hidden') return null;
+  if (payable.data === 'review') return checking;
 
   async function pay() {
     setBusy(true);
     setNote('');
     const result = await payDeposit(kind, id, locale);
     setBusy(false);
-    if (result === 'paid') queryClient.invalidateQueries({ queryKey: ['deposit-state', id] });
-    else setNote(result === 'pending' ? p.pending : result === 'failed' ? p.failed : result === 'phone_required' ? p.phoneRequired : p.error);
+    if (result === 'paid' || result === 'review' || result === 'under_review' || result === 'already_paid') {
+      queryClient.invalidateQueries({ queryKey: ['deposit-state', id] });
+      queryClient.invalidateQueries({ queryKey: ['deposit-payable', id] });
+      return;
+    }
+    const messages: Record<string, string> = {
+      pending: p.pending,
+      failed: p.failed,
+      phone_required: p.phoneRequired,
+      pending_order: p.pendingOrder,
+      not_approved: p.notApproved,
+    };
+    setNote(messages[result] ?? p.error);
   }
 
   return (

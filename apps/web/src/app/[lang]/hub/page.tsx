@@ -24,7 +24,7 @@ type IncomingCall = {
   created_at: string;
 };
 
-type Deposit = { id: string; description: string; amount_tzs: number; amount_usd: number; paid_at: string | null; payout_done: boolean };
+type Deposit = { id: string; description: string; amount_tzs: number; amount_usd: number; status: 'paid' | 'review'; paid_at: string | null; payout_done: boolean; created_at: string };
 
 type Lead = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string; guide_packages: { title: string } | null };
 
@@ -63,10 +63,11 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
       .returns<Lead[]>(),
     supabase
       .from('payments')
-      .select('id, description, amount_tzs, amount_usd, paid_at, payout_done')
+      .select('id, description, amount_tzs, amount_usd, status, paid_at, payout_done, created_at')
       .eq('payee_user_id', user.id)
-      .eq('status', 'paid')
-      .order('paid_at', { ascending: false })
+      // 'review': Selcom reported a payment Rafrika is checking by hand; shown as "being checked".
+      .in('status', ['paid', 'review'])
+      .order('created_at', { ascending: false })
       .limit(50)
       .returns<Deposit[]>(),
     supabase.from('trip_requests').select('id', { count: 'exact', head: true }).eq('status', 'open').neq('traveler_id', user.id),
@@ -87,11 +88,11 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
         <ul className="mt-3 divide-y divide-line text-sm">
           {(deposits ?? []).map((d) => (
             <li key={d.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-3 py-3">
-              <span className="tabular-nums text-muted">{d.paid_at ? day.format(new Date(d.paid_at)) : ''}</span>
+              <span className="tabular-nums text-muted">{day.format(new Date(d.paid_at ?? d.created_at))}</span>
               <span className="min-w-0 truncate font-semibold">{d.description}</span>
               <span className="text-right">
                 <span className="block font-bold tabular-nums">TSh {d.amount_tzs.toLocaleString('en-US')}</span>
-                <span className="block text-xs text-muted tabular-nums">{formatUsd(Number(d.amount_usd))} · {d.payout_done ? t.hub.depositPaidOut : t.hub.depositHeld}</span>
+                <span className="block text-xs text-muted tabular-nums">{formatUsd(Number(d.amount_usd))} · {d.status === 'review' ? t.hub.depositChecking : d.payout_done ? t.hub.depositPaidOut : t.hub.depositHeld}</span>
               </span>
             </li>
           ))}

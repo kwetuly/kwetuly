@@ -1,6 +1,7 @@
 // Deposits through Selcom Checkout (M-Pesa, Tigo Pesa, Airtel Money, Halopesa and cards).
 //
 //   POST { action: "config" }                          → { enabled, rate } (anyone; Pay button and ≈ TSh prices)
+//   POST { action: "check", kind, id } + user token     → { ok } or { error } (can this deposit be paid now?)
 //   POST { action: "checkout", kind: "offer"|"group", id } + user token → { url, order_id }
 //   POST { action: "status", order_id } + user token   → { status }    (asks Selcom, updates the row)
 //   POST from Selcom (webhook, has order_id)           → re-checks the order with Selcom, never trusts the body
@@ -17,6 +18,11 @@ const env = (key: string, fallback = '') => Deno.env.get(key) ?? fallback;
 const SITE_URL = env('SITE_URL', 'https://rafrika.com').replace(/\/$/, '');
 const API = `https://${env('SELCOM_LIVE') === '1' ? 'apigw' : 'apigwtest'}.selcommobile.com/v1/`;
 const RATE = Number(env('USD_TZS_RATE'));
+const RATE_SOURCE = 'env:USD_TZS_RATE';
+// Selcom closes an unpaid order after this many minutes (sent as `expiry` on create-order).
+const ORDER_EXPIRY_MINUTES = 60;
+// Selcom states that mean the order can no longer be paid. EXPIRED covers orders past their expiry.
+const FAILED_STATES = ['CANCELLED', 'CANCELED', 'USERCANCELLED', 'USERCANCELED', 'REJECTED', 'EXPIRED'];
 const enabled = () => Boolean(env('SELCOM_VENDOR') && env('SELCOM_API_KEY') && env('SELCOM_API_SECRET') && RATE > 0);
 
 const cors = {
@@ -67,20 +73,39 @@ const admin = () => createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE
 type Admin = ReturnType<typeof admin>;
 
 // Ask Selcom for the real result and record it (used by the webhook, the return page and the app).
-// A completed order is marked paid only when Selcom reports exactly the shillings we asked for, in TZS;
+// A completed order is marked paid only when Selcom reports exactly the shillings we asked for;
 // anything else is held as 'review' for an admin to check, never 'paid'.
+// Failed orders are checked too: an order we cancelled or gave up on can still have been paid at
+// Selcom, and that money must never be dropped silently. It goes to 'review' (admins are alerted
+// by the payments_review trigger).
 async function refresh(db: Admin, orderId: string) {
   const { data: payment } = await db.from('payments').select('id, status, amount_tzs').eq('order_id', orderId).maybeSingle();
   if (!payment) return null;
-  if (payment.status !== 'pending') return payment.status as string;
+  if (payment.status !== 'pending' && payment.status !== 'failed') return payment.status as string;
   const result = await selcom('checkout/order-status', 'GET', { order_id: orderId });
   const order = result.data?.[0] ?? {};
   const state = String(order.payment_status ?? '').toUpperCase();
-  let status = state === 'COMPLETED' ? 'paid' : ['CANCELLED', 'USERCANCELLED', 'REJECTED'].includes(state) ? 'failed' : 'pending';
+  const rawAmount = String(order.amount ?? '').replace(/,/g, '').trim();
+  const providerAmount = rawAmount !== '' && Number.isFinite(Number(rawAmount)) ? Number(rawAmount) : null;
+  const settled = {
+    provider_amount: providerAmount,
+    provider_reference: order.reference ?? order.transid ?? null,
+    provider_channel: order.channel ?? null,
+  };
+
+  if (payment.status === 'failed') {
+    if (state !== 'COMPLETED') return 'failed';
+    console.error(`Deposit ${orderId}: Selcom reports it paid after it was marked failed; held for review`);
+    await db.from('payments').update({ status: 'review', ...settled }).eq('id', payment.id).eq('status', 'failed');
+    return 'review';
+  }
+
+  let status = state === 'COMPLETED' ? 'paid' : FAILED_STATES.includes(state) ? 'failed' : 'pending';
   if (status === 'paid') {
-    const amount = Number(String(order.amount ?? '').replace(/,/g, ''));
-    const currency = String(order.currency ?? 'TZS').toUpperCase();
-    if (!Number.isFinite(amount) || amount !== payment.amount_tzs || currency !== 'TZS') {
+    // Selcom's order-status answer does not always include a currency. The order was created in TZS,
+    // so only a currency Selcom actually reports can disagree; a missing one is not a mismatch.
+    const currency = order.currency ? String(order.currency).toUpperCase() : null;
+    if (providerAmount === null || providerAmount !== payment.amount_tzs || (currency !== null && currency !== 'TZS')) {
       status = 'review';
       console.error(`Deposit ${orderId}: Selcom amount or currency does not match the order; held for review`);
     }
@@ -88,12 +113,7 @@ async function refresh(db: Admin, orderId: string) {
   if (status !== 'pending') {
     await db
       .from('payments')
-      .update({
-        status,
-        provider_reference: order.reference ?? order.transid ?? null,
-        provider_channel: order.channel ?? null,
-        paid_at: status === 'paid' ? new Date().toISOString() : null,
-      })
+      .update({ status, ...settled, paid_at: status === 'paid' ? new Date().toISOString() : null })
       .eq('id', payment.id)
       .eq('status', 'pending');
   }
@@ -103,7 +123,8 @@ async function refresh(db: Admin, orderId: string) {
 // ---------------------------------------------------------------------------
 // Checkout
 // ---------------------------------------------------------------------------
-type Order = { payee: string; description: string; usd: number; offerId?: string; memberId?: string };
+// Amounts in whole US cents, so nothing is rounded before the shillings are worked out.
+type Order = { payee: string; description: string; cents: number; offerId?: string; memberId?: string };
 
 // Deposits go only to approved guides (offering as themselves) or to owners of an approved,
 // non-sample business listing.
@@ -131,7 +152,7 @@ async function loadOrder(db: Admin, userId: string, kind: string, id: string): P
     return {
       payee: offer.offered_by,
       description: `Deposit: ${request.title}`.slice(0, 200),
-      usd: Math.round(offer.price_total_usd * offer.deposit_percent) / 100,
+      cents: offer.price_total_usd * offer.deposit_percent, // whole dollars x percent = cents
       offerId: offer.id,
     };
   }
@@ -155,12 +176,33 @@ async function loadOrder(db: Admin, userId: string, kind: string, id: string): P
     return {
       payee: trip.organizer_id,
       description: `Deposit: ${trip.title} (${member.seats})`.slice(0, 200),
-      usd: Math.round(price * member.seats * trip.deposit_percent) / 100,
+      cents: price * member.seats * trip.deposit_percent,
       memberId: member.id,
     };
   }
   return 'bad_request';
 }
+
+// Is a payment for this deposit already done or being checked?
+async function settledError(db: Admin, order: Order) {
+  const target = order.offerId ? 'trip_offer_id' : 'group_member_id';
+  const settled = await db.from('payments').select('status').eq(target, (order.offerId ?? order.memberId)!).in('status', ['paid', 'review']);
+  if (settled.data?.some((p) => p.status === 'paid')) return 'already_paid';
+  if (settled.data?.length) return 'under_review';
+  return null;
+}
+
+// Can the traveller pay this deposit now? Lets the website and app hide the Pay box instead of
+// showing an error (unapproved guide or business, admin-made offer, unapproved or cancelled group).
+async function check(db: Admin, userId: string, kind: string, id: string) {
+  const order = await loadOrder(db, userId, kind, id);
+  if (typeof order === 'string') return json({ error: order });
+  const settled = await settledError(db, order);
+  return settled ? json({ error: settled }) : json({ ok: true });
+}
+
+// Past its expiry (plus a few minutes' grace) Selcom no longer takes money for an order.
+const expired = (createdAt: string) => Date.now() - new Date(createdAt).getTime() > (ORDER_EXPIRY_MINUTES + 5) * 60_000;
 
 async function checkout(db: Admin, user: { id: string; email?: string }, kind: string, id: string, locale: string) {
   const order = await loadOrder(db, user.id, kind, id);
@@ -168,19 +210,26 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
 
   const target = order.offerId ? 'trip_offer_id' : 'group_member_id';
   const targetId = (order.offerId ?? order.memberId)!;
-  const settled = await db.from('payments').select('status').eq(target, targetId).in('status', ['paid', 'review']);
-  if (settled.data?.some((p) => p.status === 'paid')) return json({ error: 'already_paid' }, 409);
-  if (settled.data?.length) return json({ error: 'under_review' }, 409);
+  const settled = await settledError(db, order);
+  if (settled) return json({ error: settled }, 409);
 
   // Never leave two payable orders open: settle or cancel the earlier one at Selcom first.
-  const { data: open } = await db.from('payments').select('order_id').eq(target, targetId).eq('status', 'pending');
+  const { data: open } = await db.from('payments').select('order_id, created_at').eq(target, targetId).eq('status', 'pending');
   for (const earlier of open ?? []) {
     try {
       const state = await refresh(db, earlier.order_id);
       if (state === 'paid') return json({ error: 'already_paid' }, 409);
       if (state === 'review') return json({ error: 'under_review' }, 409);
       if (state === 'pending') {
-        await selcom('checkout/cancel-order', 'DELETE', { order_id: earlier.order_id });
+        try {
+          await selcom('checkout/cancel-order', 'DELETE', { order_id: earlier.order_id });
+        } catch (err) {
+          // Selcom may refuse to cancel an order that has already expired. Past its expiry it can no
+          // longer be paid, so give up on it; if it was paid after all, refresh() (webhook or the
+          // return page) moves the failed row to 'review' and the admins are alerted.
+          if (!expired(earlier.created_at)) throw err;
+          console.error(`Deposit ${earlier.order_id}: cancel refused after expiry; marked failed`);
+        }
         await db.from('payments').update({ status: 'failed' }).eq('order_id', earlier.order_id).eq('status', 'pending');
       }
     } catch (err) {
@@ -193,7 +242,11 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
   const phone = selcomPhone(profile?.phone ?? null);
   if (!phone) return json({ error: 'phone_required' }, 400);
 
-  const tzs = Math.ceil((order.usd * RATE) / 100) * 100; // round up to 100 shillings
+  // Integer maths: cents x (shillings per dollar) / 100 = shillings, rounded up to the next 100 shillings:
+  //   ceil(cents x rate / 10 000) x 100.
+  // The rate is taken in hundredths so a rate such as 2650.75 stays exact (same result, no fractions).
+  const rate100 = Math.round(RATE * 100);
+  const tzs = Math.ceil((order.cents * rate100) / 1_000_000) * 100;
   const orderId = `RAF${Date.now()}${Math.floor(Math.random() * 9000 + 1000)}`;
   const lang = /^[a-z]{2}$/.test(locale) ? locale : 'en';
 
@@ -204,8 +257,10 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
     trip_offer_id: order.offerId ?? null,
     group_member_id: order.memberId ?? null,
     description: order.description,
-    amount_usd: order.usd,
+    amount_usd: order.cents / 100,
     amount_tzs: tzs,
+    usd_tzs_rate: rate100 / 100,
+    rate_source: RATE_SOURCE,
     order_id: orderId,
   });
   // 23505: another checkout for this deposit started at the same moment (only one pending order is allowed).
@@ -220,6 +275,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
       buyer_phone: phone,
       amount: tzs,
       currency: 'TZS',
+      expiry: ORDER_EXPIRY_MINUTES,
       redirect_url: btoa(`${SITE_URL}/${lang}/payments/return?order=${orderId}`),
       cancel_url: btoa(`${SITE_URL}/${lang}/payments/return?order=${orderId}&cancelled=1`),
       webhook: btoa(`${env('SUPABASE_URL')}/functions/v1/payments`),
@@ -262,16 +318,18 @@ Deno.serve(async (req) => {
   const user = auth?.user;
   if (!user) return json({ error: 'sign_in' }, 401);
 
+  if (body.action === 'check') return check(db, user.id, body.kind, body.id);
   if (body.action === 'checkout') return checkout(db, user, body.kind, body.id, body.locale ?? 'en');
 
   if (body.action === 'status') {
-    const { data: own } = await db.from('payments').select('id').eq('order_id', body.order_id).eq('user_id', user.id).maybeSingle();
+    const { data: own } = await db.from('payments').select('id, status').eq('order_id', body.order_id).eq('user_id', user.id).maybeSingle();
     if (!own) return json({ error: 'not_found' }, 404);
     try {
       return json({ status: await refresh(db, body.order_id) });
     } catch (err) {
+      // Selcom could not be reached, or never created this order: report what we have.
       console.error(err);
-      return json({ status: 'pending' });
+      return json({ status: own.status });
     }
   }
   return json({ error: 'bad_request' }, 400);

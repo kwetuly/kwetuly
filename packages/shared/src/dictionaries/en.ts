@@ -232,6 +232,7 @@ export const en = {
     noDeposits: 'No deposits yet. They appear here when travellers pay through Rafrika.',
     depositHeld: 'Held by Rafrika',
     depositPaidOut: 'Paid out to you',
+    depositChecking: 'Being checked by Rafrika',
     openRequests: 'Open trip requests',
   },
   jobs: {
@@ -756,6 +757,12 @@ export const en = {
     paidOutNote: 'Paid to your guide.',
     notPaid: 'Deposit not paid yet.',
     paidOn: 'Paid {date}',
+    review: 'We’re checking this payment',
+    reviewNote: 'Selcom’s answer did not match what we expected, so the Rafrika team is checking this payment by hand. Please don’t pay again. We will let you know when it is checked.',
+    checking: 'Being checked by Rafrika. Please don’t pay again.',
+    underReview: 'We’re checking a payment for this deposit. Please don’t pay again. We will let you know when it is checked.',
+    pendingOrder: 'A payment you started is still open at Selcom. Finish it there, or try again in about an hour.',
+    notApproved: 'This guide or business cannot take deposits through Rafrika yet. Pay them directly as agreed.',
   },
   alerts: {
     mute: 'Mute alerts',

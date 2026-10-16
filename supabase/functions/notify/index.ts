@@ -125,6 +125,12 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Asante! TZS ${v('amount')} zimepokelewa`, body: `Tumepokea amana yako ya "${v('what')}". Mwongozaji wako amearifiwa.` }
         : { subject: `Thank you! TZS ${v('amount')} received`, body: `We received your deposit for "${v('what')}". Your guide has been told.` };
+    case 'payment_review':
+      // Admins only (email and push).
+      return {
+        subject: `Deposit to check: order ${v('order')}`,
+        body: `Selcom's result for "${v('what')}" does not match what Rafrika expected (asked TZS ${v('amount')}, Selcom reported ${v('reported')}), or it was paid after Rafrika gave up on the order. It is held as "review": check it in the Selcom portal before doing anything else.`,
+      };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':

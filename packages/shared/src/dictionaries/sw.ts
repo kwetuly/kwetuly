@@ -234,6 +234,7 @@ export const sw: Dictionary = {
     noDeposits: 'Bado hakuna amana. Zitaonekana hapa wasafiri wakilipa kupitia Rafrika.',
     depositHeld: 'Inashikiliwa na Rafrika',
     depositPaidOut: 'Umelipwa',
+    depositChecking: 'Inakaguliwa na Rafrika',
     openRequests: 'Maombi ya safari yaliyo wazi',
   },
   jobs: {
@@ -758,6 +759,12 @@ export const sw: Dictionary = {
     paidOutNote: 'Imelipwa kwa mwongozaji wako.',
     notPaid: 'Amana bado haijalipwa.',
     paidOn: 'Imelipwa {date}',
+    review: 'Tunakagua malipo haya',
+    reviewNote: 'Jibu la Selcom halikulingana na tulichotarajia, kwa hiyo timu ya Rafrika inayakagua malipo haya. Tafadhali usilipe tena. Tutakujulisha yakishakaguliwa.',
+    checking: 'Inakaguliwa na Rafrika. Tafadhali usilipe tena.',
+    underReview: 'Tunakagua malipo ya amana hii. Tafadhali usilipe tena. Tutakujulisha yakishakaguliwa.',
+    pendingOrder: 'Malipo uliyoanza bado yako wazi kwenye Selcom. Yamalizie huko, au jaribu tena baada ya saa moja hivi.',
+    notApproved: 'Mwongozaji au biashara hii bado haiwezi kupokea amana kupitia Rafrika. Mlipe moja kwa moja kama mlivyokubaliana.',
   },
   alerts: {
     mute: 'Zima taarifa',

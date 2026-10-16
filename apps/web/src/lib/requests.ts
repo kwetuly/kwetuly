@@ -70,28 +70,30 @@ export async function listOffers(requestId: string): Promise<TripOffer[]> {
   return data ?? [];
 }
 
-/** Ids of offers or group-trip spots that already have a paid deposit. */
+/** Ids of offers or group-trip spots whose deposit is paid or being checked by Rafrika (no Pay button for either). */
 export async function paidDeposits(column: 'trip_offer_id' | 'group_member_id', ids: string[]): Promise<Set<string>> {
   if (!ids.length) return new Set();
   const supabase = await createClient();
-  const { data } = await supabase.from('payments').select(column).in(column, ids).eq('status', 'paid');
+  const { data } = await supabase.from('payments').select(column).in(column, ids).in('status', ['paid', 'review']);
   return new Set((data ?? []).map((row) => (row as Record<string, string>)[column]));
 }
 
-export type DepositState = { paid: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
+/** `review`: Selcom reported a payment Rafrika must check by hand; treat it as "being checked", never as unpaid. */
+export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
-/** Where the deposit for one offer or group-trip spot is: not paid, held by Rafrika, or paid to the guide. */
+/** Where the deposit for one offer or group-trip spot is: not paid, being checked, held by Rafrika, or paid to the guide. */
 export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('payments')
-    .select('paid_at, payout_done, amount_usd')
+    .select('status, paid_at, payout_done, amount_usd')
     .eq(column, id)
-    .eq('status', 'paid')
-    .order('paid_at', { ascending: false })
-    .limit(1)
-    .maybeSingle<{ paid_at: string | null; payout_done: boolean; amount_usd: number }>();
-  return data
-    ? { paid: true, paidAt: data.paid_at, paidOut: data.payout_done, amountUsd: Number(data.amount_usd) }
-    : { paid: false, paidAt: null, paidOut: false, amountUsd: null };
+    .in('status', ['paid', 'review'])
+    .order('created_at', { ascending: false })
+    .limit(10)
+    .returns<{ status: 'paid' | 'review'; paid_at: string | null; payout_done: boolean; amount_usd: number }[]>();
+  const paid = (data ?? []).find((row) => row.status === 'paid');
+  if (paid) return { paid: true, review: false, paidAt: paid.paid_at, paidOut: paid.payout_done, amountUsd: Number(paid.amount_usd) };
+  const review = (data ?? [])[0];
+  return { paid: false, review: Boolean(review), paidAt: null, paidOut: false, amountUsd: review ? Number(review.amount_usd) : null };
 }

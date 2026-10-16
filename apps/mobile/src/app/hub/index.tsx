@@ -120,12 +120,12 @@ export default function HubScreen() {
         {(deposits.data ?? []).map((d, i) => (
           <View key={d.id} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
             <Text style={{ width: 52, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
-              {d.paid_at ? new Date(d.paid_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : ''}
+              {new Date(d.paid_at ?? d.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
             </Text>
             <Text numberOfLines={2} style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{d.description}</Text>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ color: colors.label, fontWeight: '800', fontVariant: ['tabular-nums'] }}>TSh {d.amount_tzs.toLocaleString('en-US')}</Text>
-              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
+              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{d.status === 'review' ? h.depositChecking : d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
             </View>
           </View>
         ))}

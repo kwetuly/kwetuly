@@ -595,6 +595,12 @@ export const fr: Dictionary = {
     paidOutNote: 'Versé à votre guide.',
     notPaid: 'Acompte pas encore payé.',
     paidOn: 'Payé le {date}',
+    review: 'Nous vérifions ce paiement',
+    reviewNote: 'La réponse de Selcom ne correspond pas à ce que nous attendions : l’équipe Rafrika vérifie ce paiement à la main. Ne payez pas une deuxième fois. Nous vous préviendrons une fois la vérification faite.',
+    checking: 'En cours de vérification par Rafrika. Ne payez pas une deuxième fois.',
+    underReview: 'Nous vérifions un paiement pour cet acompte. Ne payez pas une deuxième fois. Nous vous préviendrons une fois la vérification faite.',
+    pendingOrder: 'Un paiement que vous avez commencé est encore ouvert chez Selcom. Terminez-le, ou réessayez dans une heure environ.',
+    notApproved: 'Ce guide ou cette entreprise ne peut pas encore recevoir d’acompte via Rafrika. Payez-le directement, comme convenu.',
   },
   alerts: {
     mute: 'Couper les alertes',

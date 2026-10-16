@@ -411,8 +411,18 @@ type PaymentRow = {
   // Added by 20261016001100_security_review_fixes.sql; optional until that migration is applied.
   payout_by?: string | null;
   payout_at?: string | null;
+  // Added by 20261016001600_payments_review_fixes.sql; optional until that migration is applied.
+  provider_amount?: number | null;
   created_at: string;
 };
+
+// Phone numbers on the payments list are masked (e.g. 2557XX…678): enough to tell people apart,
+// not enough to copy. Full numbers stay on the profile.
+function maskPhone(phone: string | null) {
+  const digits = (phone ?? '').replace(/\D/g, '');
+  if (!digits) return null;
+  return digits.length < 8 ? '…' : `${digits.slice(0, 4)}XX…${digits.slice(-3)}`;
+}
 
 // Deposits paid through Selcom. Rafrika pays them out to the guide or company, then ticks them here.
 async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
@@ -434,7 +444,7 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
     : { data: [] };
   const who = (id: string | null) => {
     const person = people?.find((p) => p.id === id);
-    return person ? [person.full_name, person.phone].filter(Boolean).join(' · ') : '—';
+    return person ? [person.full_name, maskPhone(person.phone)].filter(Boolean).join(' · ') : '—';
   };
   const a = t.admin;
 
@@ -448,8 +458,17 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
             <div className="text-sm">
               <p className="font-bold">
                 {p.description} · TZS {p.amount_tzs.toLocaleString('en')} (${p.amount_usd})
-                <span className={`ml-2 rounded-[5px] px-2 py-0.5 text-xs font-semibold ${p.status === 'paid' ? 'bg-mint text-forest' : 'bg-red-50 text-red-800'}`}>{p.status}</span>
+                <span
+                  className={`ml-2 rounded-[5px] px-2 py-0.5 text-xs font-semibold ${
+                    p.status === 'paid' ? 'bg-mint text-forest' : p.status === 'review' ? 'bg-gold/25 text-charcoal' : 'bg-red-50 text-red-800'
+                  }`}
+                >
+                  {p.status === 'review' ? 'review: check with Selcom' : p.status}
+                </span>
               </p>
+              {p.provider_amount != null && Number(p.provider_amount) !== p.amount_tzs && (
+                <p className="font-semibold">Selcom reported TZS {Number(p.provider_amount).toLocaleString('en')}</p>
+              )}
               <p className="text-muted">
                 {new Date(p.created_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {p.provider_channel ?? ''} {p.provider_reference ?? ''}
               </p>

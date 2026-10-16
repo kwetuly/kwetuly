@@ -32,7 +32,9 @@ export function BookingTicket({ title, guide, dates, people, totalUsd, depositPe
     ? null
     : deposit?.paid
       ? `${p.paidOn.replace('{date}', deposit.paidAt ? new Date(deposit.paidAt).toLocaleDateString(locale, { day: 'numeric', month: 'short' }) : '')} · ${forGuide ? (deposit.paidOut ? t.hub.depositPaidOut : t.hub.depositHeld) : deposit.paidOut ? p.paidOutNote : p.heldNote}`
-      : p.notPaid;
+      : deposit?.review
+        ? forGuide ? t.hub.depositChecking : p.checking
+        : p.notPaid;
 
   const cell = (label: string, value: string, extra?: string | null) => (
     <View style={{ width: '50%', paddingRight: space.sm, gap: space.xxs }}>

@@ -159,21 +159,38 @@ export async function paymentsEnabled(): Promise<boolean> {
   return (await paymentsConfig()).enabled;
 }
 
-export type DepositState = { paid: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
+/** `review`: Selcom reported a payment Rafrika must check by hand; treat it as "being checked", never as unpaid. */
+export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
-/** Where a deposit is: not paid, held by Rafrika, or paid to the guide. */
+/** Where a deposit is: not paid, being checked, held by Rafrika, or paid to the guide. */
 export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
   const { data } = await supabase
     .from('payments')
-    .select('paid_at, payout_done, amount_usd')
+    .select('status, paid_at, payout_done, amount_usd')
     .eq(column, id)
-    .eq('status', 'paid')
-    .order('paid_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return data
-    ? { paid: true, paidAt: data.paid_at, paidOut: data.payout_done, amountUsd: Number(data.amount_usd) }
-    : { paid: false, paidAt: null, paidOut: false, amountUsd: null };
+    .in('status', ['paid', 'review'])
+    .order('created_at', { ascending: false })
+    .limit(10);
+  const rows = (data ?? []) as { status: 'paid' | 'review'; paid_at: string | null; payout_done: boolean; amount_usd: number }[];
+  const paid = rows.find((row) => row.status === 'paid');
+  if (paid) return { paid: true, review: false, paidAt: paid.paid_at, paidOut: paid.payout_done, amountUsd: Number(paid.amount_usd) };
+  const review = rows[0];
+  return { paid: false, review: Boolean(review), paidAt: null, paidOut: false, amountUsd: review ? Number(review.amount_usd) : null };
+}
+
+// Reasons the Edge Function gives when a deposit cannot be paid online at all: the Pay box is hidden.
+const NOT_PAYABLE = new Set(['not_found', 'not_accepted', 'no_deposit', 'not_approved', 'already_paid', 'bad_request']);
+
+/**
+ * Whether the traveller can pay this deposit now: 'pay', 'review' (a payment is being checked), or
+ * 'hidden' (unapproved guide or business, admin-made offer, unapproved or cancelled group).
+ * If the check itself fails, show the box; checkout runs the same rules again.
+ */
+export async function depositPayable(kind: 'offer' | 'group', id: string): Promise<'pay' | 'review' | 'hidden'> {
+  const { data } = await supabase.functions.invoke('payments', { body: { action: 'check', kind, id } });
+  const error = ((data ?? {}) as { error?: string }).error;
+  if (error === 'under_review') return 'review';
+  return error && NOT_PAYABLE.has(error) ? 'hidden' : 'pay';
 }
 
 /** Lowest live offer on each of the traveller's requests. */
@@ -187,17 +204,26 @@ export async function lowestOffers(requestIds: string[]): Promise<Record<string,
   return lowest;
 }
 
-/** Deposits paid to this guide or company (newest first), for the Guide Hub ledger. */
+/** Deposits paid to this guide or company, or being checked by Rafrika (newest first), for the Guide Hub ledger. */
 export async function listMyDeposits(userId: string) {
   const { data, error } = await supabase
     .from('payments')
-    .select('id, description, amount_tzs, amount_usd, paid_at, payout_done')
+    .select('id, description, amount_tzs, amount_usd, status, paid_at, payout_done, created_at')
     .eq('payee_user_id', userId)
-    .eq('status', 'paid')
-    .order('paid_at', { ascending: false })
+    .in('status', ['paid', 'review'])
+    .order('created_at', { ascending: false })
     .limit(50);
   check(error);
-  return (data ?? []) as { id: string; description: string; amount_tzs: number; amount_usd: number; paid_at: string | null; payout_done: boolean }[];
+  return (data ?? []) as {
+    id: string;
+    description: string;
+    amount_tzs: number;
+    amount_usd: number;
+    status: 'paid' | 'review';
+    paid_at: string | null;
+    payout_done: boolean;
+    created_at: string;
+  }[];
 }
 
 /** Opens the Selcom payment page; when the traveller comes back, asks Selcom for the result. */

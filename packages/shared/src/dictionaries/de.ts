@@ -595,6 +595,12 @@ export const de: Dictionary = {
     paidOutNote: 'An Ihren Guide ausgezahlt.',
     notPaid: 'Anzahlung noch nicht bezahlt.',
     paidOn: 'Bezahlt am {date}',
+    review: 'Wir prüfen diese Zahlung',
+    reviewNote: 'Die Antwort von Selcom passt nicht zu dem, was wir erwartet haben. Das Rafrika-Team prüft diese Zahlung deshalb von Hand. Bitte zahlen Sie nicht noch einmal. Wir melden uns, sobald sie geprüft ist.',
+    checking: 'Wird von Rafrika geprüft. Bitte zahlen Sie nicht noch einmal.',
+    underReview: 'Wir prüfen eine Zahlung für diese Anzahlung. Bitte zahlen Sie nicht noch einmal. Wir melden uns, sobald sie geprüft ist.',
+    pendingOrder: 'Eine begonnene Zahlung ist bei Selcom noch offen. Schließen Sie sie dort ab oder versuchen Sie es in etwa einer Stunde erneut.',
+    notApproved: 'Dieser Guide oder dieses Unternehmen kann noch keine Anzahlungen über Rafrika annehmen. Bitte zahlen Sie wie vereinbart direkt.',
   },
   alerts: {
     mute: 'Hinweise stummschalten',
