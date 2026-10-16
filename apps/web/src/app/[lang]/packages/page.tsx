@@ -46,7 +46,10 @@ async function List({ t, locale, searchParams }: { t: Dictionary; locale: Locale
         ))}
       </nav>
       {packages.length === 0 ? (
-        <p className="mt-10 text-lg text-muted">{t.packages.catalogEmpty}</p>
+        <div className="mt-10">
+          <p className="text-lg text-muted">{t.packages.catalogEmpty}</p>
+          <Link href={`/${locale}/guides`} className="btn mt-5">{t.nav.guides}</Link>
+        </div>
       ) : (
         <ul className="mt-6 space-y-3">
           {packages.map((p) => (

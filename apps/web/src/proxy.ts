@@ -33,7 +33,23 @@ export async function proxy(request: NextRequest) {
   if (hasLocale(firstSegment)) {
     response.cookies.set('lang', firstSegment, { path: '/', maxAge: 60 * 60 * 24 * 365 });
   }
-  return updateSession(request, response);
+  return updateSession(request, response, groupTripMissing(request));
+}
+
+// Group trips are only visible to some people (pending trips to their organiser), so the page
+// cannot know before streaming whether a trip exists. Check here, as the visitor, and answer
+// unknown or hidden trips with a real HTTP 404 instead of a 200 "not found" page.
+function groupTripMissing(request: NextRequest) {
+  const match = /^\/([a-z]{2})\/group-trips\/([^/]+)\/?$/.exec(request.nextUrl.pathname);
+  if (!match || !hasLocale(match[1]) || match[2] === 'new' || match[2] === 'mine') return undefined;
+  const [, lang, id] = match;
+  const notFound = () => NextResponse.rewrite(new URL(`/${lang}/not-found`, request.url), { status: 404 });
+  return async (supabase: Parameters<NonNullable<Parameters<typeof updateSession>[2]>>[0]) => {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return notFound();
+    const { data, error } = await supabase.from('group_trips').select('id').eq('id', id).maybeSingle();
+    // On a database error let the page decide, rather than show a wrong 404.
+    return !error && !data ? notFound() : null;
+  };
 }
 
 export const config = {

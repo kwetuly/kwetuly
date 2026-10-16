@@ -7,8 +7,11 @@ import { businessApproval, requireUser } from '@/lib/auth';
 import type { GroupTrip } from '@/lib/groups';
 import { createClient } from '@/lib/supabase/server';
 import { formatDates } from '@/components/group-trip-card';
+import { SUPPORT_EMAIL } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'My group trips', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).groups.mine, robots: { index: false } };
+}
 
 export default async function MyGroupTripsPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -47,7 +50,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
   const requestLabel: Record<string, string> = { requested: g.stateRequested, accepted: g.stateAccepted, declined: g.stateDeclined };
   const tripState = (trip: Row) => (trip.cancelled ? g.cancelledTrip : trip.status === 'pending' ? g.statusPending : trip.status === 'rejected' ? g.statusRejected : null);
 
-  const item = (trip: Row, note?: string | null) => (
+  const item = (trip: Row, note?: string | null, organiser = false) => (
     <li key={trip.id}>
       <Link href={`/${locale}/group-trips/${trip.id}`} className="card flex flex-wrap items-center justify-between gap-3 p-5 hover:border-leaf">
         <span>
@@ -56,15 +59,26 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
         </span>
         {note && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-semibold text-leaf-dark">{note}</span>}
       </Link>
+      {/* A rejected trip says "please contact Rafrika": give the organiser the way to do it. */}
+      {organiser && trip.status === 'rejected' && !trip.cancelled && SUPPORT_EMAIL && (
+        <a
+          href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${g.statusRejected} ${trip.title}`)}`}
+          className="mt-2 inline-block text-sm font-semibold text-forest underline"
+        >
+          {t.ux.contactRafrika}
+        </a>
+      )}
     </li>
   );
 
   return (
     <div className="mt-6 space-y-10">
+      {/* Business accounts can organise once Rafrika approves their listing. */}
+      {business === 'waiting' && <p className="card">{t.business.waitApproval}</p>}
       {(organised.data?.length ?? 0) > 0 && (
         <section>
           <h2 className="text-xl font-bold">{g.organising}</h2>
-          <ul className="mt-3 space-y-3">{organised.data!.map((trip) => item(trip, tripState(trip)))}</ul>
+          <ul className="mt-3 space-y-3">{organised.data!.map((trip) => item(trip, tripState(trip), true))}</ul>
         </section>
       )}
       <section>

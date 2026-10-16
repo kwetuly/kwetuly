@@ -1,8 +1,16 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+type SessionClient = ReturnType<typeof createServerClient>;
+
 // Refreshes the Supabase session cookie on every request and returns the response to send.
-export async function updateSession(request: NextRequest, response: NextResponse) {
+// `check` may look something up as the signed-in visitor and return a different response (for
+// example a 404); the refreshed session cookies are copied onto it.
+export async function updateSession(
+  request: NextRequest,
+  response: NextResponse,
+  check?: (supabase: SessionClient) => Promise<NextResponse | null>,
+) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -23,5 +31,8 @@ export async function updateSession(request: NextRequest, response: NextResponse
 
   // Do not remove: this revalidates the auth token and writes the refreshed cookies.
   await supabase.auth.getUser();
-  return response;
+  const replacement = check ? await check(supabase) : null;
+  if (!replacement) return response;
+  response.cookies.getAll().forEach((cookie) => replacement.cookies.set(cookie));
+  return replacement;
 }

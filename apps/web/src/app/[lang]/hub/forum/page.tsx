@@ -9,6 +9,7 @@ import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { createPost } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { title: 'Guide forum', robots: { index: false } };
 
@@ -45,7 +46,7 @@ export default async function ForumPage() {
             <option value="">{t.hub.region}</option>
             {REGIONS.map((r) => <option key={r}>{r}</option>)}
           </select>
-          <button className="btn w-full">{t.hub.post}</button>
+          <SubmitButton className="btn w-full">{t.hub.post}</SubmitButton>
         </form>
       </aside>
     </div>

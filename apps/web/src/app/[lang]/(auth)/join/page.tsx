@@ -10,6 +10,7 @@ import { signUp } from '../actions';
 import { SocialSignIn } from '@/components/social-sign-in';
 import { EVENTS } from '@rafrika/shared';
 import { LogEvent } from '@/components/analytics';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).join.title };
@@ -49,7 +50,7 @@ async function JoinForm({
   locale: Locale;
 }) {
   const params = await searchParams;
-  const selected = roles.some((r) => r.id === params.role) ? (params.role as string) : 'guide';
+  const selected = roles.some((r) => r.id === params.role) ? (params.role as string) : 'traveler';
 
   if (params.sent) {
     return <>
@@ -66,17 +67,28 @@ async function JoinForm({
       {params.error && params.error !== 'invite' && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       {(await inviteRequired()) && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
-      <fieldset className="grid gap-3 sm:grid-cols-3">
-        {roles.map(({ id, Icon }) => (
-          <label key={id} className="cursor-pointer">
-            <input type="radio" name="role" value={id} defaultChecked={selected === id} className="peer sr-only" />
-            <span className="flex h-full flex-col gap-2 rounded-[5px] border-2 border-line p-4 transition peer-checked:border-leaf peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-mint">
-              <Icon className="size-6 text-leaf-dark" aria-hidden />
-              <span className="font-bold">{t.join[id].title}</span>
-              <span className="text-xs text-muted">{t.join[id].body}</span>
-            </span>
-          </label>
-        ))}
+      <fieldset>
+        <legend className="label">{t.auth.welcomeRole}</legend>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {roles.map(({ id, Icon }) => (
+            <label key={id} className="cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value={id}
+                defaultChecked={selected === id}
+                className="peer sr-only"
+                aria-labelledby={`role-${id}-title`}
+                aria-describedby={`role-${id}-body`}
+              />
+              <span className="flex h-full flex-col gap-2 rounded-[5px] border-2 border-line p-4 transition peer-checked:border-leaf peer-checked:bg-sand peer-focus-visible:ring-4 peer-focus-visible:ring-forest">
+                <Icon className="size-6 text-leaf-dark" aria-hidden />
+                <span id={`role-${id}-title`} className="font-bold">{t.join[id].title}</span>
+                <span id={`role-${id}-body`} className="text-xs text-muted">{t.join[id].body}</span>
+              </span>
+            </label>
+          ))}
+        </div>
       </fieldset>
       <div>
         <label className="label" htmlFor="full_name">{t.auth.fullName}</label>
@@ -95,7 +107,7 @@ async function JoinForm({
         <label className="label" htmlFor="password">{t.auth.password}</label>
         <input className="field" id="password" name="password" type="password" minLength={8} required autoComplete="new-password" />
       </div>
-      <button className="btn w-full">{t.auth.createAccount}</button>
+      <SubmitButton className="btn w-full">{t.auth.createAccount}</SubmitButton>
     </form>
     </div>
   );

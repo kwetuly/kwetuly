@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -275,9 +275,11 @@ function MyOffer({ req }: { req: TripRequest }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  // Fill the form with the offer already sent, so it can be edited.
-  useEffect(() => {
-    if (!offer) return;
+  // Fill the form with the offer already sent, so it can be edited (adjusting state while rendering
+  // when the loaded offer changes, instead of in an effect).
+  const [seenOffer, setSeenOffer] = useState<typeof offer>(null);
+  if (offer && offer !== seenOffer) {
+    setSeenOffer(offer);
     setF({
       company: offer.company_name ?? '',
       price: String(offer.price_total_usd),
@@ -287,7 +289,7 @@ function MyOffer({ req }: { req: TripRequest }) {
       excludes: offer.excludes ?? '',
       validUntil: offer.valid_until ?? '',
     });
-  }, [offer]);
+  }
 
   if (loading || mine.isLoading) return <ScreenState loading />;
   if (!canOffer && !offer) return <Muted>{businessWaiting ? t.business.waitApproval : o.whoCan}</Muted>;

@@ -8,6 +8,7 @@ import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { DirectUpload } from '@/components/direct-upload';
 import { deletePackage, savePackage } from './actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { title: 'My packages', robots: { index: false } };
 
@@ -166,7 +167,7 @@ function PackageForm({ p, t, locale, userId }: { p?: GuidePackage; t: Dictionary
         />
       </div>
       <div className="flex flex-wrap gap-3 pt-2">
-        <button className="btn">{pt.submit}</button>
+        <SubmitButton className="btn">{pt.submit}</SubmitButton>
         <button className="btn-outline" name="draft" value="1">{pt.saveDraft}</button>
       </div>
     </form>

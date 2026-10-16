@@ -287,7 +287,7 @@ export const pl: Dictionary = {
     association: 'Stowarzyszenie',
     vehicle: 'Ma własny pojazd',
     contactTitle: 'Zapytaj przewodnika o wyprawę',
-    contactBody: 'Twoja wiadomość trafia do przewodnika przez Rafrika. Dane kontaktowe są udostępniane po uzgodnieniu wyprawy.',
+    contactBody: 'Twoja wiadomość trafia do przewodnika przez Rafrika. Przewodnik otrzymuje Twoje imię i podany tu kontakt, aby móc Ci odpowiedzieć.',
     askName: 'Zadaj pytanie: {name}',
     askNote: 'Bezpłatnie, bez płacenia za pytanie. {name} czyta i odpowiada osobiście.',
     oneGroup: 'Każdy przewodnik prowadzi naraz tylko jedną grupę, więc popularne terminy szybko się zapełniają.',

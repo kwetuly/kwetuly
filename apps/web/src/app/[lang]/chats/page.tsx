@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { listMyChats } from '@/lib/chats';
 import { createChat, joinChat } from './actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { title: 'Group chats', robots: { index: false } };
 
@@ -41,14 +42,14 @@ async function Chats({ searchParams, t, locale }: { searchParams: Promise<Record
             <span className="label">{c.chatName}</span>
             <input name="name" className="field" required maxLength={80} placeholder={c.chatNamePlaceholder} />
           </label>
-          <button className="btn w-full">{c.create}</button>
+          <SubmitButton className="btn w-full">{c.create}</SubmitButton>
         </form>
         <form action={joinChat} className="card space-y-3">
           <h2 className="font-bold">{c.joinWithCode}</h2>
           {params.joinError && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{c.joinError}</p>}
           <input type="hidden" name="locale" value={locale} />
           <input name="code" className="field" required maxLength={300} placeholder={c.codePlaceholder} aria-label={c.codePlaceholder} />
-          <button className="btn-outline w-full">{c.join}</button>
+          <SubmitButton className="btn-outline w-full">{c.join}</SubmitButton>
         </form>
       </div>
 

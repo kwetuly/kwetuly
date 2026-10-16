@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -149,8 +149,11 @@ export default function ProfileEditScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
 
-  // Fill the form once the saved profile (or the account name and phone) arrives.
-  useEffect(() => {
+  // Fill the form once the saved profile (or the account name and phone) arrives. Adjusting state
+  // while rendering when the loaded data changes, instead of in an effect.
+  const [seen, setSeen] = useState<{ mine: unknown; success: boolean; profile: unknown }>({ mine: undefined, success: false, profile: undefined });
+  if (seen.mine !== mine.data || seen.success !== mine.isSuccess || seen.profile !== profile.data) {
+    setSeen({ mine: mine.data, success: mine.isSuccess, profile: profile.data });
     const g = mine.data?.guide;
     const p = mine.data?.details;
     if (g) {
@@ -185,7 +188,7 @@ export default function ProfileEditScreen() {
     } else if (mine.isSuccess) {
       setF((current) => ({ ...current, display_name: profile.data?.full_name ?? '', phone: profile.data?.phone ?? '', whatsapp_number: profile.data?.phone ?? '' }));
     }
-  }, [mine.data, mine.isSuccess, profile.data]);
+  }
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;

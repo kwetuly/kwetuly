@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { liveRecentLinks } from './recently-viewed-actions';
 
 // Guides and trips this visitor opened lately, kept only in their own browser (nothing is sent
 // anywhere). The home page shows them so people can pick up where they left off.
@@ -60,6 +61,26 @@ export function TrackView({ item }: { item: RecentItem }) {
 export function RecentlyViewed({ title, clearLabel }: { title: string; clearLabel: string }) {
   const raw = useSyncExternalStore(subscribe, read, () => '[]');
   const items = useMemo(() => parse(raw), [raw]);
+
+  // Once per visit, drop guides and tours that were removed or hidden since they were opened.
+  useEffect(() => {
+    const saved = parse(read());
+    if (saved.length === 0) return;
+    let cancelled = false;
+    liveRecentLinks(saved.map((i) => i.href))
+      .then((live) => {
+        if (cancelled || live.length === saved.length) return;
+        const keep = new Set(live);
+        write(parse(read()).filter((i) => keep.has(i.href)));
+      })
+      .catch(() => {
+        // Offline or the check failed: keep the list as it is.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (items.length === 0) return null;
 
   return (

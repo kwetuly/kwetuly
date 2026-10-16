@@ -9,7 +9,9 @@ import { createClient } from '@/lib/supabase/server';
 import { TwoStepSetup } from '@/components/two-step-setup';
 import { deleteAccount } from './actions';
 
-export const metadata: Metadata = { robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).ux.securityTitle, robots: { index: false } };
+}
 
 export default async function SecurityPage({ searchParams }: PageProps<'/[lang]/security'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);

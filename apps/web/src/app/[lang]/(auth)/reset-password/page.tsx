@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/config';
 import { RECOVERY_COOKIE, recoveryUserId } from '@/lib/recovery';
 import { createClient } from '@/lib/supabase/server';
 import { updatePassword } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).ux.newPasswordTitle, robots: { index: false } };
@@ -80,7 +81,7 @@ async function NewPassword({
           <label className="label" htmlFor="confirm">{t.ux.confirmPassword}</label>
           <input className="field" id="confirm" name="confirm" type="password" required minLength={8} maxLength={72} autoComplete="new-password" />
         </div>
-        <button className="btn w-full">{t.ux.savePassword}</button>
+        <SubmitButton className="btn w-full">{t.ux.savePassword}</SubmitButton>
       </form>
       {error && (
         <p className="mt-4 text-sm text-muted">

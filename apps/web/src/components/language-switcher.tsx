@@ -23,7 +23,7 @@ export function LanguageSwitcher({ current }: { current: Locale }) {
   return (
     <details ref={ref} className="relative">
       <summary
-        className="flex cursor-pointer list-none items-center gap-1.5 rounded-[5px] border border-line px-3 py-1.5 text-xs font-bold uppercase hover:border-forest [&::-webkit-details-marker]:hidden"
+        className="flex h-10 cursor-pointer list-none items-center gap-1 rounded-[5px] border border-line px-2 text-xs font-bold uppercase sm:h-auto sm:gap-1.5 sm:px-3 sm:py-1.5 hover:border-forest [&::-webkit-details-marker]:hidden"
         aria-label="Language"
       >
         <Globe className="size-4" aria-hidden /> {current}

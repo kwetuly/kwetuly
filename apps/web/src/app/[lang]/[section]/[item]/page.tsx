@@ -29,7 +29,11 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/[section]/
   return found ? pageMeta({ path: `/${section}/${item}`, title: found.item.label[locale], description: found.item.blurb[locale] }) : {};
 }
 
-export default function ItemPage(props: PageProps<'/[lang]/[section]/[item]'>) {
+export default async function ItemPage(props: PageProps<'/[lang]/[section]/[item]'>) {
+  // Unknown addresses get a real HTTP 404 before the Suspense boundary starts streaming.
+  const { section: sectionSlug, item: itemSlug } = await props.params;
+  const found = findMenuItem(sectionSlug, itemSlug);
+  if (!found || found.item.href) notFound();
   return (
     <Suspense fallback={<div className="pattern-kanga h-72" />}>
       <ItemContent {...props} />

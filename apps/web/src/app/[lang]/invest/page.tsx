@@ -6,6 +6,7 @@ import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { registerInterest } from '../[section]/actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -92,7 +93,7 @@ async function InterestForm({
       <input name="name" className="field" required maxLength={120} placeholder={t.profile.name} autoComplete="name" />
       <input name="contact" className="field" required maxLength={160} placeholder={t.profile.contact} />
       <textarea name="message" className="field min-h-24" maxLength={2000} placeholder={placeholder} />
-      <button className="btn">{cta}</button>
+      <SubmitButton className="btn">{cta}</SubmitButton>
     </form>
   );
 }

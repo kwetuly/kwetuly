@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { MENU } from '@rafrika/shared';
@@ -11,7 +12,8 @@ import { Icon } from './icon';
 import { Logo } from './logo';
 
 // Desktop: hover/focus mega-menus. Mobile: full-screen drawer with expandable sections.
-export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: string }) {
+// `account` (mobile only) holds the sign-in / account links that do not fit in the phone header.
+export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLabel: string; account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -79,7 +81,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 items-center justify-center rounded-[5px] border border-line xl:hidden"
+        className="flex size-10 shrink-0 items-center justify-center rounded-[5px] border border-line xl:hidden"
         aria-label="Open menu"
       >
         <Menu className="size-5" />
@@ -89,6 +91,7 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
       {open &&
         createPortal(
         <div className="fixed inset-0 z-50 flex flex-col bg-night text-white xl:hidden" role="dialog" aria-modal="true">
+          <CloseOnNavigate onNavigate={setOpen} />
           <div className="flex items-center justify-between px-4 py-4">
             <Logo tone="light" className="text-2xl" />
             <button
@@ -151,10 +154,31 @@ export function SiteNav({ locale, soonLabel }: { locale: Locale; soonLabel: stri
                 </div>
               );
             })}
+            {account && (
+              <div
+                className="mt-2"
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest('a')) setOpen(false);
+                }}
+              >
+                {account}
+              </div>
+            )}
           </nav>
         </div>,
           document.body,
         )}
     </>
   );
+}
+
+// Closes the open drawer after any navigation, including a sign-out redirect. Only mounted while the
+// drawer is open (never during prerendering), so reading the pathname does not block the header.
+function CloseOnNavigate({ onNavigate }: { onNavigate: (open: boolean) => void }) {
+  const pathname = usePathname();
+  const openedAt = useRef(pathname);
+  useEffect(() => {
+    if (pathname !== openedAt.current) onNavigate(false);
+  }, [pathname, onNavigate]);
+  return null;
 }

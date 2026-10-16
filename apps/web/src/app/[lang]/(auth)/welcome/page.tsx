@@ -9,6 +9,7 @@ import { InviteCodeField } from '@/components/invite-code-field';
 import { getCurrentUser } from '@/lib/auth';
 import { safeLocalPath } from '@/lib/safe-next';
 import { finishWelcome } from './actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.welcomeTitle, robots: { index: false } };
@@ -82,7 +83,7 @@ async function WelcomeForm({
         <input className="field" id="phone" name="phone" type="tel" required autoComplete="tel" inputMode="tel" placeholder="+255 712 345 678" defaultValue={user.phone ?? ''} aria-describedby="phone-hint" />
         <p id="phone-hint" className="mt-1 text-xs text-muted">{t.auth.phoneHint}</p>
       </div>
-      <button className="btn w-full">{t.auth.finish}</button>
+      <SubmitButton className="btn w-full">{t.auth.finish}</SubmitButton>
     </form>
   );
 }

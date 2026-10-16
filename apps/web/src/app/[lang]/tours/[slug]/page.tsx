@@ -58,6 +58,7 @@ import { StickyCta } from '@/components/sticky-cta';
 import { SITE_URL } from '@/lib/site';
 import { enquireTrip, toggleSavedTour } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
+import { SubmitButton } from '@/components/submit-button';
 
 type Params = Promise<{ slug: string }>;
 type Search = Promise<Record<string, string | string[] | undefined>>;
@@ -523,7 +524,7 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
               </select>
             )}
             <textarea name="message" className="field min-h-20" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={1500} />
-            <button className="btn w-full" data-track="tour_send_enquiry">{tt.send}</button>
+            <SubmitButton className="btn w-full" data-track="tour_send_enquiry">{tt.send}</SubmitButton>
             <p className="text-xs leading-relaxed text-white">{t.ux.whatNextTour}</p>
             <p className="text-xs leading-relaxed text-white">{t.ux.privacyTour}</p>
             <p className="text-xs leading-relaxed text-white">

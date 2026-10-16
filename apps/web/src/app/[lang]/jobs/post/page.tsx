@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser, welcomePath } from '@/lib/auth';
 import { postJob } from './actions';
 import { PhotoHero } from '@/components/photo-hero';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = {
   title: 'Hire guides & crew, or hand over clients',
@@ -159,7 +160,7 @@ async function JobForm({
         <span className="label">{j.howToApply}</span>
         <input name="how_to_apply" className="field" required maxLength={300} />
       </label>
-      <button className="btn sm:col-span-2">{handover ? j.handoverSubmit : j.submit}</button>
+      <SubmitButton className="btn sm:col-span-2">{handover ? j.handoverSubmit : j.submit}</SubmitButton>
     </form>
   );
 }

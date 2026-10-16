@@ -287,7 +287,7 @@ export const de: Dictionary = {
     association: 'Verband',
     vehicle: 'Eigenes Fahrzeug',
     contactTitle: 'Diesen Guide zu einer Reise fragen',
-    contactBody: 'Ihre Nachricht erreicht den Guide über Rafrika. Kontaktdaten werden geteilt, sobald Sie sich über die Reise einig sind.',
+    contactBody: 'Ihre Nachricht erreicht den Guide über Rafrika. Der Guide erhält Ihren Namen und den hier angegebenen Kontakt, um Ihnen zu antworten.',
     askName: 'Fragen Sie {name}',
     askNote: 'Kostenlos, Fragen kostet nichts. {name} liest und antwortet persönlich.',
     oneGroup: 'Jeder Guide führt immer nur eine Gruppe, beliebte Termine sind daher früh vergeben.',

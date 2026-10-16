@@ -26,6 +26,8 @@ import { StickyCta } from '@/components/sticky-cta';
 import { SITE_URL } from '@/lib/site';
 import { requestCall, requestGuide, submitReview } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
+import { SubmitButton } from '@/components/submit-button';
+import { InViewNote } from '@/components/in-view-note';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
@@ -41,7 +43,17 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[sl
   });
 }
 
+// Cache Components needs at least one sample slug to check the page at build time. Unknown slugs
+// are still rendered on request; the cached lookup below answers them with a real 404.
+export async function generateStaticParams() {
+  const [first] = await listGuides({});
+  return [{ slug: first?.slug ?? '__placeholder__' }];
+}
+
 export default async function GuideProfilePage({ params, searchParams }: PageProps<'/[lang]/guides/[slug]'>) {
+  // Checked before the Suspense boundary so a missing or hidden guide returns HTTP 404, not 200.
+  const { slug } = await params;
+  if (!(await getGuideBySlug(slug))) notFound();
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
     <Suspense fallback={<div className="mx-auto mt-10 h-64 max-w-4xl animate-pulse rounded-[5px] bg-surface" />}>
@@ -208,7 +220,7 @@ async function Profile({
         <p className="mt-1 text-sm text-muted">{t.profile.contactBody}</p>
         <p className="mt-1 text-sm text-muted">{t.profile.oneGroup}</p>
         {status.sent ? (
-          <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{t.profile.sent}</p>
+          <InViewNote className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{t.profile.sent}</InViewNote>
         ) : (
           <form action={requestGuide} className="mt-4 space-y-3">
             {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
@@ -234,7 +246,7 @@ async function Profile({
               <span className="label">{t.profile.message}</span>
               <textarea className="field min-h-28" name="message" required maxLength={2000} />
             </label>
-            <button className="btn w-full" data-track="guide_send_enquiry">{t.profile.send}</button>
+            <SubmitButton className="btn w-full" data-track="guide_send_enquiry">{t.profile.send}</SubmitButton>
             <p className="text-xs leading-relaxed text-muted">{t.ux.whatNextGuide}</p>
             <p className="text-xs leading-relaxed text-muted">{t.ux.privacyGuide}</p>
           </form>
@@ -282,9 +294,9 @@ async function MessageButton({ guide, t, locale }: { guide: Guide; t: Dictionary
     <form action={startConversation}>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="guide_id" value={guide.id} />
-      <button className="btn-dark w-full" data-track="guide_message">
+      <SubmitButton className="btn-dark w-full" data-track="guide_message">
         <MessagesSquare className="size-5" aria-hidden /> {t.messages.messageGuide}
-      </button>
+      </SubmitButton>
     </form>
   );
 }
@@ -315,7 +327,7 @@ async function CallBooking({
       </div>
       <div className="p-6">
         {status.callSent ? (
-          <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">{t.calls.sent}</p>
+          <InViewNote className="rounded-[5px] bg-mint p-4 font-semibold text-forest">{t.calls.sent}</InViewNote>
         ) : !user ? (
           <div>
             <p className="text-white/80">{t.calls.signInFirst}</p>
@@ -343,7 +355,7 @@ async function CallBooking({
             <textarea name="preferred_times" className="field min-h-20 text-charcoal" placeholder={t.calls.times} aria-label={t.calls.times} required maxLength={500} />
             <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} aria-label={t.calls.contact} maxLength={160} />
             <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={2000} />
-            <button className="btn w-full">{t.calls.book}</button>
+            <SubmitButton className="btn w-full">{t.calls.book}</SubmitButton>
             <p className="text-xs text-white/70">{t.calls.payNote}</p>
           </form>
         )}
@@ -433,7 +445,7 @@ async function ReviewForm({
   ]);
   const eligible = (calls.count ?? 0) > 0 || (conversations.count ?? 0) > 0;
 
-  if (status.reviewSent) return <p className="mt-5 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.thanks}</p>;
+  if (status.reviewSent) return <InViewNote className="mt-5 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {r.thanks}</InViewNote>;
   if (!eligible) return <p className="mt-5 rounded-[5px] bg-surface p-4 text-sm text-muted">{r.onlyAfter}</p>;
 
   return (
@@ -456,7 +468,7 @@ async function ReviewForm({
         </div>
       </fieldset>
       <textarea name="body" className="field min-h-28" placeholder={r.body} aria-label={r.body} required minLength={10} maxLength={2000} defaultValue={own.data?.body ?? ''} />
-      <button className="btn">{r.submit}</button>
+      <SubmitButton className="btn">{r.submit}</SubmitButton>
     </form>
   );
 }

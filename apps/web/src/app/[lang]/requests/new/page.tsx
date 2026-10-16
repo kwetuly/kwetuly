@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser, welcomePath } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createRequest } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -138,7 +139,7 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       <label className="flex items-center gap-2 sm:col-span-2">
         <input type="checkbox" name="female_guide" className="size-4 accent-forest" /> {r.femaleGuide}
       </label>
-      <button className="btn sm:col-span-2">{r.submit}</button>
+      <SubmitButton className="btn sm:col-span-2">{r.submit}</SubmitButton>
     </form>
   );
 }

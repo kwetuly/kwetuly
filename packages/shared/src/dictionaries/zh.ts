@@ -282,7 +282,7 @@ export const zh: Dictionary = {
     association: '所属协会',
     vehicle: '自有车辆',
     contactTitle: '向这位导游咨询行程',
-    contactBody: '你的消息会通过 Rafrika 发送给导游。确定行程后再交换联系方式。',
+    contactBody: '你的消息会通过 Rafrika 发送给导游。导游会收到你的姓名和你在此填写的联系方式，以便回复你。',
     askName: '向 {name} 提问',
     askNote: '免费，提问无需付款。{name} 会亲自阅读并回复。',
     oneGroup: '每位向导同一时间只带一个团，热门日期很快就会订满。',

@@ -25,7 +25,11 @@ export async function generateMetadata({ params }: PageProps<'/[lang]/[section]'
   return section ? pageMeta({ path: `/${section.slug}`, title: section.label[locale], description: section.tagline[locale] }) : {};
 }
 
-export default function SectionPage(props: PageProps<'/[lang]/[section]'>) {
+export default async function SectionPage(props: PageProps<'/[lang]/[section]'>) {
+  // Unknown addresses such as /en/does-not-exist land here: answer them with a real HTTP 404
+  // before the Suspense boundary starts streaming a 200.
+  const { section: slug } = await props.params;
+  if (!sections.some((s) => s.slug === slug)) notFound();
   return (
     <Suspense fallback={<div className="pattern-kanga h-72" />}>
       <SectionContent {...props} />

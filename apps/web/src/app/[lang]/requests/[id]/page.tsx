@@ -16,6 +16,7 @@ import { languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
 import { PayDeposit } from '@/components/pay-deposit';
 import { answerOffer, sendOffer, setRequestOpen, withdrawOffer } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -330,7 +331,7 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
             <input name="valid_until" type="date" min={today()} className="field" defaultValue={offer?.valid_until ?? ''} />
           </label>
           <div className="flex items-end">
-            <button className="btn w-full">{offer ? o.update : o.send}</button>
+            <SubmitButton className="btn w-full">{offer ? o.update : o.send}</SubmitButton>
           </div>
         </form>
       )}

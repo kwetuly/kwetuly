@@ -9,6 +9,7 @@ import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { createReply } from '../../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { title: 'Forum thread', robots: { index: false } };
 
@@ -76,7 +77,7 @@ async function ThreadView({ params, t, locale }: { params: Promise<{ id: string 
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="post_id" value={post.id} />
           <textarea name="body" className="field min-h-24" required maxLength={3000} placeholder={t.hub.reply} />
-          <button className="btn">{t.hub.reply}</button>
+          <SubmitButton className="btn">{t.hub.reply}</SubmitButton>
         </form>
       </section>
     </article>

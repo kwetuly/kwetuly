@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -25,12 +25,16 @@ export default function ReviewScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    if (status.data?.own) {
-      setRating(status.data.own.rating);
-      setBody(status.data.own.body);
+  // Show the traveller's earlier review once it arrives (adjusting state while rendering, not in an effect).
+  const own = status.data?.own;
+  const [seenOwn, setSeenOwn] = useState<typeof own>(undefined);
+  if (own !== seenOwn) {
+    setSeenOwn(own);
+    if (own) {
+      setRating(own.rating);
+      setBody(own.body);
     }
-  }, [status.data?.own]);
+  }
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/review/${guideId}`, { name }))} />;

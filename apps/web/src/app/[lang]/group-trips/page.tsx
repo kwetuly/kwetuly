@@ -12,7 +12,7 @@ import { listGroupTrips } from '@/lib/groups';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  return pageMeta({ path: '/group-trips', title: t.groups.title, description: t.groups.subtitle });
+  return pageMeta({ path: '/group-trips', title: t.ux.findGroupTrip, description: t.groups.subtitle });
 }
 
 export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang]/group-trips'>) {
@@ -24,7 +24,7 @@ export default async function GroupTripsPage({ searchParams }: PageProps<'/[lang
           <span className="flex size-14 items-center justify-center rounded-[5px] bg-leaf text-white">
             <UsersRound className="size-7" aria-hidden />
           </span>
-          <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.groups.title}</h1>
+          <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl">{t.ux.findGroupTrip}</h1>
           <p className="mt-3 max-w-2xl text-lg text-white/85">{t.groups.subtitle}</p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href={`/${locale}/group-trips/new`} className="btn"><Plus className="size-4" aria-hidden /> {t.groups.start}</Link>

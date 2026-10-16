@@ -10,6 +10,7 @@ import type { Locale } from '@/i18n/config';
 import { getMerchShopId, listProducts, type Product } from '@/lib/merch';
 import { orderMerch } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   if (!MERCH_ENABLED) return {};
@@ -118,7 +119,7 @@ async function Content({ searchParams, t, locale }: PageProps<'/[lang]/merch'> &
               <span className="label">{x.merchNote}</span>
               <textarea name="message" className="field min-h-20" maxLength={1000} />
             </label>
-            <button className="btn w-full" data-track="merch_order">{t.profile.send}</button>
+            <SubmitButton className="btn w-full" data-track="merch_order">{t.profile.send}</SubmitButton>
           </form>
         )}
       </aside>

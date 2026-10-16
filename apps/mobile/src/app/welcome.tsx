@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,9 +27,13 @@ export default function WelcomeScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    if (profile.data?.full_name) setName(profile.data.full_name);
-  }, [profile.data?.full_name]);
+  // Fill in the account name once the profile arrives (adjusting state while rendering, not in an effect).
+  const fullName = profile.data?.full_name;
+  const [seenName, setSeenName] = useState<string | null | undefined>(undefined);
+  if (fullName !== seenName) {
+    setSeenName(fullName);
+    if (fullName) setName(fullName);
+  }
 
   async function finish() {
     setBusy(true);

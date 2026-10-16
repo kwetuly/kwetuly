@@ -7,6 +7,7 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { PhotoHero } from '@/components/photo-hero';
 import { applyAsAgency } from './actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -117,7 +118,7 @@ async function ApplyForm({
           <input name="contact" className="field" placeholder={t.profile.contact} required maxLength={160} />
           <textarea name="markets" className="field min-h-20" placeholder={p.markets} maxLength={400} />
           <input name="volume" className="field" placeholder={p.volume} maxLength={40} />
-          <button className="btn w-full">{p.submit}</button>
+          <SubmitButton className="btn w-full">{p.submit}</SubmitButton>
         </form>
       )}
     </div>

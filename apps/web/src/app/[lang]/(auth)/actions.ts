@@ -96,15 +96,20 @@ export async function completeOnboarding(formData: FormData) {
   redirect(`/${locale}/dashboard${role === 'guide' ? '?as=guide' : ''}`);
 }
 
-export async function signIn(formData: FormData) {
+export type SignInState = { error: 'credentials' | 'other'; email: string } | null;
+
+// Used with useActionState: a wrong email or password comes back as state (so the form keeps the
+// email the person typed) instead of a redirect.
+export async function signIn(_previous: SignInState, formData: FormData): Promise<SignInState> {
   const locale = localeFrom(formData);
+  const email = String(formData.get('email') ?? '').trim();
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({
-    email: String(formData.get('email') ?? '').trim(),
+    email,
     password: String(formData.get('password') ?? ''),
   });
 
-  if (error) redirect(`/${locale}/login?error=1`);
+  if (error) return { error: error.code === 'invalid_credentials' || error.status === 400 ? 'credentials' : 'other', email };
   // Return to where the person was going (e.g. a group chat invite), but only within this site.
   const next = safeNext(locale, formData.get('next'));
   // Accounts with two-step sign-in still need their authenticator code.

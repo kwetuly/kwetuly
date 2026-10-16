@@ -63,6 +63,12 @@ export const ux_en = {
   passwordError: 'We could not save the password. Please try again, or ask for a new reset link.',
   goToDashboard: 'Go to my account',
   backToSignIn: 'Back to sign in',
+  sending: 'Sending…',
+  linkExpired: 'This link has expired or was already used. Sign in, or ask for a new link.',
+  signInWrong: 'Email or password is not right.',
+  passwordLabel: 'Password',
+  findGroupTrip: 'Find a group trip',
+  contactRafrika: 'Contact Rafrika',
 };
 
 export const ux_sw = {
@@ -126,6 +132,12 @@ export const ux_sw = {
   passwordError: 'Hatukuweza kuhifadhi nenosiri. Tafadhali jaribu tena, au omba kiungo kipya.',
   goToDashboard: 'Nenda kwenye akaunti yangu',
   backToSignIn: 'Rudi kuingia',
+  sending: 'Inatuma…',
+  linkExpired: 'Kiungo hiki kimeisha muda au kimeshatumika. Ingia, au omba kiungo kipya.',
+  signInWrong: 'Barua pepe au nenosiri si sahihi.',
+  passwordLabel: 'Nenosiri',
+  findGroupTrip: 'Tafuta safari ya kikundi',
+  contactRafrika: 'Wasiliana na Rafrika',
 };
 
 export const ux_fr = {
@@ -189,6 +201,12 @@ export const ux_fr = {
   passwordError: 'Nous n’avons pas pu enregistrer le mot de passe. Réessayez ou demandez un nouveau lien.',
   goToDashboard: 'Aller à mon compte',
   backToSignIn: 'Retour à la connexion',
+  sending: 'Envoi…',
+  linkExpired: 'Ce lien a expiré ou a déjà été utilisé. Connectez-vous ou demandez un nouveau lien.',
+  signInWrong: 'L’e-mail ou le mot de passe n’est pas correct.',
+  passwordLabel: 'Mot de passe',
+  findGroupTrip: 'Trouver un voyage de groupe',
+  contactRafrika: 'Contacter Rafrika',
 };
 
 export const ux_it = {
@@ -252,6 +270,12 @@ export const ux_it = {
   passwordError: 'Non è stato possibile salvare la password. Riprova o chiedi un nuovo link.',
   goToDashboard: 'Vai al mio account',
   backToSignIn: 'Torna all’accesso',
+  sending: 'Invio…',
+  linkExpired: 'Questo link è scaduto o è già stato usato. Accedi oppure chiedi un nuovo link.',
+  signInWrong: 'Email o password non corretti.',
+  passwordLabel: 'Password',
+  findGroupTrip: 'Trova un viaggio di gruppo',
+  contactRafrika: 'Contatta Rafrika',
 };
 
 export const ux_de = {
@@ -315,6 +339,12 @@ export const ux_de = {
   passwordError: 'Das Passwort konnte nicht gespeichert werden. Versuche es erneut oder fordere einen neuen Link an.',
   goToDashboard: 'Zu meinem Konto',
   backToSignIn: 'Zurück zur Anmeldung',
+  sending: 'Wird gesendet…',
+  linkExpired: 'Dieser Link ist abgelaufen oder wurde bereits verwendet. Melden Sie sich an oder fordern Sie einen neuen Link an.',
+  signInWrong: 'E-Mail oder Passwort ist nicht richtig.',
+  passwordLabel: 'Passwort',
+  findGroupTrip: 'Gruppenreise finden',
+  contactRafrika: 'Rafrika kontaktieren',
 };
 
 export const ux_pl = {
@@ -378,6 +408,12 @@ export const ux_pl = {
   passwordError: 'Nie udało się zapisać hasła. Spróbuj ponownie lub poproś o nowy link.',
   goToDashboard: 'Przejdź do mojego konta',
   backToSignIn: 'Wróć do logowania',
+  sending: 'Wysyłanie…',
+  linkExpired: 'Ten link wygasł lub został już użyty. Zaloguj się albo poproś o nowy link.',
+  signInWrong: 'Nieprawidłowy e-mail lub hasło.',
+  passwordLabel: 'Hasło',
+  findGroupTrip: 'Znajdź wyprawę grupową',
+  contactRafrika: 'Skontaktuj się z Rafrika',
 };
 
 export const ux_zh = {
@@ -441,6 +477,12 @@ export const ux_zh = {
   passwordError: '无法保存密码。请重试，或申请新的重置链接。',
   goToDashboard: '前往我的账户',
   backToSignIn: '返回登录',
+  sending: '正在发送…',
+  linkExpired: '此链接已过期或已被使用。请登录，或申请新的链接。',
+  signInWrong: '邮箱或密码不正确。',
+  passwordLabel: '密码',
+  findGroupTrip: '查找团体游',
+  contactRafrika: '联系 Rafrika',
 };
 
 export const UX_TEXT = { en: ux_en, sw: ux_sw, fr: ux_fr, it: ux_it, de: ux_de, pl: ux_pl, zh: ux_zh };

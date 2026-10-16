@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requestPasswordReset } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).ux.forgotTitle, robots: { index: false } };
@@ -58,7 +59,7 @@ async function ResetRequest({
           <label className="label" htmlFor="email">{t.auth.email}</label>
           <input className="field" id="email" name="email" type="email" required autoComplete="email" maxLength={320} autoFocus />
         </div>
-        <button className="btn w-full">{t.ux.sendResetLink}</button>
+        <SubmitButton className="btn w-full">{t.ux.sendResetLink}</SubmitButton>
       </form>
     </>
   );

@@ -9,6 +9,7 @@ import { today } from '@/lib/today';
 import { DirectUpload } from '@/components/direct-upload';
 import { requestBadge, saveBusiness } from './business-actions';
 import { BusinessSales } from './business-sales';
+import { SubmitButton } from '@/components/submit-button';
 
 type OwnBusiness = {
   id: string;
@@ -118,7 +119,7 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
           </span>
           <DirectUpload name="licence_path" bucket="verification" userId={user.id} prefix="business-licence" accept="image/jpeg,image/png,image/webp,application/pdf" labels={uploadLabels} />
         </div>
-        <button className="btn">{bt.save}</button>
+        <SubmitButton className="btn">{bt.save}</SubmitButton>
       </form>
 
       {business && (

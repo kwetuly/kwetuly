@@ -6,7 +6,7 @@ import '../globals.css';
 import { MENU } from '@rafrika/shared';
 import { LOCALE_TAGS, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
-import { AuthLinks } from '@/components/auth-links';
+import { AuthLinks, MenuAccount } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
@@ -50,11 +50,11 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           {t.ux.skipToContent}
         </a>
         <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-xl">
-          <nav className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
+          <nav className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-4">
             <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
               <Logo className="text-[28px]" />
             </Link>
-            <div className="ml-auto flex items-center gap-3 text-sm">
+            <div className="ml-auto flex min-w-0 items-center gap-2 text-sm sm:gap-3">
               <Suspense fallback={null}>
                 <AuthLinks />
               </Suspense>
@@ -62,7 +62,15 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
                 <LanguageSwitcher current={locale} />
               </Suspense>
               <div className="xl:hidden">
-                <SiteNav locale={locale} soonLabel={t.nav.soon} />
+                <SiteNav
+                  locale={locale}
+                  soonLabel={t.nav.soon}
+                  account={
+                    <Suspense fallback={null}>
+                      <MenuAccount />
+                    </Suspense>
+                  }
+                />
               </div>
             </div>
           </nav>

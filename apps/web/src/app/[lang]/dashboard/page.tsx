@@ -15,6 +15,7 @@ import { GuideReferral } from './guide-referral';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
 
@@ -139,7 +140,11 @@ async function GuideEditor({
               </Field>
               <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
               <Field label={d.photo}>
-                <DirectUpload name="photo_path" bucket="avatars" userId={user.id} prefix="avatar" accept="image/jpeg,image/png,image/webp" labels={uploadLabels} />
+                {guide?.photo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={guide.photo_url} alt={d.currentPhoto} className="mb-2 block size-20 rounded-[5px] object-cover" />
+                )}
+                <DirectUpload name="photo_path" bucket="avatars" userId={user.id} prefix="avatar" accept="image/jpeg,image/png,image/webp" labels={{ ...uploadLabels, uploaded: d.photoUploaded }} />
               </Field>
             </>
           )}
@@ -258,7 +263,7 @@ async function GuideEditor({
           )}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button className="btn">{next ? d.saveContinue : d.saveFinish}</button>
+            <SubmitButton className="btn">{next ? d.saveContinue : d.saveFinish}</SubmitButton>
             {guide && index > 0 && (
               <Link href={stepHref(GUIDE_STEPS[index - 1])} className="btn-outline">{d.back}</Link>
             )}
@@ -387,7 +392,7 @@ async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictio
         <h2 className="text-lg font-bold">{t.groups.title}</h2>
         <div className="flex flex-wrap gap-2">
           <Link href={`/${locale}/group-trips/mine`} className="btn-outline px-4 py-2 text-sm">{t.groups.mine}</Link>
-          <Link href={`/${locale}/group-trips`} className="btn px-4 py-2 text-sm">{t.groups.joinTitle}</Link>
+          <Link href={`/${locale}/group-trips`} className="btn px-4 py-2 text-sm">{t.ux.findGroupTrip}</Link>
         </div>
       </section>
       <section className="card mt-6 flex flex-wrap items-center justify-between gap-3">
@@ -423,7 +428,7 @@ async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; loc
           <span className="label">{x.phoneField}</span>
           <input name="phone" type="tel" className="field" required maxLength={20} defaultValue={user.phone ?? ''} autoComplete="tel" />
         </label>
-        <button className="btn px-5 py-2.5">{x.saveDetails}</button>
+        <SubmitButton className="btn px-5 py-2.5">{x.saveDetails}</SubmitButton>
       </form>
     </section>
   );

@@ -12,6 +12,7 @@ import { today } from '@/lib/today';
 import { BusinessBadge } from '@/components/business-card';
 import { askBusiness } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
+import { SubmitButton } from '@/components/submit-button';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/businesses/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -103,7 +104,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
               <span className="label">{isShop ? bt.orderWhat : t.profile.message}</span>
               <textarea className="field min-h-28" name="message" required maxLength={2000} />
             </label>
-            <button className="btn w-full" data-track="business_send_enquiry">{t.profile.send}</button>
+            <SubmitButton className="btn w-full" data-track="business_send_enquiry">{t.profile.send}</SubmitButton>
           </form>
         )}
       </aside>

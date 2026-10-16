@@ -23,6 +23,7 @@ import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
 import { depositState } from '@/lib/requests';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -252,7 +253,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
         <input name="seats" type="number" min={1} max={Math.max(spotsLeft(trip), 1)} defaultValue={1} className="field" />
       </label>
       <textarea name="message" className="field min-h-20" placeholder={g.message} maxLength={1000} />
-      <button className="btn w-full">{g.joinCta}</button>
+      <SubmitButton className="btn w-full">{g.joinCta}</SubmitButton>
     </form>
   );
 }

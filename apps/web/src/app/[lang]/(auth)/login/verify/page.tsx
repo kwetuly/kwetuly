@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { verifySignInCode } from '../../actions';
+import { SubmitButton } from '@/components/submit-button';
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -41,7 +42,7 @@ async function CodeForm({ searchParams, t, locale }: { searchParams: Promise<Rec
           autoFocus
         />
       </div>
-      <button className="btn w-full">{t.auth.signIn}</button>
+      <SubmitButton className="btn w-full">{t.auth.signIn}</SubmitButton>
     </form>
   );
 }
