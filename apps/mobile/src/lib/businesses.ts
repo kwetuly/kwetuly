@@ -146,3 +146,29 @@ export async function listMyReferralSales(): Promise<ReferralSale[]> {
   check(error);
   return (data ?? []) as unknown as ReferralSale[];
 }
+
+// Travel news for travellers (guides read Field news in the Hub).
+export type TravelNews = { id: string; title: string; body: string; region: string | null; source_name: string | null; source_url: string | null; published_on: string };
+
+export async function listTravelNews(): Promise<TravelNews[]> {
+  const { data, error } = await supabase
+    .from('travel_news')
+    .select('id, title, body, region, source_name, source_url, published_on')
+    .eq('published', true)
+    .order('published_on', { ascending: false })
+    .limit(50);
+  check(error);
+  return (data ?? []) as TravelNews[];
+}
+
+// Rafrika merchandise; orders go to the Rafrika Shop listing as an enquiry.
+export type Product = { id: string; name: string; description: string | null; price_tzs: number | null; sizes: string[]; photo_url: string | null };
+
+export async function listProducts(): Promise<{ products: Product[]; shopId: string | null }> {
+  const [products, shop] = await Promise.all([
+    supabase.from('shop_products').select('id, name, description, price_tzs, sizes, photo_url').eq('active', true).order('sort_order').order('name'),
+    supabase.from('providers').select('id').eq('business_type', 'merch').eq('verification_status', 'approved').limit(1).maybeSingle(),
+  ]);
+  check(products.error);
+  return { products: (products.data ?? []) as Product[], shopId: (shop.data?.id as string | undefined) ?? null };
+}

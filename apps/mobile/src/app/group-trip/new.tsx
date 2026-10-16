@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
@@ -16,12 +16,15 @@ const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 export default function NewGroupTripScreen() {
   const { t, locale } = useI18n();
   const g = t.groups;
+  const complete = useLocalSearchParams<{ complete?: string }>().complete === '1';
   const { session } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const asBusiness = profile.data?.role === 'provider' || profile.data?.role === 'admin';
+  // Travellers organise as themselves once their account has a phone; Rafrika calls it before approving.
+  const asTraveller = !asGuide && !asBusiness;
 
   const [f, setF] = useState({
     company: '',
@@ -39,17 +42,18 @@ export default function NewGroupTripScreen() {
     includes: '',
     deposit: '30',
     contact: '',
+    going: '2',
   });
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   if (!userId || mine.isLoading || profile.isLoading) return <ScreenState loading />;
-  if (!asGuide && !asBusiness) {
+  if (asTraveller && !profile.data?.phone) {
     return (
       <Card style={{ margin: space.lg }}>
-        <Muted>{g.whoCan}</Muted>
-        <Button title={t.dashboard.title} onPress={() => router.replace('/profile-edit')} />
+        <Muted>{t.extras.phoneNeeded}</Muted>
+        <Button title={t.extras.addPhone} onPress={() => router.replace('/profile-edit')} />
       </Card>
     );
   }
@@ -58,6 +62,7 @@ export default function NewGroupTripScreen() {
     const min = parseInt(f.min, 10) || 1;
     const max = parseInt(f.max, 10);
     const price = parseInt(f.price, 10);
+    const going = complete ? parseInt(f.going, 10) || 0 : 0;
     const today = new Date().toISOString().slice(0, 10);
     const valid =
       f.title.trim().length >= 5 &&
@@ -72,7 +77,8 @@ export default function NewGroupTripScreen() {
       max >= 2 &&
       min <= max &&
       f.contact.trim().length >= 3 &&
-      (asGuide || f.company.trim());
+      (!complete || (going >= 1 && going < max)) &&
+      (asGuide || asTraveller || f.company.trim());
     if (!valid) return setMessage({ tone: 'error', text: t.auth.error });
     setBusy(true);
     try {
@@ -80,7 +86,8 @@ export default function NewGroupTripScreen() {
         userId!,
         asGuide ? mine.data!.guide!.id : null,
         {
-          company_name: asGuide ? null : f.company.trim(),
+          company_name: asGuide || asTraveller ? null : f.company.trim(),
+          already_going: going,
           title: f.title.trim(),
           description: f.description.trim(),
           specialty: f.specialty[0],
@@ -107,10 +114,11 @@ export default function NewGroupTripScreen() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
-      <Stack.Title>{g.newTitle}</Stack.Title>
+      <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
       <Card>
-        <Muted>{g.newBody}</Muted>
-        {!asGuide && <Field label={g.companyName} value={f.company} onChangeText={set('company')} />}
+        <Muted>{complete ? t.extras.completeBody : g.newBody}</Muted>
+        {asTraveller && <Muted>{t.extras.travellerCheck}</Muted>}
+        {asBusiness && !asGuide && <Field label={g.companyName} value={f.company} onChangeText={set('company')} />}
         <Field label={g.tripTitle} value={f.title} onChangeText={set('title')} />
         <ChipSelect label={g.tripType} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialty} onChange={set('specialty')} multiple={false} />
         <ChipSelect label={g.region} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.region} onChange={set('region')} multiple={false} />
@@ -120,6 +128,7 @@ export default function NewGroupTripScreen() {
         <Field label={g.price} value={f.price} onChangeText={set('price')} keyboardType="number-pad" />
         <Field label={g.meetingPoint} value={f.meeting} onChangeText={set('meeting')} />
         <Field label={g.minPeopleField} value={f.min} onChangeText={set('min')} keyboardType="number-pad" />
+        {complete && <Field label={t.extras.alreadyGoing} value={f.going} onChangeText={set('going')} keyboardType="number-pad" />}
         <Field label={g.maxPeople} value={f.max} onChangeText={set('max')} keyboardType="number-pad" />
         <ChipSelect label={t.guides.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
         <Field label={g.includesField} value={f.includes} onChangeText={set('includes')} multiline />

@@ -190,7 +190,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
                   <div className="pt-1.5">
                     <h3 className="font-bold">{d.title}</h3>
                     <p className="mt-1 text-sm text-muted">{d.body}</p>
-                    <DayDetails day={d} stops={stops} t={t} />
+                    {/* Day trips split one day into parts; show that day's stops once. */}
+                    {(i === 0 || trip.itinerary[i - 1].day !== d.day) && <DayDetails day={d} stops={stops} t={t} />}
                   </div>
                 </li>
               ))}

@@ -16,7 +16,9 @@ export async function registerInterest(formData: FormData) {
   const kind = formData.get('kind') === 'business' ? 'business' : 'traveler';
   const name = field('name', 120);
   const contact = field('contact', 160);
-  const back = `/${locale}/${section}/${item}`;
+  // Pages with their own address (e.g. /invest) send people back there.
+  const own = field('back', 200);
+  const back = own.startsWith(`/${locale}/`) && /^[/a-z0-9-]+$/.test(own) ? own : `/${locale}/${section}/${item}`;
   if (!name || !contact) redirect(`${back}?error=${kind}#${kind}`);
 
   const supabase = await createClient();

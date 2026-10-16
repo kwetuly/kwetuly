@@ -19,7 +19,15 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
     case '/group-trips':
       return '/trips';
     case '/group-trips/new':
-      return '/group-trip/new';
+      return { pathname: '/group-trip/new', params };
+    case '/group-trips/mine':
+      return '/my-group-trips';
+    case '/news':
+      return '/news' as Href;
+    case '/merch':
+      return '/merch' as Href;
+    case '/invest':
+      return '/invest' as Href;
     case '/calls':
       return '/calls';
     case '/jobs/post':

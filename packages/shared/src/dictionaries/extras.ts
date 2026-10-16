@@ -25,6 +25,7 @@ export const extras_en = {
   merchOrder: 'Order this',
   merchSize: 'Size',
   merchQty: 'How many',
+  merchNote: 'Anything else we should know? (optional)',
   priceOnRequest: 'Price on request',
   investTitle: 'Invest in Tanzania',
 };
@@ -55,6 +56,7 @@ export const extras_sw: ExtrasText = {
   merchOrder: 'Agiza hii',
   merchSize: 'Saizi',
   merchQty: 'Ngapi',
+  merchNote: 'Kuna jingine tunapaswa kujua? (si lazima)',
   priceOnRequest: 'Bei kwa maombi',
   investTitle: 'Wekeza Tanzania',
 };
@@ -83,6 +85,7 @@ export const extras_fr: ExtrasText = {
   merchOrder: 'Commander',
   merchSize: 'Taille',
   merchQty: 'Quantité',
+  merchNote: 'Autre chose à nous dire ? (facultatif)',
   priceOnRequest: 'Prix sur demande',
   investTitle: 'Investir en Tanzanie',
 };
@@ -111,6 +114,7 @@ export const extras_it: ExtrasText = {
   merchOrder: 'Ordina',
   merchSize: 'Taglia',
   merchQty: 'Quantità',
+  merchNote: 'Altro da sapere? (facoltativo)',
   priceOnRequest: 'Prezzo su richiesta',
   investTitle: 'Investire in Tanzania',
 };
@@ -139,6 +143,7 @@ export const extras_de: ExtrasText = {
   merchOrder: 'Bestellen',
   merchSize: 'Größe',
   merchQty: 'Anzahl',
+  merchNote: 'Sonst noch etwas? (optional)',
   priceOnRequest: 'Preis auf Anfrage',
   investTitle: 'In Tansania investieren',
 };
@@ -167,6 +172,7 @@ export const extras_pl: ExtrasText = {
   merchOrder: 'Zamów',
   merchSize: 'Rozmiar',
   merchQty: 'Ilość',
+  merchNote: 'Coś jeszcze? (opcjonalnie)',
   priceOnRequest: 'Cena na zapytanie',
   investTitle: 'Inwestuj w Tanzanii',
 };
@@ -195,6 +201,7 @@ export const extras_zh: ExtrasText = {
   merchOrder: '下单',
   merchSize: '尺码',
   merchQty: '数量',
+  merchNote: '还有其他需要说明的吗？（选填）',
   priceOnRequest: '价格面议',
   investTitle: '投资坦桑尼亚',
 };

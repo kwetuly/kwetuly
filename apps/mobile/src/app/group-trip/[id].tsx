@@ -46,7 +46,7 @@ export default function GroupTripScreen() {
   if (!trip.data) return <ScreenState loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
   const g = trip.data;
   const g10n = t.groups;
-  const left = Math.max(g.max_people - g.seats_taken, 0);
+  const left = Math.max(g.max_people - g.seats_taken - (g.already_going ?? 0), 0);
   const open = g.status === 'approved' && !g.cancelled && g.start_date >= new Date().toISOString().slice(0, 10) && left > 0;
   const isOrganizer = userId === g.organizer_id;
 
@@ -91,13 +91,13 @@ export default function GroupTripScreen() {
           <Text style={{ fontSize: textSize.title1, fontWeight: '800', color: brand.forest }}>
             {formatUsd(g.price_per_person_usd)} <Text style={{ fontSize: textSize.subhead, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
           </Text>
-          <SpotsBar taken={g.seats_taken} max={g.max_people} labels={g10n} />
+          <SpotsBar taken={g.seats_taken + (g.already_going ?? 0)} max={g.max_people} labels={g10n} />
           {g.guides ? (
             <Link href={`/guide/${g.guides.slug}`} style={{ color: brand.forest, fontWeight: '700' }}>
               {g10n.organisedBy} {g.guides.display_name} ›
             </Link>
           ) : (
-            g.company_name && <Muted>{g10n.organisedBy} {g.company_name}</Muted>
+            g.organizer_kind === 'traveller' ? <Muted>{t.extras.byTraveller}</Muted> : g.company_name && <Muted>{g10n.organisedBy} {g.company_name}</Muted>
           )}
         </Card>
 

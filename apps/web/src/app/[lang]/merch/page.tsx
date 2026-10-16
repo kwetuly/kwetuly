@@ -108,7 +108,7 @@ async function Content({ searchParams, t, locale }: PageProps<'/[lang]/merch'> &
               <input name="contact" className="field" required maxLength={160} />
             </label>
             <label className="block">
-              <span className="label">{t.profile.message}</span>
+              <span className="label">{x.merchNote}</span>
               <textarea name="message" className="field min-h-20" maxLength={1000} />
             </label>
             <button className="btn w-full" data-track="merch_order">{t.profile.send}</button>

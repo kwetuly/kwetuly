@@ -28,7 +28,7 @@ export default function MyGroupTripsScreen() {
         <Card>
           <Text style={{ fontWeight: '800', fontSize: textSize.body, color: colors.label }}>{trip.title}</Text>
           <Muted>
-            {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.seats_taken}/{trip.max_people}
+            {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.seats_taken + (trip.already_going ?? 0)}/{trip.max_people}
           </Muted>
           {note && <Badge label={note} tone="sand" />}
         </Card>

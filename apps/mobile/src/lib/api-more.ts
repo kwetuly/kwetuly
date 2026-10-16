@@ -327,11 +327,11 @@ export async function postJob(userId: string, job: Omit<Job, 'id'>) {
 // ---------------------------------------------------------------------------
 // Group trip organisers
 // ---------------------------------------------------------------------------
-export type OrganisedTrip = { id: string; title: string; start_date: string; end_date: string; seats_taken: number; max_people: number; status: string; cancelled: boolean };
+export type OrganisedTrip = { id: string; title: string; start_date: string; end_date: string; seats_taken: number; already_going: number; max_people: number; status: string; cancelled: boolean };
 export type TripRequest = { id: string; traveler_name: string; traveler_contact: string; seats: number; message: string | null; status: string };
 
 export async function listMyOrganisedTrips(userId: string): Promise<OrganisedTrip[]> {
-  const { data, error } = await supabase.from('group_trips').select('id, title, start_date, end_date, seats_taken, max_people, status, cancelled').eq('organizer_id', userId).order('start_date', { ascending: false });
+  const { data, error } = await supabase.from('group_trips').select('id, title, start_date, end_date, seats_taken, already_going, max_people, status, cancelled').eq('organizer_id', userId).order('start_date', { ascending: false });
   check(error);
   return (data ?? []) as OrganisedTrip[];
 }
@@ -339,7 +339,7 @@ export async function listMyOrganisedTrips(userId: string): Promise<OrganisedTri
 export async function listMyJoinedTrips(userId: string) {
   const { data, error } = await supabase
     .from('group_trip_members')
-    .select('status, group_trips(id, title, start_date, end_date, seats_taken, max_people, status, cancelled)')
+    .select('status, group_trips(id, title, start_date, end_date, seats_taken, already_going, max_people, status, cancelled)')
     .eq('traveler_id', userId)
     .neq('status', 'cancelled')
     .order('created_at', { ascending: false });
@@ -365,7 +365,7 @@ export async function cancelGroupTrip(tripId: string) {
 export async function createGroupTrip(
   userId: string,
   guideId: string | null,
-  trip: { company_name: string | null; title: string; description: string; specialty: string; region: string; meeting_point: string | null; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; languages: string[]; includes: string | null; deposit_percent: number },
+  trip: { company_name: string | null; title: string; description: string; specialty: string; region: string; meeting_point: string | null; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; languages: string[]; includes: string | null; deposit_percent: number; already_going: number },
   contact: string,
 ) {
   const { data, error } = await supabase.from('group_trips').insert({ ...trip, organizer_id: userId, guide_id: guideId }).select('id').single();

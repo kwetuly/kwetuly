@@ -164,6 +164,8 @@ export type GroupTrip = {
   id: string;
   organizer_id: string;
   company_name: string | null;
+  organizer_kind: 'guide' | 'business' | 'traveller';
+  already_going: number;
   title: string;
   description: string;
   specialty: string;
@@ -184,7 +186,7 @@ export type GroupTrip = {
 };
 
 const GROUP_COLUMNS =
-  'id, organizer_id, company_name, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url)';
+  'id, organizer_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url)';
 
 export async function listGroupTrips(): Promise<GroupTrip[]> {
   const today = new Date().toISOString().slice(0, 10);

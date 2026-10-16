@@ -7,7 +7,7 @@ import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
 
-import { Avatar, Badge, Card, Stars } from './ui';
+import { Avatar, Badge, Card, Muted, Stars } from './ui';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 // A guide at a glance: who they are, what they do, languages, special trips and badges.
@@ -95,12 +95,14 @@ export function GroupTripCard({ trip }: { trip: GroupTrip }) {
           <Text style={{ color: colors.secondaryLabel }}>
             {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.region}
           </Text>
-          {(trip.guides?.display_name || trip.company_name) && (
+          {trip.organizer_kind === 'traveller' && <Muted>{t.extras.byTraveller}</Muted>}
+          {trip.already_going > 0 && <Muted>{t.extras.alreadyGoingShort.replace('{n}', String(trip.already_going))}</Muted>}
+          {trip.organizer_kind !== 'traveller' && (trip.guides?.display_name || trip.company_name) && (
             <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>
               {t.groups.organisedBy} {trip.guides?.display_name ?? trip.company_name}
             </Text>
           )}
-          <SpotsBar taken={trip.seats_taken} max={trip.max_people} labels={t.groups} />
+          <SpotsBar taken={trip.seats_taken + (trip.already_going ?? 0)} max={trip.max_people} labels={t.groups} />
         </Card>
       </Pressable>
     </Link>

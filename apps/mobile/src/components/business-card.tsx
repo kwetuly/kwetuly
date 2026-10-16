@@ -12,6 +12,17 @@ const todayIso = () => new Date().toISOString().slice(0, 10);
 export function BusinessBadge({ business, full }: { business: Business; full?: boolean }) {
   const { t, locale } = useI18n();
   const bt = t.business;
+  // Sample listings were added by Rafrika from public information; say so plainly.
+  if (business.is_sample) {
+    return full ? (
+      <Text style={{ color: colors.label, backgroundColor: brand.sand, padding: space.md, borderRadius: radius.button }}>
+        <Text style={{ fontWeight: '700' }}>{t.extras.sampleBadge}. </Text>
+        {t.extras.sampleNote}
+      </Text>
+    ) : (
+      <Badge label={t.extras.sampleBadge} tone="sand" />
+    );
+  }
   if (!hasValidBadge(business, todayIso())) {
     return full ? (
       <Text style={{ color: colors.secondaryLabel, backgroundColor: colors.fill, padding: space.md, borderRadius: radius.button }}>

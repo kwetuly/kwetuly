@@ -44,6 +44,9 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
   const { section, item } = found;
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const siblings = section.items.filter((i) => i.slug !== item.slug);
+  // Once businesses are listed here, the page is open: no "soon" badge or waiting-list form.
+  const pageKey = `${section.slug}/${item.slug}`;
+  const open = BUSINESS_PAGES[pageKey] ? (await listBusinesses(BUSINESS_PAGES[pageKey])).length > 0 : false;
 
   return (
     <>
@@ -57,7 +60,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
               <Icon name={item.icon} className="size-8" />
             </span>
             <div>
-              <span className="badge">{t.nav.soon}</span>
+              {!open && <span className="badge">{t.nav.soon}</span>}
               <h1 className="mt-2 text-4xl font-extrabold sm:text-5xl">{item.label[locale]}</h1>
             </div>
           </div>
@@ -73,7 +76,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
 
       <section className="relative mx-auto -mt-16 grid max-w-6xl gap-6 px-4 pb-16 lg:grid-cols-2">
         <Suspense fallback={<div className="card h-80 animate-pulse" />}>
-          <InterestForm
+          {!open && <InterestForm
             kind="traveler"
             searchParams={searchParams}
             t={t}
@@ -82,7 +85,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
             item={item.slug}
             title={t.explore.comingTitle}
             body={t.explore.comingBody}
-          />
+          />}
           <InterestForm
             kind="business"
             searchParams={searchParams}
