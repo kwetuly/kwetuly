@@ -5,6 +5,7 @@ Kept by `chief-of-staff`. Walter approves everything in "Waiting for Walter".
 Goal (set 2026-10-16): a soft launch. The website goes live on a real domain for invited guides and travellers. Deposits stay off until Selcom is ready, and no sample data is shown.
 
 ## Waiting for Walter
+- 2026-10-24: Brand name. Recommendation: keep **Rafrika** (rafiki + Afrika). rafrika.com is free, web search shows no business with the name, it covers all of Africa, and it is already in the code, the 7 languages and the legal drafts. A Gmail is not needed: use support@rafrika.com (free Cloudflare Email Routing). Backup: **Gundika** (gundua = discover; gundika.com free, no web results), but choosing it means a full rename. Walter to do: (1) check @rafrika on Instagram, TikTok, X, Facebook and YouTube, and reserve the free ones; (2) check whether rafrica.com (the "c" spelling people will type) is free; (3) buy rafrika.com yourself at Cloudflare (about US$10.50 a year), plus rafrica.com if it is free, so it can forward; (4) ask the advocate for a BRELA name and trademark search, and ARIPO later for Africa-wide. If the Rafrika handles are mostly taken, switch to Gundika and do the same checks for it.
 - 2026-10-16: Approve the soft-launch plan (scope: website first, invite-only, deposits off).
 - 2026-10-16: Create a private git remote (GitHub) so the code is backed up. Right now it exists only on this PC.
 - 2026-10-16: Hosting accounts: Vercel, and buy or point rafrika.com. Decide whether to use a second Supabase project for staging.
@@ -35,6 +36,8 @@ Goal (set 2026-10-16): a soft launch. The website goes live on a real domain for
 - data-analyst: soft-launch scorecard and event check once PostHog is live (step 3).
 - customer-care: FAQ and reply templates for the soft launch (step 3).
 - Before launch: delete all sample data in /admin/listings and publish only the reviewed trips.
+
+- Brand name, after Walter says yes to Rafrika (no rename needed): devops sets up the domain and support@rafrika.com forwarding; legal writes the BRELA/ARIPO search brief for the advocate; marketing drafts 3 to 5 slogan options for Walter; designer checks the logo against the brand rules (no new logo needed). If Walter picks Gundika instead: designer new logo, frontend-engineer renames web and app, localization updates the 7 languages, legal updates the drafts, marketing slogan, then qa-tester checks the whole site.
 
 ## In progress
 

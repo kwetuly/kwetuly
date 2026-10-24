@@ -12,6 +12,7 @@
 | business-listing-terms.md | Listing terms, "Checked by Rafrika" badge, referral commission agreement template | Draft 0.1 |
 | deposit-and-refund-policy.md | Deposits and refunds (deposits are OFF at soft launch) | Draft 0.1 |
 | group-chat-media-consent.md | Group-chat photos and videos, and public sharing | Draft 0.1 |
+| brand-name-search-brief.md | One-page brief asking an advocate for a BRELA/Zanzibar name and trademark search for "Rafrika" / "Rafrica", filing advice, later Africa-wide options, fees and timelines (added 2026-10-24; Walter sends it) | Draft 0.1 |
 
 No earlier legal drafts existed under docs/ (checked 2026-10-16). The drafts were written against the database migrations in supabase/migrations and the site texts in packages/shared/src/dictionaries.
 
@@ -28,6 +29,7 @@ Section numbers are only given where a source reported them, and none have been 
 | Insurance | Insurance Act; TIRA; NIC (mainland) and ZIC (Zanzibar) portals | Rafrika must not sell insurance without agency approval; link only to official portals | Official URLs to be confirmed |
 | Online content | Electronic and Postal Communications (Online Content) Regulations, 2020, amended 2022 (GN 136 of 2022) and reportedly 2025; TCRA | Traveller moments, travel news, guides' forum: is a licence needed? | [Bowmans, 2020 regulations](https://www.bowmanslaw.com/insights/technology-media-and-telecommunications/tanzanian-electronic-and-postal-communications-online-content-regulations-2020-published/); [Afriwise, 2022 amendments](https://www.afriwise.com/blog/tanzania-amendments-to-the-regulations-under-the-electronic-and-postal-communications-act) |
 | E-contracts | Electronic Transactions Act, 2015 | Click-to-accept terms, electronic records | Official text to be obtained |
+| Brand / trademarks | BRELA (mainland trade and service marks, business names); Zanzibar BPRA (separate register, to be confirmed); ARIPO and Madrid reportedly not usable for Tanzania at present (law-firm reports, late 2025) | Protecting the "Rafrika" name; see brand-name-search-brief.md | [BRELA](https://www.brela.go.tz/); [FB Attorneys, ARIPO marks unenforceable (Nov 2025)](https://fbattorneys.co.tz/aripo-registered-trademarks-unenforceable-in-tanzania/); [Afriwise, Court of Appeal decision](https://www.afriwise.com/blog/foreign-or-aripo-trade-marks-not-protected-in-tanzania-mainland-landmark-court-of-appeal-decision) |
 | Investment | TISEZA; Capital Markets and Securities Authority (to be confirmed) | The invest page makes introductions | Not researched yet |
 | Tax | TRA (VAT, withholding, EFD receipts) | Badge fees, commissions, merchandise, deposits | For accounting and the advocate |
 
@@ -48,10 +50,11 @@ Section numbers are only given where a source reported them, and none have been 
 ## Open questions
 
 - **Retention periods built into the database (migration 20261016001200_account_deletion_cleanup.sql, not yet applied).** Sent and skipped email/WhatsApp alerts (which hold the email address or phone number and a message preview) are deleted after 30 days; failed alerts, and alerts given up on after 5 attempts, after 90 days. When an account is deleted, the person's enquiries are kept for the guide or business but their name, contact and message are blanked; alerts addressed to them, or copying their contact details, are emptied; and "coming soon" sign-ups with their email or phone are deleted. Payment records are kept with the person removed (for accounting). Advocate: are 30 and 90 days acceptable under the Personal Data Protection Act, 2022, how long must payment and enquiry records be kept (tax, consumer disputes), and should the privacy policy state these periods?
+- **Brand name.** See the questions in brand-name-search-brief.md (searches, Zanzibar filing, classes, ARIPO/Madrid position, fees and timelines).
 
 ## Before any of this goes live
 
-1. Advocate reviews all six drafts and answers the open questions at the end of each.
+1. Advocate reviews all the drafts and answers the open questions at the end of each.
 2. Walter fills the placeholders with real company details (no guesses).
 3. localization prepares Kiswahili (and, for traveller texts, all 7 languages) from the reviewed English.
 4. Walter approves publication. Only then may frontend-engineer add the pages and footer links.
