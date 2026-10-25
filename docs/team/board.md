@@ -5,6 +5,11 @@ Kept by `chief-of-staff`. Walter approves everything in "Waiting for Walter".
 Goal (set 2026-10-16): a soft launch. The website goes live on a real domain for invited guides and travellers. Deposits stay off until Selcom is ready, and no sample data is shown.
 
 ## Waiting for Walter
+- 2026-10-25: Send one test email to support@kwetuly.com from another address and confirm it lands in kwetuly@gmail.com (ImprovMX).
+- 2026-10-25: Resend for alerts@kwetuly.com: create the Resend account himself (check the free plan limits on resend.com), add domain kwetuly.com, then paste the DNS records Resend shows into Vercel DNS. Then enter RESEND_API_KEY, EMAIL_FROM and SITE_URL himself in Supabase, Edge Functions, Secrets. Agents never see the key.
+- 2026-10-25: Approve the Next.js security upgrade before it is pushed to the live site (after qa-tester passes it).
+- 2026-10-25: Upgrade Supabase to Pro (check current price) before launch, then turn on leaked-password protection. Upgrade Vercel to Pro (check current price) before launch, since Hobby is non-commercial.
+- 2026-10-25: Still open: WhatsApp template kwetuly_alert (Meta), Google/Facebook sign-in keys, social handles, legal brief blanks, company registration, then D-U-N-S, then Apple/Google developer accounts, Expo account, Vercel billing address, PostHog account, Selcom (after company), approve real guides, publish the 30 draft tours, native-speaker review, advocate for privacy policy and terms.
 - 2026-10-24: Rename to Kwetuly, open questions (none of these block step 1):
   - (a) Answered 2026-10-24: nothing was registered under Rafrika, so the app ids are changing to `com.kwetuly.app`, with slug and scheme `kwetuly`.
   - (b) Answered 2026-10-24: "remove everything rafrika". The internal names (`rafrika_pct`, `@rafrika/shared`, storage keys, the `rafrika_recovery` cookie, map layer ids) are being renamed now. The repo folder on disk stays `rafrika` for now.
@@ -31,6 +36,13 @@ Goal (set 2026-10-16): a soft launch. The website goes live on a real domain for
 - Parked: credits idea. Advice so far is no stored-credit wallet, because it likely needs Bank of Tanzania approval.
 
 ## To do
+- 2026-10-25 plan (in order):
+  - 1. devops: Resend setup guide for Walter (click by click), check the Resend DNS records do not clash with ImprovMX MX/SPF, check the notify function is deployed on live and its trigger and 5-minute retry work. No account changes, no keys.
+  - 1b. tech-lead (in parallel): Next.js security upgrade on a branch, then qa-tester checks it. Walter approves before it goes live.
+  - 2. After Walter enters the secrets: devops sends one test alert to Walter's own address; qa-tester checks a booking and an enquiry notice end to end (English and Kiswahili); security-reviewer checks sender setup (SPF, DKIM, DMARC) and that no personal data leaks in emails.
+  - 3. frontend-engineer: the small QA findings on forms and labels; qa-tester re-checks.
+  - 4. backend-engineer: Google/Facebook sign-in guide for Walter; security-reviewer reviews after Walter adds the keys.
+  - 5. devops: WhatsApp kwetuly_alert submission guide for Walter (Meta).
 - tech-lead: launch-readiness audit, giving a blocker list and the order of fixes (step 1).
 - security-reviewer: independent review of sign-in, personal data, uploads, admin and payments, plus Supabase RLS and advisors (step 1, in parallel).
 - legal: draft the privacy policy, terms, deposit/refund and media-consent texts for the advocate (step 1, in parallel).
@@ -54,9 +66,13 @@ Goal (set 2026-10-16): a soft launch. The website goes live on a real domain for
 - (Older plan, replaced by the line above) Brand name, after Walter picks a name and buys the .com: (1) designer makes the new wordmark and the missing files from docs/design/logo-check-2026-10.md, and Walter approves; (2) frontend-engineer renames the website and app (texts, metadata, app name and bundle display name, emails), working with backend-engineer on database and email-template text; (3) localization updates the 7 languages and checks how the name sounds in each; (4) legal swaps the name in the drafts and the BRELA brief; (5) marketing redoes the slogans and handle list; (6) devops sets up the domain and support@ email forwarding; (7) qa-tester checks the whole site for any leftover "Rafrika". Steps 1, 4, 5 and 6 can run in parallel. Step 2 needs the wordmark from step 1, and step 7 comes last.
 
 ## In progress
-- 2026-10-24: Rename to Kwetuly, step 1 (designer, legal, marketing, devops).
+- 2026-10-25: Website alerts email from alerts@kwetuly.com (Resend), step 1 (devops guide and checks).
 
 
 ## Done
+- 2026-10-25: Website live on Vercel at https://kwetuly.com (www redirects); domain DNS in Vercel.
+- 2026-10-25: Supabase (Kwetuly, free plan): Site URL and redirect URLs set to kwetuly.com; minimum password length 8. Leaked-password protection waits for Pro.
+- 2026-10-25: Email forwarding: ImprovMX free, any address @kwetuly.com goes to kwetuly@gmail.com; MX and SPF records verified. Test email not yet confirmed.
+- 2026-10-25: Both rename migrations applied on live (brand_rename_kwetuly, neutral_names_and_shop_identity). Rename to Kwetuly finished in code (commits c71711c, 276b193).
 - 2026-10-24: Brand name chosen: Kwetuly (Kiswahili "kwetu" = our place, our home; say "kweh-TOO-lee"). Walter bought kwetuly.com on Vercel (team "kwetuly", Hobby plan, US$11.25 a year). Aim widened to all of Africa, starting in Tanzania. Walter approved starting the rename.
 - 2026-10-16: Menu with the selling points, shop order requests, traveller group trips with phone confirmation, news, merchandise, invest page, sample data (labelled), researched content (needs_review), native app icon tiles, 21-agent team.

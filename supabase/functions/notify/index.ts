@@ -148,12 +148,12 @@ function emailHtml(text: Text, link: string, locale: string) {
   const button = locale === 'sw' ? 'Fungua Kwetuly' : 'Open Kwetuly';
   return `<!doctype html><html><body style="margin:0;background:#f7f6f3;font-family:Arial,sans-serif;color:#16211c">
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
-  <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden">
+  <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:5px;overflow:hidden">
     <tr><td style="background:#7f7f7f;padding:20px 28px;color:#ffffff;font-size:22px;font-weight:bold">Kwetuly</td></tr>
     <tr><td style="padding:28px">
       <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(text.subject)}</h1>
       <p style="font-size:15px;line-height:1.6;margin:0 0 24px">${escapeHtml(text.body)}</p>
-      <a href="${link}" style="display:inline-block;background:#ff6a2b;color:#fff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:15px">${button}</a>
+      <a href="${link}" style="display:inline-block;background:#1D951A;color:#fff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:5px">${button}</a>
     </td></tr>
     <tr><td style="padding:16px 28px;font-size:12px;color:#5f6b66;border-top:1px solid #e7e5e0">Kwetuly: the home of Tanzanian guides.</td></tr>
   </table></td></tr></table></body></html>`;
