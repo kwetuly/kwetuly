@@ -80,7 +80,7 @@ export function BusinessSalesCard({ providerId }: { providerId: string }) {
       <SectionTitle>{bt.salesTitle}</SectionTitle>
       <Muted>{bt.salesBody}</Muted>
       <Text style={{ fontWeight: '700', color: colors.label, backgroundColor: colors.fill, padding: space.md, borderRadius: radius.button }}>
-        {a?.active ? bt.agreementShares.replace('{r}', String(Number(a.rafrika_pct))).replace('{g}', String(Number(a.guide_pct))) : bt.noAgreement}
+        {a?.active ? bt.agreementShares.replace('{r}', String(Number(a.kwetuly_pct))).replace('{g}', String(Number(a.guide_pct))) : bt.noAgreement}
       </Text>
       <Field label={bt.codeField} value={code} onChangeText={(v) => setCode(v.toUpperCase())} autoCapitalize="characters" />
       <Field label={bt.amountField} value={amount} onChangeText={setAmount} keyboardType="number-pad" />

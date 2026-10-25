@@ -16,6 +16,7 @@ import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 
 export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
 
@@ -121,7 +122,7 @@ async function GuideEditor({
             <li key={s} className={`h-1.5 flex-1 rounded-[4px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
           ))}
         </ol>
-        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
 
         <form action={saveGuideProfile} className="card mt-6 space-y-5">
           <input type="hidden" name="locale" value={locale} />
@@ -130,7 +131,7 @@ async function GuideEditor({
           {step === 'basics' && (
             <>
               <Field label={d.displayName}>
-                <input className="field" name="display_name" required maxLength={80} autoComplete="name" defaultValue={guide?.display_name ?? user.fullName ?? ''} />
+                <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} className="field" name="display_name" required maxLength={80} autoComplete="name" defaultValue={guide?.display_name ?? user.fullName ?? ''} />
               </Field>
               <Field label={d.baseRegion}>
                 <select className="field" name="base_region" required defaultValue={guide?.base_region ?? ''}>
@@ -297,7 +298,7 @@ async function GuideEditor({
         </div>
       )}
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
-      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
 
       {/* The sign-up steps, each with its own short form. */}
       <ol className="card mt-6 divide-y divide-line">
@@ -418,13 +419,14 @@ async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; loc
     <section id="details" className="card mt-6 scroll-mt-28">
       <h2 className="text-lg font-bold">{x.detailsTitle}</h2>
       {status === 'saved' && <p className="mt-2 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{x.detailsSaved}</p>}
-      {status === 'invalid' && <p className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{x.phoneInvalid}</p>}
+      {status === 'invalid' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{x.phoneInvalid}</p>}
+      {status === 'name' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.nameReserved}</p>}
       <form action={saveMyDetails} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <input type="hidden" name="locale" value={locale} />
         {back && <input type="hidden" name="back" value={back} />}
         <label className="block">
           <span className="label">{t.profile.name}</span>
-          <input name="full_name" className="field" maxLength={120} defaultValue={user.fullName ?? ''} autoComplete="name" />
+          <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} name="full_name" className="field" maxLength={120} defaultValue={user.fullName ?? ''} autoComplete="name" />
         </label>
         <label className="block">
           <span className="label">{x.phoneField}</span>

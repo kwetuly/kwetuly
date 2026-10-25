@@ -44,7 +44,7 @@ export default function WelcomeScreen() {
       router.replace(next ?? (role === 'guide' ? '/profile-edit' : '/'));
     } catch (e) {
       const reason = e instanceof Error ? e.message : '';
-      setMessage({ tone: 'error', text: reason === 'phone' ? t.auth.phoneError : reason === 'invite' ? t.auth.inviteError : t.auth.error });
+      setMessage({ tone: 'error', text: reason === 'phone' ? t.auth.phoneError : reason === 'invite' ? t.auth.inviteError : reason === 'name' ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }

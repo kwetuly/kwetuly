@@ -24,6 +24,16 @@ export const BUSINESS_TYPES = [
 
 export type BusinessType = (typeof BUSINESS_TYPES)[number]['id'];
 
+/**
+ * Types a business owner may pick. 'merch' is the Kwetuly Shop, which receives shop orders with
+ * travellers' details: only admins create it, and the database refuses it from anyone else
+ * (error 'business_type_reserved').
+ */
+export const OWNER_BUSINESS_TYPES = BUSINESS_TYPES.filter((b) => b.id !== 'merch');
+
+/** site_settings key holding {"provider_id": "<uuid>"}: the one listing that receives shop orders. */
+export const SHOP_PROVIDER_SETTING = 'shop_provider';
+
 /** What Kwetuly can check for the paid badge. Admin ticks the ones actually done. */
 export const BADGE_CHECKS = [
   { id: 'licence', ...L('Business licence', 'Leseni ya biashara', 'Licence commerciale', 'Licenza commerciale', 'Gewerbelizenz', 'Licencja działalności', '营业执照') },
@@ -84,10 +94,10 @@ export function hasValidBadge(b: Pick<Business, 'badge_checks' | 'badge_valid_un
 }
 
 /** A sale's commission split from the business's agreement (percentages of the sale amount). */
-export function commissionSplit(amount: number, agreement: { rafrika_pct: number; guide_pct: number } | null) {
+export function commissionSplit(amount: number, agreement: { kwetuly_pct: number; guide_pct: number } | null) {
   if (!agreement) return { kwetuly: 0, guide: 0 };
   const round = (n: number) => Math.round(n);
-  return { kwetuly: round((amount * Number(agreement.rafrika_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
+  return { kwetuly: round((amount * Number(agreement.kwetuly_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
 }
 
 /** Shops where travellers can order for delivery to their hotel, or reserve and collect. */

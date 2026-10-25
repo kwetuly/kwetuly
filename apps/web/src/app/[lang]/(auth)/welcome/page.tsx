@@ -10,6 +10,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { safeLocalPath } from '@/lib/safe-next';
 import { finishWelcome } from './actions';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.welcomeTitle, robots: { index: false } };
@@ -55,7 +56,7 @@ async function WelcomeForm({
 
   return (
     <form action={finishWelcome} className="card mt-8 space-y-5">
-      {params.error && params.error !== 'invite' && <p className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : t.auth.error}</p>}
+      {params.error && params.error !== 'invite' && <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : params.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       {next && <input type="hidden" name="next" value={next} />}
       {(await inviteRequired()) && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
@@ -76,7 +77,7 @@ async function WelcomeForm({
       </fieldset>
       <div>
         <label className="label" htmlFor="full_name">{t.auth.fullName}</label>
-        <input className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={user.fullName ?? ''} />
+        <NameInput reservedMessage={t.auth.nameReserved} className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={user.fullName ?? ''} />
       </div>
       <div>
         <label className="label" htmlFor="phone">{t.auth.phone}</label>

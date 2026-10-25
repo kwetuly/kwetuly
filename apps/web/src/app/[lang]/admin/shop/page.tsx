@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
-import { PRODUCT_COLUMNS, type Product } from '@/lib/merch';
+import { findShopId, PRODUCT_COLUMNS, type Product } from '@/lib/merch';
 import { createClient } from '@/lib/supabase/server';
 import { createMerchShop, deleteProduct, saveProduct } from './actions';
 
@@ -66,9 +66,9 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
   if (user.role !== 'admin') return <p className="mt-6">Admins only.</p>;
   const params = await searchParams;
   const supabase = await createClient();
-  const [{ data: products }, { data: shop }] = await Promise.all([
+  const [{ data: products }, shop] = await Promise.all([
     supabase.from('shop_products').select(PRODUCT_COLUMNS).order('sort_order').order('name').returns<Product[]>(),
-    supabase.from('providers').select('id').eq('business_type', 'merch').limit(1).maybeSingle(),
+    findShopId(supabase),
   ]);
 
   return (

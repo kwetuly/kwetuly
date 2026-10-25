@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { EVENTS, normalizePhone } from '@kwetuly/shared';
+import { EVENTS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { getInviteOnly } from '@/lib/api-more';
@@ -136,6 +136,8 @@ export default function SignInScreen() {
     const normalized = normalizePhone(phone);
     if (!normalized) return setMessage({ tone: 'error', text: t.auth.phoneError });
     if (!fullName.trim() || password.length < 8) return setMessage({ tone: 'error', text: t.auth.error });
+    // Names that look like Kwetuly are kept for its own team (the database refuses them too).
+    if (isReservedDisplayName(fullName)) return setMessage({ tone: 'error', text: t.auth.nameReserved });
     // Invite-only: the database checks the code when the account is created. A wrong code is refused
     // there, so no account is created and no email is sent.
     const invite = inviteCode.trim().slice(0, 200);

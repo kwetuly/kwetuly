@@ -10,7 +10,7 @@ import { saveAgreement, setSalesStatus } from '../actions';
 
 export const metadata: Metadata = { title: 'Commissions', robots: { index: false } };
 
-type Agreement = { provider_id: string; rafrika_pct: number; guide_pct: number; signed_on: string | null; notes: string | null; active: boolean };
+type Agreement = { provider_id: string; kwetuly_pct: number; guide_pct: number; signed_on: string | null; notes: string | null; active: boolean };
 type Business = { id: string; business_name: string; base_region: string };
 type Sale = { id: string; provider_id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: string; guides: { display_name: string } | null };
 
@@ -42,7 +42,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
   const supabase = await createClient();
   const [{ data: businesses }, { data: agreements }, { data: sales }] = await Promise.all([
     supabase.from('providers').select('id, business_name, base_region').eq('verification_status', 'approved').order('business_name').returns<Business[]>(),
-    supabase.from('business_agreements').select('provider_id, rafrika_pct, guide_pct, signed_on, notes, active').returns<Agreement[]>(),
+    supabase.from('business_agreements').select('provider_id, kwetuly_pct, guide_pct, signed_on, notes, active').returns<Agreement[]>(),
     supabase
       .from('referral_sales')
       .select('id, provider_id, code, guide_id, sale_date, amount_tzs, status, guides(display_name)')
@@ -97,7 +97,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                 {rows.length} sales · TSh {money.format(total)} ·{' '}
                 {agreement ? (
                   <>
-                    Kwetuly {Number(agreement.rafrika_pct)}% = <strong>TSh {money.format(split.kwetuly)}</strong> · guides {Number(agreement.guide_pct)}% = <strong>TSh {money.format(split.guide)}</strong>
+                    Kwetuly {Number(agreement.kwetuly_pct)}% = <strong>TSh {money.format(split.kwetuly)}</strong> · guides {Number(agreement.guide_pct)}% = <strong>TSh {money.format(split.guide)}</strong>
                   </>
                 ) : (
                   <span className="text-red-800">no agreement recorded</span>
@@ -150,7 +150,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                   </p>
                   <label className="block">
                     <span className="label">Kwetuly %</span>
-                    <input className="field" name="rafrika_pct" type="number" min={0} max={100} step="0.5" defaultValue={a?.rafrika_pct ?? ''} />
+                    <input className="field" name="kwetuly_pct" type="number" min={0} max={100} step="0.5" defaultValue={a?.kwetuly_pct ?? ''} />
                   </label>
                   <label className="block">
                     <span className="label">Guide %</span>

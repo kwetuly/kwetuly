@@ -301,6 +301,7 @@ export const it: Dictionary = {
     phone: 'Numero di telefono / WhatsApp',
     phoneHint: 'Con prefisso internazionale, es. +39 312 345 6789',
     phoneError: 'Inserisci un numero valido con il prefisso internazionale.',
+    nameReserved: 'Questo nome è riservato al team Kwetuly. Usa il tuo nome.',
     inviteCode: 'Codice di invito',
     inviteHint: 'Per ora Kwetuly è solo su invito. Chiedi il codice alla persona che ti ha invitato.',
     inviteError: 'Questo codice di invito non è corretto. Verificalo con la persona che ti ha invitato e riprova.',

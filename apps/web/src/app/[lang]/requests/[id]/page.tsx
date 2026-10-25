@@ -17,6 +17,7 @@ import { RatingSummary } from '@/components/stars';
 import { PayDeposit } from '@/components/pay-deposit';
 import { answerOffer, sendOffer, setRequestOpen, withdrawOffer } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -282,7 +283,7 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
       <h2 className="text-2xl font-bold">{offer ? o.yourOffer : o.makeOffer}</h2>
       <p className="mt-1 text-sm text-muted">{o.competing}: {request.offers_count}</p>
       {status.offerSent && <p className="mt-3 rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {o.sent}</p>}
-      {status.offerError && <p className="mt-3 rounded-[5px] bg-red-50 p-4 text-red-800">{t.requests.error}</p>}
+      {status.offerError && <p className="mt-3 rounded-[5px] bg-red-50 p-4 text-red-800">{status.offerError === 'name' ? t.auth.nameReserved : t.requests.error}</p>}
       {banner && <p className="mt-3 rounded-[5px] bg-surface p-4 font-semibold">{banner}</p>}
 
       {offer && (offer.status === 'accepted' || offer.status === 'declined') && (
@@ -302,7 +303,7 @@ async function MyOffer({ request, offer, user, status, canOffer, t, locale }: { 
           {!asGuide && (
             <label className="block sm:col-span-2">
               <span className="label">{o.companyName}</span>
-              <input name="company_name" className="field" required maxLength={120} defaultValue={offer?.company_name ?? ''} />
+              <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} name="company_name" className="field" required maxLength={120} defaultValue={offer?.company_name ?? ''} />
             </label>
           )}
           <label className="block">

@@ -365,6 +365,7 @@ export const en = {
     phone: 'Phone / WhatsApp number',
     phoneHint: 'With country code, e.g. +255 712 345 678 or +44 7700 900123',
     phoneError: 'Please enter a valid phone number with its country code.',
+    nameReserved: 'This name is kept for the Kwetuly team. Please use your own name.',
     inviteCode: 'Invite code',
     inviteHint: 'Kwetuly is invite-only for now. Ask the person who invited you for the code.',
     inviteError: 'That invite code is not right. Check it with the person who invited you and try again.',

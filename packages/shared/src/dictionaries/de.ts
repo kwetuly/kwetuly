@@ -301,6 +301,7 @@ export const de: Dictionary = {
     phone: 'Telefon- / WhatsApp-Nummer',
     phoneHint: 'Mit Ländervorwahl, z. B. +49 151 23456789',
     phoneError: 'Bitte geben Sie eine gültige Nummer mit Ländervorwahl ein.',
+    nameReserved: 'Dieser Name ist dem Kwetuly-Team vorbehalten. Bitte verwenden Sie Ihren eigenen Namen.',
     inviteCode: 'Einladungscode',
     inviteHint: 'Kwetuly ist vorerst nur auf Einladung nutzbar. Fragen Sie die Person, die Sie eingeladen hat, nach dem Code.',
     inviteError: 'Dieser Einladungscode stimmt nicht. Prüfen Sie ihn mit der Person, die Sie eingeladen hat, und versuchen Sie es erneut.',

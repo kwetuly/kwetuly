@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { isUuid, today } from '@/lib/requests';
@@ -96,6 +96,8 @@ export async function sendOffer(formData: FormData) {
     (asGuide || offer.company_name) &&
     (!offer.valid_until || offer.valid_until >= today());
   if (!valid) redirect(`${back}?offerError=1#offer`);
+  // Names that look like Kwetuly are kept for its own team (the database refuses them too; admins may).
+  if (user.role !== 'admin' && isReservedDisplayName(offer.company_name)) redirect(`${back}?offerError=name#offer`);
 
   const supabase = await createClient();
   const { data: existing } = await supabase
@@ -109,6 +111,7 @@ export async function sendOffer(formData: FormData) {
     : await supabase
         .from('trip_offers')
         .insert({ ...offer, request_id: requestId, offered_by: user.id, guide_id: asGuide ? user.guide!.id : null });
+  if (isDisplayNameReservedError(error)) redirect(`${back}?offerError=name#offer`);
   redirect(`${back}?${error ? 'offerError' : 'offerSent'}=1#offer`);
 }
 

@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, normalizePhone } from '@kwetuly/shared';
+import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, normalizePhone } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { requireOnboarded } from '@/lib/auth';
@@ -130,12 +130,13 @@ export async function saveGuideProfile(formData: FormData) {
         guideId = data.id;
         break;
       }
+      if (isDisplayNameReservedError(error)) fail('name');
       if (error?.code !== '23505') break;
     }
     if (!guideId) fail('save');
   } else if (Object.keys(patch).length > 0) {
     const { error } = await supabase.from('guides').update(patch).eq('id', guideId);
-    if (error) fail(error.code === '23505' ? 'slug' : 'save');
+    if (error) fail(error.code === '23505' ? 'slug' : isDisplayNameReservedError(error) ? 'name' : 'save');
   }
 
   if (has('documents')) {
@@ -185,6 +186,11 @@ export async function saveMyDetails(formData: FormData) {
   const back = String(formData.get('back') ?? '');
   const next = back.startsWith(`/${locale}/`) && /^[/a-z0-9?=&-]+$/.test(back) ? back : `/${locale}/dashboard`;
   if (!phone) redirect(`/${locale}/dashboard?details=invalid#details`);
-  await supabase.from('profiles').update({ full_name: text(formData, 'full_name', 120), phone }).eq('id', user.id);
+  const fullName = text(formData, 'full_name', 120);
+  // Names that look like Kwetuly are refused by the database unless the account is an admin (the
+  // browser normally stops them first); the form comes back with the return page kept.
+  const keepBack = next === `/${locale}/dashboard` ? '' : `&back=${encodeURIComponent(next)}`;
+  const { error } = await supabase.from('profiles').update({ full_name: fullName, phone }).eq('id', user.id);
+  if (isDisplayNameReservedError(error)) redirect(`/${locale}/dashboard?details=name${keepBack}#details`);
   redirect(next === `/${locale}/dashboard` ? `${next}?details=saved#details` : next);
 }

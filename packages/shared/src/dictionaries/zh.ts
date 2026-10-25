@@ -296,6 +296,7 @@ export const zh: Dictionary = {
     phone: '手机 / WhatsApp 号码',
     phoneHint: '请带国家代码，例如 +86 138 0013 8000',
     phoneError: '请输入带国家代码的有效号码。',
+    nameReserved: '此名称仅供 Kwetuly 团队使用。请使用您自己的名字。',
     inviteCode: '邀请码',
     inviteHint: 'Kwetuly 目前仅限受邀注册。请向邀请您的人索取邀请码。',
     inviteError: '邀请码不正确。请与邀请您的人核对后再试。',

@@ -367,6 +367,7 @@ export const sw: Dictionary = {
     phone: 'Namba ya simu / WhatsApp',
     phoneHint: 'Pamoja na msimbo wa nchi, mf. +255 712 345 678',
     phoneError: 'Tafadhali weka namba sahihi ya simu pamoja na msimbo wa nchi.',
+    nameReserved: 'Jina hili limehifadhiwa kwa timu ya Kwetuly. Tafadhali tumia jina lako mwenyewe.',
     inviteCode: 'Msimbo wa mwaliko',
     inviteHint: 'Kwetuly ni kwa walioalikwa tu kwa sasa. Muulize aliyekualika akupe msimbo.',
     inviteError: 'Msimbo huo wa mwaliko si sahihi. Hakikisha na aliyekualika kisha ujaribu tena.',

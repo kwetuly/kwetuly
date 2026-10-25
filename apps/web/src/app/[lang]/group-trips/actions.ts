@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -73,9 +73,12 @@ export async function createGroupTrip(formData: FormData) {
     trip.already_going < trip.max_people &&
     (trip.guide_id || trip.company_name || (!asBusiness && user.phone));
   if (!valid) redirect(`${back}error=1`);
+  // Names that look like Kwetuly are kept for its own team (the database refuses them too; admins may).
+  if (user.role !== 'admin' && isReservedDisplayName(trip.company_name)) redirect(`${back}error=name`);
 
   const supabase = await createClient();
   const { data, error } = await supabase.from('group_trips').insert(trip).select('id').single();
+  if (isDisplayNameReservedError(error)) redirect(`${back}error=name`);
   if (error || !data) redirect(`${back}error=1`);
   await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
 

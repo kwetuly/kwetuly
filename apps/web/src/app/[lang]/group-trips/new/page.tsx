@@ -10,6 +10,7 @@ import { businessApproval, getCurrentUser, welcomePath } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createGroupTrip } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -98,14 +99,14 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
   const today = new Date().toISOString().slice(0, 10);
   return (
     <form action={createGroupTrip} className="card grid gap-4 sm:grid-cols-2">
-      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{t.auth.error}</p>}
+      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{params.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="complete" value={complete ? '1' : ''} />
       {asTraveller && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.travellerCheck}</p>}
       {asBusiness && !asGuide && (
         <label className="block sm:col-span-2">
           <span className="label">{g.companyName}</span>
-          <input name="company_name" className="field" required maxLength={120} />
+          <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} name="company_name" className="field" required maxLength={120} />
         </label>
       )}
       <label className="block sm:col-span-2">

@@ -301,6 +301,7 @@ export const pl: Dictionary = {
     phone: 'Numer telefonu / WhatsApp',
     phoneHint: 'Z kierunkowym kraju, np. +48 512 345 678',
     phoneError: 'Podaj prawidłowy numer z kierunkowym kraju.',
+    nameReserved: 'Ta nazwa jest zarezerwowana dla zespołu Kwetuly. Użyj własnego imienia i nazwiska.',
     inviteCode: 'Kod zaproszenia',
     inviteHint: 'Na razie Kwetuly działa tylko na zaproszenie. Poproś o kod osobę, która cię zaprosiła.',
     inviteError: 'Ten kod zaproszenia jest nieprawidłowy. Sprawdź go z osobą, która cię zaprosiła, i spróbuj ponownie.',

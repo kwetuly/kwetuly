@@ -11,7 +11,7 @@ export async function BusinessSales({ providerId, t, locale, status }: { provide
   const bt = t.business;
   const supabase = await createClient();
   const [{ data: agreement }, { data: sales }] = await Promise.all([
-    supabase.from('business_agreements').select('rafrika_pct, guide_pct, active').eq('provider_id', providerId).maybeSingle<{ rafrika_pct: number; guide_pct: number; active: boolean }>(),
+    supabase.from('business_agreements').select('kwetuly_pct, guide_pct, active').eq('provider_id', providerId).maybeSingle<{ kwetuly_pct: number; guide_pct: number; active: boolean }>(),
     supabase.from('referral_sales').select('id, code, guide_id, sale_date, amount_tzs, status, note').eq('provider_id', providerId).order('sale_date', { ascending: false }).limit(50).returns<Sale[]>(),
   ]);
   const money = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
@@ -23,7 +23,7 @@ export async function BusinessSales({ providerId, t, locale, status }: { provide
       <p className="text-sm text-muted">{bt.salesBody}</p>
       <p className="rounded-[5px] bg-surface p-3 text-sm font-semibold">
         {agreement?.active
-          ? bt.agreementShares.replace('{r}', String(Number(agreement.rafrika_pct))).replace('{g}', String(Number(agreement.guide_pct)))
+          ? bt.agreementShares.replace('{r}', String(Number(agreement.kwetuly_pct))).replace('{g}', String(Number(agreement.guide_pct)))
           : bt.noAgreement}
       </p>
       {status.sale_saved && <p className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{bt.saved}</p>}

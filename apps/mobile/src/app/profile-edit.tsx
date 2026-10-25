@@ -4,7 +4,7 @@ import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, isDisplayNameReservedError, isReservedDisplayName, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
@@ -202,6 +202,11 @@ export default function ProfileEditScreen() {
       setMessage({ tone: 'error', text: t.auth.error });
       return false;
     }
+    // Names that look like Kwetuly are kept for its own team (the database refuses them too).
+    if (isReservedDisplayName(f.display_name)) {
+      setMessage({ tone: 'error', text: t.auth.nameReserved });
+      return false;
+    }
     setBusy(true);
     setMessage(null);
     try {
@@ -242,7 +247,7 @@ export default function ProfileEditScreen() {
       setMessage({ tone: 'ok', text: d.saved });
       return true;
     } catch (e) {
-      setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : t.auth.error });
+      setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
       return false;
     } finally {
       setBusy(false);

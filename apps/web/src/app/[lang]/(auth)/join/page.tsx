@@ -72,6 +72,7 @@ async function JoinForm({
           createAccount: t.auth.createAccount,
           error: t.auth.error,
           phoneError: t.auth.phoneError,
+          nameReserved: t.auth.nameReserved,
           inviteCode: t.auth.inviteCode,
           inviteError: t.auth.inviteError,
           inviteHint: t.auth.inviteHint,

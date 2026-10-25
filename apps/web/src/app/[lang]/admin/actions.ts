@@ -241,7 +241,7 @@ export async function saveAgreement(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase.from('business_agreements').upsert({
     provider_id: String(formData.get('provider_id') ?? ''),
-    rafrika_pct: pct('rafrika_pct'),
+    kwetuly_pct: pct('kwetuly_pct'),
     guide_pct: pct('guide_pct'),
     signed_on: /^\d{4}-\d{2}-\d{2}$/.test(signed) ? signed : null,
     notes: String(formData.get('notes') ?? '').trim().slice(0, 2000) || null,

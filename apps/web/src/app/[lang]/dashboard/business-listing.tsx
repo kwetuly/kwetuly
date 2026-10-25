@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BUSINESS_TYPES, REGIONS, formatUsd } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, formatUsd } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { CurrentUser } from '@/lib/auth';
@@ -10,6 +10,7 @@ import { DirectUpload } from '@/components/direct-upload';
 import { requestBadge, saveBusiness } from './business-actions';
 import { BusinessSales } from './business-sales';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 
 type OwnBusiness = {
   id: string;
@@ -64,19 +65,19 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
         </div>
       )}
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</p>}
-      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
+      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
 
       <form action={saveBusiness} className="card mt-6 space-y-4">
         <input type="hidden" name="locale" value={locale} />
         <label className="block">
           <span className="label">{bt.nameField}</span>
-          <input className="field" name="business_name" required maxLength={120} defaultValue={business?.business_name ?? ''} />
+          <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} className="field" name="business_name" required maxLength={120} defaultValue={business?.business_name ?? ''} />
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="label">{bt.typeField}</span>
             <select className="field" name="business_type" required defaultValue={business?.business_type ?? 'hotel'}>
-              {BUSINESS_TYPES.map((b) => <option key={b.id} value={b.id}>{b[locale]}</option>)}
+              {(business?.business_type === 'merch' ? BUSINESS_TYPES : OWNER_BUSINESS_TYPES).map((b) => <option key={b.id} value={b.id}>{b[locale]}</option>)}
             </select>
           </label>
           <label className="block">

@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { SHOP_PROVIDER_SETTING } from '@kwetuly/shared';
+import { findShopId } from '@/lib/merch';
 
 async function adminOnly(formData: FormData): Promise<{ locale: Locale; userId: string }> {
   const value = String(formData.get('locale') ?? '');
@@ -47,22 +49,47 @@ export async function deleteProduct(formData: FormData) {
   redirect(`/${locale}/admin/shop?deleted=1`);
 }
 
-// Orders need somewhere to arrive: a "Kwetuly Shop" listing owned by the admin account.
+// Orders need somewhere to arrive: a "Kwetuly Shop" listing owned by the admin account, named in the
+// site setting 'shop_provider' so that no other listing can ever receive shop orders.
 export async function createMerchShop(formData: FormData) {
   const { locale, userId } = await adminOnly(formData);
   const supabase = await createClient();
-  const { data } = await supabase.from('providers').select('id').eq('business_type', 'merch').limit(1).maybeSingle();
-  if (!data) {
-    await supabase.from('providers').insert({
-      owner_id: userId,
-      business_name: 'Kwetuly Shop',
-      business_type: 'merch',
-      base_region: 'Arusha',
-      story: 'Official Kwetuly merchandise.',
-      languages: ['en', 'sw'],
-      verification_status: 'approved',
-    });
+  const back = `/${locale}/admin/shop`;
+  if (!(await findShopId(supabase))) {
+    // Reuse this admin's own shop listing if one exists, else create it.
+    const { data: own } = await supabase
+      .from('providers')
+      .select('id')
+      .eq('business_type', 'merch')
+      .eq('owner_id', userId)
+      .order('created_at')
+      .order('id')
+      .limit(1)
+      .maybeSingle<{ id: string }>();
+    let shopId = own?.id;
+    if (!shopId) {
+      const { data: created } = await supabase
+        .from('providers')
+        .insert({
+          owner_id: userId,
+          business_name: 'Kwetuly Shop',
+          business_type: 'merch',
+          base_region: 'Arusha',
+          story: 'Official Kwetuly merchandise.',
+          languages: ['en', 'sw'],
+          verification_status: 'approved',
+        })
+        .select('id')
+        .single<{ id: string }>();
+      shopId = created?.id;
+    } else {
+      await supabase.from('providers').update({ verification_status: 'approved' }).eq('id', shopId);
+    }
+    if (!shopId) redirect(`${back}?error=1`);
+    const { error } = await supabase.from('site_settings').upsert({ key: SHOP_PROVIDER_SETTING, value: { provider_id: shopId } });
+    if (error) redirect(`${back}?error=1`);
   }
   revalidateTag('businesses', 'max');
-  redirect(`/${locale}/admin/shop`);
+  revalidateTag('settings', 'max');
+  redirect(back);
 }

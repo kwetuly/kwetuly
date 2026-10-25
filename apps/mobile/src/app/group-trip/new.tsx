@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { createGroupTrip, getMyGuide } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
@@ -118,8 +118,8 @@ export default function NewGroupTripScreen() {
         f.contact.trim(),
       );
       router.replace({ pathname: '/group-trip/[id]', params: { id } });
-    } catch {
-      setMessage({ tone: 'error', text: t.auth.error });
+    } catch (e) {
+      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }

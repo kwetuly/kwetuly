@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { safeProps } from './analytics';
 import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
+import { isDisplayNameReservedError, isReservedDisplayName } from './display-name';
 import { hasRecordedCheck } from './guide-checks';
 import { filterTours, formatPrice, readTourFilters, verifiedPrice, type Tour } from './tours';
 
@@ -100,7 +101,7 @@ describe('business badge', () => {
 
 describe('referral commission', () => {
   it('splits a sale by the agreement and pays nothing without one', () => {
-    expect(commissionSplit(100000, { rafrika_pct: 10, guide_pct: 5 })).toEqual({ kwetuly: 10000, guide: 5000 });
+    expect(commissionSplit(100000, { kwetuly_pct: 10, guide_pct: 5 })).toEqual({ kwetuly: 10000, guide: 5000 });
     expect(commissionSplit(100000, null)).toEqual({ kwetuly: 0, guide: 0 });
   });
 });
@@ -111,5 +112,32 @@ describe('verified guide', () => {
     expect(hasRecordedCheck(none)).toBe(false);
     expect(hasRecordedCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(true);
     expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(true);
+  });
+});
+
+describe('reserved display names', () => {
+  it('refuses the brand name in any form', () => {
+    for (const name of [
+      'Kwetuly', 'kwetuly support', 'KWETULY Team', 'Kwe.tuly', 'kwetu_ly', 'Kwetu1y',
+      'KwetuIy', // capital i
+      'Kwetu ly', 'Kwetu\u00a0ly', // space, non-breaking space
+      'Kw\u0435tuly', 'Kwetul\u0443', // Cyrillic e, Cyrillic u that looks like y
+      '\uff2bwetuly', // fullwidth K
+      'Kvvetuly', 'Kw\u00e9tuly', 'Kwe\u200btuly', 'Kwetu\u04cfy', '\u039a\u03c9etuly',
+      'Kwetul\u00fd', 'Kwe tuly', 'Kwe-tuly Tours', 'K w e t u l y',
+      'Rafrika', 'rafrika-help', 'Mr Rafr1ka', 'RafrikaTeam', 'Rafrlka', 'R\u0430frika', 'Safari-Rafrika', 'Ra.frika',
+    ]) {
+      expect(isReservedDisplayName(name), JSON.stringify(name)).toBe(true);
+    }
+  });
+  it('allows ordinary names', () => {
+    for (const name of ['Amani Mushi', 'Kwetu Lyimo', 'Kwetu-Lyimo', 'Kwetu.Lyimo', 'Kwetu Lyimo-Mushi', 'Nyumbani Kwetu Lyamba', 'Safarafrika Tours', 'Afrika Safaris', '', null, undefined, '\u674e\u660e', 'Zo\u00eb Kowalska']) {
+      expect(isReservedDisplayName(name), String(name)).toBe(false);
+    }
+  });
+  it('recognises the database error code', () => {
+    expect(isDisplayNameReservedError({ message: 'display_name_reserved' })).toBe(true);
+    expect(isDisplayNameReservedError({ message: 'other' })).toBe(false);
+    expect(isDisplayNameReservedError(null)).toBe(false);
   });
 });

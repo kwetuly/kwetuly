@@ -1,6 +1,6 @@
 // More data access: reviews, calls, enquiries, Guide Hub, guide profile, organiser tools and business tools.
 // Same tables and rules as the website; row-level security enforces who may do what.
-import { normalizePhone, type GuideCheckFields } from '@kwetuly/shared';
+import { isDisplayNameReservedError, isReservedDisplayName, normalizePhone, type GuideCheckFields } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 function check(error: { message: string } | null) {
@@ -135,9 +135,11 @@ export async function registerInterest(input: { section: string; item: string; k
 export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '') {
   const normalized = normalizePhone(phone);
   if (!normalized) throw new Error('phone');
+  if (isReservedDisplayName(fullName)) throw new Error('name');
   const code = inviteCode.trim().slice(0, 200);
   const { error } = await supabase.rpc('complete_onboarding', { p_role: role, p_phone: normalized, p_full_name: fullName, p_invite_code: code || null });
   if (error?.message.includes('invite_code_invalid')) throw new Error('invite');
+  if (isDisplayNameReservedError(error)) throw new Error('name');
   check(error);
 }
 

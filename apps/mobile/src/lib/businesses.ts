@@ -1,4 +1,4 @@
-import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_COLUMNS, SHOP_PROVIDER_SETTING, type Business, type BusinessType } from '@kwetuly/shared';
 import { supabase } from '@/lib/supabase';
 
 // Business listings, the same rules as the website: visitors see approved businesses; the owner's
@@ -118,7 +118,7 @@ export async function requestBadge(userId: string) {
 export type ReferralSale = { id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: 'reported' | 'invoiced' | 'paid'; providers?: { business_name: string } | null };
 
 export async function getMyAgreement(providerId: string) {
-  const { data } = await supabase.from('business_agreements').select('rafrika_pct, guide_pct, active').eq('provider_id', providerId).maybeSingle<{ rafrika_pct: number; guide_pct: number; active: boolean }>();
+  const { data } = await supabase.from('business_agreements').select('kwetuly_pct, guide_pct, active').eq('provider_id', providerId).maybeSingle<{ kwetuly_pct: number; guide_pct: number; active: boolean }>();
   return data ?? null;
 }
 
@@ -165,10 +165,30 @@ export async function listTravelNews(): Promise<TravelNews[]> {
 export type Product = { id: string; name: string; description: string | null; price_tzs: number | null; sizes: string[]; photo_url: string | null };
 
 export async function listProducts(): Promise<{ products: Product[]; shopId: string | null }> {
-  const [products, shop] = await Promise.all([
+  const [products, shopId] = await Promise.all([
     supabase.from('shop_products').select('id, name, description, price_tzs, sizes, photo_url').eq('active', true).order('sort_order').order('name'),
-    supabase.from('providers').select('id').eq('business_type', 'merch').eq('verification_status', 'approved').limit(1).maybeSingle(),
+    getShopId(),
   ]);
   check(products.error);
-  return { products: (products.data ?? []) as Product[], shopId: (shop.data?.id as string | undefined) ?? null };
+  return { products: (products.data ?? []) as Product[], shopId };
+}
+
+// The one listing named in site setting 'shop_provider' (admins only), never "any merch listing",
+// so no other business can receive shop orders. Null until Kwetuly sets it up.
+async function getShopId(): Promise<string | null> {
+  const { data: setting } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', SHOP_PROVIDER_SETTING)
+    .maybeSingle<{ value: { provider_id?: unknown } }>();
+  const id = setting?.value?.provider_id;
+  if (typeof id !== 'string' || !id) return null;
+  const { data } = await supabase
+    .from('providers')
+    .select('id')
+    .eq('id', id)
+    .eq('business_type', 'merch')
+    .eq('verification_status', 'approved')
+    .maybeSingle<{ id: string }>();
+  return data?.id ?? null;
 }

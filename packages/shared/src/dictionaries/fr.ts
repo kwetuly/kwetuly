@@ -301,6 +301,7 @@ export const fr: Dictionary = {
     phone: 'Numéro de téléphone / WhatsApp',
     phoneHint: 'Avec l’indicatif du pays, ex. +33 6 12 34 56 78',
     phoneError: 'Veuillez saisir un numéro valide avec l’indicatif du pays.',
+    nameReserved: 'Ce nom est réservé à l’équipe Kwetuly. Merci d’utiliser votre propre nom.',
     inviteCode: 'Code d’invitation',
     inviteHint: 'Kwetuly est sur invitation pour le moment. Demandez le code à la personne qui vous a invité.',
     inviteError: 'Ce code d’invitation n’est pas valide. Vérifiez-le auprès de la personne qui vous a invité, puis réessayez.',

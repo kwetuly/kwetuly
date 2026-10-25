@@ -1,6 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
 import { redirect } from 'next/navigation';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
@@ -18,7 +19,7 @@ function localeFrom(formData: FormData) {
 
 const SIGNUP_ROLES = ['traveler', 'guide', 'provider'] as const;
 
-export type SignUpState = { error: 'invite' | 'phone' | 'other'; role: string; fullName: string; phone: string; email: string } | null;
+export type SignUpState = { error: 'invite' | 'phone' | 'name' | 'other'; role: string; fullName: string; phone: string; email: string } | null;
 
 // Used with useActionState: a refused sign-up comes back as state, so the form keeps the name, phone
 // and email the person typed (never the password or invite code) and nothing personal goes in the URL.
@@ -39,6 +40,8 @@ export async function signUp(_previous: SignUpState, formData: FormData): Promis
   if (!inviteCode && (await inviteRequired())) return { error: 'invite', ...keep };
   if (!phone) return { error: 'phone', ...keep };
   if (!email || password.length < 8 || !fullName) return { error: 'other', ...keep };
+  // Names that look like Kwetuly are kept for its own team (the database refuses them too).
+  if (isReservedDisplayName(fullName)) return { error: 'name', ...keep };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
@@ -85,15 +88,18 @@ export async function completeOnboarding(formData: FormData) {
   // is done). complete_onboarding checks the invite code in the database while the gate is on.
   const inviteCode = inviteCodeInput(formData.get('invite_code'));
   if (!phone) redirect(`/${locale}/welcome?role=${role}&error=phone`);
+  const fullName = String(formData.get('full_name') ?? '').trim().slice(0, 120);
+  if (isReservedDisplayName(fullName)) redirect(`/${locale}/welcome?role=${role}&error=name`);
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('complete_onboarding', {
     p_role: role,
     p_phone: phone,
-    p_full_name: String(formData.get('full_name') ?? '').trim().slice(0, 120),
+    p_full_name: fullName,
     p_invite_code: inviteCode || null,
   });
   if (isInviteError(error)) redirect(`/${locale}/welcome?role=${role}&error=invite`);
+  if (isDisplayNameReservedError(error)) redirect(`/${locale}/welcome?role=${role}&error=name`);
   if (error) redirect(`/${locale}/welcome?role=${role}&error=1`);
 
   // New guides go straight to their profile editor.

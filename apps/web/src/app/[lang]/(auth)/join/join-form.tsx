@@ -5,6 +5,7 @@ import { Briefcase, Compass, Plane } from 'lucide-react';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { InviteCodeField } from '@/components/invite-code-field';
 import { SubmitButton } from '@/components/submit-button';
+import { NameInput } from '@/components/name-input';
 import { signUp } from '../actions';
 
 const roles = [
@@ -16,7 +17,7 @@ const roles = [
 export type JoinLabels = {
   auth: Pick<
     Dictionary['auth'],
-    'welcomeRole' | 'fullName' | 'phone' | 'phoneHint' | 'email' | 'password' | 'createAccount' | 'error' | 'phoneError' | 'inviteCode' | 'inviteError' | 'inviteHint'
+    'welcomeRole' | 'fullName' | 'phone' | 'phoneHint' | 'email' | 'password' | 'createAccount' | 'error' | 'phoneError' | 'nameReserved' | 'inviteCode' | 'inviteError' | 'inviteHint'
   >;
   join: Pick<Dictionary['join'], 'traveler' | 'guide' | 'provider'>;
 };
@@ -43,7 +44,7 @@ export function JoinForm({
   return (
     <form action={action} className="space-y-5">
       {error && error !== 'invite' && (
-        <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{error === 'phone' ? t.auth.phoneError : t.auth.error}</p>
+        <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{error === 'phone' ? t.auth.phoneError : error === 'name' ? t.auth.nameReserved : t.auth.error}</p>
       )}
       <input type="hidden" name="locale" value={locale} />
       {invite && <InviteCodeField key={state ? 'retry' : 'first'} t={t} invalid={error === 'invite'} />}
@@ -73,7 +74,7 @@ export function JoinForm({
       <div>
         <label className="label" htmlFor="full_name">{t.auth.fullName}</label>
         {/* React resets the form after the action; the defaults bring back what was typed. */}
-        <input className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={state?.fullName ?? ''} />
+        <NameInput reservedMessage={t.auth.nameReserved} className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={state?.fullName ?? ''} />
       </div>
       <div>
         <label className="label" htmlFor="phone">{t.auth.phone}</label>

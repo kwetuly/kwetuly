@@ -4,7 +4,7 @@ import { Redirect, Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUSINESS_TYPES, REGIONS, formatUsd, hasValidBadge, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, type BusinessType } from '@kwetuly/shared';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
@@ -84,6 +84,8 @@ function Editor({
 
   async function save() {
     if (!f.name.trim() || !f.region[0] || !f.whatsapp.trim()) return setMessage({ tone: 'error', text: t.auth.error });
+    // Names that look like Kwetuly are kept for its own team (the database refuses them too).
+    if (isReservedDisplayName(f.name)) return setMessage({ tone: 'error', text: t.auth.nameReserved });
     setBusy(true);
     setMessage(null);
     try {
@@ -107,8 +109,8 @@ function Editor({
       setLicence(null);
       setMessage({ tone: 'ok', text: bt.saved });
       onSaved();
-    } catch {
-      setMessage({ tone: 'error', text: t.auth.error });
+    } catch (e) {
+      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }
@@ -136,7 +138,7 @@ function Editor({
           <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{bt.photoField}</Text>
         </Pressable>
         <Field label={bt.nameField} value={f.name} onChangeText={set('name')} />
-        <ChipSelect label={bt.typeField} options={BUSINESS_TYPES.map((b) => ({ value: b.id, label: b[locale] }))} selected={f.type} onChange={set('type')} multiple={false} />
+        <ChipSelect label={bt.typeField} options={(business?.business_type === 'merch' ? BUSINESS_TYPES : OWNER_BUSINESS_TYPES).map((b) => ({ value: b.id, label: b[locale] }))} selected={f.type} onChange={set('type')} multiple={false} />
         <ChipSelect label={bt.regionField} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.region} onChange={set('region')} multiple={false} />
         <Field label={bt.locationField} value={f.location} onChangeText={set('location')} />
         <Field label={bt.whatsappField} value={f.whatsapp} onChangeText={set('whatsapp')} keyboardType="phone-pad" />

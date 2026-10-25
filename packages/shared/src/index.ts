@@ -15,3 +15,4 @@ export * from './analytics';
 export * from './packages';
 export * from './businesses';
 export * from './invest';
+export * from './display-name';

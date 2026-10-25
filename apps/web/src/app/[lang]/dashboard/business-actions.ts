@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { BUSINESS_TYPES, REGIONS } from '@kwetuly/shared';
+import { OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -35,9 +35,14 @@ export async function saveBusiness(formData: FormData) {
   const region = text(formData, 'base_region', 60);
   const whatsapp = text(formData, 'whatsapp_number', 30);
   const website = text(formData, 'website', 200);
-  if (!name || !BUSINESS_TYPES.some((b) => b.id === type) || !region || !(REGIONS as readonly string[]).includes(region) || !whatsapp) {
+  // The Kwetuly Shop type ('merch') is kept for Kwetuly; the database refuses it from owners too.
+  const { data: existing } = await supabase.from('providers').select('id, photos, business_type').eq('owner_id', user.id).maybeSingle<{ id: string; photos: string[]; business_type: string }>();
+  const typeAllowed = OWNER_BUSINESS_TYPES.some((b) => b.id === type) || (type === 'merch' && existing?.business_type === 'merch');
+  if (!name || !typeAllowed || !region || !(REGIONS as readonly string[]).includes(region) || !whatsapp) {
     redirect(`${back}?error=missing#business`);
   }
+  // Names that look like Kwetuly are kept for its own team (the database refuses them too).
+  if (isReservedDisplayName(name)) redirect(`${back}?error=name#business`);
 
   const row: Record<string, unknown> = {
     business_name: name,
@@ -53,11 +58,11 @@ export async function saveBusiness(formData: FormData) {
   const extra = ownPath(formData.get('extra_photo_path'), user.id, 'business-extra', ['jpg', 'png', 'webp']);
   const licence = ownPath(formData.get('licence_path'), user.id, 'business-licence', ['jpg', 'png', 'webp', 'pdf']);
 
-  const { data: existing } = await supabase.from('providers').select('id, photos').eq('owner_id', user.id).maybeSingle<{ id: string; photos: string[] }>();
   if (extra) row.photos = [...(existing?.photos ?? []), avatars.getPublicUrl(extra).data.publicUrl].slice(-6);
   const saved = existing
     ? await supabase.from('providers').update(row).eq('id', existing.id).select('id').single<{ id: string }>()
     : await supabase.from('providers').insert({ ...row, owner_id: user.id }).select('id').single<{ id: string }>();
+  if (isDisplayNameReservedError(saved.error)) redirect(`${back}?error=name#business`);
   if (saved.error || !saved.data) redirect(`${back}?error=save#business`);
 
   // WhatsApp number and licence stay private: only the owner and Kwetuly can read them.
