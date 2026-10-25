@@ -1,16 +1,18 @@
-// Sends queued Rafrika alerts by email (Resend) and WhatsApp (Meta WhatsApp Cloud API).
+// Sends queued Kwetuly alerts by email (Resend) and WhatsApp (Meta WhatsApp Cloud API).
 // Triggered by the database whenever alerts are queued, and every 5 minutes by pg_cron for retries.
 //
 // Secrets (Supabase dashboard → Edge Functions → Secrets). Channels without secrets are skipped:
 //   RESEND_API_KEY            email provider key
-//   EMAIL_FROM                e.g. "Rafrika <alerts@rafrika.com>" (domain must be verified in Resend)
+//   EMAIL_FROM                e.g. "Kwetuly <alerts@kwetuly.com>" (domain must be verified in Resend)
 //   WHATSAPP_TOKEN            permanent access token from Meta Business
 //   WHATSAPP_PHONE_NUMBER_ID  the sending number's ID from WhatsApp Manager
-//   WHATSAPP_TEMPLATE         approved template name (default "rafrika_alert": body "{{1}} {{2}}")
-//   SITE_URL                  e.g. "https://rafrika.com" (default)
+//   WHATSAPP_TEMPLATE         approved template name (default "kwetuly_alert": body "{{1}} {{2}}").
+//                             Walter submits "kwetuly_alert" to Meta himself; until Meta approves it,
+//                             set this secret to the old approved name so WhatsApp alerts keep going.
+//   SITE_URL                  e.g. "https://kwetuly.com" (default)
 //   EXPO_ACCESS_TOKEN         optional; only needed if push security is turned on in Expo
 //
-// Push alerts go to every phone the person has signed in on with the Rafrika app (push_tokens).
+// Push alerts go to every phone the person has signed in on with the Kwetuly app (push_tokens).
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -25,7 +27,7 @@ type Outbox = {
 };
 
 const env = (key: string, fallback = '') => Deno.env.get(key) ?? fallback;
-const SITE_URL = env('SITE_URL', 'https://rafrika.com').replace(/\/$/, '');
+const SITE_URL = env('SITE_URL', 'https://kwetuly.com').replace(/\/$/, '');
 const MAX_ATTEMPTS = 5;
 
 // ---------------------------------------------------------------------------
@@ -57,28 +59,28 @@ function render(event: string, locale: string, p: Record<string, string | null>)
         : { subject: `${v('guide')} accepted your call`, body: `Your call with ${v('guide')} is confirmed${when ? ` for ${when} (Tanzania time)` : ''}.${p.meeting_link ? ` Join here: ${v('meeting_link')}` : ''}` };
     case 'call_declined':
       return sw
-        ? { subject: `${v('guide')} hakuweza kukubali simu`, body: `Samahani, ${v('guide')} hapatikani kwa muda huo. Chagua mwongozaji mwingine kwenye Rafrika.` }
-        : { subject: `${v('guide')} couldn't take your call`, body: `Sorry, ${v('guide')} isn't available then. You can choose another guide on Rafrika.` };
+        ? { subject: `${v('guide')} hakuweza kukubali simu`, body: `Samahani, ${v('guide')} hapatikani kwa muda huo. Chagua mwongozaji mwingine kwenye Kwetuly.` }
+        : { subject: `${v('guide')} couldn't take your call`, body: `Sorry, ${v('guide')} isn't available then. You can choose another guide on Kwetuly.` };
     case 'guide_pending':
       return { subject: `Guide waiting for approval: ${v('guide')}`, body: `${v('guide')} (${v('region')}) has submitted a profile. Check their registration and approve or reject.` };
     case 'guide_approved':
       return sw
-        ? { subject: 'Hongera! Wasifu wako umeidhinishwa', body: `Karibu Rafrika, ${v('guide')}! Wasifu wako uko hewani na sasa unaweza kuingia Kituo cha Waongozaji.` }
-        : { subject: 'Congratulations! Your profile is approved', body: `Karibu to Rafrika, ${v('guide')}! Your profile is live and the Guide Hub is now open to you.` };
+        ? { subject: 'Hongera! Wasifu wako umeidhinishwa', body: `Karibu Kwetuly, ${v('guide')}! Wasifu wako uko hewani na sasa unaweza kuingia Kituo cha Waongozaji.` }
+        : { subject: 'Congratulations! Your profile is approved', body: `Karibu to Kwetuly, ${v('guide')}! Your profile is live and the Guide Hub is now open to you.` };
     case 'job_pending':
       return { subject: `Job waiting for review: ${v('title')}`, body: `${v('company')} posted "${v('title')}". Review it in the admin page.` };
     case 'job_approved':
       return sw
-        ? { subject: 'Kazi yako imeidhinishwa', body: `"${v('title')}" sasa inaonekana kwa waongozaji waliothibitishwa kwenye Rafrika.` }
-        : { subject: 'Your job is live', body: `"${v('title')}" is now visible to verified guides on Rafrika.` };
+        ? { subject: 'Kazi yako imeidhinishwa', body: `"${v('title')}" sasa inaonekana kwa waongozaji waliothibitishwa kwenye Kwetuly.` }
+        : { subject: 'Your job is live', body: `"${v('title')}" is now visible to verified guides on Kwetuly.` };
     case 'message_new':
       return sw
-        ? { subject: `Ujumbe mpya kutoka kwa ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Jibu kwenye Rafrika.` }
-        : { subject: `New message from ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Reply on Rafrika.` };
+        ? { subject: `Ujumbe mpya kutoka kwa ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Jibu kwenye Kwetuly.` }
+        : { subject: `New message from ${v('sender')}`, body: `${v('sender')}: "${v('preview')}". Reply on Kwetuly.` };
     case 'review_new':
       return sw
-        ? { subject: `Maoni mapya: nyota ${v('rating')} kutoka kwa ${v('author')}`, body: `${v('author')} ameandika: "${v('preview')}". Tazama wasifu wako kwenye Rafrika.` }
-        : { subject: `New ${v('rating')}-star review from ${v('author')}`, body: `${v('author')} wrote: "${v('preview')}". See it on your Rafrika profile.` };
+        ? { subject: `Maoni mapya: nyota ${v('rating')} kutoka kwa ${v('author')}`, body: `${v('author')} ameandika: "${v('preview')}". Tazama wasifu wako kwenye Kwetuly.` }
+        : { subject: `New ${v('rating')}-star review from ${v('author')}`, body: `${v('author')} wrote: "${v('preview')}". See it on your Kwetuly profile.` };
     case 'group_pending':
       return { subject: `Group trip waiting for review: ${v('title')}`, body: `"${v('title')}" by ${v('organizer')} needs approval. Check dates, price and what is included.` };
     case 'group_approved':
@@ -87,40 +89,40 @@ function render(event: string, locale: string, p: Record<string, string | null>)
         : { subject: 'Your group trip is live', body: `"${v('title')}" is now visible to travellers. We will tell you when someone asks to join.` };
     case 'group_join_requested':
       return sw
-        ? { subject: `${v('name')} anataka kujiunga: ${v('title')}`, body: `${v('name')} ameomba nafasi ${v('seats')}. ${v('message')} Kubali au kataa kwenye Rafrika.` }
-        : { subject: `${v('name')} wants to join ${v('title')}`, body: `${v('name')} asked for ${v('seats')} spot(s). ${v('message')} Accept or decline on Rafrika.` };
+        ? { subject: `${v('name')} anataka kujiunga: ${v('title')}`, body: `${v('name')} ameomba nafasi ${v('seats')}. ${v('message')} Kubali au kataa kwenye Kwetuly.` }
+        : { subject: `${v('name')} wants to join ${v('title')}`, body: `${v('name')} asked for ${v('seats')} spot(s). ${v('message')} Accept or decline on Kwetuly.` };
     case 'group_join_accepted':
       return sw
-        ? { subject: `Umekubaliwa: ${v('title')}`, body: `Mwandaaji amekubali ombi lako. Fungua Rafrika uone mawasiliano yake na upange malipo.` }
-        : { subject: `You're in: ${v('title')}`, body: `The organiser accepted your request. Open Rafrika to see their contact and arrange payment.` };
+        ? { subject: `Umekubaliwa: ${v('title')}`, body: `Mwandaaji amekubali ombi lako. Fungua Kwetuly uone mawasiliano yake na upange malipo.` }
+        : { subject: `You're in: ${v('title')}`, body: `The organiser accepted your request. Open Kwetuly to see their contact and arrange payment.` };
     case 'group_join_declined':
       return sw
-        ? { subject: `Ombi halikukubaliwa: ${v('title')}`, body: `Mwandaaji hakuweza kukupokea safari hii. Tazama safari nyingine za makundi kwenye Rafrika.` }
-        : { subject: `Request not accepted: ${v('title')}`, body: `The organiser could not take you this time. See other group trips on Rafrika.` };
+        ? { subject: `Ombi halikukubaliwa: ${v('title')}`, body: `Mwandaaji hakuweza kukupokea safari hii. Tazama safari nyingine za makundi kwenye Kwetuly.` }
+        : { subject: `Request not accepted: ${v('title')}`, body: `The organiser could not take you this time. See other group trips on Kwetuly.` };
     case 'group_chat_message':
       return sw
         ? { subject: `${v('chat')}: ujumbe mpya`, body: `${v('sender')}: ${v('preview')}` }
         : { subject: `${v('chat')}: new message`, body: `${v('sender')}: ${v('preview')}` };
     case 'request_new':
       return sw
-        ? { subject: `Ombi jipya la safari: ${v('title')}`, body: `${v('name')} anatafuta mwongozaji kwa watu ${v('people')}${p.when ? ` kuanzia ${v('when')}` : ''}. Tuma ofa yako kwenye Rafrika.` }
-        : { subject: `New trip request: ${v('title')}`, body: `${v('name')} is looking for a guide for ${v('people')} people${p.when ? ` from ${v('when')}` : ''}. Send your offer on Rafrika.` };
+        ? { subject: `Ombi jipya la safari: ${v('title')}`, body: `${v('name')} anatafuta mwongozaji kwa watu ${v('people')}${p.when ? ` kuanzia ${v('when')}` : ''}. Tuma ofa yako kwenye Kwetuly.` }
+        : { subject: `New trip request: ${v('title')}`, body: `${v('name')} is looking for a guide for ${v('people')} people${p.when ? ` from ${v('when')}` : ''}. Send your offer on Kwetuly.` };
     case 'offer_new':
       return sw
-        ? { subject: `Ofa mpya kwa "${v('title')}"`, body: `${v('from')} amekutumia ofa ya USD ${v('price')}. Linganisha ofa na uchague kwenye Rafrika.` }
-        : { subject: `New offer for "${v('title')}"`, body: `${v('from')} sent you an offer of USD ${v('price')}. Compare offers and choose on Rafrika.` };
+        ? { subject: `Ofa mpya kwa "${v('title')}"`, body: `${v('from')} amekutumia ofa ya USD ${v('price')}. Linganisha ofa na uchague kwenye Kwetuly.` }
+        : { subject: `New offer for "${v('title')}"`, body: `${v('from')} sent you an offer of USD ${v('price')}. Compare offers and choose on Kwetuly.` };
     case 'offer_accepted':
       return sw
-        ? { subject: `Ofa yako imekubaliwa: ${v('title')}`, body: `${v('name')} amechagua ofa yako. Mazungumzo yamefunguliwa kwenye Rafrika na sasa mnaona mawasiliano ya kila mmoja.` }
-        : { subject: `Your offer was accepted: ${v('title')}`, body: `${v('name')} chose your offer. A chat is open on Rafrika and you can now see each other's contact details.` };
+        ? { subject: `Ofa yako imekubaliwa: ${v('title')}`, body: `${v('name')} amechagua ofa yako. Mazungumzo yamefunguliwa kwenye Kwetuly na sasa mnaona mawasiliano ya kila mmoja.` }
+        : { subject: `Your offer was accepted: ${v('title')}`, body: `${v('name')} chose your offer. A chat is open on Kwetuly and you can now see each other's contact details.` };
     case 'offer_declined':
       return sw
-        ? { subject: `Ofa haikuchaguliwa: ${v('title')}`, body: 'Msafiri amechagua ofa nyingine. Tazama maombi mengine ya safari kwenye Rafrika.' }
-        : { subject: `Offer not chosen: ${v('title')}`, body: 'The traveller chose another offer. See other open trip requests on Rafrika.' };
+        ? { subject: `Ofa haikuchaguliwa: ${v('title')}`, body: 'Msafiri amechagua ofa nyingine. Tazama maombi mengine ya safari kwenye Kwetuly.' }
+        : { subject: `Offer not chosen: ${v('title')}`, body: 'The traveller chose another offer. See other open trip requests on Kwetuly.' };
     case 'payment_received':
       return sw
-        ? { subject: `Amana imepokelewa: TZS ${v('amount')}`, body: `Amana ya "${v('what')}" imelipwa kupitia Selcom. Timu ya Rafrika itakulipa.` }
-        : { subject: `Deposit received: TZS ${v('amount')}`, body: `The deposit for "${v('what')}" was paid through Selcom. The Rafrika team will pay it out to you.` };
+        ? { subject: `Amana imepokelewa: TZS ${v('amount')}`, body: `Amana ya "${v('what')}" imelipwa kupitia Selcom. Timu ya Kwetuly itakulipa.` }
+        : { subject: `Deposit received: TZS ${v('amount')}`, body: `The deposit for "${v('what')}" was paid through Selcom. The Kwetuly team will pay it out to you.` };
     case 'payment_receipt':
       return sw
         ? { subject: `Asante! TZS ${v('amount')} zimepokelewa`, body: `Tumepokea amana yako ya "${v('what')}". Mwongozaji wako amearifiwa.` }
@@ -129,31 +131,31 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       // Admins only (email and push).
       return {
         subject: `Deposit to check: order ${v('order')}`,
-        body: `Selcom's result for "${v('what')}" does not match what Rafrika expected (asked TZS ${v('amount')}, Selcom reported ${v('reported')}), or it was paid after Rafrika gave up on the order. It is held as "review": check it in the Selcom portal before doing anything else.`,
+        body: `Selcom's result for "${v('what')}" does not match what Kwetuly expected (asked TZS ${v('amount')}, Selcom reported ${v('reported')}), or it was paid after Kwetuly gave up on the order. It is held as "review": check it in the Selcom portal before doing anything else.`,
       };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':
       return { subject: `Business wants to list: ${v('business') || v('name')}`, body: `${v('name')} (${v('contact')}) wants to be listed under ${v('section')} / ${v('item')}. ${v('message')}` };
     default:
-      return { subject: 'Rafrika update', body: v('message') };
+      return { subject: 'Kwetuly update', body: v('message') };
   }
 }
 
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 function emailHtml(text: Text, link: string, locale: string) {
-  const button = locale === 'sw' ? 'Fungua Rafrika' : 'Open Rafrika';
+  const button = locale === 'sw' ? 'Fungua Kwetuly' : 'Open Kwetuly';
   return `<!doctype html><html><body style="margin:0;background:#f7f6f3;font-family:Arial,sans-serif;color:#16211c">
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px">
   <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden">
-    <tr><td style="background:#7f7f7f;padding:20px 28px;color:#ffffff;font-size:22px;font-weight:bold">Rafrika</td></tr>
+    <tr><td style="background:#7f7f7f;padding:20px 28px;color:#ffffff;font-size:22px;font-weight:bold">Kwetuly</td></tr>
     <tr><td style="padding:28px">
       <h1 style="font-size:20px;margin:0 0 12px">${escapeHtml(text.subject)}</h1>
       <p style="font-size:15px;line-height:1.6;margin:0 0 24px">${escapeHtml(text.body)}</p>
       <a href="${link}" style="display:inline-block;background:#ff6a2b;color:#fff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:15px">${button}</a>
     </td></tr>
-    <tr><td style="padding:16px 28px;font-size:12px;color:#5f6b66;border-top:1px solid #e7e5e0">Rafrika: the home of Tanzanian guides.</td></tr>
+    <tr><td style="padding:16px 28px;font-size:12px;color:#5f6b66;border-top:1px solid #e7e5e0">Kwetuly: the home of Tanzanian guides.</td></tr>
   </table></td></tr></table></body></html>`;
 }
 
@@ -169,7 +171,7 @@ async function sendEmail(to: string, text: Text, link: string, locale: string) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: env('EMAIL_FROM', 'Rafrika <alerts@rafrika.com>'),
+      from: env('EMAIL_FROM', 'Kwetuly <alerts@kwetuly.com>'),
       to: [to],
       subject: text.subject,
       html: emailHtml(text, link, locale),
@@ -200,7 +202,7 @@ async function sendWhatsApp(to: string, text: Text, link: string, locale: string
       to: toWhatsAppNumber(to),
       type: 'template',
       template: {
-        name: env('WHATSAPP_TEMPLATE', 'rafrika_alert'),
+        name: env('WHATSAPP_TEMPLATE', 'kwetuly_alert'),
         language: { code: locale === 'sw' ? 'sw' : 'en' },
         components: [
           { type: 'body', parameters: [{ type: 'text', text: clean(`${text.subject}: ${text.body}`) }, { type: 'text', text: link }] },

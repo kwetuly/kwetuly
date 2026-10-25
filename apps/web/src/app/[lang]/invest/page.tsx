@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { ExternalLink, TrendingUp } from 'lucide-react';
-import { INVEST_TEXT as TEXT } from '@rafrika/shared';
+import { INVEST_TEXT as TEXT } from '@kwetuly/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -53,10 +53,10 @@ export default async function InvestPage({ searchParams }: PageProps<'/[lang]/in
       </section>
 
       <section className="card mt-6 space-y-3 bg-sand">
-        <h2 className="text-2xl font-bold">{x.rafrikaTitle}</h2>
-        <p>{x.rafrika}</p>
+        <h2 className="text-2xl font-bold">{x.kwetulyTitle}</h2>
+        <p>{x.kwetuly}</p>
         <Suspense fallback={<div className="h-48 animate-pulse rounded-[5px] bg-surface" />}>
-          <InterestForm searchParams={searchParams} t={t} locale={locale} placeholder={x.rafrika} cta={x.rafrikaCta} />
+          <InterestForm searchParams={searchParams} t={t} locale={locale} placeholder={x.kwetuly} cta={x.kwetulyCta} />
         </Suspense>
       </section>
 

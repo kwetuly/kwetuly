@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
-import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tourSummary, tourTitle, type Place, type Tour, type TourStop } from '@rafrika/shared';
+import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tourSummary, tourTitle, type Place, type Tour, type TourStop } from '@kwetuly/shared';
 import { GUIDE_COLUMNS, type Guide } from './guides';
 import { createClient } from './supabase/server';
 

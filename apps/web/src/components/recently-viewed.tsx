@@ -9,7 +9,7 @@ import { liveRecentLinks } from './recently-viewed-actions';
 
 export type RecentItem = { href: string; title: string; subtitle?: string; image?: string | null };
 
-const KEY = 'rafrika:recent';
+const KEY = 'kwetuly:recent';
 const MAX = 6;
 const listeners = new Set<() => void>();
 

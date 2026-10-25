@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, normalizePhone } from '@rafrika/shared';
+import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, normalizePhone } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { requireOnboarded } from '@/lib/auth';

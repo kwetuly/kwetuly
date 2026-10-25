@@ -1,7 +1,7 @@
 // Data access for the app. Everything goes through Supabase with the signed-in user's session,
 // so row-level security decides what each person can see and do (exactly as on the website).
 import { randomUUID } from 'expo-crypto';
-import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Place, type Tour as SharedTour, type TourStop } from '@rafrika/shared';
+import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Place, type Tour as SharedTour, type TourStop } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 export type Guide = {

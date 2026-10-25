@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, Footprints, Landmark, PawPrint, Sparkles } from 'lucide-react';
-import { PLACE_KINDS, STOP_KINDS, type TourStop } from '@rafrika/shared';
+import { PLACE_KINDS, STOP_KINDS, type TourStop } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getPlaceForViewer, toursVisiting } from '@/lib/trips';

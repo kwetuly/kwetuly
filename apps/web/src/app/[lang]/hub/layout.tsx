@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { HUB_MENU } from '@rafrika/shared';
+import { HUB_MENU } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { requireHubAccess } from '@/lib/auth';
 import { Icon } from '@/components/icon';

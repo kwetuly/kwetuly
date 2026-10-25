@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@rafrika/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
 import { Circle, CircleCheck, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -229,7 +229,7 @@ async function GuideEditor({
                 <Field label="TikTok"><input className="field" name="tiktok_url" type="url" defaultValue={guide?.tiktok_url ?? ''} placeholder="https://" /></Field>
               </div>
               <p className="text-sm text-muted">{d.followUs}</p>
-              <Field label={`${d.slug} (rafrika.com/${locale}/guides/…)`}>
+              <Field label={`${d.slug} (kwetuly.com/${locale}/guides/…)`}>
                 <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
               </Field>
               <Field label={d.visibility}>
@@ -351,7 +351,7 @@ async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictio
   return (
     <>
       {/* The page metadata says "My profile"; travellers' tab title matches their heading instead. */}
-      <title>{`${t.traveler.title} · Rafrika`}</title>
+      <title>{`${t.traveler.title} · Kwetuly`}</title>
       <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
       <MyDetails t={t} locale={locale} user={user} status={details} back={back} />
       <section className="card mt-6">

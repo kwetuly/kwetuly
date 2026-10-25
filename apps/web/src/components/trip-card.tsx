@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { photoUrl, tripPhoto } from '@/lib/photos';
 import { BadgeCheck, Clock, MapPin, Sparkles } from 'lucide-react';
-import { TOUR_TYPES, TRIP_CATEGORIES, formatPrice, verifiedPrice } from '@rafrika/shared';
+import { TOUR_TYPES, TRIP_CATEGORIES, formatPrice, verifiedPrice } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { tripSummary, tripTitle, type Trip } from '@/lib/trips';

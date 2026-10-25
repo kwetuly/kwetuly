@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { ALL_SECTIONS } from '@rafrika/shared';
+import { ALL_SECTIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';

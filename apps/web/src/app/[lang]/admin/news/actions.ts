@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { REGIONS } from '@rafrika/shared';
+import { REGIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';

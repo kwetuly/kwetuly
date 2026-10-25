@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BadgeCheck, Handshake, Languages, MapPin, Venus } from 'lucide-react';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, hasRecordedCheck } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, hasRecordedCheck } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Guide } from '@/lib/guides';
@@ -45,7 +45,7 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
 // Badges for who the guide is: verified, Pro, female guide, works with agencies.
 const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs font-bold';
 
-// "Verified guide" only once Rafrika has recorded at least one document check. On the profile page
+// "Verified guide" only once Kwetuly has recorded at least one document check. On the profile page
 // (`showApproved`), an approved guide without checks gets a neutral label that links to the explanation.
 export function GuideBadges({ guide, t, showApproved }: { guide: Guide; t: Dictionary; showApproved?: boolean }) {
   return (

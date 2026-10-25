@@ -88,7 +88,7 @@ export function drawTourMap(
   map.addControl(
     new TerrainToggle(labels, (on) => {
       if (on) {
-        map.setTerrain({ source: 'rafrika-terrain', exaggeration: 1.4 });
+        map.setTerrain({ source: 'kwetuly-terrain', exaggeration: 1.4 });
         map.easeTo({ pitch: 60, duration: 900 });
       } else {
         map.setTerrain(null);
@@ -102,11 +102,11 @@ export function drawTourMap(
   map.on('load', () => {
     // Relief shading under the labels, and a separate source for 3D terrain (MapLibre advises not sharing one).
     const dem = { type: 'raster-dem' as const, tiles: [TERRAIN_TILE_URL], encoding: 'terrarium' as const, tileSize: 256, maxzoom: 13 };
-    map.addSource('rafrika-hillshade', { ...dem, attribution: TERRAIN_ATTRIBUTION });
-    map.addSource('rafrika-terrain', dem);
+    map.addSource('kwetuly-hillshade', { ...dem, attribution: TERRAIN_ATTRIBUTION });
+    map.addSource('kwetuly-terrain', dem);
     const firstSymbol = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
     map.addLayer(
-      { id: 'rafrika-hillshade', type: 'hillshade', source: 'rafrika-hillshade', paint: { 'hillshade-exaggeration': 0.4, 'hillshade-shadow-color': '#3a3a3a' } },
+      { id: 'kwetuly-hillshade', type: 'hillshade', source: 'kwetuly-hillshade', paint: { 'hillshade-exaggeration': 0.4, 'hillshade-shadow-color': '#3a3a3a' } },
       firstSymbol,
     );
 
@@ -116,11 +116,11 @@ export function drawTourMap(
       properties: { mode: stop.transfer_mode ?? 'drive' },
       geometry: { type: 'LineString' as const, coordinates: [points[i], points[i + 1]] },
     }));
-    map.addSource('rafrika-route', { type: 'geojson', data: { type: 'FeatureCollection', features: legs } });
+    map.addSource('kwetuly-route', { type: 'geojson', data: { type: 'FeatureCollection', features: legs } });
     const dashed: MapLibre.FilterSpecification = ['in', ['get', 'mode'], ['literal', ['flight', 'boat']]];
-    map.addLayer({ id: 'rafrika-route-casing', type: 'line', source: 'rafrika-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 } });
-    map.addLayer({ id: 'rafrika-route', type: 'line', source: 'rafrika-route', filter: ['!', dashed], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': LEAF, 'line-width': 4 } });
-    map.addLayer({ id: 'rafrika-route-dashed', type: 'line', source: 'rafrika-route', filter: dashed, paint: { 'line-color': LEAF, 'line-width': 3, 'line-dasharray': [2, 2] } });
+    map.addLayer({ id: 'kwetuly-route-casing', type: 'line', source: 'kwetuly-route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 } });
+    map.addLayer({ id: 'kwetuly-route', type: 'line', source: 'kwetuly-route', filter: ['!', dashed], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': LEAF, 'line-width': 4 } });
+    map.addLayer({ id: 'kwetuly-route-dashed', type: 'line', source: 'kwetuly-route', filter: dashed, paint: { 'line-color': LEAF, 'line-width': 3, 'line-dasharray': [2, 2] } });
   });
 
   // Stops at the same place (e.g. start and end in Arusha) share one marker with both numbers.

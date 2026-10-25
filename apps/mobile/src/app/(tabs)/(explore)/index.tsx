@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@kwetuly/shared';
 import { GroupTripCard } from '@/components/cards';
 import { Glyph } from '@/components/glyph';
 import { Chip, SectionTitle } from '@/components/ui';
@@ -20,7 +20,7 @@ export default function ExploreScreen() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingBottom: space.xxl, gap: space.xl }} style={{ backgroundColor: colors.background }}>
-      <Stack.Title large>Rafrika</Stack.Title>
+      <Stack.Title large>Kwetuly</Stack.Title>
 
       {/* Hero */}
       <View style={{ marginHorizontal: space.lg, height: 260, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.night }}>
@@ -91,7 +91,7 @@ export default function ExploreScreen() {
         )}
       </View>
 
-      {/* Everything on Rafrika: the same sections as the website menu, as icon tiles. */}
+      {/* Everything on Kwetuly: the same sections as the website menu, as icon tiles. */}
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.explore.title}</SectionTitle>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
@@ -115,7 +115,7 @@ export default function ExploreScreen() {
         </View>
       </View>
 
-      {/* Why Rafrika */}
+      {/* Why Kwetuly */}
       <View style={{ gap: space.md, paddingHorizontal: space.lg }}>
         <SectionTitle>{t.home.whyTitle}</SectionTitle>
         <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: brand.forest }}>{t.home.hook}</Text>

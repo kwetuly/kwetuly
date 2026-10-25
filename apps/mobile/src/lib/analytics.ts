@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { usePathname } from 'expo-router';
 import PostHog from 'posthog-react-native';
-import { POSTHOG_DEFAULT_HOST, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@rafrika/shared';
+import { POSTHOG_DEFAULT_HOST, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@kwetuly/shared';
 
 // Product analytics with PostHog, matching the website: same event names, no personal details,
 // and nothing kept on the phone between launches (memory only). Off until

@@ -5,14 +5,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { listTours } from '@/lib/api';
 import { track } from '@/lib/analytics';
-import { EVENTS } from '@rafrika/shared';
+import { EVENTS } from '@kwetuly/shared';
 import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, space, textSize } from '@/theme';
 
-// "Plan this trip": an enquiry to Rafrika about a catalogue tour.
+// "Plan this trip": an enquiry to Kwetuly about a catalogue tour.
 export default function EnquireScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { MENU, UX_TEXT } from '@rafrika/shared';
+import { MENU, UX_TEXT } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import { itemHref } from '@/lib/menu';
 import { Icon } from './icon';

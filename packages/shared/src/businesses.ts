@@ -18,13 +18,13 @@ export const BUSINESS_TYPES = [
   { id: 'spa', ...L('Massage & spa', 'Masaji na spa', 'Massage & spa', 'Massaggi e spa', 'Massage & Spa', 'Masaż i spa', '按摩与水疗') },
   { id: 'salon', ...L('Salon & barber', 'Saluni na kinyozi', 'Salon & barbier', 'Parrucchiere e barbiere', 'Salon & Barbier', 'Salon i fryzjer', '美发与理发') },
   { id: 'nightlife', ...L('Nightlife', 'Burudani ya usiku', 'Vie nocturne', 'Vita notturna', 'Nachtleben', 'Życie nocne', '夜生活') },
-  { id: 'merch', ...L('Rafrika Shop', 'Duka la Rafrika', 'Boutique Rafrika', 'Negozio Rafrika', 'Rafrika-Shop', 'Sklep Rafrika', 'Rafrika 商店') },
+  { id: 'merch', ...L('Kwetuly Shop', 'Duka la Kwetuly', 'Boutique Kwetuly', 'Negozio Kwetuly', 'Kwetuly-Shop', 'Sklep Kwetuly', 'Kwetuly 商店') },
   { id: 'other', ...L('Other', 'Nyingine', 'Autre', 'Altro', 'Sonstiges', 'Inne', '其他') },
 ] as const;
 
 export type BusinessType = (typeof BUSINESS_TYPES)[number]['id'];
 
-/** What Rafrika can check for the paid badge. Admin ticks the ones actually done. */
+/** What Kwetuly can check for the paid badge. Admin ticks the ones actually done. */
 export const BADGE_CHECKS = [
   { id: 'licence', ...L('Business licence', 'Leseni ya biashara', 'Licence commerciale', 'Licenza commerciale', 'Gewerbelizenz', 'Licencja działalności', '营业执照') },
   { id: 'tourism_licence', ...L('Tourism licence (TTB)', 'Leseni ya utalii (TTB)', 'Licence de tourisme (TTB)', 'Licenza turistica (TTB)', 'Tourismuslizenz (TTB)', 'Licencja turystyczna (TTB)', '旅游执照（TTB）') },
@@ -85,9 +85,9 @@ export function hasValidBadge(b: Pick<Business, 'badge_checks' | 'badge_valid_un
 
 /** A sale's commission split from the business's agreement (percentages of the sale amount). */
 export function commissionSplit(amount: number, agreement: { rafrika_pct: number; guide_pct: number } | null) {
-  if (!agreement) return { rafrika: 0, guide: 0 };
+  if (!agreement) return { kwetuly: 0, guide: 0 };
   const round = (n: number) => Math.round(n);
-  return { rafrika: round((amount * Number(agreement.rafrika_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
+  return { kwetuly: round((amount * Number(agreement.rafrika_pct)) / 100), guide: round((amount * Number(agreement.guide_pct)) / 100) };
 }
 
 /** Shops where travellers can order for delivery to their hotel, or reserve and collect. */

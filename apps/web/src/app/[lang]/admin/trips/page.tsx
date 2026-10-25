@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { TOUR_COLUMNS, TOUR_TYPES, TRIP_CIRCUITS, tourReadiness, verifiedPrice, type Tour } from '@rafrika/shared';
+import { TOUR_COLUMNS, TOUR_TYPES, TRIP_CIRCUITS, tourReadiness, verifiedPrice, type Tour } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -31,7 +31,7 @@ export default async function AdminToursPage({ searchParams }: PageProps<'/[lang
         <Link href={`/${locale}/admin/trips/new`} className="btn px-4 py-2 text-sm">New tour</Link>
       </div>
       <p className="mt-2 max-w-3xl text-sm text-muted">
-        Signature Trips are Rafrika’s own itineraries. Operator Tours link to a tour operator and their own page, with original summaries only.
+        Signature Trips are Kwetuly’s own itineraries. Operator Tours link to a tour operator and their own page, with original summaries only.
         Prices show only with the date you verified them; without one, travellers see “Price subject to confirmation”.
         A tour can only be published once its itinerary, map stops, highlights, inclusions and best months are filled in.
       </p>

@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
 // An operator's profile: verification, licence and TripAdvisor details (each with the date
-// Rafrika checked it) and all of their tours.
+// Kwetuly checked it) and all of their tours.
 export default function OperatorScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();

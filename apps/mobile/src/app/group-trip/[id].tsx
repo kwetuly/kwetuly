@@ -3,7 +3,7 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EVENTS, specialtyPhoto, formatUsd } from '@rafrika/shared';
+import { EVENTS, specialtyPhoto, formatUsd } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';

@@ -4,7 +4,7 @@ import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@rafrika/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
@@ -401,7 +401,7 @@ export default function ProfileEditScreen() {
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
           <Toggle label={d.hasVehicle} value={f.has_vehicle} onChange={set('has_vehicle')} />
           <Toggle label={d.openToPartners} value={f.open_to_partners} onChange={set('open_to_partners')} />
-          <Field label={d.slug} value={f.slug} onChangeText={set('slug')} autoCapitalize="none" hint="rafrika.com/guides/…" />
+          <Field label={d.slug} value={f.slug} onChangeText={set('slug')} autoCapitalize="none" hint="kwetuly.com/guides/…" />
           <ChipSelect
             label={d.visibility}
             options={[

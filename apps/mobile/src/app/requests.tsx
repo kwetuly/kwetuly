@@ -10,7 +10,7 @@ import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, specialtyName } from '@/lib/labels';
 
-import { formatUsd } from '@rafrika/shared';
+import { formatUsd } from '@kwetuly/shared';
 import { brand, colors, space, textSize } from '@/theme';
 
 export default function RequestsScreen() {

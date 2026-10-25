@@ -1,18 +1,18 @@
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { BADGE_CHECKS, BUSINESS_TYPES, hasValidBadge, type Business } from '@rafrika/shared';
+import { BADGE_CHECKS, BUSINESS_TYPES, hasValidBadge, type Business } from '@kwetuly/shared';
 import { Badge, Card } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-/** The paid "Checked by Rafrika" badge: what was checked and when, never a recommendation. */
+/** The paid "Checked by Kwetuly" badge: what was checked and when, never a recommendation. */
 export function BusinessBadge({ business, full }: { business: Business; full?: boolean }) {
   const { t, locale } = useI18n();
   const bt = t.business;
-  // Sample listings were added by Rafrika from public information; say so plainly.
+  // Sample listings were added by Kwetuly from public information; say so plainly.
   if (business.is_sample) {
     return full ? (
       <Text style={{ color: colors.label, backgroundColor: brand.sand, padding: space.md, borderRadius: radius.button }}>

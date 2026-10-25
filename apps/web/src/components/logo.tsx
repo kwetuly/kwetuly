@@ -1,18 +1,17 @@
-// The Rafrika wordmark: "rafrika" in lowercase, with the dot of the i drawn as a rising sun.
-// Sizes with the surrounding font size, so set `className` with a text size.
+// The Kwetuly wordmark: "kwetuly" in lowercase with the gold sun rising out of the "u".
+// Outlined shapes from docs/design/kwetuly/kwetuly-wordmark-green.svg, so no font is needed.
+// It is 1em tall, so set the size with a text size in `className`. The sun is decoration only.
+const WORDMARK_PATH =
+  'M42 780V23H192V508L136 490L377 234H562L364 454L561 780H391L226 503L313 481L146 663L192 576V780ZM762 780 574 234H729L861 628L807 627L954 234H1084L1230 627L1176 628L1308 234H1464L1275 780H1145L993 358H1045L892 780ZM1763 792Q1676 792 1612 753.5Q1548 715 1513 650Q1478 585 1478 506Q1478 424 1514.5 360Q1551 296 1613 259Q1675 222 1753 222Q1818 222 1868 242.5Q1918 263 1952.5 300Q1987 337 2005 385.5Q2023 434 2023 491Q2023 507 2021.5 522.5Q2020 538 2016 549H1607V439H1931L1860 491Q1870 448 1859 414.5Q1848 381 1820.5 361.5Q1793 342 1753 342Q1714 342 1686 361Q1658 380 1644 417Q1630 454 1633 507Q1629 553 1644 588Q1659 623 1690 642.5Q1721 662 1765 662Q1805 662 1833.5 646Q1862 630 1878 602L1998 659Q1982 699 1947.5 729Q1913 759 1866 775.5Q1819 792 1763 792ZM2344 786Q2245 786 2190.5 732.5Q2136 679 2136 583V364H2044V234H2049Q2091 234 2113.5 213Q2136 192 2136 150V110H2286V234H2414V364H2286V573Q2286 601 2296 619.5Q2306 638 2327 647Q2348 656 2379 656Q2386 656 2395 655Q2404 654 2414 653V780Q2399 782 2380 784Q2361 786 2344 786ZM2668 792Q2602 792 2555.5 763.5Q2509 735 2485 684Q2461 633 2461 565V234H2611V553Q2611 584 2623.5 607.5Q2636 631 2659 644Q2682 657 2711 657Q2741 657 2763.5 644Q2786 631 2798.5 607.5Q2811 584 2811 553V234H2961V780H2821V672L2829 696Q2810 745 2767.5 768.5Q2725 792 2668 792ZM3041 780V23H3191V780ZM3356 1000Q3332 1000 3309.5 996Q3287 992 3270 983V860Q3284 864 3303 867Q3322 870 3338 870Q3382 870 3401 849.5Q3420 829 3432 803L3469 718L3467 843L3227 234H3388L3547 667H3487L3646 234H3807L3573 831Q3551 887 3519 925Q3487 963 3446.5 981.5Q3406 1000 3356 1000Z';
+
 export function Logo({ tone = 'dark', className = '' }: { tone?: 'dark' | 'light'; className?: string }) {
   const text = tone === 'dark' ? 'text-leaf' : 'text-white';
-  const sun = 'bg-gold';
   return (
-    <span className={`inline-block font-extrabold leading-none tracking-[-0.04em] ${text} ${className}`} aria-label="Rafrika">
-      <span aria-hidden>
-        rafr
-        <span className="relative">
-          ı
-          <span className={`absolute left-1/2 top-[0.02em] size-[0.27em] -translate-x-1/2 rounded-full ${sun}`} />
-        </span>
-        ka
-      </span>
+    <span className={`inline-flex leading-none ${text} ${className}`}>
+      <svg viewBox="0 0 3827 1020" className="h-[1em] w-auto" role="img" aria-label="Kwetuly">
+        <path fill="currentColor" d={WORDMARK_PATH} />
+        <circle cx="2711" cy="165" r="100" fill="#ffb627" />
+      </svg>
     </span>
   );
 }

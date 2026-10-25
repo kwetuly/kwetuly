@@ -1,9 +1,9 @@
 // Texts for guide packages. Traveller-facing texts are in all 7 languages; the guide's own
-// management texts are in English and Kiswahili (guides use Rafrika in those two), like the dashboard.
+// management texts are in English and Kiswahili (guides use Kwetuly in those two), like the dashboard.
 
 const guideEn = {
   manageTitle: 'My packages',
-  manageIntro: 'Offer cultural visits, day trips or one-on-one trips. Rafrika checks each package before travellers see it.',
+  manageIntro: 'Offer cultural visits, day trips or one-on-one trips. Kwetuly checks each package before travellers see it.',
   add: 'Add a package',
   editPackage: 'Edit package',
   remove: 'Delete',
@@ -24,7 +24,7 @@ const guideEn = {
   meetingField: 'Meeting point',
   photoField: 'Photo',
   status: { draft: 'Draft', pending: 'Waiting for review', approved: 'Live', rejected: 'Not approved' },
-  reviewNote: 'Note from Rafrika',
+  reviewNote: 'Note from Kwetuly',
   changeNote: 'Changing a live package sends it back for a quick review.',
   none: 'No packages yet.',
   saved: 'Saved.',
@@ -34,7 +34,7 @@ type GuideTexts = typeof guideEn;
 
 const guideSw: GuideTexts = {
   manageTitle: 'Vifurushi vyangu',
-  manageIntro: 'Toa ziara za kitamaduni, safari za siku moja au safari za mtu mmoja. Rafrika hukagua kila kifurushi kabla wasafiri hawajakiona.',
+  manageIntro: 'Toa ziara za kitamaduni, safari za siku moja au safari za mtu mmoja. Kwetuly hukagua kila kifurushi kabla wasafiri hawajakiona.',
   add: 'Ongeza kifurushi',
   editPackage: 'Hariri kifurushi',
   remove: 'Futa',
@@ -55,7 +55,7 @@ const guideSw: GuideTexts = {
   meetingField: 'Mahali pa kukutana',
   photoField: 'Picha',
   status: { draft: 'Rasimu', pending: 'Inasubiri ukaguzi', approved: 'Iko hewani', rejected: 'Haikukubaliwa' },
-  reviewNote: 'Ujumbe kutoka Rafrika',
+  reviewNote: 'Ujumbe kutoka Kwetuly',
   changeNote: 'Ukibadilisha kifurushi kilicho hewani, kitakaguliwa tena kwa haraka.',
   none: 'Bado hakuna vifurushi.',
   saved: 'Imehifadhiwa.',
@@ -79,7 +79,7 @@ export const packages_en = {
   ask: 'Ask about this package',
   about: 'About the package: {title}',
   catalogTitle: 'Packages by local guides',
-  catalogBody: 'Cultural visits, day trips and one-on-one trips, offered by verified guides and checked by Rafrika.',
+  catalogBody: 'Cultural visits, day trips and one-on-one trips, offered by verified guides and checked by Kwetuly.',
   all: 'All',
   catalogEmpty: 'No packages here yet. Check back soon.',
 };
@@ -104,7 +104,7 @@ export const packages_sw: PackagesText = {
   ask: 'Uliza kuhusu kifurushi hiki',
   about: 'Kuhusu kifurushi: {title}',
   catalogTitle: 'Vifurushi vya waongozaji wa ndani',
-  catalogBody: 'Ziara za kitamaduni, safari za siku moja na safari za mtu mmoja, zinazotolewa na waongozaji waliothibitishwa na kukaguliwa na Rafrika.',
+  catalogBody: 'Ziara za kitamaduni, safari za siku moja na safari za mtu mmoja, zinazotolewa na waongozaji waliothibitishwa na kukaguliwa na Kwetuly.',
   all: 'Zote',
   catalogEmpty: 'Bado hakuna vifurushi hapa. Rudi baadaye.',
 };
@@ -127,7 +127,7 @@ export const packages_fr: PackagesText = {
   ask: 'Poser une question sur cette formule',
   about: 'Au sujet de la formule : {title}',
   catalogTitle: 'Formules proposées par des guides locaux',
-  catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides vérifiés et contrôlés par Rafrika.',
+  catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides vérifiés et contrôlés par Kwetuly.',
   all: 'Toutes',
   catalogEmpty: 'Pas encore de formule ici. Revenez bientôt.',
 };
@@ -150,7 +150,7 @@ export const packages_it: PackagesText = {
   ask: 'Chiedi di questo pacchetto',
   about: 'Riguardo al pacchetto: {title}',
   catalogTitle: 'Pacchetti di guide locali',
-  catalogBody: 'Visite culturali, gite di un giorno e viaggi individuali, offerti da guide verificate e controllati da Rafrika.',
+  catalogBody: 'Visite culturali, gite di un giorno e viaggi individuali, offerti da guide verificate e controllati da Kwetuly.',
   all: 'Tutti',
   catalogEmpty: 'Ancora nessun pacchetto qui. Torna presto.',
 };
@@ -173,7 +173,7 @@ export const packages_de: PackagesText = {
   ask: 'Zu diesem Angebot fragen',
   about: 'Zum Angebot: {title}',
   catalogTitle: 'Angebote lokaler Guides',
-  catalogBody: 'Kulturbesuche, Tagesausflüge und Reisen zu zweit mit dem Guide, angeboten von geprüften Guides und von Rafrika kontrolliert.',
+  catalogBody: 'Kulturbesuche, Tagesausflüge und Reisen zu zweit mit dem Guide, angeboten von geprüften Guides und von Kwetuly kontrolliert.',
   all: 'Alle',
   catalogEmpty: 'Hier gibt es noch keine Angebote. Schauen Sie bald wieder vorbei.',
 };
@@ -196,7 +196,7 @@ export const packages_pl: PackagesText = {
   ask: 'Zapytaj o ten pakiet',
   about: 'W sprawie pakietu: {title}',
   catalogTitle: 'Pakiety lokalnych przewodników',
-  catalogBody: 'Wizyty kulturalne, wycieczki jednodniowe i wyprawy jeden na jeden, oferowane przez sprawdzonych przewodników i sprawdzone przez Rafrika.',
+  catalogBody: 'Wizyty kulturalne, wycieczki jednodniowe i wyprawy jeden na jeden, oferowane przez sprawdzonych przewodników i sprawdzone przez Kwetuly.',
   all: 'Wszystkie',
   catalogEmpty: 'Nie ma tu jeszcze pakietów. Zajrzyj wkrótce.',
 };
@@ -219,7 +219,7 @@ export const packages_zh: PackagesText = {
   ask: '咨询此套餐',
   about: '关于套餐：{title}',
   catalogTitle: '当地向导的套餐',
-  catalogBody: '文化探访、一日游和一对一行程，由经过核实的向导提供，并经 Rafrika 审核。',
+  catalogBody: '文化探访、一日游和一对一行程，由经过核实的向导提供，并经 Kwetuly 审核。',
   all: '全部',
   catalogEmpty: '这里还没有套餐，请稍后再来看看。',
 };

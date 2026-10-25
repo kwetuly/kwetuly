@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ExternalLink, MapPin } from 'lucide-react';
-import { BUSINESS_TYPES, ORDER_TYPES } from '@rafrika/shared';
+import { BUSINESS_TYPES, ORDER_TYPES } from '@kwetuly/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -77,7 +77,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
 
       <aside id="ask" className="card h-fit scroll-mt-28">
         <h2 className="text-lg font-semibold">{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', business.business_name)}</h2>
-        {/* Sample listings: the business has not joined, so the message goes to Rafrika. */}
+        {/* Sample listings: the business has not joined, so the message goes to Kwetuly. */}
         <p className="mt-1 text-sm text-muted">{business.is_sample ? bt.askBodySample : isShop ? bt.orderBody : bt.askBody}</p>
         {status.sent ? (
           <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{bt.sent}</p>

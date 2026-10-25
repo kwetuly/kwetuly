@@ -41,7 +41,7 @@ export default function SecurityScreen() {
     for (const f of all?.all ?? []) {
       if (f.factor_type === 'totp' && f.status === 'unverified') await supabase.auth.mfa.unenroll({ factorId: f.id });
     }
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Rafrika' });
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Kwetuly' });
     setBusy(false);
     if (error || !data) return setMessage({ tone: 'error', text: t.ux.errorBody });
     setSetup({ factorId: data.id, secret: data.totp.secret, uri: data.totp.uri });

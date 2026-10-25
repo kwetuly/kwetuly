@@ -1,5 +1,5 @@
 import { BadgeCheck, HeartPulse, IdCard, type LucideIcon } from 'lucide-react';
-import { guideChecks, type GuideCheckFields, type GuideCheckId } from '@rafrika/shared';
+import { guideChecks, type GuideCheckFields, type GuideCheckId } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { today } from '@/lib/today';
@@ -14,7 +14,7 @@ function checkText(id: GuideCheckId, c: Dictionary['checks']) {
       : { label: c.firstAid, body: c.firstAidBody };
 }
 
-// Small labels under the guide's name: exactly which checks Rafrika has done.
+// Small labels under the guide's name: exactly which checks Kwetuly has done.
 export async function GuideCheckPills({ guide, t }: { guide: GuideCheckFields; t: Dictionary }) {
   const checks = guideChecks(guide, await today());
   if (checks.length === 0) return null;
@@ -34,8 +34,8 @@ export async function GuideCheckPills({ guide, t }: { guide: GuideCheckFields; t
   );
 }
 
-// "What Rafrika checked": each check in plain words, with the date. The documents themselves stay private.
-// `approved`: Rafrika approved the profile, which is said plainly when no document has been checked yet.
+// "What Kwetuly checked": each check in plain words, with the date. The documents themselves stay private.
+// `approved`: Kwetuly approved the profile, which is said plainly when no document has been checked yet.
 export async function GuideChecksSection({ guide, t, locale, approved }: { guide: GuideCheckFields; t: Dictionary; locale: Locale; approved?: boolean }) {
   const c = t.checks;
   const checks = guideChecks(guide, await today());

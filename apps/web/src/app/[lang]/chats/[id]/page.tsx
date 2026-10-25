@@ -130,11 +130,11 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
                   <span className="inline-flex items-center gap-1 font-semibold text-forest"><Sparkles className="size-3" aria-hidden /> {c.featured}</span>
                 )}
                 {msg.media_url && msg.media_path && (
-                  <ShareMedia url={msg.media_url} name={msg.media_path.split('/').pop() ?? 'rafrika'} labels={{ share: c.shareToApps, download: c.download }} />
+                  <ShareMedia url={msg.media_url} name={msg.media_path.split('/').pop() ?? 'kwetuly'} labels={{ share: c.shareToApps, download: c.download }} />
                 )}
               </div>
 
-              {/* Sender decides whether Rafrika may use it publicly. */}
+              {/* Sender decides whether Kwetuly may use it publicly. */}
               {mine && (
                 <form action={setShareConsent} className="mt-1">
                   <input type="hidden" name="locale" value={locale} />

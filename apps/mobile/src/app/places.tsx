@@ -1,13 +1,13 @@
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { PLACE_KINDS } from '@rafrika/shared';
+import { PLACE_KINDS } from '@kwetuly/shared';
 import { Card, Muted, ScreenState } from '@/components/ui';
 import { listPlaces } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
-// Guides to the parks, heritage sites and villages on Rafrika's tours.
+// Guides to the parks, heritage sites and villages on Kwetuly's tours.
 export default function PlacesScreen() {
   const { t, locale } = useI18n();
   const places = useQuery({ queryKey: ['places'], queryFn: listPlaces });

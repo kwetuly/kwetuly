@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "Rafrika",
-    "slug": "rafrika",
+    "name": "Kwetuly",
+    "slug": "kwetuly",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "rafrika",
+    "scheme": "kwetuly",
     "userInterfaceStyle": "light",
     "backgroundColor": "#f7f6f3",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.rafrika.app",
+      "bundleIdentifier": "com.kwetuly.app",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.rafrika.app",
+      "package": "com.kwetuly.app",
       "adaptiveIcon": {
         "backgroundColor": "#1d951a",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +44,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Rafrika lets you share photos and videos with your travel group.",
+          "photosPermission": "Kwetuly lets you share photos and videos with your travel group.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -52,6 +52,7 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/images/notification-icon.png",
           "color": "#187a16"
         }
       ]

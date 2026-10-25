@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import type { DOMProps } from 'expo/dom';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { drawTourMap, type TourMapHandle, type TourMapLabels, type TourStop } from '@rafrika/shared';
+import { drawTourMap, type TourMapHandle, type TourMapLabels, type TourStop } from '@kwetuly/shared';
 
 // The website's MapLibre route map (OpenFreeMap, relief shading and a 3D view), run inside a web
 // view (Expo DOM component) so the app shows exactly the same map.

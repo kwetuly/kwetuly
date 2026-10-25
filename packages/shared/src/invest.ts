@@ -3,7 +3,7 @@
 export const INVEST_TEXT = {
   en: {
     intro:
-      'Tanzania welcomes investment in lodges, camps, hotels, transport and community tourism. Here is who to talk to and how the process starts. Rafrika is not an investment adviser; always check with the official authority.',
+      'Tanzania welcomes investment in lodges, camps, hotels, transport and community tourism. Here is who to talk to and how the process starts. Kwetuly is not an investment adviser; always check with the official authority.',
     whoTitle: 'Who handles investment',
     who: 'The Tanzania Investment and Special Economic Zones Authority (TISEZA) was created in 2025 under the Investment and Special Economic Zones Act, 2025. It brought together the Tanzania Investment Centre (TIC) and the Export Processing Zones Authority (EPZA). Investors register their projects with TISEZA.',
     helpTitle: 'What the one-stop centre helps with',
@@ -26,14 +26,14 @@ export const INVEST_TEXT = {
     ],
     official: 'TISEZA official website',
     contact: 'TISEZA contacts',
-    rafrikaTitle: 'Where Rafrika can help',
-    rafrika: 'We can introduce you to experienced local guides, cultural tourism groups and businesses on Rafrika. Tell us what you are planning.',
-    rafrikaCta: 'Tell us your plans',
+    kwetulyTitle: 'Where Kwetuly can help',
+    kwetuly: 'We can introduce you to experienced local guides, cultural tourism groups and businesses on Kwetuly. Tell us what you are planning.',
+    kwetulyCta: 'Tell us your plans',
     checked: 'Checked on 16 October 2026. Rules change: confirm everything with TISEZA. This page is not legal or financial advice.',
   },
   sw: {
     intro:
-      'Tanzania inakaribisha uwekezaji katika loji, kambi, hoteli, usafiri na utalii wa jamii. Hapa ni nani wa kuzungumza naye na jinsi mchakato unavyoanza. Rafrika si mshauri wa uwekezaji; thibitisha kila kitu na mamlaka rasmi.',
+      'Tanzania inakaribisha uwekezaji katika loji, kambi, hoteli, usafiri na utalii wa jamii. Hapa ni nani wa kuzungumza naye na jinsi mchakato unavyoanza. Kwetuly si mshauri wa uwekezaji; thibitisha kila kitu na mamlaka rasmi.',
     whoTitle: 'Nani anashughulikia uwekezaji',
     who: 'Mamlaka ya Uwekezaji na Maeneo Maalum ya Kiuchumi Tanzania (TISEZA) ilianzishwa mwaka 2025 chini ya Sheria ya Uwekezaji na Maeneo Maalum ya Kiuchumi, 2025. Iliunganisha Kituo cha Uwekezaji Tanzania (TIC) na Mamlaka ya Maeneo Huru ya Uzalishaji kwa Mauzo ya Nje (EPZA). Wawekezaji husajili miradi yao TISEZA.',
     helpTitle: 'Kituo cha huduma za pamoja kinasaidia nini',
@@ -56,9 +56,9 @@ export const INVEST_TEXT = {
     ],
     official: 'Tovuti rasmi ya TISEZA',
     contact: 'Mawasiliano ya TISEZA',
-    rafrikaTitle: 'Rafrika inaweza kusaidia wapi',
-    rafrika: 'Tunaweza kukutambulisha kwa waongozaji wazoefu, vikundi vya utalii wa kitamaduni na biashara zilizo kwenye Rafrika. Tueleze mpango wako.',
-    rafrikaCta: 'Tueleze mpango wako',
+    kwetulyTitle: 'Kwetuly inaweza kusaidia wapi',
+    kwetuly: 'Tunaweza kukutambulisha kwa waongozaji wazoefu, vikundi vya utalii wa kitamaduni na biashara zilizo kwenye Kwetuly. Tueleze mpango wako.',
+    kwetulyCta: 'Tueleze mpango wako',
     checked: 'Imekaguliwa tarehe 16 Oktoba 2026. Sheria hubadilika: thibitisha kila kitu na TISEZA. Ukurasa huu si ushauri wa kisheria wala wa kifedha.',
   },
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@rafrika/shared';
+import { BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@kwetuly/shared';
 import { useQuery } from '@tanstack/react-query';
 import { BusinessCard } from '@/components/business-card';
 import { listBusinesses } from '@/lib/businesses';

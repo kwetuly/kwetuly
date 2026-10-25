@@ -5,7 +5,7 @@ import { useProfile, useSession } from '@/lib/auth';
 
 /**
  * Verified guides and approved business accounts may see open trip requests, send offers and run
- * group trips. A business waits until Rafrika approves its listing (the database checks the same).
+ * group trips. A business waits until Kwetuly approves its listing (the database checks the same).
  */
 export function useCanOffer() {
   const { session } = useSession();
@@ -18,7 +18,7 @@ export function useCanOffer() {
   const approvedBusiness = role === 'provider' && business.data?.verification_status === 'approved' && !business.data.is_sample;
   return {
     canOffer: approvedBusiness || role === 'admin' || !!approvedGuide,
-    /** Business account whose listing Rafrika has not approved yet. */
+    /** Business account whose listing Kwetuly has not approved yet. */
     businessWaiting: role === 'provider' && !approvedBusiness && !approvedGuide && !business.isLoading,
     approvedBusiness,
     guideId: approvedGuide?.id ?? null,

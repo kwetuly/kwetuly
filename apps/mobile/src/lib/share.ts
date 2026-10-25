@@ -3,10 +3,10 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { SITE_URL } from './supabase';
 
-/** Opens the phone's share sheet (WhatsApp, Instagram, Facebook, TikTok…) with a link to a Rafrika page. */
+/** Opens the phone's share sheet (WhatsApp, Instagram, Facebook, TikTok…) with a link to a Kwetuly page. */
 export async function shareLink(path: string, message: string) {
   const url = `${SITE_URL}${path}`;
-  await Share.share({ message: `${message} ${url}`, url, title: 'Rafrika' });
+  await Share.share({ message: `${message} ${url}`, url, title: 'Kwetuly' });
 }
 
 /** Downloads a chat photo/video and hands the file itself to the share sheet, e.g. to post it on Instagram. */

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
-import type { UX_TEXT } from '@rafrika/shared';
+import type { UX_TEXT } from '@kwetuly/shared';
 import { createClient } from '@/lib/supabase/client';
 
 type Labels = (typeof UX_TEXT)['en'];
@@ -26,7 +26,7 @@ export function TwoStepSetup({ enabled, labels }: { enabled: boolean; labels: La
     for (const f of factors?.all ?? []) {
       if (f.factor_type === 'totp' && f.status === 'unverified') await supabase.auth.mfa.unenroll({ factorId: f.id });
     }
-    const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Rafrika' });
+    const { data, error: enrollError } = await supabase.auth.mfa.enroll({ factorType: 'totp', issuer: 'Kwetuly' });
     setBusy(false);
     if (enrollError || !data) return setError(labels.errorBody);
     setSetup({ factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret });

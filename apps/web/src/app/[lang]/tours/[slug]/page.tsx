@@ -39,7 +39,7 @@ import {
   tourMatchesTheme,
   verifiedPrice,
   type TourStop,
-} from '@rafrika/shared';
+} from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getTourGuides, getTourStops, getTripForViewer, listTours, placesForStops, savedTourIds, tripSummary, tripTitle, type Trip } from '@/lib/trips';
@@ -554,7 +554,7 @@ function TourJsonLd({ trip, title, stops, locale, now, listTitle }: { trip: Trip
           url,
           image: tourCoverUrl(trip),
           touristType: trip.travel_styles,
-          provider: trip.tour_operators ? { '@type': 'Organization', name: trip.tour_operators.name } : { '@type': 'Organization', name: 'Rafrika' },
+          provider: trip.tour_operators ? { '@type': 'Organization', name: trip.tour_operators.name } : { '@type': 'Organization', name: 'Kwetuly' },
           itinerary: stops.length
             ? { '@type': 'ItemList', itemListElement: stops.map((s, i) => ({ '@type': 'ListItem', position: i + 1, item: { '@type': 'Place', name: s.name, geo: { '@type': 'GeoCoordinates', latitude: s.lat, longitude: s.lng } } })) }
             : undefined,
@@ -566,7 +566,7 @@ function TourJsonLd({ trip, title, stops, locale, now, listTitle }: { trip: Trip
           '@context': 'https://schema.org',
           '@type': 'BreadcrumbList',
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Rafrika', item: `${SITE_URL}/${locale}` },
+            { '@type': 'ListItem', position: 1, name: 'Kwetuly', item: `${SITE_URL}/${locale}` },
             { '@type': 'ListItem', position: 2, name: listTitle, item: `${SITE_URL}/${locale}/tours` },
             { '@type': 'ListItem', position: 3, name: title },
           ],

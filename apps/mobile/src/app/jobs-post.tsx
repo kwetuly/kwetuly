@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@rafrika/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS } from '@kwetuly/shared';
 import { Button, Card, Chip, ChipSelect, Field, FormMessage, Muted } from '@/components/ui';
 import { postJob } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
@@ -11,7 +11,7 @@ import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
-// Companies hire crew, or hand over clients they can't take. Rafrika reviews each one first.
+// Companies hire crew, or hand over clients they can't take. Kwetuly reviews each one first.
 export default function JobsPostScreen() {
   const params = useLocalSearchParams<{ kind?: string }>();
   const { t, locale } = useI18n();

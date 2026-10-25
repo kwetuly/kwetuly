@@ -1,6 +1,6 @@
--- Starter trip catalogue for Rafrika, organised by Tanzania Tourist Board circuits.
+-- Starter trip catalogue for Kwetuly, organised by Tanzania Tourist Board circuits.
 -- All trips start as DRAFT with no price: review, set prices and partners, then publish in /admin/trips.
--- Itinerary text is a first draft written for review by Rafrika's guides.
+-- Itinerary text is a first draft written for review by Kwetuly's guides.
 
 insert into public.trips
   (slug, title_en, title_sw, summary_en, summary_sw, circuit, kind, categories, days, destinations, start_from,
@@ -84,7 +84,7 @@ values
    {"day":6,"title":"Summit day","body":"Midnight start to Uhuru Peak, descend to Mweka Camp."},
    {"day":7,"title":"Mweka Gate","body":"Descend through the forest; certificates and celebration."}]',
  '{Licensed mountain guides and crew,Park fees and rescue fee,Camping equipment and meals on the mountain,Transfers to and from the gate}',
- '{International flights and visa,"Travel insurance with evacuation cover to 6,000 m",Tips for guides and porters,Personal gear (can be rented through Rafrika)}',
+ '{International flights and visa,"Travel insurance with evacuation cover to 6,000 m",Tips for guides and porters,Personal gear (can be rented through Kwetuly)}',
  '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 20),
 
 ('kilimanjaro-lemosho-8-days', 'Kilimanjaro: Lemosho Route (8 days)', 'Kilimanjaro: Njia ya Lemosho (siku 8)',
@@ -307,28 +307,28 @@ values
    {"day":8,"title":"Materuni homestay","body":"Coffee, waterfalls and a night with a Chagga family."},
    {"day":9,"title":"Lake Eyasi","body":"Drive to Lake Eyasi; Datoga visit."},
    {"day":10,"title":"Hadzabe morning and return","body":"Dawn with the Hadzabe, return to Arusha."}]',
- '{Each part is delivered by a licensed operator or a verified Rafrika guide}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 72),
+ '{Each part is delivered by a licensed operator or a verified Kwetuly guide}', '{International flights and visa,Travel insurance,Tips}', '{1,2,3,6,7,8,9,10,12}', 'partner', 'operator', null, 72),
 
--- ============================ RAFRIKA SIGNATURE TRIPS (promo) ============================
-('signature-guides-day-off', 'Rafrika Signature: A Guide''s Day Off', 'Rafrika Maalum: Siku ya Mapumziko ya Mwongozaji',
+-- ============================ KWETULY SIGNATURE TRIPS (promo) ============================
+('signature-guides-day-off', 'Kwetuly Signature: A Guide''s Day Off', 'Kwetuly Maalum: Siku ya Mapumziko ya Mwongozaji',
  'Spend the day the way Kilimanjaro guides spend theirs: Materuni waterfall, a coffee ceremony, nyama choma for lunch and a swim at Chemka.',
  'Tumia siku kama waongozaji wa Kilimanjaro: maporomoko ya Materuni, kahawa, nyama choma mchana na kuogelea Chemka.',
  'northern', 'day_trip', '{cultural,walking}', 1, '{Materuni village,Chemka springs,Moshi}', 'Moshi',
- '{Led by a verified Rafrika guide,Waterfall and coffee,Nyama choma lunch and hot-spring swim}',
+ '{Led by a verified Kwetuly guide,Waterfall and coffee,Nyama choma lunch and hot-spring swim}',
  '[{"day":1,"title":"A guide''s favourite day","body":"Morning at Materuni waterfall and coffee farm, nyama choma lunch in a local spot, afternoon swim at Chemka hot springs."}]',
- '{Verified Rafrika guide,Transport,Entrance fees,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', 'signature',
- 'Designed by Rafrika guides. Share your photos with #RafrikaGuides.', 5),
+ '{Verified Kwetuly guide,Transport,Entrance fees,Lunch}', '{Tips,Drinks}', '{1,2,3,6,7,8,9,10,11,12}', 'guide', 'signature',
+ 'Designed by Kwetuly guides. Share your photos with #KwetulyGuides.', 5),
 
-('signature-walk-with-a-kili-guide', 'Rafrika Signature: Walk with a Kilimanjaro Veteran', 'Rafrika Maalum: Tembea na Mkongwe wa Kilimanjaro',
+('signature-walk-with-a-kili-guide', 'Kwetuly Signature: Walk with a Kilimanjaro Veteran', 'Kwetuly Maalum: Tembea na Mkongwe wa Kilimanjaro',
  'A day hike into Kilimanjaro''s rainforest with a guide who has stood on the summit hundreds of times, plus a personal prep session for your climb.',
  'Matembezi ya siku msituni Kilimanjaro na mwongozaji aliyefika kileleni mamia ya mara, pamoja na maandalizi binafsi.',
  'northern', 'day_trip', '{mountain,walking}', 1, '{Kilimanjaro National Park}', 'Moshi',
  '{Rainforest day hike towards Mandara Hut,Personal climb preparation and gear check,Stories from 300+ summits}',
  '[{"day":1,"title":"Kilimanjaro day hike","body":"Gear check and briefing in Moshi, day hike from Marangu Gate into the rainforest, lunch on the trail, debrief."}]',
- '{Veteran Rafrika guide,Park day fees,Transport,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,12}', 'guide', 'signature',
+ '{Veteran Kwetuly guide,Park day fees,Transport,Lunch}', '{Tips}', '{1,2,3,6,7,8,9,10,12}', 'guide', 'signature',
  'Our founder''s favourite way to prepare climbers.', 6),
 
-('signature-afcon-2027-fan-days', 'Rafrika Signature: AFCON 2027 Fan Days', 'Rafrika Maalum: Siku za Mashabiki AFCON 2027',
+('signature-afcon-2027-fan-days', 'Kwetuly Signature: AFCON 2027 Fan Days', 'Kwetuly Maalum: Siku za Mashabiki AFCON 2027',
  'Between matches in Tanzania: a city tour with a local guide, a quick safari to Mikumi or a day on Zanzibar, with verified transfers.',
  'Kati ya mechi Tanzania: ziara ya mji na mwongozaji, safari fupi Mikumi au siku Zanzibar, pamoja na usafiri uliothibitishwa.',
  'nationwide', 'combo', '{event,safari,cultural}', 3, '{Dar es Salaam,Mikumi National Park,Zanzibar,Arusha}', 'Dar es Salaam',
@@ -339,7 +339,7 @@ values
  '{Verified driver transfers,Local guide,Entrance and park fees for chosen options}', '{Match tickets,Flights,Tips}', '{6,7}', 'partner', 'signature',
  'AFCON 2027, 19 June to 17 July. Venues and dates subject to CAF confirmation.', 7),
 
-('signature-spice-stone-sea', 'Rafrika Signature: Spice, Stone & Sea', 'Rafrika Maalum: Viungo, Mawe na Bahari',
+('signature-spice-stone-sea', 'Kwetuly Signature: Spice, Stone & Sea', 'Kwetuly Maalum: Viungo, Mawe na Bahari',
  'Three days of Zanzibar with a Swahili storyteller guide: Stone Town at night, a spice farm cooking class and a dhow to a sandbank.',
  'Siku tatu Zanzibar na mwongozaji msimulizi: Mji Mkongwe usiku, darasa la kupika shambani na jahazi hadi kisiwa cha mchanga.',
  'coast', 'multi_day', '{cultural,marine,beach}', 3, '{Stone Town,Zanzibar}', 'Zanzibar',
@@ -348,4 +348,4 @@ values
    {"day":2,"title":"Spice and cooking","body":"Spice farm visit and Swahili cooking class."},
    {"day":3,"title":"Sea","body":"Dhow trip to a sandbank with seafood lunch, then departure."}]',
  '{Storyteller guide,Cooking class,Dhow trip and lunch,Transfers on Zanzibar}', '{Flights,Accommodation (we can suggest homestays),Tips}', '{1,2,6,7,8,9,10,12}', 'partner', 'signature',
- 'A Rafrika original. Ask about honeymoon versions.', 8);
+ 'A Kwetuly original. Ask about honeymoon versions.', 8);

@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
-import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@rafrika/shared';
+import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@kwetuly/shared';
 
 // Public data has no session, so it can be cached and shared between visitors.
 function publicClient() {
@@ -35,7 +35,7 @@ export async function getBusiness(id: string): Promise<Business | null> {
   return (data as Business | null) ?? null;
 }
 
-/** The yearly badge fee in USD, or null while Rafrika has not set it. */
+/** The yearly badge fee in USD, or null while Kwetuly has not set it. */
 export async function getBadgeFee(): Promise<number | null> {
   'use cache';
   cacheTag('settings');

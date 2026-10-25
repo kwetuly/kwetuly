@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BedDouble, CircleAlert, ExternalLink, Footprints, Landmark, Mountain, PawPrint, Sparkles, Utensils } from 'lucide-react';
-import { PLACE_KINDS, altitudeProfile, overnightFor, type ItineraryDay, type Place, type TourStop } from '@rafrika/shared';
+import { PLACE_KINDS, altitudeProfile, overnightFor, type ItineraryDay, type Place, type TourStop } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 

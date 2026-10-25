@@ -4,7 +4,7 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@rafrika/shared';
+import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@kwetuly/shared';
 import { BusinessBadge } from '@/components/business-card';
 import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
@@ -74,7 +74,7 @@ export default function BusinessScreen() {
 
       <Card>
         <SectionTitle>{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', b.business_name)}</SectionTitle>
-        {/* Sample listings: the business has not joined, so the message goes to Rafrika. */}
+        {/* Sample listings: the business has not joined, so the message goes to Kwetuly. */}
         <Muted>{b.is_sample ? bt.askBodySample : isShop ? bt.orderBody : bt.askBody}</Muted>
         <Field label={t.profile.name} value={name} onChangeText={setName} />
         <Field label={t.profile.contact} value={contact} onChangeText={setContact} autoCapitalize="none" />

@@ -8,11 +8,11 @@ Rules used: no invented prices, market figures, partners or results. Vendor pric
 
 ---
 
-## 0. One thing to settle first: can Rafrika take money at all?
+## 0. One thing to settle first: can Kwetuly take money at all?
 
 Every paid stream needs a registered company that can invoice and give receipts: a BRELA registration, a TIN, EFD receipts, and VAT if registered. The legal drafts still have `[COMPANY LEGAL NAME]`, `[BRELA REGISTRATION NUMBER]` and `[TIN]` as placeholders (`docs/legal/business-listing-terms.md`, `docs/legal/README.md`).
 
-**Assumption:** until those exist, Rafrika should not sell badges, invoice commissions or sell merchandise. accounting and legal should confirm what is required.
+**Assumption:** until those exist, Kwetuly should not sell badges, invoice commissions or sell merchandise. accounting and legal should confirm what is required.
 
 ---
 
@@ -20,11 +20,11 @@ Every paid stream needs a registered company that can invoice and give receipts:
 
 | Stream | Who pays | Works in soft launch? | Why | Starts |
 | --- | --- | --- | --- | --- |
-| "Checked by Rafrika" badge (yearly) | Business | **Yes**, once the company can invoice | Paid by invoice over WhatsApp and bank or mobile money. It does not use the deposit system. Admin already stores the fee and the badge dates. | Soft launch |
-| Referral commission | Business, after referred sales | **Yes, but small and late** | Shops record sales, Rafrika invoices monthly and is paid within the agreed days (Schedule 1). Cash arrives about 1 to 2 months after the sale. It also depends on travellers being in Tanzania, and an invite-only launch will bring few. | Soft launch, first cash around month 2 to 3 |
-| Merchandise (Rafrika Shop) | Traveller | **Only if stock is in hand and prices are set** | Order requests are paid by mobile money or cash. It needs known unit costs, stock and receipts. | Soft launch or later (Walter's choice) |
-| Guide packages | Traveller pays the guide directly | **No revenue for Rafrika** | Deposits are off, so Rafrika never sees the money. Taking a cut would mean billing guides on trust, which leaks and damages trust. | Later, when payments go through Rafrika |
-| Prep calls | Traveller pays the guide directly | **No revenue for Rafrika** | Same reason. `call_price_usd` is set by the guide, and the payments table only covers trip and group deposits. | Later; probably the first guide-side fee once payments are on (see 2C) |
+| "Checked by Kwetuly" badge (yearly) | Business | **Yes**, once the company can invoice | Paid by invoice over WhatsApp and bank or mobile money. It does not use the deposit system. Admin already stores the fee and the badge dates. | Soft launch |
+| Referral commission | Business, after referred sales | **Yes, but small and late** | Shops record sales, Kwetuly invoices monthly and is paid within the agreed days (Schedule 1). Cash arrives about 1 to 2 months after the sale. It also depends on travellers being in Tanzania, and an invite-only launch will bring few. | Soft launch, first cash around month 2 to 3 |
+| Merchandise (Kwetuly Shop) | Traveller | **Only if stock is in hand and prices are set** | Order requests are paid by mobile money or cash. It needs known unit costs, stock and receipts. | Soft launch or later (Walter's choice) |
+| Guide packages | Traveller pays the guide directly | **No revenue for Kwetuly** | Deposits are off, so Kwetuly never sees the money. Taking a cut would mean billing guides on trust, which leaks and damages trust. | Later, when payments go through Kwetuly |
+| Prep calls | Traveller pays the guide directly | **No revenue for Kwetuly** | Same reason. `call_price_usd` is set by the guide, and the payments table only covers trip and group deposits. | Later; probably the first guide-side fee once payments are on (see 2C) |
 | Fee on deposits | Traveller or guide | No | Deposits are off. It needs Selcom and the advocate's answer on the National Payment Systems Act (deposit policy, question 1). | After the advocate and Selcom |
 | Insurance | None | Never, for now | It needs NIC agency and TIRA approval. We only link to official portals. | Not planned |
 
@@ -36,7 +36,7 @@ Every paid stream needs a registered company that can invoice and give receipts:
 
 I do not have Tanzanian market data on what businesses pay for listings or checks, or on typical shop commission rates, so I have not put in any market figures. Where a number is needed, I give a way to calculate it from Walter's own costs.
 
-### 2A. Yearly "Checked by Rafrika" badge fee
+### 2A. Yearly "Checked by Kwetuly" badge fee
 
 **Floor (cost of doing one check):** staff hours (documents, identity, video call or visit, admin) × hourly cost + travel cost if it is a visit + payment fees + a share of the advocate and receipt costs.
 
@@ -45,7 +45,7 @@ Walter or accounting needs to supply the hourly cost and the travel cost. Any fe
 | Option | What it is | For | Against |
 | --- | --- | --- | --- |
 | 1. One flat fee for every business, in TSh | Same price for a homestay and a hotel | Simple and easy to explain. Matches legal draft B4 ("same for every business of the same type"). | Too high for small homestays, or too low for hotels. |
-| 2. Fee depends on how it is checked: video call or visit | A visit costs Rafrika more and is a stronger check. The badge already must say which one was done. | Price follows real cost. Honest, because the badge shows the method. | Must not look like the rejected Regular/Premium/VIP tiers. It has to stay "what was checked", never "better" or "recommended". |
+| 2. Fee depends on how it is checked: video call or visit | A visit costs Kwetuly more and is a stronger check. The badge already must say which one was done. | Price follows real cost. Honest, because the badge shows the method. | Must not look like the rejected Regular/Premium/VIP tiers. It has to stay "what was checked", never "better" or "recommended". |
 | 3. Founding businesses free for year 1, full fee at renewal | The first N businesses (Walter sets N) get the check free during the soft launch | Fills listings fast. Tests the checklist and the process. | No revenue in year 1. Does not prove anyone will pay. Risk that businesses see the badge as "always free". |
 
 **Recommendation:** option 1, a single TSh fee set at or above the cost floor. Offer a launch discount to the first businesses rather than making it free, so we learn whether anyone will pay. Ask partnerships to prepare (not send) 5 short questions about willingness to pay, for Walter to ask the first businesses.
@@ -55,15 +55,15 @@ Also decide:
 - Refund if no check item passes (legal B5).
 - Badge does not change ranking. I recommend "does not" (legal B8). It is simpler and avoids extra disclosure.
 
-### 2B. Rafrika's default share of referral commission
+### 2B. Kwetuly's default share of referral commission
 
-The total commission a business pays is agreed with each business, and I have no reliable data on usual rates. What Walter can set is the **default split** of that total between Rafrika and the guide. The guide's share is paid by Rafrika out of its share, after the business pays.
+The total commission a business pays is agreed with each business, and I have no reliable data on usual rates. What Walter can set is the **default split** of that total between Kwetuly and the guide. The guide's share is paid by Kwetuly out of its share, after the business pays.
 
-| Option | Split of the total commission (Rafrika / guide) | For | Against |
+| Option | Split of the total commission (Kwetuly / guide) | For | Against |
 | --- | --- | --- | --- |
 | 1. Equal | 50 / 50 | Simple. Fair story for guides. | Small amounts for both. |
-| 2. Guide-first | Guide gets the larger part (for example 1/3 Rafrika, 2/3 guide) | Matches "guides are the core customers". Strong reason for guides to use codes. | Stronger pull for guides to steer travellers. Rafrika earns less per sale. |
-| 3. Rafrika-first | Rafrika gets the larger part | More revenue per sale. | Guides have little reason to hand out codes, so few sales get recorded at all. |
+| 2. Guide-first | Guide gets the larger part (for example 1/3 Kwetuly, 2/3 guide) | Matches "guides are the core customers". Strong reason for guides to use codes. | Stronger pull for guides to steer travellers. Kwetuly earns less per sale. |
+| 3. Kwetuly-first | Kwetuly gets the larger part | More revenue per sale. | Guides have little reason to hand out codes, so few sales get recorded at all. |
 
 **Recommendation:** option 1 (50/50) as the default, changeable per agreement.
 
@@ -82,8 +82,8 @@ Risks:
 | Option | What it is | For | Against |
 | --- | --- | --- | --- |
 | 1. Free for guides during the soft launch | No fee, no commission | Gets guides on board. No collection problem while payments are off. | No revenue from the main product yet. |
-| 2. Guides report bookings and Rafrika invoices them a % | Commission on trust | Some revenue now. | Cannot be checked. Guides stop reporting. Hurts trust with core customers. Admin work. |
-| 3. Later: a disclosed Rafrika fee on prep calls paid through Rafrika | Once Selcom is live and the advocate approves, the traveller pays the call price plus or including a fee shown before paying | Collected automatically. Prep calls are small, fixed prices, so the fee is easy to explain. | Waits on company registration, Selcom and the advocate's answer on collecting money for guides. |
+| 2. Guides report bookings and Kwetuly invoices them a % | Commission on trust | Some revenue now. | Cannot be checked. Guides stop reporting. Hurts trust with core customers. Admin work. |
+| 3. Later: a disclosed Kwetuly fee on prep calls paid through Kwetuly | Once Selcom is live and the advocate approves, the traveller pays the call price plus or including a fee shown before paying | Collected automatically. Prep calls are small, fixed prices, so the fee is easy to explain. | Waits on company registration, Selcom and the advocate's answer on collecting money for guides. |
 
 **Recommendation:** option 1 now, and announce option 3 to guides in writing before it starts. Do not charge guides a monthly subscription. Any subscription with levels would bring back the rejected tiered model.
 
@@ -113,7 +113,7 @@ Vendor prices were checked on 2026-10-16 in US$ and may change. TSh amounts depe
 | Point-in-time recovery | No | 0 (would be 100) | Not needed at soft-launch size. [supabase.com/pricing](https://supabase.com/pricing) |
 | Email (Resend) | Yes | **0** (Free: 3,000/month, 100/day), or 20 (Pro: 50,000/month) | Risk: a busy invite day could hit 100 emails/day. Upgrade only if the free plan's limits are reached. [resend.com/pricing](https://resend.com/pricing) |
 | Analytics (PostHog EU) | Yes | **0** | Free: first 1M events and 5,000 recordings a month. Set billing limits. [posthog.com/pricing](https://posthog.com/pricing) |
-| Domain rafrika.com | Yes | **about 1 to 2** (yearly fee spread over 12 months) | Estimate, not checked. Depends on registrar and on whether Walter already owns it. |
+| Domain kwetuly.com | Yes | **about 1 to 2** (yearly fee spread over 12 months) | Estimate, not checked. Depends on registrar and on whether Walter already owns it. |
 | AI concierge (Anthropic API) | Optional | **0 if off**; otherwise set a hard monthly cap | Secondary sources list Haiku 4.5 at US$1 input / US$5 output per million tokens ([finout.io](https://finout.io/blog/anthropic-api-pricing)). Check against Anthropic's own pricing page. |
 | SMS phone codes | Later | 0 now (admin phone confirmation) | Later, per SMS. International gateways are about US$0.14 to 0.32 per SMS ([sent.dm comparison](https://www.sent.dm/resources/tanzania-sms-pricing), secondary source). One local provider lists 25 TSh per segment ([Sakura](https://billing.sakurahost.co.tz/knowledgebase/49/Understanding-SMS-Pricing-and-Credit-System-in-Tanzania.html), indicative). Get real quotes before choosing. |
 | WhatsApp Business messages | Later | Not priced | Meta per-message pricing; check when turned on. |
@@ -181,17 +181,17 @@ Stored credit that customers buy, top up or can cash out is very likely e-money 
 
 Versions that **do not hold customers' money** (advocate to confirm each):
 
-1. **Discount codes Rafrika funds itself.** For example "first prep call: Rafrika fee waived". They only reduce Rafrika's own fee at the moment of paying. No balance, no cash value, not transferable, with an expiry.
-2. **Free-service perks for businesses and guides.** For example a referral or loyalty reward that gives a business a discount on its next badge renewal. They can only be used against Rafrika's own fees. They cannot be bought and are never paid out in cash.
-3. **Guide referral shares stay commission, not credit.** Rafrika pays them out monthly after the business pays. No balance is held for longer. Ask the advocate whether even this short period counts as holding money.
+1. **Discount codes Kwetuly funds itself.** For example "first prep call: Kwetuly fee waived". They only reduce Kwetuly's own fee at the moment of paying. No balance, no cash value, not transferable, with an expiry.
+2. **Free-service perks for businesses and guides.** For example a referral or loyalty reward that gives a business a discount on its next badge renewal. They can only be used against Kwetuly's own fees. They cannot be bought and are never paid out in cash.
+3. **Guide referral shares stay commission, not credit.** Kwetuly pays them out monthly after the business pays. No balance is held for longer. Ask the advocate whether even this short period counts as holding money.
 
 Avoid:
 - gift cards or vouchers sold for money
-- credits usable with guides or other businesses (Rafrika would be holding money for third parties)
+- credits usable with guides or other businesses (Kwetuly would be holding money for third parties)
 - any top-up
 - any cash-out
 
-When to build: not before payments go through Rafrika. Until then there is no Rafrika fee to discount.
+When to build: not before payments go through Kwetuly. Until then there is no Kwetuly fee to discount.
 
 ---
 
@@ -199,10 +199,10 @@ When to build: not before payments go through Rafrika. Until then there is no Ra
 
 1. **Company first.** Confirm whether the company is registered with a TIN and can issue receipts. Recommendation: no sales of any kind until it can.
 2. **Badge fee.** Recommendation: one flat TSh fee at or above the cost floor (option 1), with a launch discount for the first businesses rather than free. Walter supplies the hourly and travel costs so accounting can work out the floor. Also: VAT included or not, no refund once the check is done (pending the advocate), badge does not affect ranking.
-3. **Default referral split.** Recommendation: 50/50 of the agreed total between Rafrika and the guide, paid by Rafrika after the business pays, changeable per agreement.
-4. **Guide packages and prep calls.** Recommendation: free during the soft launch. Plan a disclosed fee on prep calls paid through Rafrika once Selcom and the advocate allow it. No guide subscriptions.
+3. **Default referral split.** Recommendation: 50/50 of the agreed total between Kwetuly and the guide, paid by Kwetuly after the business pays, changeable per agreement.
+4. **Guide packages and prep calls.** Recommendation: free during the soft launch. Plan a disclosed fee on prep calls paid through Kwetuly once Selcom and the advocate allow it. No guide subscriptions.
 5. **Merchandise.** Recommendation: hide the shop for the soft launch unless stock and unit costs are known. If they are, use a low margin.
 6. **Hosting spend.** Recommendation: Vercel Pro (US$20) and Supabase Pro (US$25) for production, a Free Supabase project for staging, free Resend and PostHog, AI concierge off or capped. About US$46/month.
 7. **Advocate and company setup.** Recommendation: get 2 written quotes before committing (legal and accounting to prepare the request; Walter sends it).
 8. **90-day targets and go/no-go.** Recommendation: adopt the table and criteria in section 4 as the scorecard, and have data-analyst track them weekly.
-9. **Credits.** Recommendation: keep it parked until payments are live, then only consider option 1 (Rafrika-funded discount codes), after the advocate confirms.
+9. **Credits.** Recommendation: keep it parked until payments are live, then only consider option 1 (Kwetuly-funded discount codes), after the advocate confirms.

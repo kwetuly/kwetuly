@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Clock, Video } from 'lucide-react';
-import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
+import { CALL_TOPICS, formatUsd } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { listCallGuides } from '@/lib/guides';

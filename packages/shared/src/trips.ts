@@ -31,8 +31,8 @@ export const TRIP_CATEGORIES = [
 
 export const TRIP_OPERATORS = {
   partner: L('Operated by a licensed partner', 'Inaendeshwa na mshirika mwenye leseni', 'Organisé par un partenaire agréé', 'Gestito da un partner autorizzato', 'Durchgeführt von einem lizenzierten Partner', 'Realizowane przez licencjonowanego partnera', '由持证合作伙伴运营'),
-  rafrika: L('Operated by Rafrika', 'Inaendeshwa na Rafrika', 'Organisé par Rafrika', 'Gestito da Rafrika', 'Durchgeführt von Rafrika', 'Realizowane przez Rafrika', '由 Rafrika 运营'),
-  guide: L('Led by a verified Rafrika guide', 'Inaongozwa na mwongozaji wa Rafrika', 'Mené par un guide Rafrika vérifié', 'Guidato da una guida Rafrika verificata', 'Geführt von einem geprüften Rafrika-Guide', 'Prowadzone przez sprawdzonego przewodnika Rafrika', '由 Rafrika 认证导游带领'),
+  kwetuly: L('Operated by Kwetuly', 'Inaendeshwa na Kwetuly', 'Organisé par Kwetuly', 'Gestito da Kwetuly', 'Durchgeführt von Kwetuly', 'Realizowane przez Kwetuly', '由 Kwetuly 运营'),
+  guide: L('Led by a verified Kwetuly guide', 'Inaongozwa na mwongozaji wa Kwetuly', 'Mené par un guide Kwetuly vérifié', 'Guidato da una guida Kwetuly verificata', 'Geführt von einem geprüften Kwetuly-Guide', 'Prowadzone przez sprawdzonego przewodnika Kwetuly', '由 Kwetuly 认证导游带领'),
 } as const;
 
 export const MONTHS: Record<Locale, readonly string[]> = {

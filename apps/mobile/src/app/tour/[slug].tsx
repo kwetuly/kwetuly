@@ -22,7 +22,7 @@ import {
   tripPhoto,
   verifiedPrice,
   type TourStop,
-} from '@rafrika/shared';
+} from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { Avatar, Badge, BottomBar, Button, Card, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
 import { TourCard } from '@/components/cards';

@@ -2,8 +2,10 @@
 import type { Metadata } from 'next';
 import { LOCALE_TAGS, locales, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/dictionaries';
-import { PHOTOS, photoUrl } from '@/lib/photos';
 import { INDEXING_ON } from '@/lib/site';
+
+// Default preview when a page is shared: the white Kwetuly wordmark on green.
+export const DEFAULT_SHARE_IMAGE = { url: '/brand/kwetuly-og.png', width: 1200, height: 630, alt: 'Kwetuly' };
 
 type PageMeta = { path: string; title: string; description?: string | null; image?: string | null; noindex?: boolean; type?: 'website' | 'article' | 'profile' };
 
@@ -28,9 +30,9 @@ export async function pageMeta({ path, title, description, image, noindex, type 
       description: desc,
       url: `/${locale}${path}`,
       type,
-      siteName: 'Rafrika',
+      siteName: 'Kwetuly',
       locale: locale === 'zh' ? 'zh_CN' : locale,
-      images: [{ url: image ?? photoUrl(PHOTOS.safariSunset, 1200), width: 1200, height: 800 }],
+      images: [image ? { url: image, width: 1200, height: 800 } : DEFAULT_SHARE_IMAGE],
     },
     twitter: { card: 'summary_large_image', title, description: desc },
     // Only set robots when needed: an undefined value would override the layout's invite-only noindex.

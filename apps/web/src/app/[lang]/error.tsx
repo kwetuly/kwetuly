@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { EVENTS, UX_TEXT } from '@rafrika/shared';
+import { EVENTS, UX_TEXT } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
 
 // Friendly fallback when a page fails to render, with a retry and a way home.

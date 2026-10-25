@@ -56,7 +56,7 @@ export const OFFER_COLUMNS =
   'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, created_at, guides(display_name, slug, photo_url, rating_avg, rating_count, identity_checked_at, licence_checked_at, first_aid_checked_at)';
 
 export const isUuid = (value: string) => /^[0-9a-f-]{36}$/i.test(value);
-export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Rafrika partner';
+export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Kwetuly partner';
 export const today = () => new Date().toISOString().slice(0, 10);
 
 // Row-level security decides what the viewer may see: their own requests, or open ones for guides and companies.
@@ -79,7 +79,7 @@ export async function listOffers(requestId: string): Promise<TripOffer[]> {
   return data ?? [];
 }
 
-/** Ids of offers or group-trip spots whose deposit is paid or being checked by Rafrika (no Pay button for either). */
+/** Ids of offers or group-trip spots whose deposit is paid or being checked by Kwetuly (no Pay button for either). */
 export async function paidDeposits(column: 'trip_offer_id' | 'group_member_id', ids: string[]): Promise<Set<string>> {
   if (!ids.length) return new Set();
   const supabase = await createClient();
@@ -87,10 +87,10 @@ export async function paidDeposits(column: 'trip_offer_id' | 'group_member_id', 
   return new Set((data ?? []).map((row) => (row as Record<string, string>)[column]));
 }
 
-/** `review`: Selcom reported a payment Rafrika must check by hand; treat it as "being checked", never as unpaid. */
+/** `review`: Selcom reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
 export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
-/** Where the deposit for one offer or group-trip spot is: not paid, being checked, held by Rafrika, or paid to the guide. */
+/** Where the deposit for one offer or group-trip spot is: not paid, being checked, held by Kwetuly, or paid to the guide. */
 export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
   const supabase = await createClient();
   const { data } = await supabase

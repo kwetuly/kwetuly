@@ -12,7 +12,7 @@ export function Stars({ value, size = 'size-4', label }: { value: number; size?:
   );
 }
 
-// Rating line for cards and profile headers: "★★★★★ 4.8 (12 reviews)" or "New on Rafrika".
+// Rating line for cards and profile headers: "★★★★★ 4.8 (12 reviews)" or "New on Kwetuly".
 export function RatingSummary({
   avg,
   count,

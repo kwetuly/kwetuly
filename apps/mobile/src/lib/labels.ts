@@ -1,4 +1,4 @@
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, TRIP_CATEGORIES, type Locale } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, TRIP_CATEGORIES, type Locale } from '@kwetuly/shared';
 
 export const specialtyName = (id: string, locale: Locale) => GUIDE_SPECIALTIES.find((s) => s.id === id)?.[locale] ?? id;
 export const languageName = (code: string) => GUIDE_LANGUAGES.find((l) => l.code === code)?.name ?? code;

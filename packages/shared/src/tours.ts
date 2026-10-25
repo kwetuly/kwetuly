@@ -1,11 +1,11 @@
-// The Tours section: Rafrika Signature Trips and Operator Tours, shared by the website and the app.
+// The Tours section: Kwetuly Signature Trips and Operator Tours, shared by the website and the app.
 // Labels are in the order en, sw, fr, it, de, pl, zh (see locales.ts). Keep the ids in sync with
 // the enums and checks in supabase/migrations/20261015000000_tours.sql.
 
 import { L, type Locale } from './locales';
 
 export const TOUR_TYPES = [
-  { id: 'signature', ...L('Signature Trip', 'Safari Maalum ya Rafrika', 'Voyage Signature', 'Viaggio Signature', 'Signature-Reise', 'Podróż Signature', '招牌行程') },
+  { id: 'signature', ...L('Signature Trip', 'Safari Maalum ya Kwetuly', 'Voyage Signature', 'Viaggio Signature', 'Signature-Reise', 'Podróż Signature', '招牌行程') },
   { id: 'operator', ...L('Operator Tour', 'Safari ya Kampuni', 'Circuit d’opérateur', 'Tour di operatore', 'Veranstalter-Tour', 'Wycieczka operatora', '运营商行程') },
 ] as const;
 export type TourTypeId = (typeof TOUR_TYPES)[number]['id'];
@@ -146,13 +146,19 @@ export type Tour = {
   source_url: string | null;
   source_checked_at: string | null;
   needs_review: boolean;
-  operated_by: 'partner' | 'rafrika' | 'guide';
+  operated_by: 'partner' | 'kwetuly' | 'guide';
   operator_id: string | null;
   promo_text: string | null;
   status: 'draft' | 'published' | 'archived';
   updated_at: string;
   tour_operators: TourOperatorSummary | null;
 };
+
+/** Temporary until the rename migration runs: rows saved before it still say 'rafrika' (the old name).
+ * Read them as 'kwetuly' so forms keep the right operator. Remove once the migration has run. */
+export function normalizeOperatedBy(value: string | null | undefined): string {
+  return value === 'rafrika' ? 'kwetuly' : (value ?? '');
+}
 
 export const TOUR_COLUMNS =
   'id, slug, title_en, title_sw, summary_en, summary_sw, tour_type, is_signature, circuit, kind, categories, travel_styles, days, nights, start_from, end_at, destinations, highlights, itinerary, accommodation, group_type, min_group, max_group, price_from, price_currency, price_conditions, price_verified_at, price_valid_until, includes, excludes, best_months, best_time_note, fitness, packing, good_to_know, cover_url, source_url, source_checked_at, needs_review, operated_by, operator_id, promo_text, status, updated_at, tour_operators(id, slug, name, logo_url, location, verified_at)';

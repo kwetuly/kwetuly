@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Landmark } from 'lucide-react';
-import { PLACE_KINDS } from '@rafrika/shared';
+import { PLACE_KINDS } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { listPlaces } from '@/lib/trips';

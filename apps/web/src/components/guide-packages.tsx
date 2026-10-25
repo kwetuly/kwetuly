@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { Clock, Users } from 'lucide-react';
-import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
+import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 

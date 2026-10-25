@@ -13,7 +13,7 @@ import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 import { GuidePackages } from '@/components/guide-packages';
 import { getGuidePackages } from '@/lib/packages';
 
-import { EVENTS, formatUsd, hasRecordedCheck } from '@rafrika/shared';
+import { EVENTS, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
 import { brand, colors, space, textSize } from '@/theme';
 

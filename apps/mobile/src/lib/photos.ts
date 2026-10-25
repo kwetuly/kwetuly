@@ -1,7 +1,7 @@
 import type { ImageSource } from 'expo-image';
-import { photoUrl, type Photo } from '@rafrika/shared';
+import { photoUrl, type Photo } from '@kwetuly/shared';
 
-// Rafrika's own photos are bundled with the app (smaller copies of the website's /photos files);
+// Kwetuly's own photos are bundled with the app (smaller copies of the website's /photos files);
 // stock photos load from Unsplash at the requested width.
 const LOCAL: Record<string, number> = {
   'kili-camp-mawenzi': require('../../assets/photos/kili-camp-mawenzi.jpg'),

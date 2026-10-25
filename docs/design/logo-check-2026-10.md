@@ -1,5 +1,7 @@
 # Logo and brand marks check (2026-10-24)
 
+> **Replaced (2026-10-24):** the brand is now Kwetuly. This check of the old Rafrika marks is kept for history; the current marks and rules are in `docs/design/kwetuly/README.md`.
+
 Walter approved keeping the name "Rafrika" on 2026-10-24. This is a check of the logo files we have today against the brand rules: green `#1D951A`, gold `#ffb627`, grey `#7F7F7F`, 5px corners, no all caps. No files were changed. Figma was not used.
 
 ## The mark today

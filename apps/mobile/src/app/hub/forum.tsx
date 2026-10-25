@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { Link, Stack, router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { HUB_MENU, REGIONS } from '@rafrika/shared';
+import { HUB_MENU, REGIONS } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { createHubPost, listHubPosts } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';

@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { PACKAGE_KINDS } from '@rafrika/shared';
+import { PACKAGE_KINDS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';

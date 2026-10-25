@@ -1,14 +1,14 @@
 {
-  "name": "rafrika",
+  "name": "kwetuly",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "web": "npm run dev --workspace @rafrika/web",
-    "web:build": "npm run build --workspace @rafrika/web",
-    "mobile": "npm run start --workspace @rafrika/mobile",
+    "web": "npm run dev --workspace @kwetuly/web",
+    "web:build": "npm run build --workspace @kwetuly/web",
+    "mobile": "npm run start --workspace @kwetuly/mobile",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   }

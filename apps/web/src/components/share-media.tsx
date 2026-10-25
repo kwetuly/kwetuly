@@ -14,7 +14,7 @@ export function ShareMedia({ url, name, labels }: { url: string; name: string; l
       const blob = await (await fetch(url)).blob();
       const file = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Rafrika' });
+        await navigator.share({ files: [file], title: 'Kwetuly' });
       } else {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);

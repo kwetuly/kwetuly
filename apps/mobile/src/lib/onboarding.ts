@@ -2,7 +2,7 @@ import type { Href } from 'expo-router';
 import { useProfile, useSession } from './auth';
 
 /**
- * Accounts that have not finished the welcome step (e.g. no invite code yet while Rafrika is
+ * Accounts that have not finished the welcome step (e.g. no invite code yet while Kwetuly is
  * invite-only) cannot create anything: the database refuses it. Screens with a form send them to
  * the welcome step instead, which brings them back to `next` afterwards.
  */

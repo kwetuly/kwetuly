@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, BadgeCheck, CalendarDays, Languages, MapPin, MessageCircle, Users, Wallet } from 'lucide-react';
-import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd, hasRecordedCheck } from '@rafrika/shared';
+import { EVENTS, GUIDE_EXPERTISE, approxTzs, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';

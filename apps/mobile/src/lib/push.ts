@@ -24,7 +24,7 @@ export async function registerForPush(ask: boolean): Promise<PushState> {
   if (!Notifications || !Device.isDevice || !projectId) return 'unavailable';
   try {
     if (process.env.EXPO_OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', { name: 'Rafrika', importance: Notifications.AndroidImportance.HIGH });
+      await Notifications.setNotificationChannelAsync('default', { name: 'Kwetuly', importance: Notifications.AndroidImportance.HIGH });
     }
     let { status } = await Notifications.getPermissionsAsync();
     if (status !== 'granted' && ask) status = (await Notifications.requestPermissionsAsync()).status;

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { PACKAGE_KINDS } from '@rafrika/shared';
+import { PACKAGE_KINDS } from '@kwetuly/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';

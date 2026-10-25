@@ -100,8 +100,8 @@ describe('business badge', () => {
 
 describe('referral commission', () => {
   it('splits a sale by the agreement and pays nothing without one', () => {
-    expect(commissionSplit(100000, { rafrika_pct: 10, guide_pct: 5 })).toEqual({ rafrika: 10000, guide: 5000 });
-    expect(commissionSplit(100000, null)).toEqual({ rafrika: 0, guide: 0 });
+    expect(commissionSplit(100000, { rafrika_pct: 10, guide_pct: 5 })).toEqual({ kwetuly: 10000, guide: 5000 });
+    expect(commissionSplit(100000, null)).toEqual({ kwetuly: 0, guide: 0 });
   });
 });
 

@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS, EVENTS, formatUsd } from '@rafrika/shared';
+import { CALL_TOPICS, EVENTS, formatUsd } from '@kwetuly/shared';
 import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
@@ -111,7 +111,7 @@ async function Profile({
           '@context': 'https://schema.org',
           '@type': 'BreadcrumbList',
           itemListElement: [
-            { '@type': 'ListItem', position: 1, name: 'Rafrika', item: `${SITE_URL}/${locale}` },
+            { '@type': 'ListItem', position: 1, name: 'Kwetuly', item: `${SITE_URL}/${locale}` },
             { '@type': 'ListItem', position: 2, name: t.guides.title, item: `${SITE_URL}/${locale}/guides` },
             { '@type': 'ListItem', position: 3, name: guide.display_name },
           ],

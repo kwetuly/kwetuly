@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -29,7 +29,7 @@ export async function createGroupTrip(formData: FormData) {
 
   const asGuide = user.guide?.status === 'approved';
   const business = await businessApproval(user);
-  // Business accounts organise only once Rafrika has approved their listing.
+  // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && business === 'waiting') redirect(`${back}error=1`);
   const asBusiness = business === 'approved' || user.role === 'admin';
   // Travellers organise as themselves: no guide and no company. Completing a group means some

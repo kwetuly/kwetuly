@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { PACKAGE_KINDS } from '@rafrika/shared';
+import { PACKAGE_KINDS } from '@kwetuly/shared';
 import { PackageCard } from '@/components/guide-packages';
 import { Chip, Muted, ScreenState } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';

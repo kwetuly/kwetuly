@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { Check, Globe } from 'lucide-react';
-import { UX_TEXT } from '@rafrika/shared';
+import { UX_TEXT } from '@kwetuly/shared';
 import { LOCALE_NAMES, localePrefix, locales, type Locale } from '@/i18n/config';
 
 // Globe button that opens the list of site languages, each written in its own language.

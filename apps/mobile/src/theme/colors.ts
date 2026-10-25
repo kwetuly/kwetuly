@@ -1,4 +1,4 @@
-// Fixed light colours taken from the website, so the app looks the same as rafrika.com even when the
+// Fixed light colours taken from the website, so the app looks the same as kwetuly.com even when the
 // phone is in dark mode or Android picks colours from the wallpaper.
 export const colors = {
   label: '#2b3631', // website charcoal

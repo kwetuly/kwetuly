@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BUSINESS_TYPES, REGIONS, formatUsd } from '@rafrika/shared';
+import { BUSINESS_TYPES, REGIONS, formatUsd } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { CurrentUser } from '@/lib/auth';

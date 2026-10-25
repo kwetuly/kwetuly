@@ -14,7 +14,7 @@ import {
   filterTours,
   readTourFilters,
   type TourFilters,
-} from '@rafrika/shared';
+} from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { listTours, savedTourIds } from '@/lib/trips';

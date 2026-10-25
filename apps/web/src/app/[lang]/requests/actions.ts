@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { isUuid, today } from '@/lib/requests';

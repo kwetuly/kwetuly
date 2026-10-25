@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
-import { PACKAGE_COLUMNS, type GuidePackage } from '@rafrika/shared';
+import { PACKAGE_COLUMNS, type GuidePackage } from '@kwetuly/shared';
 
 export type Guide = {
   id: string;

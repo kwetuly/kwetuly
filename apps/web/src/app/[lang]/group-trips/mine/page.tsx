@@ -73,13 +73,13 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
         </span>
         {note && <span className={`rounded-[5px] px-3 py-1 text-xs font-semibold ${toneClass[note.tone]}`}>{note.text}</span>}
       </Link>
-      {/* A rejected trip says "please contact Rafrika": give the organiser the way to do it. */}
+      {/* A rejected trip says "please contact Kwetuly": give the organiser the way to do it. */}
       {organiser && trip.status === 'rejected' && !trip.cancelled && SUPPORT_EMAIL && (
         <a
           href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`${g.statusRejected} ${trip.title}`)}`}
           className="mt-2 inline-block text-sm font-semibold text-forest underline"
         >
-          {t.ux.contactRafrika}
+          {t.ux.contactKwetuly}
         </a>
       )}
     </li>
@@ -87,7 +87,7 @@ async function Lists({ t, locale }: { t: Dictionary; locale: Locale }) {
 
   return (
     <div className="mt-6 space-y-10">
-      {/* Business accounts can organise once Rafrika approves their listing. */}
+      {/* Business accounts can organise once Kwetuly approves their listing. */}
       {business === 'waiting' && <p className="card">{t.business.waitApproval}</p>}
       {(organised.data?.length ?? 0) > 0 && (
         <section>

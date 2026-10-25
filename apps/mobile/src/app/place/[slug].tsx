@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { STOP_KINDS, type TourStop } from '@rafrika/shared';
+import { STOP_KINDS, type TourStop } from '@kwetuly/shared';
 import { Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { TourCard } from '@/components/cards';
 import TourMap from '@/components/tour-map';

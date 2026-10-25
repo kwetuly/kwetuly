@@ -1,6 +1,6 @@
-import { DEFAULT_LOCALE, LOCALES, type Locale } from '@rafrika/shared';
+import { DEFAULT_LOCALE, LOCALES, type Locale } from '@kwetuly/shared';
 
-export { LOCALE_NAMES, LOCALE_TAGS } from '@rafrika/shared';
+export { LOCALE_NAMES, LOCALE_TAGS } from '@kwetuly/shared';
 export type { Locale };
 export const locales = LOCALES;
 export const defaultLocale: Locale = DEFAULT_LOCALE;

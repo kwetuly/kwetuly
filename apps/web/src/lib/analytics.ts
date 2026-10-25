@@ -1,7 +1,7 @@
 'use client';
 
 import type { PostHog } from 'posthog-js';
-import { POSTHOG_DEFAULT_HOST, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@rafrika/shared';
+import { POSTHOG_DEFAULT_HOST, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@kwetuly/shared';
 
 // Product analytics with PostHog in cookieless mode: no cookies or browser storage, so no consent
 // banner is needed. Turned off until NEXT_PUBLIC_POSTHOG_KEY is set. The library loads after the

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { EVENTS, normalizePhone } from '@rafrika/shared';
+import { EVENTS, normalizePhone } from '@kwetuly/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { getInviteOnly } from '@/lib/api-more';

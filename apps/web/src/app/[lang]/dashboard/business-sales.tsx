@@ -6,7 +6,7 @@ import { SubmitButton } from '@/components/submit-button';
 
 type Sale = { id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: 'reported' | 'invoiced' | 'paid'; note: string | null };
 
-// Sales the business made thanks to a guide's Rafrika referral code, and its commission agreement.
+// Sales the business made thanks to a guide's Kwetuly referral code, and its commission agreement.
 export async function BusinessSales({ providerId, t, locale, status }: { providerId: string; t: Dictionary; locale: Locale; status: Record<string, string | string[] | undefined> }) {
   const bt = t.business;
   const supabase = await createClient();

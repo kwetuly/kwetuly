@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ArrowLeft, Bell, Store } from 'lucide-react';
-import { ALL_SECTIONS, BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@rafrika/shared';
+import { ALL_SECTIONS, BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@kwetuly/shared';
 import { listBusinesses } from '@/lib/businesses';
 import { BusinessCard } from '@/components/business-card';
 import { today } from '@/lib/today';
@@ -125,7 +125,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
   );
 }
 
-// Listed businesses for this page; ones with a valid "Checked by Rafrika" badge come first.
+// Listed businesses for this page; ones with a valid "Checked by Kwetuly" badge come first.
 async function Businesses({ pageKey, t, locale }: { pageKey: string; t: Dictionary; locale: Locale }) {
   const [list, now] = await Promise.all([listBusinesses(BUSINESS_PAGES[pageKey]), today()]);
   if (list.length === 0) return null;

@@ -1,17 +1,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { BadgeCheck, MapPin } from 'lucide-react';
-import { BADGE_CHECKS, BUSINESS_TYPES, hasValidBadge, type Business } from '@rafrika/shared';
+import { BADGE_CHECKS, BUSINESS_TYPES, hasValidBadge, type Business } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 
 /**
- * The paid "Checked by Rafrika" badge. It always says what was checked and when, and that it is
+ * The paid "Checked by Kwetuly" badge. It always says what was checked and when, and that it is
  * a paid check, never a recommendation.
  */
 export function BusinessBadge({ business, t, locale, today, full }: { business: Business; t: Dictionary; locale: Locale; today: string; full?: boolean }) {
   const bt = t.business;
-  // Sample listings were added by Rafrika from public information; say so plainly.
+  // Sample listings were added by Kwetuly from public information; say so plainly.
   if (business.is_sample) {
     return full ? (
       <p className="rounded-[5px] border border-gold bg-sand p-3 text-sm">

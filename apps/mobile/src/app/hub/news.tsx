@@ -1,13 +1,13 @@
 import { FlatList, RefreshControl, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { HUB_MENU } from '@rafrika/shared';
+import { HUB_MENU } from '@kwetuly/shared';
 import { Card, Muted, ScreenState } from '@/components/ui';
 import { listHubPosts } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
-// Official field news (park updates, rules) posted by Rafrika.
+// Official field news (park updates, rules) posted by Kwetuly.
 export default function NewsScreen() {
   const { t, locale } = useI18n();
   const news = useQuery({ queryKey: ['hub-posts', 'news'], queryFn: () => listHubPosts('news') });

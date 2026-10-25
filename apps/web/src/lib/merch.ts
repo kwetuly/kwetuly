@@ -21,7 +21,7 @@ function publicClient() {
   });
 }
 
-/** Rafrika merchandise on sale. Orders go to the Rafrika Shop listing (business type "merch"). */
+/** Kwetuly merchandise on sale. Orders go to the Kwetuly Shop listing (business type "merch"). */
 export async function listProducts(): Promise<Product[]> {
   'use cache';
   cacheTag('products');
@@ -30,7 +30,7 @@ export async function listProducts(): Promise<Product[]> {
   return (data ?? []) as Product[];
 }
 
-/** The listing that receives merchandise orders, or null until Rafrika creates it. */
+/** The listing that receives merchandise orders, or null until Kwetuly creates it. */
 export async function getMerchShopId(): Promise<string | null> {
   'use cache';
   cacheTag('businesses');

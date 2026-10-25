@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   // Shared code from the monorepo is TypeScript source, so Next compiles it.
-  transpilePackages: ["@rafrika/shared"],
+  transpilePackages: ["@kwetuly/shared"],
   // Lets a phone on the same Wi-Fi open the dev server (http://<this computer's IP>:3000).
   allowedDevOrigins: ["192.168.1.131"],
   images: {

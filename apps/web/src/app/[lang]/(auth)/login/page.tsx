@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
-import { UX_TEXT } from '@rafrika/shared';
+import { UX_TEXT } from '@kwetuly/shared';
 import { LoginForm } from './login-form';
 import { SocialSignIn } from '@/components/social-sign-in';
 

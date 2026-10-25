@@ -1,8 +1,8 @@
 import { createContext, use, useState, type ReactNode } from 'react';
 import { getLocales } from 'expo-localization';
-import { DEFAULT_LOCALE, DICTIONARIES, LOCALES, type Dictionary, type Locale } from '@rafrika/shared';
+import { DEFAULT_LOCALE, DICTIONARIES, LOCALES, type Dictionary, type Locale } from '@kwetuly/shared';
 
-const STORAGE_KEY = 'rafrika.locale';
+const STORAGE_KEY = 'kwetuly.locale';
 
 const isLocale = (value: string | null | undefined): value is Locale => !!value && (LOCALES as readonly string[]).includes(value);
 

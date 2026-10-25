@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@rafrika/shared';
+import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@kwetuly/shared';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui';
 import { getMyGuide, listMyCalls } from '@/lib/api-more';

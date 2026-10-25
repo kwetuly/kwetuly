@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
-import { approxTzs, formatUsd } from '@rafrika/shared';
+import { approxTzs, formatUsd } from '@kwetuly/shared';
 import { Badge } from '@/components/ui';
 import type { DepositState } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';

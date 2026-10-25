@@ -1,2 +1,2 @@
-// Photos now live in @rafrika/shared so the website and the app use the same ones.
-export * from '@rafrika/shared';
+// Photos now live in @kwetuly/shared so the website and the app use the same ones.
+export * from '@kwetuly/shared';

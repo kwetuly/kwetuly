@@ -21,7 +21,7 @@ export default async function AdminInvitesPage() {
         <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">Back to admin</Link>
       </div>
       <p className="mt-2 max-w-3xl text-sm text-muted">
-        While Rafrika is invite-only, new accounts need one of these codes to finish signing up, on the website and in the app.
+        While Kwetuly is invite-only, new accounts need one of these codes to finish signing up, on the website and in the app.
         Existing accounts are never asked. Codes are stored scrambled (hashed), so a code is shown only once, when you add it.
       </p>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>

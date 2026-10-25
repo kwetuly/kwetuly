@@ -47,7 +47,7 @@ export async function deleteProduct(formData: FormData) {
   redirect(`/${locale}/admin/shop?deleted=1`);
 }
 
-// Orders need somewhere to arrive: a "Rafrika Shop" listing owned by the admin account.
+// Orders need somewhere to arrive: a "Kwetuly Shop" listing owned by the admin account.
 export async function createMerchShop(formData: FormData) {
   const { locale, userId } = await adminOnly(formData);
   const supabase = await createClient();
@@ -55,10 +55,10 @@ export async function createMerchShop(formData: FormData) {
   if (!data) {
     await supabase.from('providers').insert({
       owner_id: userId,
-      business_name: 'Rafrika Shop',
+      business_name: 'Kwetuly Shop',
       business_type: 'merch',
       base_region: 'Arusha',
-      story: 'Official Rafrika merchandise.',
+      story: 'Official Kwetuly merchandise.',
       languages: ['en', 'sw'],
       verification_status: 'approved',
     });

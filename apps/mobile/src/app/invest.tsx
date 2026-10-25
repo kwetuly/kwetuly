@@ -1,7 +1,7 @@
 import { ScrollView, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { INVEST_TEXT } from '@rafrika/shared';
+import { INVEST_TEXT } from '@kwetuly/shared';
 import { Button, Card, Muted, SectionTitle } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { colors, space } from '@/theme';
@@ -29,8 +29,8 @@ export default function InvestScreen() {
         {x.steps.map((s, i) => <Text key={s} style={{ color: colors.label, lineHeight: 21 }}>{i + 1}. {s}</Text>)}
       </Card>
       <Card>
-        <SectionTitle>{x.rafrikaTitle}</SectionTitle>
-        <Muted>{x.rafrika}</Muted>
+        <SectionTitle>{x.kwetulyTitle}</SectionTitle>
+        <Muted>{x.kwetuly}</Muted>
       </Card>
       <Muted>{x.checked}</Muted>
     </ScrollView>

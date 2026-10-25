@@ -1,6 +1,6 @@
-# Rafrika
+# Kwetuly
 
-Guide-first Tanzanian travel platform. Website: `apps/web` (Next.js). iOS/Android app: `apps/mobile` (Expo; read `apps/mobile/AGENTS.md` first). Shared code and the 7-language dictionaries: `packages/shared`. Database: Supabase, migrations in `supabase/migrations`.
+Guide-first travel platform for Africa, starting in Tanzania. Website: `apps/web` (Next.js). iOS/Android app: `apps/mobile` (Expo; read `apps/mobile/AGENTS.md` first). Shared code and the 7-language dictionaries: `packages/shared`. Database: Supabase, migrations in `supabase/migrations`.
 
 ## The AI team
 
@@ -43,7 +43,7 @@ Building and reviewing stay separate: engineers' work is checked by `qa-tester`,
 
 - Agents prepare; Walter decides. Nobody posts, sends, pays, signs, deletes real data or contacts real people or authorities without Walter.
 - Never invent facts, prices, ratings, reviews or partners. Sample guides and listings (`is_sample`) are test data and are always labelled.
-- The paid "Checked by Rafrika" badge says what was checked and when, never "recommended". Commissions are disclosed to travellers. Visa and insurance link only to official sites.
+- The paid "Checked by Kwetuly" badge says what was checked and when, never "recommended". Commissions are disclosed to travellers. Visa and insurance link only to official sites.
 - Brand: green `#1D951A` for actions, gold `#ffb627`, grey `#7F7F7F`, 5px corners, no all caps, no arrows on buttons. Traveller texts in all 7 languages; guide and owner texts in English and Kiswahili.
 - Secrets only in `.env.local`. Test accounts in `supabase/test-accounts.local.md` (git-ignored); use only on localhost and never repeat them.
 - Before declaring work done: `npx tsc --noEmit -p .` in `apps/web` and `apps/mobile`, `npx expo lint` in `apps/mobile`, `npm test --workspace packages/shared`.

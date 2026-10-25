@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@rafrika/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { createGroupTrip, getMyGuide } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
@@ -14,7 +14,7 @@ import { colors, space } from '@/theme';
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
 // Verified guides post as themselves; business accounts post under their company name.
-// Every group trip waits for Rafrika's approval before travellers see it.
+// Every group trip waits for Kwetuly's approval before travellers see it.
 export default function NewGroupTripScreen() {
   const { t, locale } = useI18n();
   const g = t.groups;
@@ -26,7 +26,7 @@ export default function NewGroupTripScreen() {
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
   const asBusiness = approvedBusiness || profile.data?.role === 'admin';
-  // Travellers organise as themselves once their account has a phone; Rafrika calls it before approving.
+  // Travellers organise as themselves once their account has a phone; Kwetuly calls it before approving.
   const asTraveller = !asGuide && !asBusiness;
 
   const [f, setF] = useState({
@@ -54,7 +54,7 @@ export default function NewGroupTripScreen() {
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState loading />;
-  // Business accounts organise only once Rafrika has approved their listing.
+  // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && businessWaiting) {
     return (
       <Card style={{ margin: space.lg }}>

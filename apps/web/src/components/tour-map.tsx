@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { drawTourMap, type TourMapHandle, type TourMapLabels, type TourStop } from '@rafrika/shared';
+import { drawTourMap, type TourMapHandle, type TourMapLabels, type TourStop } from '@kwetuly/shared';
 
 // Interactive route map (MapLibre + OpenFreeMap, with terrain and a 3D view). It loads after the
 // page renders because it needs the browser. Any element with data-map-stop="<position>" on the

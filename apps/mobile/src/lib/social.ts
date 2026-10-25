@@ -21,7 +21,7 @@ export async function enabledProviders(): Promise<SocialProvider[]> {
 
 /**
  * Signs in with Google / Facebook / Apple in a secure in-app browser and returns to the app
- * (rafrika://auth-callback, or the Expo Go address while developing). Returns true when signed in.
+ * (kwetuly://auth-callback, or the Expo Go address while developing). Returns true when signed in.
  */
 export async function signInWithProvider(provider: SocialProvider): Promise<boolean> {
   const redirectTo = Linking.createURL('auth-callback');

@@ -1,6 +1,6 @@
 // More data access: reviews, calls, enquiries, Guide Hub, guide profile, organiser tools and business tools.
 // Same tables and rules as the website; row-level security enforces who may do what.
-import { normalizePhone, type GuideCheckFields } from '@rafrika/shared';
+import { normalizePhone, type GuideCheckFields } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 function check(error: { message: string } | null) {
@@ -130,7 +130,7 @@ export async function registerInterest(input: { section: string; item: string; k
 // ---------------------------------------------------------------------------
 // Social sign-up: finish the account (type and phone)
 // ---------------------------------------------------------------------------
-// While Rafrika is invite-only, the database refuses to finish an account without a valid invite
+// While Kwetuly is invite-only, the database refuses to finish an account without a valid invite
 // code (error 'invite'). Accounts that already used a code at sign-up are not asked again.
 export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '') {
   const normalized = normalizePhone(phone);

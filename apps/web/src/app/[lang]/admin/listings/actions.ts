@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { BUSINESS_TYPES, REGIONS } from '@rafrika/shared';
+import { BUSINESS_TYPES, REGIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -18,7 +18,7 @@ async function adminOnly(formData: FormData): Promise<{ locale: Locale; userId: 
 const text = (formData: FormData, key: string, max: number) => String(formData.get(key) ?? '').trim().slice(0, max);
 const https = (value: string) => (/^https:\/\/\S+$/.test(value) ? value : null);
 
-// Create or edit any business listing. Listings Rafrika adds itself belong to the admin account,
+// Create or edit any business listing. Listings Kwetuly adds itself belong to the admin account,
 // so enquiries to them arrive in the admin inbox.
 export async function saveListing(formData: FormData) {
   const { locale, userId } = await adminOnly(formData);

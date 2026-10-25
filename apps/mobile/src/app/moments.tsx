@@ -7,7 +7,7 @@ import { listMoments } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
-// Photos, videos and tips travellers agreed to share and Rafrika featured (enforced by the database).
+// Photos, videos and tips travellers agreed to share and Kwetuly featured (enforced by the database).
 export default function MomentsScreen() {
   const { t } = useI18n();
   const moments = useQuery({ queryKey: ['moments'], queryFn: listMoments });

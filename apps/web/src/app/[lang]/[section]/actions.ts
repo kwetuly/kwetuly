@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { findMenuItem } from '@rafrika/shared';
+import { findMenuItem } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 

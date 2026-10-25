@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { CALL_TOPICS } from '@rafrika/shared';
+import { CALL_TOPICS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';

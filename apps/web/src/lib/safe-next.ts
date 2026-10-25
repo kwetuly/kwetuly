@@ -13,7 +13,7 @@ export function safeLocalPath(value: unknown, fallback: string): string {
   if (!hasLocale(first)) return fallback;
   // Final check: resolved against a dummy origin it must stay on that origin.
   try {
-    const base = 'https://rafrika.invalid';
+    const base = 'https://kwetuly.invalid';
     if (new URL(next, base).origin !== base) return fallback;
   } catch {
     return fallback;

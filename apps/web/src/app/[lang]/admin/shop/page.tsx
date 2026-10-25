@@ -8,15 +8,15 @@ import { PRODUCT_COLUMNS, type Product } from '@/lib/merch';
 import { createClient } from '@/lib/supabase/server';
 import { createMerchShop, deleteProduct, saveProduct } from './actions';
 
-export const metadata: Metadata = { title: 'Rafrika Shop', robots: { index: false } };
+export const metadata: Metadata = { title: 'Kwetuly Shop', robots: { index: false } };
 
-// Admin only: Rafrika merchandise. Orders arrive in the admin inbox as enquiries to "Rafrika Shop".
+// Admin only: Kwetuly merchandise. Orders arrive in the admin inbox as enquiries to "Kwetuly Shop".
 export default async function AdminShopPage({ searchParams }: PageProps<'/[lang]/admin/shop'>) {
   const locale = await getLocale();
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">Admin</Link>
-      <h1 className="mt-2 text-3xl font-bold">Rafrika merchandise</h1>
+      <h1 className="mt-2 text-3xl font-bold">Kwetuly merchandise</h1>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Content locale={locale} searchParams={searchParams} />
       </Suspense>
@@ -82,8 +82,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
       {!shop && (
         <form action={createMerchShop} className="card mt-4 flex flex-wrap items-center gap-3 bg-sand">
           <input type="hidden" name="locale" value={locale} />
-          <p className="flex-1">Orders need a “Rafrika Shop” listing to arrive in your inbox.</p>
-          <button className="btn px-4 py-2 text-sm">Create Rafrika Shop</button>
+          <p className="flex-1">Orders need a “Kwetuly Shop” listing to arrive in your inbox.</p>
+          <button className="btn px-4 py-2 text-sm">Create Kwetuly Shop</button>
         </form>
       )}
       <div className="card mt-6">

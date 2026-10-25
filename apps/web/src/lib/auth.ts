@@ -17,7 +17,7 @@ export type CurrentUser = {
   canUseHub: boolean;
 };
 
-// Returns the signed-in user with their Rafrika role and guide status, or null.
+// Returns the signed-in user with their Kwetuly role and guide status, or null.
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const supabase = await createClient();
   const {
@@ -116,7 +116,7 @@ export async function requireAdmin(locale: string): Promise<CurrentUser> {
 }
 
 /**
- * Business accounts may make offers and run group trips only once Rafrika has approved one of
+ * Business accounts may make offers and run group trips only once Kwetuly has approved one of
  * their listings (the database checks the same). 'none' for accounts that are not businesses.
  */
 export async function businessApproval(user: CurrentUser | null): Promise<'approved' | 'waiting' | 'none'> {

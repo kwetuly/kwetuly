@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Rafrika "savanna sunset" tokens — keep in sync with packages/shared/src/theme.ts */
+/* Kwetuly "savanna sunset" tokens — keep in sync with packages/shared/src/theme.ts */
 @theme {
   --color-night: #7f7f7f;
   --color-shade: #3a3a3a; /* darker grey for fades over photos, so white text stays readable */

@@ -1,4 +1,4 @@
-// What Rafrika checked about a guide, and how complete their profile is.
+// What Kwetuly checked about a guide, and how complete their profile is.
 // Shared by the website and the app so both show exactly the same thing.
 
 export type GuideCheckId = 'identity' | 'licence' | 'firstAid';
@@ -28,7 +28,7 @@ export function guideChecks(guide: GuideCheckFields, today = new Date()): GuideC
 }
 
 /**
- * "Verified guide" is only shown once Rafrika has recorded at least one document check
+ * "Verified guide" is only shown once Kwetuly has recorded at least one document check
  * (identity, licence or first aid). An approved profile with no checks is not "verified".
  */
 export function hasRecordedCheck(guide: Pick<GuideCheckFields, 'identity_checked_at' | 'licence_checked_at' | 'first_aid_checked_at'>) {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { EVENTS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
+import { EVENTS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@kwetuly/shared';
 import { Button, Card, SectionTitle } from '@/components/ui';
 import { track } from '@/lib/analytics';
 import { useI18n } from '@/lib/i18n';

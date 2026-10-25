@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS, formatUsd } from '@rafrika/shared';
+import { CALL_TOPICS, formatUsd } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { getGuide } from '@/lib/api';
 import { requestCall } from '@/lib/api-more';

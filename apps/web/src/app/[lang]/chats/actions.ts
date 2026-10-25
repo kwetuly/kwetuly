@@ -66,7 +66,7 @@ export async function sendChatMessage(formData: FormData): Promise<{ ok: false }
   redirect(`/${locale}/chats/${chatId}#end`);
 }
 
-// The sender says whether Rafrika may use their photo, video or tip publicly.
+// The sender says whether Kwetuly may use their photo, video or tip publicly.
 export async function setShareConsent(formData: FormData) {
   const locale = localeOf(formData);
   await requireUser(locale);

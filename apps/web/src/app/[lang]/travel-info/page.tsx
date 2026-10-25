@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { ExternalLink, ShieldCheck, Stamp } from 'lucide-react';
-import { TRAVEL_LINKS } from '@rafrika/shared';
+import { TRAVEL_LINKS } from '@kwetuly/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary } from '@/i18n/dictionaries';
 

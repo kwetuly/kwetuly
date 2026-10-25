@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CalendarDays, Gavel, Plus, Users } from 'lucide-react';
-import { formatUsd } from '@rafrika/shared';
+import { formatUsd } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { redirect } from 'next/navigation';

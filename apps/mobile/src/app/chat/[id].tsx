@@ -58,13 +58,13 @@ export default function GroupChatScreen() {
     if (asset.type === 'video') {
       // Videos are uploaded as they are.
       if (asset.fileSize && asset.fileSize > MAX_BYTES) return setError(c.tooBig);
-      return setPicked({ uri: asset.uri, kind: 'video', mimeType: asset.mimeType ?? 'video/mp4', name: asset.fileName ?? 'rafrika.mp4' });
+      return setPicked({ uri: asset.uri, kind: 'video', mimeType: asset.mimeType ?? 'video/mp4', name: asset.fileName ?? 'kwetuly.mp4' });
     }
     // Photos can be shared publicly later, so save a new copy without the location and camera data.
     // The picker's own copy keeps that data on Android. If the photo cannot be read, do not send it.
     try {
       const clean = await cleanPhoto(asset, { maxSide: PHOTO_SIDE, compress: 0.8 });
-      setPicked({ uri: clean.uri, kind: 'image', mimeType: clean.mimeType, name: (asset.fileName ?? 'rafrika').replace(/\.[^.]*$/, '') + '.jpg' });
+      setPicked({ uri: clean.uri, kind: 'image', mimeType: clean.mimeType, name: (asset.fileName ?? 'kwetuly').replace(/\.[^.]*$/, '') + '.jpg' });
     } catch {
       setError(c.uploadError);
     }
@@ -94,7 +94,7 @@ export default function GroupChatScreen() {
     const objected = message.objectors.includes(userId);
     const buttons: { text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }[] = [];
     if (message.media_url) {
-      buttons.push({ text: c.shareToApps, onPress: () => shareMediaFile(message.media_url!, message.media_path!.split('/').pop() ?? 'rafrika.jpg') });
+      buttons.push({ text: c.shareToApps, onPress: () => shareMediaFile(message.media_url!, message.media_path!.split('/').pop() ?? 'kwetuly.jpg') });
     }
     if (mine) {
       buttons.push({ text: message.share_public ? c.stopSharing : c.shareConsent, onPress: () => setShareConsent(message.id, !message.share_public).then(refresh) });

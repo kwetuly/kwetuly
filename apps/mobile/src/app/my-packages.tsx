@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@rafrika/shared';
+import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
 import { Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
 import { getMyGuide } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';

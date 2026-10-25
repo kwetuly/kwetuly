@@ -1,13 +1,13 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { MERCH_ENABLED, orderMessage } from '@rafrika/shared';
+import { MERCH_ENABLED, orderMessage } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getMerchShopId } from '@/lib/merch';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
-// A merchandise order: delivered to the traveller's hotel, or held for collection. Rafrika confirms
+// A merchandise order: delivered to the traveller's hotel, or held for collection. Kwetuly confirms
 // the price and payment (mobile money or cash on delivery) before sending anything.
 export async function orderMerch(formData: FormData) {
   const value = String(formData.get('locale') ?? '');

@@ -42,7 +42,7 @@ export function useSession() {
   return use(AuthContext);
 }
 
-/** The signed-in user's Rafrika profile (role, name, phone), or null when signed out. */
+/** The signed-in user's Kwetuly profile (role, name, phone), or null when signed out. */
 export function useProfile() {
   const { session } = useSession();
   const userId = session?.user.id;

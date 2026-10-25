@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import '../globals.css';
-import { MENU } from '@rafrika/shared';
+import { MENU } from '@kwetuly/shared';
 import { LOCALE_TAGS, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks, MenuAccount } from '@/components/auth-links';
@@ -14,7 +14,7 @@ import { Logo } from '@/components/logo';
 import { Icon } from '@/components/icon';
 import { Analytics } from '@/components/analytics';
 import { INDEXING_ON, SITE_URL } from '@/lib/site';
-import { PHOTOS, photoUrl } from '@/lib/photos';
+import { DEFAULT_SHARE_IMAGE } from '@/lib/seo';
 import { itemHref } from '@/lib/menu';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'latin-ext'] });
@@ -26,13 +26,13 @@ export async function generateStaticParams() {
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
   return {
-    title: { default: `Rafrika — ${t.home.title}`, template: '%s · Rafrika' },
+    title: { default: `Kwetuly — ${t.home.title}`, template: '%s · Kwetuly' },
     description: t.home.subtitle,
     // Tell search engines about every language version of the site.
     alternates: { languages: Object.fromEntries(locales.map((l) => [LOCALE_TAGS[l], `/${l}`])) },
-    // Preview shown when a Rafrika link is shared on WhatsApp, Facebook, X and others.
+    // Preview shown when a Kwetuly link is shared on WhatsApp, Facebook, X and others.
     metadataBase: new URL(SITE_URL),
-    openGraph: { siteName: 'Rafrika', type: 'website', images: [{ url: photoUrl(PHOTOS.safariSunset, 1200), width: 1200, height: 800 }] },
+    openGraph: { siteName: 'Kwetuly', type: 'website', images: [DEFAULT_SHARE_IMAGE] },
     twitter: { card: 'summary_large_image' },
     // Invite-only soft launch: keep every page out of search results until NEXT_PUBLIC_INDEXING=on.
     ...(INDEXING_ON ? {} : { robots: { index: false, follow: false } }),
@@ -50,11 +50,11 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           {t.ux.skipToContent}
         </a>
         <header className="sticky top-0 z-40 border-b border-line/70 bg-white/85 backdrop-blur-xl">
-          <nav className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-4">
-            <Link href={`/${locale}`} className="shrink-0" aria-label="Rafrika home">
-              <Logo className="text-[28px]" />
+          <nav className="mx-auto flex max-w-7xl items-center gap-1 px-4 py-3 min-[360px]:gap-2 sm:gap-4">
+            <Link href={`/${locale}`} className="shrink-0" aria-label="Kwetuly home">
+              <Logo className="text-[22px] min-[360px]:text-[28px]" />
             </Link>
-            <div className="ml-auto flex min-w-0 items-center gap-2 text-sm sm:gap-3">
+            <div className="ml-auto flex min-w-0 items-center gap-1 text-sm min-[360px]:gap-2 sm:gap-3">
               <Suspense fallback={null}>
                 <AuthLinks />
               </Suspense>
@@ -115,7 +115,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           </div>
           <div className="border-t border-white/10">
             <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/90">
-              © 2026 Rafrika. {t.footer.rights} · Photos: Unsplash photographers
+              © 2026 Kwetuly. {t.footer.rights} · Photos: Unsplash photographers
             </p>
           </div>
         </footer>

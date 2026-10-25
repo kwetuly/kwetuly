@@ -1,4 +1,4 @@
-// Rafrika design tokens ("savanna sunset"), shared by the website and the mobile app.
+// Kwetuly design tokens ("savanna sunset"), shared by the website and the mobile app.
 
 export const colors = {
   night: '#7F7F7F', // grey for dark surfaces (text on it is white)

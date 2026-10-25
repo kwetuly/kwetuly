@@ -7,7 +7,7 @@ import { CALL_TOPICS } from './guides';
 import { L, type Label } from './locales';
 
 /**
- * Rafrika merchandise shop: the menu item, the website's /merch page and order action, and the
+ * Kwetuly merchandise shop: the menu item, the website's /merch page and order action, and the
  * app's merch screen. Off during the invite-only soft launch; set to true to bring it all back.
  * The admin page /admin/shop stays available either way.
  */
@@ -169,7 +169,7 @@ const SECTIONS: MenuSection[] = [
       },
       {
         slug: 'signature', icon: 'sparkles', href: '/tours?type=signature', status: 'live',
-        label: L('Rafrika signature trips', 'Safari maalum za Rafrika', 'Voyages signature Rafrika', 'Viaggi firmati Rafrika', 'Rafrika Signature-Reisen', 'Autorskie wyprawy Rafrika', 'Rafrika 特色行程'),
+        label: L('Kwetuly signature trips', 'Safari maalum za Kwetuly', 'Voyages signature Kwetuly', 'Viaggi firmati Kwetuly', 'Kwetuly Signature-Reisen', 'Autorskie wyprawy Kwetuly', 'Kwetuly 特色行程'),
         blurb: L('Unique trips designed by our guides', 'Safari za kipekee zilizobuniwa na waongozaji wetu', 'Des voyages uniques conçus par nos guides', 'Viaggi unici ideati dalle nostre guide', 'Einzigartige Reisen, von unseren Guides entworfen', 'Wyjątkowe wyprawy zaprojektowane przez naszych przewodników', '由我们的导游设计的独特行程'),
       },
       {
@@ -313,8 +313,8 @@ const SECTIONS: MenuSection[] = [
     items: [
       ...(MERCH_ENABLED
         ? [{
-          slug: 'rafrika', icon: 'shopping-bag', href: '/merch', status: 'live',
-          label: L('Rafrika merchandise', 'Bidhaa za Rafrika', 'Boutique Rafrika', 'Merchandising Rafrika', 'Rafrika-Merchandise', 'Gadżety Rafrika', 'Rafrika 周边'),
+          slug: 'kwetuly', icon: 'shopping-bag', href: '/merch', status: 'live',
+          label: L('Kwetuly merchandise', 'Bidhaa za Kwetuly', 'Boutique Kwetuly', 'Merchandising Kwetuly', 'Kwetuly-Merchandise', 'Gadżety Kwetuly', 'Kwetuly 周边'),
           blurb: L('T-shirts, caps and more', 'Fulana, kofia na zaidi', 'T-shirts, casquettes et plus', 'T-shirt, cappellini e altro', 'T-Shirts, Caps und mehr', 'Koszulki, czapki i więcej', 'T 恤、帽子等'),
         } satisfies MenuItem]
         : []),
@@ -467,7 +467,7 @@ const PARTNERS: MenuSection = {
     },
     {
       slug: 'list-business', icon: 'store', href: '/join?role=provider', status: 'live',
-      label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Rafrika'),
+      label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Kwetuly'),
       blurb: L('Hotels, drivers, shops and tour companies', 'Hoteli, madereva, maduka na kampuni za utalii', 'Hôtels, chauffeurs, boutiques et agences', 'Hotel, autisti, negozi e tour operator', 'Hotels, Fahrer, Shops und Veranstalter', 'Hotele, kierowcy, sklepy i biura', '酒店、司机、商店和旅行社'),
     },
   ],

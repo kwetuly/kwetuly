@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Clock } from 'lucide-react';
-import { formatUsd } from '@rafrika/shared';
+import { formatUsd } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireHubAccess } from '@/lib/auth';
@@ -65,7 +65,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
       .from('payments')
       .select('id, description, amount_tzs, amount_usd, status, paid_at, payout_done, created_at')
       .eq('payee_user_id', user.id)
-      // 'review': Selcom reported a payment Rafrika is checking by hand; shown as "being checked".
+      // 'review': Selcom reported a payment Kwetuly is checking by hand; shown as "being checked".
       .in('status', ['paid', 'review'])
       .order('created_at', { ascending: false })
       .limit(50)

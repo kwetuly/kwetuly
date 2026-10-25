@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { ALL_SECTIONS } from '@rafrika/shared';
+import { ALL_SECTIONS } from '@kwetuly/shared';
 import { locales } from '@/i18n/config';
 import { listGuides } from '@/lib/guides';
 import { listOperators, listPlaces, listTours } from '@/lib/trips';
@@ -8,7 +8,7 @@ import { INDEXING_ON, SITE_URL } from '@/lib/site';
 
 // Every public page in every language: home, sections, menu pages, published trips and public guides.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Empty while Rafrika is invite-only (NEXT_PUBLIC_INDEXING not "on").
+  // Empty while Kwetuly is invite-only (NEXT_PUBLIC_INDEXING not "on").
   if (!INDEXING_ON) return [];
   const [guides, trips, groups, operators, places] = await Promise.all([listGuides({}), listTours(), listGroupTrips(), listOperators(), listPlaces()]);
 

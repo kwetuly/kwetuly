@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageStatus } from '@rafrika/shared';
+import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageStatus } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';

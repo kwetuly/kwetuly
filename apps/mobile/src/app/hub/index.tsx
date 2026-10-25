@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
-import { CALL_TOPICS, HUB_MENU, formatUsd } from '@rafrika/shared';
+import { CALL_TOPICS, HUB_MENU, formatUsd } from '@kwetuly/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Field, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, listHubInbox, respondToCall, type HubCall } from '@/lib/api-more';

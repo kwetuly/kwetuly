@@ -1,4 +1,4 @@
-// Rafrika's own photos (local: true, served from the website's /photos folder and bundled in the
+// Kwetuly's own photos (local: true, served from the website's /photos folder and bundled in the
 // app) plus stock photos from Unsplash (free for commercial use under the Unsplash License, no
 // attribution required; we credit photographers anyway). Every stock photo was checked to be taken
 // in Tanzania and to be free (not Unsplash+).
@@ -6,23 +6,23 @@
 export type Photo = { id: string; alt: string; credit: string; local?: true };
 
 export const PHOTOS = {
-  // Rafrika's own photos from Kilimanjaro (location data removed).
-  kiliCampMawenzi: { id: 'kili-camp-mawenzi', alt: 'Tents above the clouds on Kilimanjaro, with Mawenzi peak behind', credit: 'Rafrika', local: true },
-  saddleHikers: { id: 'saddle-hikers-mawenzi', alt: 'A guided group walking across the Kilimanjaro saddle towards Mawenzi', credit: 'Rafrika', local: true },
-  kiboSaddleHikers: { id: 'kibo-saddle-hikers', alt: 'Hikers on the trail to Kibo, the summit cone of Kilimanjaro', credit: 'Rafrika', local: true },
-  kiboFromShira: { id: 'kibo-from-shira', alt: 'Kibo peak above the moorland of the Shira Plateau', credit: 'Rafrika', local: true },
-  kiboHutTrail: { id: 'kibo-hut-trail', alt: 'Hikers on the alpine desert below Kibo Hut, Kilimanjaro', credit: 'Rafrika', local: true },
-  kiliMoorland: { id: 'kili-moorland-trail', alt: 'Rocky moorland trail with Kibo peak in the distance', credit: 'Rafrika', local: true },
-  mawenziClouds: { id: 'mawenzi-clouds', alt: 'Mawenzi peak under a clear blue sky', credit: 'Rafrika', local: true },
-  mawenziMist: { id: 'mawenzi-mist', alt: 'Mist rolling past Mawenzi peak over the heath', credit: 'Rafrika', local: true },
-  kiboCrater: { id: 'kibo-crater-glacier', alt: 'The crater rim and glaciers at the top of Kilimanjaro at sunrise', credit: 'Rafrika', local: true },
-  uhuruPeak: { id: 'uhuru-peak', alt: 'Climbers at the Uhuru Peak summit sign, 5,895 m', credit: 'Rafrika', local: true },
-  kiliRainforest: { id: 'kili-rainforest-hikers', alt: 'A group hiking through the Kilimanjaro rainforest', credit: 'Rafrika', local: true },
-  kiliRockyTrail: { id: 'kili-rocky-trail', alt: 'Hikers on a rocky trail with the snowy summit ahead', credit: 'Rafrika', local: true },
-  kiliHeather: { id: 'kili-heather-zone', alt: 'Hikers in the heather zone above a sea of clouds', credit: 'Rafrika', local: true },
-  mountainHut: { id: 'mountain-hut', alt: 'Bunk beds inside a mountain hut on the Marangu route', credit: 'Rafrika', local: true },
-  colobus: { id: 'colobus-monkey', alt: 'Black-and-white colobus monkey in the forest', credit: 'Rafrika', local: true },
-  blueMonkey: { id: 'blue-monkey', alt: 'Blue monkey on a forest trail on Kilimanjaro', credit: 'Rafrika', local: true },
+  // Kwetuly's own photos from Kilimanjaro (location data removed).
+  kiliCampMawenzi: { id: 'kili-camp-mawenzi', alt: 'Tents above the clouds on Kilimanjaro, with Mawenzi peak behind', credit: 'Kwetuly', local: true },
+  saddleHikers: { id: 'saddle-hikers-mawenzi', alt: 'A guided group walking across the Kilimanjaro saddle towards Mawenzi', credit: 'Kwetuly', local: true },
+  kiboSaddleHikers: { id: 'kibo-saddle-hikers', alt: 'Hikers on the trail to Kibo, the summit cone of Kilimanjaro', credit: 'Kwetuly', local: true },
+  kiboFromShira: { id: 'kibo-from-shira', alt: 'Kibo peak above the moorland of the Shira Plateau', credit: 'Kwetuly', local: true },
+  kiboHutTrail: { id: 'kibo-hut-trail', alt: 'Hikers on the alpine desert below Kibo Hut, Kilimanjaro', credit: 'Kwetuly', local: true },
+  kiliMoorland: { id: 'kili-moorland-trail', alt: 'Rocky moorland trail with Kibo peak in the distance', credit: 'Kwetuly', local: true },
+  mawenziClouds: { id: 'mawenzi-clouds', alt: 'Mawenzi peak under a clear blue sky', credit: 'Kwetuly', local: true },
+  mawenziMist: { id: 'mawenzi-mist', alt: 'Mist rolling past Mawenzi peak over the heath', credit: 'Kwetuly', local: true },
+  kiboCrater: { id: 'kibo-crater-glacier', alt: 'The crater rim and glaciers at the top of Kilimanjaro at sunrise', credit: 'Kwetuly', local: true },
+  uhuruPeak: { id: 'uhuru-peak', alt: 'Climbers at the Uhuru Peak summit sign, 5,895 m', credit: 'Kwetuly', local: true },
+  kiliRainforest: { id: 'kili-rainforest-hikers', alt: 'A group hiking through the Kilimanjaro rainforest', credit: 'Kwetuly', local: true },
+  kiliRockyTrail: { id: 'kili-rocky-trail', alt: 'Hikers on a rocky trail with the snowy summit ahead', credit: 'Kwetuly', local: true },
+  kiliHeather: { id: 'kili-heather-zone', alt: 'Hikers in the heather zone above a sea of clouds', credit: 'Kwetuly', local: true },
+  mountainHut: { id: 'mountain-hut', alt: 'Bunk beds inside a mountain hut on the Marangu route', credit: 'Kwetuly', local: true },
+  colobus: { id: 'colobus-monkey', alt: 'Black-and-white colobus monkey in the forest', credit: 'Kwetuly', local: true },
+  blueMonkey: { id: 'blue-monkey', alt: 'Blue monkey on a forest trail on Kilimanjaro', credit: 'Kwetuly', local: true },
   // Unsplash stock photos.
   leopardTree: { id: 'photo-1667987486234-a1330e262ea3', alt: 'Leopard resting in a tree in Tarangire', credit: 'Uzuri Safaris Tanzania' },
   giraffesBalloon: { id: 'photo-1707410436230-d4b2fba910e7', alt: 'Giraffes and a hot-air balloon in the Serengeti', credit: 'Tanzania Wild Sky' },

@@ -20,4 +20,4 @@ export const supabase = createClient(url, key, {
 });
 
 /** The public website, used for share links and for tools that live on the web (guide editor, admin). */
-export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? 'https://rafrika.com').replace(/\/$/, '');
+export const SITE_URL = (process.env.EXPO_PUBLIC_SITE_URL ?? 'https://kwetuly.com').replace(/\/$/, '');

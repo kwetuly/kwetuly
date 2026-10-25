@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, useLocalSearchParams } from 'expo-router';
-import { ALL_SECTIONS, MENU } from '@rafrika/shared';
+import { ALL_SECTIONS, MENU } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { Muted, ScreenState } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';

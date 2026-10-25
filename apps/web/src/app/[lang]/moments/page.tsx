@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMeta({ path: '/moments', title: t.moments.title, description: t.moments.subtitle });
 }
 
-// Public gallery: only items the traveller agreed to share, that Rafrika featured, and that
+// Public gallery: only items the traveller agreed to share, that Kwetuly featured, and that
 // nobody in the chat objected to (enforced by the database, not just this page).
 export default async function MomentsPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);

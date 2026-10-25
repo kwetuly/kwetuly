@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { EVENTS, type AnalyticsEvent, type AnalyticsProps } from '@rafrika/shared';
+import { EVENTS, type AnalyticsEvent, type AnalyticsProps } from '@kwetuly/shared';
 import { analyticsEnabled, loadAnalytics, track } from '@/lib/analytics';
 
 /**

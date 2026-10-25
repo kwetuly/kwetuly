@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
-import { PLACE_COLUMNS, PLACE_KINDS, type Place } from '@rafrika/shared';
+import { PLACE_COLUMNS, PLACE_KINDS, type Place } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';

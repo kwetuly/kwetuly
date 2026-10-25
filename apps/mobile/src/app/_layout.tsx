@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SystemUI from 'expo-system-ui';
 import { OfflineBanner } from '@/components/offline-banner';
 import { PushSetup } from '@/components/push-setup';
-import { EVENTS, UX_TEXT } from '@rafrika/shared';
+import { EVENTS, UX_TEXT } from '@kwetuly/shared';
 import { Button } from '@/components/ui';
 import { track, useScreenTracking } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
@@ -13,7 +13,7 @@ import { I18nProvider, initialLocale, useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
 // Always the website's light look, whatever the phone's dark-mode setting.
-const rafrikaTheme: Theme = {
+const kwetulyTheme: Theme = {
   ...DefaultTheme,
   colors: { ...DefaultTheme.colors, primary: brand.leafDark, background: colors.background, card: colors.card, text: colors.label, border: colors.separator },
 };
@@ -54,7 +54,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
-          <ThemeProvider value={rafrikaTheme}>
+          <ThemeProvider value={kwetulyTheme}>
             <RootStack />
             <OfflineBanner />
             <PushSetup />

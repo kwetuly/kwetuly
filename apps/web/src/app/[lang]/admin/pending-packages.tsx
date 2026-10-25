@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@rafrika/shared';
+import { PACKAGE_COLUMNS, PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';

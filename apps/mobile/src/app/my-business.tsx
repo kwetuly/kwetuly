@@ -4,7 +4,7 @@ import { Redirect, Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUSINESS_TYPES, REGIONS, formatUsd, hasValidBadge, type BusinessType } from '@rafrika/shared';
+import { BUSINESS_TYPES, REGIONS, formatUsd, hasValidBadge, type BusinessType } from '@kwetuly/shared';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';

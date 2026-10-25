@@ -22,7 +22,7 @@ export default async function AdminMediaPage() {
         <Link href={`/${locale}/moments`} className="btn-outline ml-auto px-4 py-2 text-sm">View public gallery →</Link>
       </div>
       <p className="mt-2 text-muted">
-        Only items whose sender ticked “Rafrika may use this publicly”. If anyone in the chat objects, or the sender stops
+        Only items whose sender ticked “Kwetuly may use this publicly”. If anyone in the chat objects, or the sender stops
         sharing, the item disappears from the site automatically.
       </p>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>

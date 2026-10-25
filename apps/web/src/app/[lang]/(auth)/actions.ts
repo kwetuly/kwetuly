@@ -81,7 +81,7 @@ export async function completeOnboarding(formData: FormData) {
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
   const phone = normalizePhone(String(formData.get('phone') ?? ''));
-  // New accounts land here before they can use Rafrika (requireUser sends them back until onboarding
+  // New accounts land here before they can use Kwetuly (requireUser sends them back until onboarding
   // is done). complete_onboarding checks the invite code in the database while the gate is on.
   const inviteCode = inviteCodeInput(formData.get('invite_code'));
   if (!phone) redirect(`/${locale}/welcome?role=${role}&error=phone`);

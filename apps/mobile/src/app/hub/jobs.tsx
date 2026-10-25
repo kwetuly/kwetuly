@@ -1,7 +1,7 @@
 import { FlatList, RefreshControl, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { HUB_MENU, JOB_ROLES } from '@rafrika/shared';
+import { HUB_MENU, JOB_ROLES } from '@kwetuly/shared';
 import { Badge, Card, Muted, ScreenState } from '@/components/ui';
 import { listJobs } from '@/lib/api-more';
 import { useI18n } from '@/lib/i18n';

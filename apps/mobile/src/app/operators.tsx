@@ -6,7 +6,7 @@ import { listOperators } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
-// Tour operators whose tours Rafrika lists.
+// Tour operators whose tours Kwetuly lists.
 export default function OperatorsScreen() {
   const { t } = useI18n();
   const tt = t.tours;

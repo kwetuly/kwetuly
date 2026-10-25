@@ -8,7 +8,7 @@ import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
-// Rafrika AI concierge: the same service as the website (rafrika.com/api/concierge), answers stream in.
+// Kwetuly AI concierge: the same service as the website (kwetuly.com/api/concierge), answers stream in.
 export default function AssistantScreen() {
   const { t } = useI18n();
   const c = t.concierge;

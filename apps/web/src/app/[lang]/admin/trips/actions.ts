@@ -16,13 +16,14 @@ import {
   tourReadiness,
   type Meal,
   type Tour,
-} from '@rafrika/shared';
+  normalizeOperatedBy,
+} from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
 const STATUSES = ['draft', 'published', 'archived'] as const;
-const OPERATED = ['partner', 'rafrika', 'guide'] as const;
+const OPERATED = ['partner', 'kwetuly', 'guide'] as const;
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'TZS'] as const;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -71,7 +72,7 @@ function httpsUrl(value: string | null): string | null {
   }
 }
 
-// Cover photos are shown with next/image, which only loads Unsplash and Rafrika's own storage.
+// Cover photos are shown with next/image, which only loads Unsplash and Kwetuly's own storage.
 function coverUrl(value: string | null): string | null {
   const url = httpsUrl(value);
   if (!url) return null;
@@ -218,7 +219,7 @@ export async function saveTour(formData: FormData) {
     source_url: sourceUrl,
     source_checked_at: sourceUrl ? sourceChecked : null,
     needs_review: formData.get('needs_review') === 'on',
-    operated_by: oneOf(r.text('operated_by', 20), OPERATED) ?? 'partner',
+    operated_by: oneOf(normalizeOperatedBy(r.text('operated_by', 20)), OPERATED) ?? 'partner',
     operator_id: /^[0-9a-f-]{36}$/.test(r.text('operator_id', 40)) ? r.text('operator_id', 40) : null,
     promo_text: r.nullable('promo_text', 200),
     sort_order: r.int('sort_order', 0, 10000) ?? 100,

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES } from '@kwetuly/shared';
 import { GuideCard } from '@/components/cards';
 import { Chip, ScreenState } from '@/components/ui';
 import { listGuides, type GuideFilters } from '@/lib/api';

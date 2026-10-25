@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS } from '@rafrika/shared';
+import { CALL_TOPICS } from '@kwetuly/shared';
 import { GuideCard } from '@/components/cards';
 import { Card, Chip, Muted, ScreenState } from '@/components/ui';
 import { listCallGuides } from '@/lib/api';

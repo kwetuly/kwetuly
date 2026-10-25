@@ -4,7 +4,7 @@ import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Field, FormMessage, Muted } from '@/components/ui';
 import { contactGuide } from '@/lib/api-more';
 import { track } from '@/lib/analytics';
-import { EVENTS } from '@rafrika/shared';
+import { EVENTS } from '@kwetuly/shared';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';

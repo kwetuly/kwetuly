@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { approxTzs, formatUsd } from '@rafrika/shared';
+import { approxTzs, formatUsd } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { DepositState } from '@/lib/requests';

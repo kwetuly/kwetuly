@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { Redirect, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { MERCH_ENABLED, orderMessage, type OrderMode } from '@rafrika/shared';
+import { MERCH_ENABLED, orderMessage, type OrderMode } from '@kwetuly/shared';
 import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, listProducts } from '@/lib/businesses';
@@ -13,7 +13,7 @@ import { brand, colors, radius, space, textSize } from '@/theme';
 
 const tzs = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
 
-// Rafrika t-shirts, caps and more, like /merch on the website. Orders go to the Rafrika Shop listing.
+// Kwetuly t-shirts, caps and more, like /merch on the website. Orders go to the Kwetuly Shop listing.
 // Hidden during the invite-only soft launch (MERCH_ENABLED in packages/shared/src/menu.ts), so an old
 // link or deep link lands on the home tab instead.
 export default function MerchRoute() {

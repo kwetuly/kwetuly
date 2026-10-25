@@ -134,7 +134,7 @@ export async function reviewJob(formData: FormData) {
   redirect(`/${locale}/admin#jobs`);
 }
 
-// Record that a deposit has been paid out to the guide or company (Rafrika pays out by hand for now).
+// Record that a deposit has been paid out to the guide or company (Kwetuly pays out by hand for now).
 export async function setPaidOut(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
@@ -212,7 +212,7 @@ export async function grantBadge(formData: FormData) {
   redirect(`/${locale}/admin#businesses`);
 }
 
-// The yearly badge fee in USD; empty means "ask Rafrika".
+// The yearly badge fee in USD; empty means "ask Kwetuly".
 export async function setBadgeFee(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;

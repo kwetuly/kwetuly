@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         }
         const final = await stream.finalMessage();
         if (final.stop_reason === 'refusal') {
-          controller.enqueue(encoder.encode('\n\nI can’t help with that here. A Rafrika guide can: /en/calls'));
+          controller.enqueue(encoder.encode('\n\nI can’t help with that here. A Kwetuly guide can: /en/calls'));
         }
       } catch (error) {
         console.error('Concierge error', error instanceof Anthropic.APIError ? error.status : error);

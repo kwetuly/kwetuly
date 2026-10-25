@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { approxTzs, formatUsd, hasRecordedCheck, type Dictionary, type Locale } from '@rafrika/shared';
+import { approxTzs, formatUsd, hasRecordedCheck, type Dictionary, type Locale } from '@kwetuly/shared';
 import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
 import { SignInPrompt } from '@/components/sign-in-prompt';

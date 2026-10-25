@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Glyph, type GlyphName } from '@/components/glyph';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LOCALES, PHOTOS } from '@rafrika/shared';
+import { LOCALES, PHOTOS } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { useI18n } from '@/lib/i18n';
 import { markIntroSeen } from '@/lib/intro';
@@ -106,7 +106,7 @@ export default function IntroScreen() {
                 <View style={{ gap: space.xs, marginBottom: space.sm }}>
                   <Text style={{ color: brand.gold, fontWeight: '700', fontSize: textSize.headline }}>{i.welcome}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <Text style={{ color: brand.onDark, fontWeight: '900', fontSize: textSize.hero, letterSpacing: -1 }}>Rafrika</Text>
+                    <Text style={{ color: brand.onDark, fontWeight: '900', fontSize: textSize.hero, letterSpacing: -1 }}>Kwetuly</Text>
                     <View style={{ width: 12, height: 12, borderRadius: radius.full, backgroundColor: brand.gold, marginTop: 10, marginLeft: 4 }} />
                   </View>
                   <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: textSize.body }}>{i.tagline}</Text>

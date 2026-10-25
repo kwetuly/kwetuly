@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus, UsersRound } from 'lucide-react';
-import { GUIDE_SPECIALTIES } from '@rafrika/shared';
+import { GUIDE_SPECIALTIES } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { PhotoHero } from '@/components/photo-hero';

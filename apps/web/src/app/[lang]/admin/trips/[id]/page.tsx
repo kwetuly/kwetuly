@@ -20,7 +20,8 @@ import {
   tourReadiness,
   type Tour,
   type TourStop,
-} from '@rafrika/shared';
+  normalizeOperatedBy,
+} from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -175,7 +176,7 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
             <Field label="Cover photo: upload">
               <DirectUpload name="cover_upload" bucket="avatars" userId={user.id} prefix="tour-cover" accept="image/jpeg,image/png,image/webp" labels={{ uploading: 'Uploading…', uploaded: 'Uploaded. Save to use it.', error: 'Upload failed' }} />
             </Field>
-            <Field label="…or photo URL (Unsplash or Rafrika storage)"><input name="cover_url" type="url" defaultValue={tour.cover_url ?? ''} className="field py-2" /></Field>
+            <Field label="…or photo URL (Unsplash or Kwetuly storage)"><input name="cover_url" type="url" defaultValue={tour.cover_url ?? ''} className="field py-2" /></Field>
           </Grid>
           {!isNew && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -234,10 +235,10 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
               </select>
             </Field>
             <Field label="Who runs it">
-              <select name="operated_by" defaultValue={tour.operated_by} className="field py-2">
+              <select name="operated_by" defaultValue={normalizeOperatedBy(tour.operated_by)} className="field py-2">
                 <option value="partner">Licensed partner operator</option>
-                <option value="rafrika">Rafrika</option>
-                <option value="guide">A Rafrika guide</option>
+                <option value="kwetuly">Kwetuly</option>
+                <option value="guide">A Kwetuly guide</option>
               </select>
             </Field>
             <Field label="Operator’s own page or enquiry link"><input name="source_url" type="url" defaultValue={tour.source_url ?? ''} className="field py-2" /></Field>

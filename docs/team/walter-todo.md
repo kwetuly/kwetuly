@@ -1,4 +1,4 @@
-Rafrika - Walter's to-do (2026-10-16)
+Kwetuly - Walter's to-do (2026-10-16)
 
 TODAY (about 1 hour)
 1. GitHub: create a free account at github.com if you don't have one, then tell Claude. Claude creates the private repo and uploads the code; you only sign in once.
@@ -10,7 +10,7 @@ TODAY (about 1 hour)
    link. Without it, password reset is switched off. Set it only in Vercel and in .env.local, never in
    chat or in the code.
 5. Resend: create an account at resend.com (free) for sign-up emails. Tell Claude when done.
-6. Domain: confirm you own rafrika.com (or the domain you want) and where it is registered.
+6. Domain: confirm you own kwetuly.com (or the domain you want) and where it is registered.
 
 THIS WEEK
 7. Company details: legal name, BRELA number, TIN, address, and a privacy contact person.

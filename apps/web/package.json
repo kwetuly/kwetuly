@@ -1,5 +1,5 @@
 {
-  "name": "@rafrika/web",
+  "name": "@kwetuly/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
-    "@rafrika/shared": "*",
+    "@kwetuly/shared": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.3",
     "lucide-react": "^1.55.0",

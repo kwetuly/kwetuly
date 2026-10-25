@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { BUSINESS_TYPES, REGIONS } from '@rafrika/shared';
+import { BUSINESS_TYPES, REGIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -60,7 +60,7 @@ export async function saveBusiness(formData: FormData) {
     : await supabase.from('providers').insert({ ...row, owner_id: user.id }).select('id').single<{ id: string }>();
   if (saved.error || !saved.data) redirect(`${back}?error=save#business`);
 
-  // WhatsApp number and licence stay private: only the owner and Rafrika can read them.
+  // WhatsApp number and licence stay private: only the owner and Kwetuly can read them.
   const privateRow: Record<string, string> = { provider_id: saved.data.id, whatsapp_number: whatsapp };
   if (licence) privateRow.licence_document_path = licence;
   const { error } = await supabase.from('provider_private').upsert(privateRow);
@@ -70,7 +70,7 @@ export async function saveBusiness(formData: FormData) {
   redirect(`${back}?saved=1#business`);
 }
 
-// The owner asks for the paid badge check; Rafrika then arranges the check and the payment.
+// The owner asks for the paid badge check; Kwetuly then arranges the check and the payment.
 export async function requestBadge(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
@@ -84,7 +84,7 @@ export async function requestBadge(formData: FormData) {
   redirect(`/${locale}/dashboard#badge`);
 }
 
-// The business records a sale that came with a Rafrika referral code. The database fills in the guide.
+// The business records a sale that came with a Kwetuly referral code. The database fills in the guide.
 export async function reportSale(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;

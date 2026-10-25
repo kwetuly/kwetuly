@@ -51,7 +51,7 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
   }
 
   let state = payment.status;
-  // Failed orders are asked about too: one Rafrika gave up on may still have been paid at Selcom,
+  // Failed orders are asked about too: one Kwetuly gave up on may still have been paid at Selcom,
   // and the Edge Function then holds it for review.
   if (state === 'pending' || state === 'failed') {
     const result = await callPayments({ action: 'status', order_id: orderId }, session.session?.access_token).catch(() => ({ status: 'pending' }));

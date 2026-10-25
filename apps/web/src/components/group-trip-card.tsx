@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CalendarDays, Languages, MapPin, Users } from 'lucide-react';
-import { formatUsd } from '@rafrika/shared';
+import { formatUsd } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { peopleIn, spotsLeft, type GroupTrip } from '@/lib/groups';

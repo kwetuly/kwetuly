@@ -1,4 +1,4 @@
-import { GUIDE_EXPERTISE } from '@rafrika/shared';
+import { GUIDE_EXPERTISE } from '@kwetuly/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -435,7 +435,7 @@ function maskPhone(phone: string | null) {
   return digits.length < 8 ? '…' : `${digits.slice(0, 4)}XX…${digits.slice(-3)}`;
 }
 
-// Deposits paid through Selcom. Rafrika pays them out to the guide or company, then ticks them here.
+// Deposits paid through Selcom. Kwetuly pays them out to the guide or company, then ticks them here.
 async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
   const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;

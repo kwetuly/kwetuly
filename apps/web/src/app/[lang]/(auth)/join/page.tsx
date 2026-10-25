@@ -6,7 +6,7 @@ import type { Locale } from '@/i18n/config';
 import { inviteRequired } from '@/lib/invite';
 import { JoinForm as JoinFields } from './join-form';
 import { SocialSignIn } from '@/components/social-sign-in';
-import { EVENTS } from '@rafrika/shared';
+import { EVENTS } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 
 export async function generateMetadata(): Promise<Metadata> {

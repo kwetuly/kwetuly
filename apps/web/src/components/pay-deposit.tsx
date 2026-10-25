@@ -12,9 +12,9 @@ type Props = {
   totalUsd: number;
   percent: number;
   paid: boolean;
-  /** Selcom reported a payment that Rafrika is checking by hand: say so, never offer to pay again. */
+  /** Selcom reported a payment that Kwetuly is checking by hand: say so, never offer to pay again. */
   review?: boolean;
-  /** Set when paid: whether Rafrika still holds the deposit or has paid the guide. */
+  /** Set when paid: whether Kwetuly still holds the deposit or has paid the guide. */
   paidOut?: boolean;
   /** Page to come back to if starting the payment fails. */
   back: string;

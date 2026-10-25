@@ -20,7 +20,7 @@ type AuthClient = { auth: Pick<SupabaseClient['auth'], 'getClaims'> };
 // `openssl rand -base64 48`), set in apps/web/.env.local and in the hosting environment. Never commit
 // it and never prefix it with NEXT_PUBLIC_. Without it, password reset is refused (fails closed).
 // Changing it invalidates reset links that are in progress, nothing else.
-export const RECOVERY_COOKIE = 'rafrika_recovery';
+export const RECOVERY_COOKIE = 'kwetuly_recovery';
 export const RECOVERY_COOKIE_MAX_AGE = 15 * 60; // seconds
 
 export const recoveryCookieOptions = {
@@ -43,7 +43,7 @@ function secret(): string | null {
 }
 
 function mac(key: string, userId: string, sessionId: string, expires: number): string {
-  return createHmac('sha256', key).update(`rafrika-recovery:v1:${userId}:${sessionId}:${expires}`).digest('base64url');
+  return createHmac('sha256', key).update(`kwetuly-recovery:v1:${userId}:${sessionId}:${expires}`).digest('base64url');
 }
 
 /** Cookie value for a session that a reset link just created, or null when the secret is not set. */

@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return pageMeta({ path: '/news', title: t.extras.newsTitle, description: t.extras.newsSubtitle });
 }
 
-// News for travellers. Rafrika writes it in /admin/news; guides' Field news stays in the Hub.
+// News for travellers. Kwetuly writes it in /admin/news; guides' Field news stays in the Hub.
 export default async function NewsPage() {
   const [t, locale, news] = await Promise.all([getDictionary(), getLocale(), listTravelNews()]);
   const x = t.extras;

@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { X } from 'lucide-react';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, ALL_SECTIONS, REGIONS } from '@rafrika/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, ALL_SECTIONS, REGIONS } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { GuideSearch } from '@/components/guide-search';

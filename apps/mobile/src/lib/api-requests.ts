@@ -60,7 +60,7 @@ function check(error: { message: string } | null) {
 }
 
 export const today = () => new Date().toISOString().slice(0, 10);
-export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Rafrika partner';
+export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Kwetuly partner';
 
 export async function listMyRequests(userId: string): Promise<TripRequest[]> {
   const { data, error } = await supabase.from('trip_requests').select(REQUEST_COLUMNS).eq('traveler_id', userId).order('created_at', { ascending: false });
@@ -167,10 +167,10 @@ export async function paymentsEnabled(): Promise<boolean> {
   return (await paymentsConfig()).enabled;
 }
 
-/** `review`: Selcom reported a payment Rafrika must check by hand; treat it as "being checked", never as unpaid. */
+/** `review`: Selcom reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
 export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
-/** Where a deposit is: not paid, being checked, held by Rafrika, or paid to the guide. */
+/** Where a deposit is: not paid, being checked, held by Kwetuly, or paid to the guide. */
 export async function depositState(column: 'trip_offer_id' | 'group_member_id', id: string): Promise<DepositState> {
   const { data } = await supabase
     .from('payments')
@@ -212,7 +212,7 @@ export async function lowestOffers(requestIds: string[]): Promise<Record<string,
   return lowest;
 }
 
-/** Deposits paid to this guide or company, or being checked by Rafrika (newest first), for the Guide Hub ledger. */
+/** Deposits paid to this guide or company, or being checked by Kwetuly (newest first), for the Guide Hub ledger. */
 export async function listMyDeposits(userId: string) {
   const { data, error } = await supabase
     .from('payments')

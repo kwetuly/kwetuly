@@ -7,7 +7,7 @@ import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { colors, space, textSize } from '@/theme';
 
-// For travel agents and tour companies: why work with Rafrika, and the partner application.
+// For travel agents and tour companies: why work with Kwetuly, and the partner application.
 export default function PartnersScreen() {
   const { t, locale } = useI18n();
   const p = t.partners;

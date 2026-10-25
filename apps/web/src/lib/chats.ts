@@ -62,7 +62,7 @@ export async function listMyChats(): Promise<(GroupChat & { unread: boolean })[]
 
 export type Moment = Pick<ChatMessage, 'id' | 'sender_name' | 'body' | 'media_path' | 'media_type' | 'created_at'> & { media_url: string | null };
 
-// Items travellers agreed to share and Rafrika featured, newest first, for the public gallery.
+// Items travellers agreed to share and Kwetuly featured, newest first, for the public gallery.
 export async function listMoments(): Promise<Moment[]> {
   'use cache';
   cacheTag('moments');

@@ -1,6 +1,6 @@
 import { Linking, Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
-import { PLACE_KINDS, altitudeProfile, overnightFor, type ItineraryDay, type Place, type TourStop } from '@rafrika/shared';
+import { PLACE_KINDS, altitudeProfile, overnightFor, type ItineraryDay, type Place, type TourStop } from '@kwetuly/shared';
 import { Card, Muted, SectionTitle } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, radius, space, textSize } from '@/theme';

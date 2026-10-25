@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MENU } from '@rafrika/shared';
+import { MENU } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { GuideSearch } from '@/components/guide-search';
 import { RecentlyViewed } from '@/components/recently-viewed';
@@ -20,8 +20,8 @@ const STATS_FROM = { guides: 10, reviews: 25 };
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
-  const meta = await pageMeta({ path: '', title: `Rafrika — ${t.home.title}`, description: t.home.subtitle });
-  return { ...meta, title: { absolute: `Rafrika — ${t.home.title}` } };
+  const meta = await pageMeta({ path: '', title: `Kwetuly — ${t.home.title}`, description: t.home.subtitle });
+  return { ...meta, title: { absolute: `Kwetuly — ${t.home.title}` } };
 }
 
 export default async function HomePage() {
@@ -32,11 +32,11 @@ export default async function HomePage() {
     <>
       <JsonLd
         data={[
-          { '@context': 'https://schema.org', '@type': 'Organization', name: 'Rafrika', url: SITE_URL, logo: `${SITE_URL}/icon` },
+          { '@context': 'https://schema.org', '@type': 'Organization', name: 'Kwetuly', url: SITE_URL, logo: `${SITE_URL}/icon` },
           {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
-            name: 'Rafrika',
+            name: 'Kwetuly',
             url: `${SITE_URL}/${locale}`,
             inLanguage: locale,
             potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/${locale}/tours?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
@@ -125,7 +125,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Why Rafrika */}
+      {/* Why Kwetuly */}
       {/* Plain text, no icon cards: a short list reads faster. */}
       <section className="border-y border-line bg-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 lg:grid-cols-[1fr_2fr]">

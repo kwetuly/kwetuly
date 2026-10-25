@@ -1,9 +1,9 @@
 import { lang } from 'next/root-params';
 import { notFound } from 'next/navigation';
-import { DICTIONARIES, type Dictionary } from '@rafrika/shared';
+import { DICTIONARIES, type Dictionary } from '@kwetuly/shared';
 import { hasLocale, type Locale } from './config';
 
-// The text lives in @rafrika/shared so the website and the mobile app use the same translations.
+// The text lives in @kwetuly/shared so the website and the mobile app use the same translations.
 export type { Dictionary };
 
 export async function getLocale(): Promise<Locale> {

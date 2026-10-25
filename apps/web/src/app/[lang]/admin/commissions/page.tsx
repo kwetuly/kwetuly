@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { commissionSplit } from '@rafrika/shared';
+import { commissionSplit } from '@kwetuly/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -15,7 +15,7 @@ type Business = { id: string; business_name: string; base_region: string };
 type Sale = { id: string; provider_id: string; code: string; guide_id: string | null; sale_date: string; amount_tzs: number; status: string; guides: { display_name: string } | null };
 
 // Admin only: each business's commission agreement, and a monthly statement of referral sales
-// with what each business owes Rafrika and the guides' shares.
+// with what each business owes Kwetuly and the guides' shares.
 export default async function CommissionsPage({ searchParams }: PageProps<'/[lang]/admin/commissions'>) {
   const locale = await getLocale();
   return (
@@ -64,9 +64,9 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
       const split = rows.reduce(
         (acc, s) => {
           const one = commissionSplit(Number(s.amount_tzs), agreement);
-          return { rafrika: acc.rafrika + one.rafrika, guide: acc.guide + one.guide };
+          return { kwetuly: acc.kwetuly + one.kwetuly, guide: acc.guide + one.guide };
         },
-        { rafrika: 0, guide: 0 },
+        { kwetuly: 0, guide: 0 },
       );
       return { business: b, rows, agreement, total, split };
     })
@@ -80,7 +80,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
 
   return (
     <>
-      {params.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">Could not save. Rafrika’s share plus the guide’s share must be 100% or less.</p>}
+      {params.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">Could not save. Kwetuly’s share plus the guide’s share must be 100% or less.</p>}
 
       <section className="mt-8">
         <div className="flex flex-wrap items-center gap-3">
@@ -97,7 +97,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                 {rows.length} sales · TSh {money.format(total)} ·{' '}
                 {agreement ? (
                   <>
-                    Rafrika {Number(agreement.rafrika_pct)}% = <strong>TSh {money.format(split.rafrika)}</strong> · guides {Number(agreement.guide_pct)}% = <strong>TSh {money.format(split.guide)}</strong>
+                    Kwetuly {Number(agreement.rafrika_pct)}% = <strong>TSh {money.format(split.kwetuly)}</strong> · guides {Number(agreement.guide_pct)}% = <strong>TSh {money.format(split.guide)}</strong>
                   </>
                 ) : (
                   <span className="text-red-800">no agreement recorded</span>
@@ -149,7 +149,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                     {b.business_name} <span className="font-normal text-muted">· {b.base_region}</span>
                   </p>
                   <label className="block">
-                    <span className="label">Rafrika %</span>
+                    <span className="label">Kwetuly %</span>
                     <input className="field" name="rafrika_pct" type="number" min={0} max={100} step="0.5" defaultValue={a?.rafrika_pct ?? ''} />
                   </label>
                   <label className="block">

@@ -17,7 +17,7 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { EVENTS, approxTzs, formatUsd } from '@rafrika/shared';
+import { EVENTS, approxTzs, formatUsd } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';

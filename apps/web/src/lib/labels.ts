@@ -1,4 +1,4 @@
-import { CALL_TOPICS, JOB_ROLES } from '@rafrika/shared';
+import { CALL_TOPICS, JOB_ROLES } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 
 export type CallStatus = 'requested' | 'accepted' | 'declined' | 'completed' | 'cancelled';

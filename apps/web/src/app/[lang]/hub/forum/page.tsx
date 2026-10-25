@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { MessagesSquare, TriangleAlert } from 'lucide-react';
-import { REGIONS } from '@rafrika/shared';
+import { REGIONS } from '@kwetuly/shared';
 import { hubLabel } from '@/lib/menu';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';

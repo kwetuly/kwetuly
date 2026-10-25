@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { FlatList, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ACCOMMODATION_LEVELS, TOUR_DURATIONS, TOUR_GROUP_TYPES, TOUR_THEMES, TOUR_TYPES, TRAVEL_STYLES, filterTours, readTourFilters, type TourFilters } from '@rafrika/shared';
+import { ACCOMMODATION_LEVELS, TOUR_DURATIONS, TOUR_GROUP_TYPES, TOUR_THEMES, TOUR_TYPES, TRAVEL_STYLES, filterTours, readTourFilters, type TourFilters } from '@kwetuly/shared';
 import { GroupTripCard, TourCard } from '@/components/cards';
 import { Button, Chip, ScreenState } from '@/components/ui';
 import { listGroupTrips, listSavedTourIds, listTours, type GroupTrip, type Tour } from '@/lib/api';

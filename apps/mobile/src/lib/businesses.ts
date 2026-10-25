@@ -1,8 +1,8 @@
-import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@rafrika/shared';
+import { BUSINESS_COLUMNS, type Business, type BusinessType } from '@kwetuly/shared';
 import { supabase } from '@/lib/supabase';
 
 // Business listings, the same rules as the website: visitors see approved businesses; the owner's
-// WhatsApp number and licence live in provider_private, which only the owner and Rafrika can read.
+// WhatsApp number and licence live in provider_private, which only the owner and Kwetuly can read.
 
 function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);
@@ -128,7 +128,7 @@ export async function listBusinessSales(providerId: string): Promise<ReferralSal
   return (data ?? []) as ReferralSale[];
 }
 
-/** The business records a sale that came with a Rafrika code; the database fills in the guide. */
+/** The business records a sale that came with a Kwetuly code; the database fills in the guide. */
 export async function reportSale(providerId: string, code: string, amountTzs: number, note: string | null) {
   const { error } = await supabase.from('referral_sales').insert({ provider_id: providerId, code: code.trim().toUpperCase(), amount_tzs: Math.round(amountTzs), note });
   check(error);
@@ -161,7 +161,7 @@ export async function listTravelNews(): Promise<TravelNews[]> {
   return (data ?? []) as TravelNews[];
 }
 
-// Rafrika merchandise; orders go to the Rafrika Shop listing as an enquiry.
+// Kwetuly merchandise; orders go to the Kwetuly Shop listing as an enquiry.
 export type Product = { id: string; name: string; description: string | null; price_tzs: number | null; sizes: string[]; photo_url: string | null };
 
 export async function listProducts(): Promise<{ products: Product[]; shopId: string | null }> {

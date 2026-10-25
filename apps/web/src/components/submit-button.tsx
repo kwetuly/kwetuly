@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import type { ComponentProps } from 'react';
-import { UX_TEXT } from '@rafrika/shared';
+import { UX_TEXT } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 
 // A form's submit button that turns into a disabled "Sending…" while the server action runs, so

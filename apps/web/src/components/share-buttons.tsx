@@ -27,7 +27,7 @@ function Mark({ name }: { name: keyof typeof marks }) {
   );
 }
 
-// Share any Rafrika page: the phone's own share sheet (Instagram, TikTok, Messenger…) when the
+// Share any Kwetuly page: the phone's own share sheet (Instagram, TikTok, Messenger…) when the
 // browser supports it, plus direct links that work everywhere. `path` is the page path, e.g. /en/tours/x.
 export function ShareButtons({ path, title, text, labels, compact = false }: { path: string; title: string; text: string; labels: Labels; compact?: boolean }) {
   const [url, setUrl] = useState('');

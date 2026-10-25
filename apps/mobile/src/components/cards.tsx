@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@rafrika/shared';
+import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';

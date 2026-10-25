@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { orderMessage } from '@rafrika/shared';
+import { orderMessage } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';

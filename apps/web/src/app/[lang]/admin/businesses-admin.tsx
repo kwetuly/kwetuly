@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BADGE_CHECKS, BUSINESS_TYPES } from '@rafrika/shared';
+import { BADGE_CHECKS, BUSINESS_TYPES } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -65,7 +65,7 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
       <form action={setBadgeFee} className="card mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="locale" value={locale} />
         <label className="block">
-          <span className="label">Yearly badge fee in USD (empty = “ask Rafrika”)</span>
+          <span className="label">Yearly badge fee in USD (empty = “ask Kwetuly”)</span>
           <input className="field w-40" name="amount_usd" type="number" min={0} step="1" defaultValue={fee ?? ''} />
         </label>
         <button className="btn-outline px-4 py-2 text-sm">Save fee</button>

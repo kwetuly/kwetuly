@@ -10,12 +10,12 @@
 //   SELCOM_VENDOR, SELCOM_API_KEY, SELCOM_API_SECRET   from the Selcom merchant account
 //   SELCOM_LIVE      "1" for real money; anything else uses Selcom's test gateway
 //   USD_TZS_RATE     shillings per US dollar used to price deposits, e.g. "2600"
-//   SITE_URL         e.g. "https://rafrika.com" (default)
+//   SITE_URL         e.g. "https://kwetuly.com" (default)
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const env = (key: string, fallback = '') => Deno.env.get(key) ?? fallback;
-const SITE_URL = env('SITE_URL', 'https://rafrika.com').replace(/\/$/, '');
+const SITE_URL = env('SITE_URL', 'https://kwetuly.com').replace(/\/$/, '');
 const API = `https://${env('SELCOM_LIVE') === '1' ? 'apigw' : 'apigwtest'}.selcommobile.com/v1/`;
 const RATE = Number(env('USD_TZS_RATE'));
 const RATE_SOURCE = 'env:USD_TZS_RATE';
@@ -270,8 +270,8 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
     const result = await selcom('checkout/create-order-minimal', 'POST', {
       vendor: env('SELCOM_VENDOR'),
       order_id: orderId,
-      buyer_email: user.email ?? 'payments@rafrika.com',
-      buyer_name: (profile?.full_name ?? 'Rafrika traveller').slice(0, 60),
+      buyer_email: user.email ?? 'payments@kwetuly.com',
+      buyer_name: (profile?.full_name ?? 'Kwetuly traveller').slice(0, 60),
       buyer_phone: phone,
       amount: tzs,
       currency: 'TZS',
@@ -280,7 +280,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, kind: s
       cancel_url: btoa(`${SITE_URL}/${lang}/payments/return?order=${orderId}&cancelled=1`),
       webhook: btoa(`${env('SUPABASE_URL')}/functions/v1/payments`),
       buyer_remarks: order.description.slice(0, 100),
-      merchant_remarks: 'Rafrika deposit',
+      merchant_remarks: 'Kwetuly deposit',
       no_of_items: 1,
     });
     const encoded = result.data?.[0]?.payment_gateway_url;

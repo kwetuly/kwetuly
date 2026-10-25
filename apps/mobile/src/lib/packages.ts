@@ -1,4 +1,4 @@
-import { PACKAGE_COLUMNS, type GuidePackage, type PackageKind } from '@rafrika/shared';
+import { PACKAGE_COLUMNS, type GuidePackage, type PackageKind } from '@kwetuly/shared';
 import { supabase } from '@/lib/supabase';
 
 // Guide packages, the same rules as the website: visitors only get approved packages of approved

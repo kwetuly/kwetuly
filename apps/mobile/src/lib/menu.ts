@@ -1,5 +1,5 @@
 import type { Href } from 'expo-router';
-import { ALL_SECTIONS, type MenuItem, type MenuSection } from '@rafrika/shared';
+import { ALL_SECTIONS, type MenuItem, type MenuSection } from '@kwetuly/shared';
 
 // Turns a website menu link into the matching app screen, so the app offers the same sections as the site.
 export function appHref(section: MenuSection, item: MenuItem): Href {
