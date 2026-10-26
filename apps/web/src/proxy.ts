@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { updateSession } from '@/lib/supabase/proxy';
+import { hasPreviewAccess, PREVIEW_COOKIE, siteClosed } from '@/lib/coming-soon';
 
 function preferredLocale(request: NextRequest): Locale {
   const saved = request.cookies.get('lang')?.value;
@@ -17,9 +18,20 @@ function preferredLocale(request: NextRequest): Locale {
   return best && hasLocale(best) ? best : defaultLocale;
 }
 
+// Pages a visitor can open while the site is closed (see src/lib/coming-soon.ts).
+const OPEN_WHILE_CLOSED = ['/coming-soon', '/team-access'];
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const firstSegment = pathname.split('/')[1] ?? '';
+
+  if (siteClosed() && !OPEN_WHILE_CLOSED.includes(pathname) && !(await hasPreviewAccess(request.cookies.get(PREVIEW_COOKIE)?.value))) {
+    const response = NextResponse.rewrite(new URL('/coming-soon', request.url));
+    response.headers.set('Cache-Control', 'private, no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  }
+  if (OPEN_WHILE_CLOSED.includes(pathname)) return NextResponse.next();
 
   // Icons, robots.txt and sitemap.xml are excluded by the matcher below so they are never redirected.
   // Pages live under /en/..., /sw/..., /fr/... and so on; send everything else to the visitor's language.
