@@ -49,9 +49,9 @@ export function isSignUpInviteError(error: { message?: string; code?: string; st
 // No 0/O or 1/I/L, so codes read out over the phone survive. 12 characters ≈ 60 bits.
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
-/** A new random invite code, e.g. RAF-7KQM-X2PD-9WTE. Shown to the admin once, then stored hashed. */
+/** A new random invite code, e.g. KWE-7KQM-X2PD-9WTE. Shown to the admin once, then stored hashed. */
 export function generateInviteCode(): string {
   const bytes = randomBytes(12);
   const chars = Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('');
-  return `RAF-${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8, 12)}`;
+  return `KWE-${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8, 12)}`;
 }
