@@ -1,10 +1,11 @@
 import { ScrollView, Text } from 'react-native';
 import { Stack } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Muted, ScreenState } from '@/components/ui';
 import { listTravelNews } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
+import { openExternal } from '@/lib/open-external';
+import { safeExternalUrl } from '@kwetuly/shared';
 import { brand, colors, space, textSize } from '@/theme';
 
 // News for travellers, like /news on the website. Guides read Field news in the Hub.
@@ -27,8 +28,8 @@ export default function NewsScreen() {
           </Text>
           <Text selectable style={{ color: colors.label, fontWeight: '800', fontSize: textSize.headline }}>{n.title}</Text>
           <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{n.body}</Text>
-          {n.source_url && (
-            <Button title={`${x.newsSource}: ${n.source_name ?? new URL(n.source_url).hostname}`} variant="outline" onPress={() => WebBrowser.openBrowserAsync(n.source_url!)} />
+          {safeExternalUrl(n.source_url) && (
+            <Button title={`${x.newsSource}: ${n.source_name ?? new URL(safeExternalUrl(n.source_url)!).hostname}`} variant="outline" onPress={() => openExternal(n.source_url, { inApp: true })} />
           )}
         </Card>
       ))}

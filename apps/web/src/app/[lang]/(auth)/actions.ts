@@ -7,7 +7,7 @@ import { defaultLocale, hasLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
 import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
 import { inviteCodeInput, inviteRequired, isInviteError, isSignUpInviteError } from '@/lib/invite';
-import { normalizePhone } from '@/lib/phone';
+import { phoneFromForm } from '@/lib/phone';
 import { RECOVERY_COOKIE, recoveryUserId } from '@/lib/recovery';
 import { safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
@@ -19,7 +19,7 @@ function localeFrom(formData: FormData) {
 
 const SIGNUP_ROLES = ['traveler', 'guide', 'provider'] as const;
 
-export type SignUpState = { error: 'invite' | 'phone' | 'name' | 'other'; role: string; fullName: string; phone: string; email: string } | null;
+export type SignUpState = { error: 'invite' | 'phone' | 'name' | 'other'; role: string; fullName: string; phone: string; phoneCountry: string; email: string } | null;
 
 // Used with useActionState: a refused sign-up comes back as state, so the form keeps the name, phone
 // and email the person typed (never the password or invite code) and nothing personal goes in the URL.
@@ -30,9 +30,9 @@ export async function signUp(_previous: SignUpState, formData: FormData): Promis
   const fullName = String(formData.get('full_name') ?? '').trim();
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
-  const phoneInput = String(formData.get('phone') ?? '').trim();
-  const phone = normalizePhone(phoneInput);
-  const keep = { role, fullName: fullName.slice(0, 120), phone: phoneInput.slice(0, 40), email: email.slice(0, 320) };
+  // The number as typed plus the country picked next to it, saved as one international number.
+  const { input: phoneInput, country: phoneCountry, phone } = phoneFromForm(formData);
+  const keep = { role, fullName: fullName.slice(0, 120), phone: phoneInput.slice(0, 40), phoneCountry, email: email.slice(0, 320) };
 
   // Invite-only soft launch: the database redeems the code when the account is created
   // (handle_new_user). A wrong code is refused there, so no account is created and no email is sent.
@@ -71,7 +71,8 @@ export async function signInWithProvider(formData: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: providerValue as SocialProvider,
-    options: { redirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(next)}` },
+    // `provider` lets /auth/confirm name the provider if it refuses the sign-in (e.g. no email shared).
+    options: { redirectTo: `${SITE_URL}/auth/confirm?next=${encodeURIComponent(next)}&provider=${providerValue}` },
   });
 
   if (error || !data.url) redirect(`/${locale}/login?error=1`);
@@ -83,7 +84,7 @@ export async function completeOnboarding(formData: FormData) {
   const locale = localeFrom(formData);
   const roleValue = String(formData.get('role') ?? '');
   const role = (SIGNUP_ROLES as readonly string[]).includes(roleValue) ? roleValue : 'traveler';
-  const phone = normalizePhone(String(formData.get('phone') ?? ''));
+  const { phone } = phoneFromForm(formData);
   // New accounts land here before they can use Kwetuly (requireUser sends them back until onboarding
   // is done). complete_onboarding checks the invite code in the database while the gate is on.
   const inviteCode = inviteCodeInput(formData.get('invite_code'));

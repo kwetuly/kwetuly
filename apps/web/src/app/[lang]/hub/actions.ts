@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { REGIONS } from '@kwetuly/shared';
+import { REGIONS, normaliseWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -62,13 +62,14 @@ export async function respondToCall(formData: FormData) {
   await hubUser(locale);
   const decision = formData.get('decision') === 'accept' ? 'accepted' : 'declined';
   const scheduled = field(formData, 'scheduled_at', 30);
-  const link = field(formData, 'meeting_link', 300);
+  const link = normaliseWebsite(field(formData, 'meeting_link', 1000));
 
   const update: Record<string, string | null> = { status: decision };
   if (decision === 'accepted') {
     const when = scheduled ? new Date(scheduled) : null;
     update.scheduled_at = when && !Number.isNaN(when.getTime()) ? when.toISOString() : null;
-    update.meeting_link = /^https:\/\/\S+$/i.test(link) ? link : null;
+    // Only a clean https link to a public host (the database checks the same form).
+    update.meeting_link = link.ok ? link.url : null;
   }
 
   // RLS only lets the guide who received the request update it.

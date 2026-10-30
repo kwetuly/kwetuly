@@ -14,3 +14,8 @@ export const DICTIONARIES: Record<Locale, Dictionary> = { en, sw, fr, it, de, pl
 export { UX_TEXT } from './ux';
 export { TRAVEL_LINKS } from './travel';
 export { LEGAL_PUBLISHED } from './legal';
+export { MENU_TEXT, type MenuText } from './menu-text';
+export type { PhoneText } from './phone';
+export { LINK_TEXT, linkTexts, linkErrorCode, linkErrorMessage, type LinkTexts, type LinkErrorCode } from './links';
+export { LIMIT_TEXT, limitTexts, isRateLimited, RATE_LIMIT_SQLSTATE, RATE_LIMIT_MESSAGE, type LimitTexts } from './limits';
+export { linkCheckText, type LinkCheckText } from './link-check';

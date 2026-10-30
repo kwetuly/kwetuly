@@ -8,6 +8,7 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getOperatorForViewer, listTours } from '@/lib/trips';
 import { today } from '@/lib/today';
+import { safeExternalUrl } from '@kwetuly/shared';
 import { OperatorLogo } from '@/components/operator-logo';
 import { TripCard } from '@/components/trip-card';
 
@@ -76,9 +77,9 @@ async function Operator({ params, t, locale }: { params: Promise<{ slug: string 
 
       <dl className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {op.location && <Fact icon={MapPin} label={tt.location}>{op.location}</Fact>}
-        {op.website && (
+        {safeExternalUrl(op.website) && (
           <Fact icon={Globe} label={tt.website}>
-            <a href={op.website} target="_blank" rel="noopener noreferrer nofollow" className={link}>{hostname(op.website)} <ExternalLink className="size-3.5" aria-hidden /></a>
+            <a href={safeExternalUrl(op.website)!} target="_blank" rel="noopener noreferrer nofollow" className={link}>{hostname(op.website!)} <ExternalLink className="size-3.5" aria-hidden /></a>
           </Fact>
         )}
         {(op.contact_email || op.contact_phone) && (
@@ -101,7 +102,9 @@ async function Operator({ params, t, locale }: { params: Promise<{ slug: string 
                 {op.tripadvisor_reviews != null && ` · ${op.tripadvisor_reviews.toLocaleString(locale)} ${tt.reviews}`}
               </span>
             )}
-            <a href={op.tripadvisor_url} target="_blank" rel="noopener noreferrer nofollow" className={link}>{tt.tripadvisor} <ExternalLink className="size-3.5" aria-hidden /></a>
+            {safeExternalUrl(op.tripadvisor_url) && (
+              <a href={safeExternalUrl(op.tripadvisor_url)!} target="_blank" rel="noopener noreferrer nofollow" className={link}>{tt.tripadvisor} <ExternalLink className="size-3.5" aria-hidden /></a>
+            )}
             {op.tripadvisor_checked_at && <span className="block text-xs font-normal text-muted">{tt.lastChecked}: {date.format(new Date(op.tripadvisor_checked_at))}</span>}
           </Fact>
         )}

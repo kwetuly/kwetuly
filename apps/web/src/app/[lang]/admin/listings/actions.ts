@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { BUSINESS_TYPES, REGIONS } from '@kwetuly/shared';
+import { BUSINESS_TYPES, REGIONS, normaliseWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -25,20 +25,23 @@ export async function saveListing(formData: FormData) {
   const id = text(formData, 'id', 40);
   const type = text(formData, 'business_type', 30);
   const region = text(formData, 'base_region', 80);
+  const back = `/${locale}/admin/listings`;
+  const websiteInput = text(formData, 'website', 1000);
+  const website = websiteInput ? normaliseWebsite(websiteInput) : null;
+  if (website && !website.ok) redirect(`${back}?error=website${id ? `#b-${id}` : ''}`);
   const row = {
     business_name: text(formData, 'business_name', 120),
     business_type: type,
     base_region: region,
     location: text(formData, 'location', 160) || null,
     story: text(formData, 'story', 4000) || null,
-    website: https(text(formData, 'website', 400)),
+    website: website?.ok ? website.url : null,
     source_url: https(text(formData, 'source_url', 400)),
     photo_url: https(text(formData, 'photo_url', 400)),
     is_sample: formData.get('is_sample') === 'on',
     verification_status: formData.get('published') === 'on' ? 'approved' : 'pending',
     is_available: true,
   };
-  const back = `/${locale}/admin/listings`;
   if (row.business_name.length < 2 || !BUSINESS_TYPES.some((b) => b.id === type) || !(REGIONS as readonly string[]).includes(region)) {
     redirect(`${back}?error=1`);
   }

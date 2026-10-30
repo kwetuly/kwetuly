@@ -51,6 +51,22 @@ export async function getMyBusiness(userId: string): Promise<MyBusiness | null> 
   return (data as unknown as MyBusiness | null) ?? null;
 }
 
+/**
+ * True when the person owns a listing Kwetuly has approved (not a sample). Anyone may then act as a
+ * business, whatever account type they picked at sign-up; the database checks the same.
+ */
+export async function hasApprovedBusiness(userId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('providers')
+    .select('id')
+    .eq('owner_id', userId)
+    .eq('verification_status', 'approved')
+    .eq('is_sample', false)
+    .limit(1);
+  check(error);
+  return (data ?? []).length > 0;
+}
+
 export async function listBusinessEnquiries(providerId: string) {
   const { data, error } = await supabase
     .from('leads')

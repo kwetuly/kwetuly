@@ -4,8 +4,9 @@ import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, isDisplayNameReservedError, isReservedDisplayName, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, type DocumentStatus } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
+import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
@@ -148,6 +149,15 @@ export default function ProfileEditScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
+  // The countries picked next to the phone and WhatsApp numbers (saved numbers say their own).
+  const [phoneCountries, setPhoneCountries] = useState(() => ({ phone: devicePhoneCountry(), whatsapp: devicePhoneCountry() }));
+  // A saved +255… number is shown the local way with its country; anything else as it was typed.
+  const loadPhones = (phone: string | null | undefined, whatsapp: string | null | undefined) => {
+    const a = splitPhone(phone, devicePhoneCountry());
+    const b = splitPhone(whatsapp, devicePhoneCountry());
+    setPhoneCountries({ phone: a.country, whatsapp: b.country });
+    return { phone: a.national, whatsapp_number: b.national };
+  };
 
   // Fill the form once the saved profile (or the account name and phone) arrives. Adjusting state
   // while rendering when the loaded data changes, instead of in an effect.
@@ -180,13 +190,12 @@ export default function ProfileEditScreen() {
         call_price_usd: g.call_price_usd?.toString() ?? '',
         call_minutes: [String(g.call_minutes)],
         call_topics: g.call_topics,
-        phone: p?.phone ?? '',
-        whatsapp_number: p?.whatsapp_number ?? '',
+        ...loadPhones(p?.phone, p?.whatsapp_number),
         registration_number: p?.registration_number ?? '',
         kinapa_tanapa_id: p?.kinapa_tanapa_id ?? '',
       });
     } else if (mine.isSuccess) {
-      setF((current) => ({ ...current, display_name: profile.data?.full_name ?? '', phone: profile.data?.phone ?? '', whatsapp_number: profile.data?.phone ?? '' }));
+      setF((current) => ({ ...current, display_name: profile.data?.full_name ?? '', ...loadPhones(profile.data?.phone, profile.data?.phone) }));
     }
   }
 
@@ -205,6 +214,21 @@ export default function ProfileEditScreen() {
     // Names that look like Kwetuly are kept for its own team (the database refuses them too).
     if (isReservedDisplayName(f.display_name)) {
       setMessage({ tone: 'error', text: t.auth.nameReserved });
+      return false;
+    }
+    // Phone and WhatsApp are optional; when given they are saved as international numbers. A number
+    // that was not changed is kept exactly as saved (the form starts from the account phone before
+    // the guide has saved one). Each field names itself in the message.
+    const savedPhone = mine.data?.details?.phone ?? profile.data?.phone;
+    const savedWhatsapp = mine.data?.details?.whatsapp_number ?? profile.data?.phone;
+    const phone = resolvePhone(f.phone, phoneCountries.phone, savedPhone);
+    const whatsapp = resolvePhone(f.whatsapp_number, phoneCountries.whatsapp, savedWhatsapp);
+    if (f.phone.trim() && !phone) {
+      setMessage({ tone: 'error', text: `${d.phone}: ${t.phone.invalidGeneric}` });
+      return false;
+    }
+    if (f.whatsapp_number.trim() && !whatsapp) {
+      setMessage({ tone: 'error', text: `${d.whatsapp}: ${t.phone.invalidGeneric}` });
       return false;
     }
     setBusy(true);
@@ -236,7 +260,7 @@ export default function ProfileEditScreen() {
           call_minutes: num(f.call_minutes[0]) ?? 45,
           call_topics: f.call_topics,
         },
-        { phone: f.phone.trim() || null, whatsapp_number: f.whatsapp_number.trim() || null, registration_number: f.registration_number.trim() || null, kinapa_tanapa_id: f.kinapa_tanapa_id.trim() || null },
+        { phone, whatsapp_number: whatsapp, registration_number: f.registration_number.trim() || null, kinapa_tanapa_id: f.kinapa_tanapa_id.trim() || null },
         { photo: photo ?? undefined, idDocument: idDocument ?? undefined, licenceDocument: licenceDocument ?? undefined, firstAidDocument: firstAidDocument ?? undefined },
       );
       setPhoto(null);
@@ -247,7 +271,7 @@ export default function ProfileEditScreen() {
       setMessage({ tone: 'ok', text: d.saved });
       return true;
     } catch (e) {
-      setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
+      setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : e instanceof Error && e.message === 'links' ? linkTexts(locale).checkLinks : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
       return false;
     } finally {
       setBusy(false);
@@ -368,8 +392,8 @@ export default function ProfileEditScreen() {
       {current === 2 && (
         <Card>
           <Muted>{d.documentsWhy}</Muted>
-          <Field label={d.phone} value={f.phone} onChangeText={set('phone')} keyboardType="phone-pad" />
-          <Field label={d.whatsapp} value={f.whatsapp_number} onChangeText={set('whatsapp_number')} keyboardType="phone-pad" />
+          <PhoneField label={d.phone} number={f.phone} country={phoneCountries.phone} onChangeNumber={set('phone')} onChangeCountry={(phone) => setPhoneCountries((c) => ({ ...c, phone }))} />
+          <PhoneField label={d.whatsapp} number={f.whatsapp_number} country={phoneCountries.whatsapp} onChangeNumber={set('whatsapp_number')} onChangeCountry={(whatsapp) => setPhoneCountries((c) => ({ ...c, whatsapp }))} />
           <Field label={d.registration} value={f.registration_number} onChangeText={set('registration_number')} />
           <Field label={d.kinapa} value={f.kinapa_tanapa_id} onChangeText={set('kinapa_tanapa_id')} />
           <Muted>

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Avatar, Badge, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { TourCard } from '@/components/cards';
 import { getOperator, listTours } from '@/lib/api';
+import { openExternal } from '@/lib/open-external';
 import { useI18n } from '@/lib/i18n';
 import { brand, colors, space, textSize } from '@/theme';
 
@@ -34,7 +35,7 @@ export default function OperatorScreen() {
         </View>
         {op.description && <Muted selectable>{op.description}</Muted>}
         {op.location && <Text style={{ color: colors.label }}>{tt.location}: {op.location}</Text>}
-        {op.website && <Text accessibilityRole="link" onPress={() => Linking.openURL(op.website!)} style={link}>{tt.website}</Text>}
+        {op.website && <Text accessibilityRole="link" onPress={() => openExternal(op.website)} style={link}>{tt.website}</Text>}
         {op.contact_email && <Text accessibilityRole="link" onPress={() => Linking.openURL(`mailto:${op.contact_email}`)} style={link}>{op.contact_email}</Text>}
         {op.contact_phone && <Text accessibilityRole="link" onPress={() => Linking.openURL(`tel:${op.contact_phone!.replace(/\s/g, '')}`)} style={link}>{op.contact_phone}</Text>}
         {op.licence_number && op.licence_checked_at && (
@@ -44,7 +45,7 @@ export default function OperatorScreen() {
           </Text>
         )}
         {op.tripadvisor_url && (
-          <Text accessibilityRole="link" onPress={() => Linking.openURL(op.tripadvisor_url!)} style={link}>
+          <Text accessibilityRole="link" onPress={() => openExternal(op.tripadvisor_url)} style={link}>
             {tt.tripadvisor}
             {op.tripadvisor_rating != null && op.tripadvisor_checked_at
               ? `: ${Number(op.tripadvisor_rating).toFixed(1)} / 5${op.tripadvisor_reviews != null ? ` · ${op.tripadvisor_reviews} ${tt.reviews}` : ''} (${tt.lastChecked} ${date.format(new Date(op.tripadvisor_checked_at))})`

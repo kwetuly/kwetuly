@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, formatUsd } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, formatUsd, linkErrorMessage } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { CurrentUser } from '@/lib/auth';
@@ -11,6 +11,9 @@ import { requestBadge, saveBusiness } from './business-actions';
 import { BusinessSales } from './business-sales';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
+import { PhoneField } from '@/components/phone-field';
+import { LinkInput } from '@/components/link-input';
+import { phoneCountryHint } from '@/lib/phone';
 
 type OwnBusiness = {
   id: string;
@@ -32,8 +35,22 @@ type OwnBusiness = {
 type Enquiry = { id: string; traveler_name: string | null; traveler_contact: string | null; message: string | null; created_at: string };
 
 // The owner's listing (free once approved), the paid badge, and enquiries from travellers.
-export async function BusinessListing({ t, locale, user, status }: { t: Dictionary; locale: Locale; user: CurrentUser; status: Record<string, string | string[] | undefined> }) {
+export async function BusinessListing({
+  t,
+  locale,
+  user,
+  status,
+  embedded = false,
+}: {
+  t: Dictionary;
+  locale: Locale;
+  user: CurrentUser;
+  status: Record<string, string | string[] | undefined>;
+  /** Shown under another dashboard (a guide's): second-level heading. */
+  embedded?: boolean;
+}) {
   const bt = t.business;
+  const businessError = typeof status.business_error === 'string' ? status.business_error : null;
   const supabase = await createClient();
   const { data: business } = await supabase
     .from('providers')
@@ -55,7 +72,7 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
 
   return (
     <section id="business" className="scroll-mt-24">
-      <h1 className="text-3xl font-bold">{bt.dashboardTitle}</h1>
+      {embedded ? <h2 className="text-2xl font-bold">{bt.dashboardTitle}</h2> : <h1 className="text-3xl font-bold">{bt.dashboardTitle}</h1>}
       {business && (
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[5px] bg-mint p-4 text-forest">
           <span>{statusText}</span>
@@ -64,8 +81,9 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
           )}
         </div>
       )}
-      {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</p>}
-      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
+      {/* Business saves use their own params, so a guide who also owns a listing sees one banner. */}
+      {(status.business === 'saved' || status.business_error === 'link_website') && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</p>}
+      {businessError && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(businessError, locale) ?? (businessError === 'name' ? t.auth.nameReserved : businessError === 'whatsapp' ? t.phone.invalidGeneric : t.auth.error)}</p>}
 
       <form action={saveBusiness} className="card mt-6 space-y-4">
         <input type="hidden" name="locale" value={locale} />
@@ -91,10 +109,19 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
             <span className="label">{bt.locationField}</span>
             <input className="field" name="location" maxLength={160} defaultValue={business?.location ?? ''} />
           </label>
-          <label className="block">
-            <span className="label">{bt.whatsappField}</span>
-            <input className="field" name="whatsapp_number" type="tel" required maxLength={30} defaultValue={business?.provider_private?.whatsapp_number ?? user.phone ?? ''} />
-          </label>
+          <PhoneField
+            id="business-whatsapp"
+            name="whatsapp_number"
+            countryName="whatsapp_country"
+            label={bt.whatsappField}
+            locale={locale}
+            t={t.phone}
+            required
+            maxLength={30}
+            defaultValue={business?.provider_private?.whatsapp_number ?? user.phone ?? ''}
+            defaultCountry={await phoneCountryHint()}
+            invalid={businessError === 'whatsapp'}
+          />
         </div>
         <label className="block">
           <span className="label">{bt.storyField}</span>
@@ -102,7 +129,7 @@ export async function BusinessListing({ t, locale, user, status }: { t: Dictiona
         </label>
         <label className="block">
           <span className="label">{bt.websiteField}</span>
-          <input className="field" name="website" type="url" maxLength={200} placeholder="https://" defaultValue={business?.website ?? ''} />
+          <LinkInput id="business-website" name="website" kind="website" locale={locale} placeholder="https://" defaultValue={business?.website} />
         </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

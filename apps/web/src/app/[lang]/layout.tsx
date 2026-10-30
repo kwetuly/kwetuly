@@ -8,7 +8,7 @@ import { LOCALE_TAGS, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks, MenuAccount } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
-import { SiteNav } from '@/components/site-nav';
+import { DesktopNav, SiteNav } from '@/components/site-nav';
 import { Concierge } from '@/components/concierge';
 import { Logo } from '@/components/logo';
 import { Icon } from '@/components/icon';
@@ -61,10 +61,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               <Suspense fallback={null}>
                 <LanguageSwitcher current={locale} />
               </Suspense>
-              <div className="xl:hidden">
+              <div className="lg:hidden">
                 <SiteNav
                   locale={locale}
-                  soonLabel={t.nav.soon}
                   account={
                     <Suspense fallback={null}>
                       <MenuAccount />
@@ -75,9 +74,9 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             </div>
           </nav>
           {/* Desktop: the section menu gets its own row so it never collides with the account buttons. */}
-          <div className="hidden border-t border-line/60 xl:block">
+          <div className="hidden border-t border-line/60 lg:block">
             <div className="mx-auto max-w-7xl px-2 py-1">
-              <SiteNav locale={locale} soonLabel={t.nav.soon} />
+              <DesktopNav locale={locale} soonLabel={t.nav.soon} />
             </div>
           </div>
         </header>

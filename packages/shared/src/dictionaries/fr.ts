@@ -2,6 +2,7 @@ import { ux_fr } from './ux';
 import { packages_fr } from './packages';
 import { travel_fr } from './travel';
 import { legal_fr } from './legal';
+import { phone_fr } from './phone';
 import { business_fr } from './business';
 import { extras_fr } from './extras';
 import { en, type Dictionary } from './en';
@@ -678,4 +679,5 @@ export const fr: Dictionary = {
     rights: 'Tous droits réservés.',
   },
   legal: legal_fr,
+  phone: phone_fr,
 };

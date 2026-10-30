@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BADGE_CHECKS, BUSINESS_TYPES } from '@kwetuly/shared';
+import { BADGE_CHECKS, BUSINESS_TYPES, USER_LINK_REL, normaliseWebsite } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -44,19 +44,23 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
       }),
   );
 
-  const details = (b: AdminBusiness) => (
+  const details = (b: AdminBusiness) => {
+    const website = b.website ? normaliseWebsite(b.website) : null;
+    return (
     <>
       <p className="text-xs font-semibold text-leaf-dark">{BUSINESS_TYPES.find((x) => x.id === b.business_type)?.en}</p>
       <h3 className="text-lg font-bold">{b.business_name}</h3>
       <p className="text-sm text-muted">{[b.location, b.base_region].filter(Boolean).join(', ')} · WhatsApp {b.provider_private?.whatsapp_number ?? '—'}</p>
       {b.story && <p className="whitespace-pre-line text-sm">{b.story}</p>}
       <div className="flex flex-wrap gap-3 text-sm">
-        {b.website && <a href={b.website} target="_blank" rel="noopener" className="text-forest underline">Website</a>}
-        {b.photo_url && <a href={b.photo_url} target="_blank" rel="noopener" className="text-forest underline">Photo</a>}
+        {website?.ok && <a href={website.url} target="_blank" rel={USER_LINK_REL} className="text-forest underline">Website: {website.host}</a>}
+        {website && !website.ok && <span className="break-all text-red-800">Website not valid, not shown to travellers: {b.website}</span>}
+        {b.photo_url && <a href={b.photo_url} target="_blank" rel={USER_LINK_REL} className="text-forest underline">Photo</a>}
         {links.get(b.id) ? <a href={links.get(b.id)} target="_blank" rel="noopener" className="text-forest underline">Business licence</a> : <span className="text-muted">No licence uploaded</span>}
       </div>
     </>
-  );
+    );
+  };
 
   return (
     <section id="businesses" className="mt-12">

@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { orderMessage } from '@kwetuly/shared';
+import { isRateLimited, orderMessage } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -35,5 +35,6 @@ export async function askBusiness(formData: FormData) {
     traveler_contact: contact,
     message,
   });
-  redirect(`${back}?${error ? 'error' : 'sent'}=1#ask`);
+  // Too many enquiries in an hour (database limit): a friendly message instead of the generic error.
+  redirect(`${back}?${isRateLimited(error) ? 'error=busy' : error ? 'error=1' : 'sent=1'}#ask`);
 }

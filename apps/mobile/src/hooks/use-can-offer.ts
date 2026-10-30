@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMyGuide } from '@/lib/api-more';
-import { getMyBusiness } from '@/lib/businesses';
+import { hasApprovedBusiness } from '@/lib/businesses';
 import { useProfile, useSession } from '@/lib/auth';
 
 /**
- * Verified guides and approved business accounts may see open trip requests, send offers and run
- * group trips. A business waits until Kwetuly approves its listing (the database checks the same).
+ * Verified guides and owners of an approved listing may see open trip requests, send offers and run
+ * group trips, whatever account type they picked at sign-up (the database checks the same).
+ * A business account waits until Kwetuly approves its listing.
  */
 export function useCanOffer() {
   const { session } = useSession();
@@ -13,15 +14,15 @@ export function useCanOffer() {
   const profile = useProfile();
   const role = profile.data?.role;
   const guide = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
-  const business = useQuery({ queryKey: ['my-business', userId], queryFn: () => getMyBusiness(userId!), enabled: !!userId && role === 'provider' });
+  const business = useQuery({ queryKey: ['approved-business', userId], queryFn: () => hasApprovedBusiness(userId!), enabled: !!userId });
   const approvedGuide = guide.data?.guide?.verification_status === 'approved' ? guide.data.guide : null;
-  const approvedBusiness = role === 'provider' && business.data?.verification_status === 'approved' && !business.data.is_sample;
+  const approvedBusiness = business.data === true;
   return {
     canOffer: approvedBusiness || role === 'admin' || !!approvedGuide,
     /** Business account whose listing Kwetuly has not approved yet. */
     businessWaiting: role === 'provider' && !approvedBusiness && !approvedGuide && !business.isLoading,
     approvedBusiness,
     guideId: approvedGuide?.id ?? null,
-    loading: profile.isLoading || guide.isLoading || (role === 'provider' && business.isLoading),
+    loading: profile.isLoading || guide.isLoading || business.isLoading,
   };
 }

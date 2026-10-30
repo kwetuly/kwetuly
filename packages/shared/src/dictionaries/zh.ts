@@ -2,6 +2,7 @@ import { ux_zh } from './ux';
 import { packages_zh } from './packages';
 import { travel_zh } from './travel';
 import { legal_zh } from './legal';
+import { phone_zh } from './phone';
 import { business_zh } from './business';
 import { extras_zh } from './extras';
 import { en, type Dictionary } from './en';
@@ -297,10 +298,10 @@ export const zh: Dictionary = {
     phone: '手机 / WhatsApp 号码',
     phoneHint: '请带国家代码，例如 +86 138 0013 8000',
     phoneError: '请输入带国家代码的有效号码。',
-    nameReserved: '此名称仅供 Kwetuly 团队使用。请使用您自己的名字。',
+    nameReserved: '此名称仅供 Kwetuly 团队使用。请使用你自己的名字。',
     inviteCode: '邀请码',
-    inviteHint: 'Kwetuly 目前仅限受邀注册。请向邀请您的人索取邀请码。',
-    inviteError: '邀请码不正确。请与邀请您的人核对后再试。',
+    inviteHint: 'Kwetuly 目前仅限受邀注册。请向邀请你的人索取邀请码。',
+    inviteError: '邀请码不正确。请与邀请你的人核对后再试。',
     continueWith: '使用以下方式继续：',
     orEmail: '或使用邮箱',
     welcomeTitle: '欢迎来到 Kwetuly！',
@@ -640,11 +641,11 @@ export const zh: Dictionary = {
     strength: '资料完整度',
     complete: '已完成',
     missing: '尚需补充',
-    allDone: '全部完成。您的资料已完整。',
+    allDone: '全部完成。你的资料已完整。',
     optional: '可选',
     photo: '头像照片',
     headline: '标题',
-    bio: '关于您',
+    bio: '关于你',
     specialties: '专长',
     languages: '语言',
     regions: '带团区域',
@@ -657,11 +658,11 @@ export const zh: Dictionary = {
     statusWaiting: '已上传，等待审核',
     statusMissing: '未上传',
     statusExpired: '已过期，请上传新的',
-    documentsTitle: '您的文件',
+    documentsTitle: '你的文件',
     documentsNote: '文件保密。旅行者只能看到 Kwetuly 完成了哪些核实。',
     licenceUpload: '向导执照或登记卡',
     firstAidUpload: '急救证书（可选）',
-    recheckNote: '如果您上传新文件，我们的团队会重新核实。',
+    recheckNote: '如果你上传新文件，我们的团队会重新核实。',
   },
   ux: ux_zh,
   packages: packages_zh,
@@ -673,4 +674,5 @@ export const zh: Dictionary = {
     rights: '版权所有。',
   },
   legal: legal_zh,
+  phone: phone_zh,
 };

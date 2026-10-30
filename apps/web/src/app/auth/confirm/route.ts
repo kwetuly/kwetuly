@@ -3,11 +3,22 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { defaultLocale } from '@/i18n/config';
 import { createClient } from '@/lib/supabase/server';
+import { SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
 import { RECOVERY_COOKIE, recoveryCookieOptions, signRecoveryCookie, verifiedSession } from '@/lib/recovery';
 import { localeOfPath, safeLocalPath } from '@/lib/safe-next';
 import { SITE_URL } from '@/lib/site';
 
 const OTP_TYPES: readonly EmailOtpType[] = ['signup', 'invite', 'magiclink', 'recovery', 'email_change', 'email'];
+
+// Supabase Auth's message when a provider returns no email and "Allow users without an email" is off
+// (it has no error code for this case).
+const NO_EMAIL = /user email from external provider/i;
+
+// The provider being connected on the security page (`next` is /{locale}/security?signin=linked&provider=...).
+function linkingProvider(next: string): SocialProvider | undefined {
+  const value = new URL(next, 'https://kwetuly.invalid').searchParams.get('provider');
+  return SOCIAL_PROVIDERS.find((p) => p === value);
+}
 
 // Landing point for email links: sign-up confirmation, social sign-in and password reset.
 export async function GET(request: NextRequest) {
@@ -15,6 +26,30 @@ export async function GET(request: NextRequest) {
   // Only "/{locale}/..." paths on this site; anything else goes to the home page.
   const next = safeLocalPath(searchParams.get('next'), `/${defaultLocale}`);
   const locale = localeOfPath(next, defaultLocale);
+
+  // Supabase sends people back with ?error=...&error_code=...&error_description=... when a provider
+  // sign-in or linking is refused. Turn the known cases into friendly messages, never the raw text.
+  const site = new URL(SITE_URL).origin;
+  const oauthError = searchParams.get('error');
+  if (oauthError) {
+    const code = searchParams.get('error_code') ?? '';
+    const description = searchParams.get('error_description') ?? '';
+    const provider = SOCIAL_PROVIDERS.find((p) => p === searchParams.get('provider')) ?? linkingProvider(next);
+    const linking = next.startsWith(`/${locale}/security`);
+    let target: string;
+    if (linking) {
+      const reason = code === 'identity_already_exists' ? 'taken' : code === 'manual_linking_disabled' ? 'off' : 'error';
+      target = `/${locale}/security?signin=${reason}${provider ? `&provider=${provider}` : ''}#sign-ins`;
+    } else if (NO_EMAIL.test(description)) {
+      // "Allow users without an email" is off: the provider (Facebook, X) shared no email address.
+      target = `/${locale}/login?error=no_email${provider ? `&provider=${provider}` : ''}`;
+    } else {
+      target = `/${locale}/login?error=1`;
+    }
+    // As for any failed link: a refused sign-in never leaves a password-reset permission behind.
+    (await cookies()).delete(RECOVERY_COOKIE);
+    return NextResponse.redirect(new URL(target, site));
+  }
 
   const supabase = await createClient();
   const code = searchParams.get('code');
@@ -57,7 +92,6 @@ export async function GET(request: NextRequest) {
   }
 
   // Build the redirect from the configured site address, never from the request's Host header.
-  const site = new URL(SITE_URL).origin;
   const url = new URL(target, site);
   // Belt and braces: never leave this site.
   return NextResponse.redirect(url.origin === site ? url : new URL(`/${defaultLocale}`, site));

@@ -11,6 +11,8 @@ import { safeLocalPath } from '@/lib/safe-next';
 import { finishWelcome } from './actions';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
+import { PhoneField } from '@/components/phone-field';
+import { phoneCountryHint } from '@/lib/phone';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.welcomeTitle, robots: { index: false } };
@@ -56,7 +58,7 @@ async function WelcomeForm({
 
   return (
     <form action={finishWelcome} className="card mt-8 space-y-5">
-      {params.error && params.error !== 'invite' && <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'phone' ? t.auth.phoneError : params.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
+      {params.error && params.error !== 'invite' && params.error !== 'phone' && <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       {next && <input type="hidden" name="next" value={next} />}
       {(await inviteRequired()) && <InviteCodeField t={t} invalid={params.error === 'invite'} />}
@@ -79,11 +81,16 @@ async function WelcomeForm({
         <label className="label" htmlFor="full_name">{t.auth.fullName}</label>
         <NameInput reservedMessage={t.auth.nameReserved} className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={user.fullName ?? ''} />
       </div>
-      <div>
-        <label className="label" htmlFor="phone">{t.auth.phone}</label>
-        <input className="field" id="phone" name="phone" type="tel" required autoComplete="tel" inputMode="tel" placeholder="+255 712 345 678" defaultValue={user.phone ?? ''} aria-describedby="phone-hint" />
-        <p id="phone-hint" className="mt-1 text-xs text-muted">{t.auth.phoneHint}</p>
-      </div>
+      <PhoneField
+        id="phone"
+        label={t.auth.phone}
+        locale={locale}
+        t={t.phone}
+        required
+        defaultValue={user.phone ?? ''}
+        defaultCountry={await phoneCountryHint()}
+        invalid={params.error === 'phone'}
+      />
       <SubmitButton className="btn w-full">{t.auth.finish}</SubmitButton>
     </form>
   );

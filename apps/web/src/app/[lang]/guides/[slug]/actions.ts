@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { CALL_TOPICS } from '@kwetuly/shared';
+import { CALL_TOPICS, isRateLimited } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -69,7 +69,8 @@ export async function requestGuide(formData: FormData) {
     message,
   });
 
-  redirect(`${back}?${error ? 'error' : 'sent'}=1#contact`);
+  // Too many enquiries in an hour (database limit): a friendly message instead of the generic error.
+  redirect(`${back}?${isRateLimited(error) ? 'error=busy' : error ? 'error=1' : 'sent=1'}#contact`);
 }
 
 // Post or update the signed-in traveller's review. The database only accepts it from travellers

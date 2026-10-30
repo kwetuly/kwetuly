@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -32,6 +32,7 @@ import { getTourGuides, getTourStops, listPlaces, listSavedTourIds, listTours, s
 import { track } from '@/lib/analytics';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { openExternal } from '@/lib/open-external';
 import { languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { brand, colors, radius, space, textSize } from '@/theme';
@@ -128,7 +129,7 @@ export default function TourScreen() {
               <>
                 <Muted>{tt.operatorTourNote}</Muted>
                 {tour.source_url && (
-                  <Text accessibilityRole="link" onPress={() => Linking.openURL(tour.source_url!)} style={{ color: brand.leafDark, fontWeight: '700' }}>
+                  <Text accessibilityRole="link" onPress={() => openExternal(tour.source_url)} style={{ color: brand.leafDark, fontWeight: '700' }}>
                     {tt.source}: {tour.tour_operators?.name ?? tt.sourceLink}
                     {tour.source_checked_at ? ` · ${tt.lastChecked} ${date.format(new Date(tour.source_checked_at))}` : ''}
                   </Text>

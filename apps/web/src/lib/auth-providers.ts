@@ -6,6 +6,12 @@ import { cacheLife } from 'next/cache';
 export const SOCIAL_PROVIDERS = ['google', 'facebook', 'apple'] as const;
 export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
 
+/**
+ * "Connected sign-ins" may connect and remove sign-ins only once Walter has switched on manual linking
+ * in Supabase and set NEXT_PUBLIC_LINKING_ON=1 (Vercel). Until then the buttons stay hidden.
+ */
+export const LINKING_ON = process.env.NEXT_PUBLIC_LINKING_ON === '1';
+
 // Asks Supabase which providers are switched on, so buttons only appear once they work.
 export async function enabledSocialProviders(): Promise<SocialProvider[]> {
   'use cache';

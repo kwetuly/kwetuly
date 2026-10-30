@@ -1,19 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { MENU, UX_TEXT } from '@kwetuly/shared';
+import { MENU, MENU_TEXT, UX_TEXT, type MenuSection } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import { itemHref } from '@/lib/menu';
 import { Icon } from './icon';
 import { Logo } from './logo';
 
-// Desktop: hover/focus mega-menus. Mobile: full-screen drawer with expandable sections.
-// `account` (mobile only) holds the sign-in / account links that do not fit in the phone header.
-export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLabel: string; account?: ReactNode }) {
+// Phones and tablets (below 1024px): a full-screen drawer with expandable sections. The desktop row
+// is DesktopNav below. `account` holds the sign-in / account links that do not fit in the phone header.
+export function SiteNav({ locale, account }: { locale: Locale; account?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -55,70 +55,11 @@ export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLa
 
   return (
     <>
-      <ul className="hidden items-center gap-0.5 whitespace-nowrap xl:flex">
-        {MENU.map((section) =>
-          section.items.length === 1 ? (
-            <li key={section.slug}>
-              <Link
-                href={itemHref(locale, section, section.items[0])}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal"
-              >
-                <Icon name={section.icon} className="size-4 text-leaf-dark" />
-                {section.label[locale]}
-              </Link>
-            </li>
-          ) : (
-          <li key={section.slug} className="group relative">
-            <button
-              type="button"
-              className="flex items-center gap-1 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal group-focus-within:bg-sand"
-              aria-haspopup="true"
-            >
-              {section.label[locale]}
-              <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
-            </button>
-            <div className={`invisible absolute top-full z-30 ${section.items.length > 6 ? 'left-0 w-[42rem]' : 'left-1/2 w-[22rem] -translate-x-1/2'} translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100`}>
-              <div className="overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)]">
-                <p className="bg-night px-5 py-3 text-xs font-semibold text-white">
-                  {section.tagline[locale]}
-                </p>
-                <ul className={`p-2 ${section.items.length > 6 ? 'grid grid-cols-2' : ''}`}>
-                  {section.items.map((item) => (
-                    <li key={item.slug}>
-                      <Link
-                        href={itemHref(locale, section, item)}
-                        className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand"
-                      >
-                        <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf shadow-sm">
-                          <Icon name={item.icon} className="size-5 text-white" />
-                        </span>
-                        <span>
-                          <span className="flex items-center gap-2 text-sm font-semibold text-charcoal">
-                            {item.label[locale]}
-                            {item.status !== 'live' && (
-                              <span className="rounded-[5px] bg-mint px-2 py-0.5 text-[11px] font-bold text-forest">
-                                {soonLabel}
-                              </span>
-                            )}
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted">{item.blurb[locale]}</span>
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </li>
-          ),
-        )}
-      </ul>
-
       <button
         ref={menuButton}
         type="button"
         onClick={() => setOpen(true)}
-        className="flex size-10 shrink-0 items-center justify-center rounded-[5px] border border-line xl:hidden"
+        className="flex size-10 shrink-0 items-center justify-center rounded-[5px] border border-line lg:hidden"
         aria-label={ux.openMenu}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -131,7 +72,7 @@ export function SiteNav({ locale, soonLabel, account }: { locale: Locale; soonLa
         createPortal(
         <div
           ref={dialog}
-          className="fixed inset-0 z-50 flex flex-col bg-night text-white xl:hidden"
+          className="fixed inset-0 z-50 flex flex-col bg-night text-white lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label={ux.menuLabel}
@@ -228,4 +169,178 @@ function CloseOnNavigate({ onNavigate }: { onNavigate: (open: boolean) => void }
     if (pathname !== openedAt.current) onNavigate(false);
   }, [pathname, onNavigate]);
   return null;
+}
+
+const TRIGGER =
+  'flex items-center gap-1.5 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal';
+const GAP = 2; // gap-0.5 between the triggers
+const PANEL = 'overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)]';
+const OPENS =
+  'invisible absolute top-full z-30 translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100';
+
+// useLayoutEffect warns on the server; there the row is simply not measured yet.
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+// Desktop (1024px and wider): one row of sections with hover/focus mega-menus. The row measures
+// itself, and the sections that do not fit (narrower screens, long German or Polish labels) move
+// under "More" at the end, so nothing overlaps or is cut off in any language. Until it has been
+// measured (server render, first paint) the row is clipped sideways so nothing spills over the page.
+export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: string }) {
+  const row = useRef<HTMLDivElement>(null);
+  const ruler = useRef<HTMLUListElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  const text = MENU_TEXT[locale];
+
+  useBrowserLayoutEffect(() => {
+    const container = row.current;
+    const measure = ruler.current;
+    if (!container || !measure) return;
+    function update() {
+      if (!container || !measure) return;
+      const available = container.clientWidth;
+      if (available === 0) return;
+      const widths = Array.from(measure.children).map((el) => el.getBoundingClientRect().width);
+      const more = widths.pop() ?? 0;
+      let used = 0;
+      let count = 0;
+      for (let i = 0; i < widths.length; i++) {
+        const next = used + (i > 0 ? GAP : 0) + widths[i];
+        const needsMore = i < widths.length - 1;
+        if (next + (needsMore ? GAP + more : 0) > available) break;
+        used = next;
+        count = i + 1;
+      }
+      setFit(count);
+    }
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(container);
+    document.fonts?.ready.then(update).catch(() => {});
+    return () => observer.disconnect();
+  }, [locale]);
+
+  const shown = fit ?? MENU.length;
+
+  return (
+    <div ref={row} className={`relative ${fit === null ? 'overflow-x-clip' : ''}`}>
+      <ul className="flex items-center gap-0.5 whitespace-nowrap">
+        {MENU.slice(0, shown).map((section, index) => (
+          <SectionMenu
+            key={section.slug}
+            section={section}
+            locale={locale}
+            soonLabel={soonLabel}
+            // Menus in the left half open to the right, the others to the left, so none leaves the page.
+            align={index < (shown + 1) / 2 ? 'left' : 'right'}
+          />
+        ))}
+        {shown < MENU.length && (
+          <MoreMenu sections={MENU.slice(shown)} locale={locale} soonLabel={soonLabel} label={text.more} />
+        )}
+      </ul>
+
+      {/* Invisible copy of every trigger plus "More", only to measure their widths. The zero-size
+          box around it keeps it from widening the page. */}
+      <div aria-hidden className="pointer-events-none invisible absolute left-0 top-0 size-0 overflow-hidden">
+        <ul ref={ruler} className="flex w-max gap-0.5 whitespace-nowrap">
+          {MENU.map((section) => (
+            <li key={section.slug} className={TRIGGER}>
+              {section.items.length === 1 && <Icon name={section.icon} className="size-4" />}
+              {section.label[locale]}
+              {section.items.length > 1 && <ChevronDown className="size-4" />}
+            </li>
+          ))}
+          <li className={TRIGGER}>
+            {text.more}
+            <ChevronDown className="size-4" />
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function SectionMenu({ section, locale, soonLabel, align }: { section: MenuSection; locale: Locale; soonLabel: string; align: 'left' | 'right' }) {
+  if (section.items.length === 1)
+    return (
+      <li>
+        <Link href={itemHref(locale, section, section.items[0])} className={TRIGGER}>
+          <Icon name={section.icon} className="size-4 text-leaf-dark" />
+          {section.label[locale]}
+        </Link>
+      </li>
+    );
+  // Wide menus hang from the whole row (its left edge), so they never run off the page wherever
+  // their section sits; narrow ones hang from their own button.
+  const wide = section.items.length > 6;
+  return (
+    <li className={`group ${wide ? '' : 'relative'}`}>
+      <button type="button" className={`${TRIGGER} gap-1 group-focus-within:bg-sand`} aria-haspopup="true">
+        {section.label[locale]}
+        <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
+      </button>
+      <div className={`${OPENS} ${wide ? 'left-0 w-[min(42rem,100%)]' : `${align === 'left' ? 'left-0' : 'right-0'} w-[22rem]`}`}>
+        <div className={PANEL}>
+          <p className="bg-night px-5 py-3 text-xs font-semibold text-white">{section.tagline[locale]}</p>
+          <ul className={`p-2 ${wide ? 'grid grid-cols-2' : ''}`}>
+            {section.items.map((item) => (
+              <li key={item.slug}>
+                <Link href={itemHref(locale, section, item)} className="flex items-start gap-3 rounded-[5px] p-3 transition hover:bg-sand focus-visible:bg-sand">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-[5px] bg-leaf shadow-sm">
+                    <Icon name={item.icon} className="size-5 text-white" />
+                  </span>
+                  <span>
+                    <span className="flex items-center gap-2 text-sm font-semibold text-charcoal">
+                      {item.label[locale]}
+                      {item.status !== 'live' && <span className="rounded-[5px] bg-mint px-2 py-0.5 text-[11px] font-bold text-forest">{soonLabel}</span>}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted">{item.blurb[locale]}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+// The sections that did not fit, each with its own links, in one panel that scrolls when long.
+function MoreMenu({ sections, locale, soonLabel, label }: { sections: MenuSection[]; locale: Locale; soonLabel: string; label: string }) {
+  return (
+    <li className="group relative">
+      <button type="button" className={`${TRIGGER} gap-1 group-focus-within:bg-sand`} aria-haspopup="true">
+        {label}
+        <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
+      </button>
+      <div className={`${OPENS} right-0 w-[min(24rem,calc(100vw-2rem))]`}>
+        <div className={`${PANEL} max-h-[calc(100vh-9rem)] overflow-y-auto p-2`}>
+          {sections.map((section) => (
+            <div key={section.slug} className="border-b border-line py-1 last:border-b-0">
+              <p className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-charcoal">
+                <span className="flex size-6 items-center justify-center rounded-[5px] bg-leaf">
+                  <Icon name={section.icon} className="size-3.5 text-white" />
+                </span>
+                {section.label[locale]}
+              </p>
+              <ul>
+                {section.items.map((item) => (
+                  <li key={item.slug}>
+                    <Link
+                      href={itemHref(locale, section, item)}
+                      className="flex items-center gap-2 rounded-[5px] py-2 pl-11 pr-3 text-sm text-charcoal/90 transition hover:bg-sand focus-visible:bg-sand"
+                    >
+                      {item.label[locale]}
+                      {item.status !== 'live' && <span className="rounded-[5px] bg-mint px-2 py-0.5 text-[11px] font-bold text-forest">{soonLabel}</span>}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </li>
+  );
 }

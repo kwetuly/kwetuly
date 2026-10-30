@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, profileCompletion, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, type DocumentStatus } from '@kwetuly/shared';
 import { Circle, CircleCheck, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser, type CurrentUser } from '@/lib/auth';
+import { businessApproval, requireUser, type CurrentUser } from '@/lib/auth';
 import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
@@ -17,6 +17,9 @@ import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
+import { PhoneField } from '@/components/phone-field';
+import { LinkInput } from '@/components/link-input';
+import { phoneCountryHint } from '@/lib/phone';
 
 export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
 
@@ -46,24 +49,45 @@ export default async function DashboardPage({ searchParams }: PageProps<'/[lang]
   );
 }
 
-// Each account type gets its own dashboard and never sees the others' tools.
+// Guides see their guide tools, business accounts their listing. Anyone who owns an approved listing
+// also gets the business tools, whatever account type they picked at sign-up (the database allows it).
+// Admins keep their own view.
 async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: SearchParams }) {
   const user = await requireUser(locale);
   const params = await searchParams;
+  const business = user.role === 'admin' ? 'none' : await businessApproval(user);
+  const isBusiness = user.role === 'provider' || business === 'approved';
+  const detail = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : '');
+  const businessTools = (embedded: boolean) => (
+    <>
+      <BusinessListing t={t} locale={locale} user={user} status={params} embedded={embedded} />
+      <div className="mt-12">
+        <BusinessDashboard t={t} locale={locale} user={user} />
+      </div>
+    </>
+  );
+
   if (user.role === 'guide' || user.guide || params.as === 'guide') {
-    return <GuideEditor t={t} locale={locale} user={user} status={params} />;
-  }
-  if (user.role === 'provider') {
     return (
       <>
-        <BusinessListing t={t} locale={locale} user={user} status={params} />
-        <div className="mt-12">
-          <BusinessDashboard t={t} locale={locale} user={user} />
+        <GuideEditor t={t} locale={locale} user={user} status={params} />
+        {/* A guide who also owns an approved listing: business tools under the guide overview. */}
+        {isBusiness && !isGuideStep(params.step) && <div className="mt-12 border-t border-line pt-10">{businessTools(true)}</div>}
+      </>
+    );
+  }
+  if (user.role === 'provider') return businessTools(false);
+  if (isBusiness) {
+    // A traveller who owns an approved listing keeps their traveller sections below the business tools.
+    return (
+      <>
+        {businessTools(false)}
+        <div className="mt-12 border-t border-line pt-10">
+          <TravelerDashboard t={t} locale={locale} user={user} details={detail('details')} back={detail('back')} embedded />
         </div>
       </>
     );
   }
-  const detail = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : '');
   return <TravelerDashboard t={t} locale={locale} user={user} details={detail('details')} back={detail('back')} />;
 }
 
@@ -89,6 +113,7 @@ async function GuideEditor({
     : { data: null };
   const d = t.dashboard;
   const now = await today();
+  const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
   const step: GuideStep | null = isGuideStep(status.step) ? status.step : guide ? null : 'basics';
 
@@ -119,10 +144,10 @@ async function GuideEditor({
         {!guide && <p className="mt-2 text-muted">{d.stepsIntro}</p>}
         <ol className="mt-4 flex gap-1.5" aria-hidden>
           {GUIDE_STEPS.map((s, i) => (
-            <li key={s} className={`h-1.5 flex-1 rounded-[4px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
+            <li key={s} className={`h-1.5 flex-1 rounded-[5px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
           ))}
         </ol>
-        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
+        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : status.error === 'phone' || status.error === 'whatsapp' ? t.phone.invalidGeneric : t.auth.error)}</p>}
 
         <form action={saveGuideProfile} className="card mt-6 space-y-5">
           <input type="hidden" name="locale" value={locale} />
@@ -183,8 +208,8 @@ async function GuideEditor({
             <>
               <p className="text-sm text-muted">{d.documentsWhy}</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label={d.phone}><input className="field" name="phone" type="tel" autoComplete="tel" defaultValue={details?.phone ?? user.phone ?? ''} /></Field>
-                <Field label={d.whatsapp}><input className="field" name="whatsapp_number" type="tel" defaultValue={details?.whatsapp_number ?? user.phone ?? ''} /></Field>
+                <PhoneField id="phone" label={d.phone} locale={locale} t={t.phone} defaultValue={details?.phone ?? user.phone ?? ''} defaultCountry={phoneCountry} invalid={status.error === 'phone'} maxLength={30} />
+                <PhoneField id="whatsapp_number" name="whatsapp_number" countryName="whatsapp_country" label={d.whatsapp} locale={locale} t={t.phone} defaultValue={details?.whatsapp_number ?? user.phone ?? ''} defaultCountry={phoneCountry} invalid={status.error === 'whatsapp'} maxLength={30} />
                 <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
                 <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
               </div>
@@ -225,10 +250,11 @@ async function GuideEditor({
                 {d.openToPartners}
               </label>
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Facebook"><input className="field" name="facebook_url" type="url" defaultValue={guide?.facebook_url ?? ''} placeholder="https://" /></Field>
-                <Field label="Instagram"><input className="field" name="instagram_url" type="url" defaultValue={guide?.instagram_url ?? ''} placeholder="https://" /></Field>
-                <Field label="TikTok"><input className="field" name="tiktok_url" type="url" defaultValue={guide?.tiktok_url ?? ''} placeholder="https://" /></Field>
+                <Field label="Facebook"><LinkInput id="facebook_url" name="facebook_url" kind="facebook" locale={locale} defaultValue={guide?.facebook_url} placeholder="facebook.com/…" /></Field>
+                <Field label="Instagram"><LinkInput id="instagram_url" name="instagram_url" kind="instagram" locale={locale} defaultValue={guide?.instagram_url} placeholder="@…" /></Field>
+                <Field label="TikTok"><LinkInput id="tiktok_url" name="tiktok_url" kind="tiktok" locale={locale} defaultValue={guide?.tiktok_url} placeholder="@…" /></Field>
               </div>
+              <p className="text-sm text-muted">{linkTexts(locale).socialHint}</p>
               <p className="text-sm text-muted">{d.followUs}</p>
               <Field label={`${d.slug} (kwetuly.com/${locale}/guides/…)`}>
                 <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
@@ -298,7 +324,7 @@ async function GuideEditor({
         </div>
       )}
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
-      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{status.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
+      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : t.auth.error)}</p>}
 
       {/* The sign-up steps, each with its own short form. */}
       <ol className="card mt-6 divide-y divide-line">
@@ -339,7 +365,22 @@ type MyCall = {
   guides: { display_name: string; slug: string } | null;
 };
 
-async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictionary; locale: Locale; user: CurrentUser; details: string; back: string }) {
+async function TravelerDashboard({
+  t,
+  locale,
+  user,
+  details,
+  back,
+  embedded = false,
+}: {
+  t: Dictionary;
+  locale: Locale;
+  user: CurrentUser;
+  details: string;
+  back: string;
+  /** Shown under the business tools: no page title, a second-level heading. */
+  embedded?: boolean;
+}) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('call_requests')
@@ -352,8 +393,14 @@ async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictio
   return (
     <>
       {/* The page metadata says "My profile"; travellers' tab title matches their heading instead. */}
-      <title>{`${t.traveler.title} · Kwetuly`}</title>
-      <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
+      {embedded ? (
+        <h2 className="text-2xl font-bold">{t.traveler.title}</h2>
+      ) : (
+        <>
+          <title>{`${t.traveler.title} · Kwetuly`}</title>
+          <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
+        </>
+      )}
       <MyDetails t={t} locale={locale} user={user} status={details} back={back} />
       <section className="card mt-6">
         <h2 className="text-lg font-bold">{t.traveler.calls}</h2>
@@ -376,10 +423,10 @@ async function TravelerDashboard({ t, locale, user, details, back }: { t: Dictio
                 {c.status === 'accepted' && c.scheduled_at && (
                   <span className="w-full text-sm text-muted">
                     {new Date(c.scheduled_at).toLocaleString(locale)}
-                    {c.meeting_link && (
+                    {safeExternalUrl(c.meeting_link) && (
                       <>
                         {' · '}
-                        <a href={c.meeting_link} className="font-semibold text-leaf-dark underline" target="_blank" rel="noopener">
+                        <a href={safeExternalUrl(c.meeting_link)!} className="font-semibold text-leaf-dark underline" target="_blank" rel={USER_LINK_REL}>
                           {t.traveler.joinCall}
                         </a>
                       </>
@@ -419,7 +466,7 @@ async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; loc
     <section id="details" className="card mt-6 scroll-mt-28">
       <h2 className="text-lg font-bold">{x.detailsTitle}</h2>
       {status === 'saved' && <p className="mt-2 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{x.detailsSaved}</p>}
-      {status === 'invalid' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{x.phoneInvalid}</p>}
+      {status === 'invalid' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.phone.invalidGeneric}</p>}
       {status === 'name' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.nameReserved}</p>}
       <form action={saveMyDetails} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <input type="hidden" name="locale" value={locale} />
@@ -428,10 +475,7 @@ async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; loc
           <span className="label">{t.profile.name}</span>
           <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} name="full_name" className="field" maxLength={120} defaultValue={user.fullName ?? ''} autoComplete="name" />
         </label>
-        <label className="block">
-          <span className="label">{x.phoneField}</span>
-          <input name="phone" type="tel" className="field" required maxLength={20} defaultValue={user.phone ?? ''} autoComplete="tel" />
-        </label>
+        <PhoneField id="details-phone" label={t.auth.phone} locale={locale} t={t.phone} required defaultValue={user.phone ?? ''} defaultCountry={await phoneCountryHint()} />
         <SubmitButton className="btn px-5 py-2.5">{x.saveDetails}</SubmitButton>
       </form>
     </section>
@@ -486,7 +530,7 @@ function ProfileStrength({ guide, details, t }: { guide: Guide | null; details: 
           {percent}% {c.complete}
         </p>
       </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-[4px] bg-surface" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={c.strength}>
+      <div className="mt-3 h-2 overflow-hidden rounded-[5px] bg-surface" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label={c.strength}>
         <div className="h-full bg-leaf" style={{ width: `${percent}%` }} />
       </div>
       {allDone && <p className="mt-3 text-sm font-semibold text-leaf-dark">{c.allDone}</p>}

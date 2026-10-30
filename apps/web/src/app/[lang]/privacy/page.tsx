@@ -95,7 +95,8 @@ export default async function PrivacyPage() {
         <li>
           <strong>Enquiries, trip requests and bookings:</strong> what you send to a guide or business (for example name, contact, dates, number of travellers, budget and
           message), offers, which offer you accepted, group-trip join requests, call requests and reviews. When an offer is accepted, both sides can see each other&rsquo;s email
-          and phone number.
+          and phone number. Kwetuly admins can also read enquiries, order requests and trip requests, including the names and contact details in them, to make sure the
+          service works, help when something goes wrong, deal with complaints and reports, and prevent fraud.
         </li>
         <li>
           <strong>Payments (when deposits are switched on):</strong> amount, what it was for, status, and the payment provider&rsquo;s reference. We never receive your full card

@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { inviteRequired } from '@/lib/invite';
+import { phoneCountryHint } from '@/lib/phone';
 import { JoinForm as JoinFields } from './join-form';
 import { SocialSignIn } from '@/components/social-sign-in';
 import { EVENTS } from '@kwetuly/shared';
@@ -60,24 +61,24 @@ async function JoinForm({
       locale={locale}
       selected={selected}
       invite={await inviteRequired()}
+      phoneCountry={await phoneCountryHint()}
       initialError={typeof params.error === 'string' ? params.error : null}
       t={{
         auth: {
           welcomeRole: t.auth.welcomeRole,
           fullName: t.auth.fullName,
           phone: t.auth.phone,
-          phoneHint: t.auth.phoneHint,
           email: t.auth.email,
           password: t.auth.password,
           createAccount: t.auth.createAccount,
           error: t.auth.error,
-          phoneError: t.auth.phoneError,
           nameReserved: t.auth.nameReserved,
           inviteCode: t.auth.inviteCode,
           inviteError: t.auth.inviteError,
           inviteHint: t.auth.inviteHint,
         },
         join: { traveler: t.join.traveler, guide: t.join.guide, provider: t.join.provider },
+        phone: t.phone,
       }}
     />
     </div>

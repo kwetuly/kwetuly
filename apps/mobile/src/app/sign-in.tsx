@@ -3,12 +3,13 @@ import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-n
 import { router, useLocalSearchParams } from 'expo-router';
 import { EVENTS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
 import { Button, Card, Chip, Muted } from '@/components/ui';
+import { PhoneField, initialPhone } from '@/components/phone-field';
 import { useI18n } from '@/lib/i18n';
 import { getInviteOnly } from '@/lib/api-more';
 import { track } from '@/lib/analytics';
 import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
-import { enabledProviders, signInWithProvider, type SocialProvider } from '@/lib/social';
+import { enabledProviders, PROVIDER_NAMES, signInWithProvider, type SocialProvider } from '@/lib/social';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
@@ -30,7 +31,8 @@ export default function SignInScreen() {
   const [mode, setMode] = useState<'signIn' | 'join'>(params.mode === 'join' ? 'join' : 'signIn');
   const [role, setRole] = useState<(typeof ROLES)[number]>('traveler');
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
+  // Country from the phone's region setting (Tanzania otherwise); the number as the person types it.
+  const [phone, setPhone] = useState(() => initialPhone(null));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -99,8 +101,12 @@ export default function SignInScreen() {
 
   async function social(provider: SocialProvider) {
     setMessage(null);
-    const ok = await signInWithProvider(provider);
-    if (!ok) return setMessage({ tone: 'error', text: t.auth.error });
+    const result = await signInWithProvider(provider);
+    if (!result.ok) {
+      if (result.reason === 'cancelled') return;
+      // Facebook or X shared no email, so Supabase refused to create the account: say so plainly.
+      return setMessage({ tone: 'error', text: result.reason === 'no_email' ? t.ux.noEmail.replace('{provider}', PROVIDER_NAMES[provider]) : t.auth.error });
+    }
     const { data: current } = await supabase.auth.getSession();
     if (needsSecondStep(current.session)) {
       const { data: factors } = await supabase.auth.mfa.listFactors();
@@ -133,8 +139,8 @@ export default function SignInScreen() {
       return;
     }
 
-    const normalized = normalizePhone(phone);
-    if (!normalized) return setMessage({ tone: 'error', text: t.auth.phoneError });
+    const normalized = normalizePhone(phone.number, phone.country);
+    if (!normalized) return setMessage({ tone: 'error', text: t.phone.invalidGeneric });
     if (!fullName.trim() || password.length < 8) return setMessage({ tone: 'error', text: t.auth.error });
     // Names that look like Kwetuly are kept for its own team (the database refuses them too).
     if (isReservedDisplayName(fullName)) return setMessage({ tone: 'error', text: t.auth.nameReserved });
@@ -186,7 +192,7 @@ export default function SignInScreen() {
         {providers.length > 0 && (
           <Card>
             {providers.map((p) => (
-              <Button key={p} title={`${t.auth.continueWith} ${p === 'google' ? 'Google' : p === 'facebook' ? 'Facebook' : 'Apple'}`} variant="outline" onPress={() => social(p)} />
+              <Button key={p} title={`${t.auth.continueWith} ${PROVIDER_NAMES[p]}`} variant="outline" onPress={() => social(p)} />
             ))}
             <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '700' }}>{t.auth.orEmail}</Text>
           </Card>
@@ -203,8 +209,13 @@ export default function SignInScreen() {
               </View>
               <Muted>{t.join[role].body}</Muted>
               <TextInput value={fullName} onChangeText={setFullName} placeholder={t.auth.fullName} placeholderTextColor={colors.secondaryLabel} autoComplete="name" textContentType="name" style={input} />
-              <TextInput value={phone} onChangeText={setPhone} placeholder={t.auth.phone} placeholderTextColor={colors.secondaryLabel} keyboardType="phone-pad" autoComplete="tel" textContentType="telephoneNumber" style={input} />
-              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.auth.phoneHint}</Text>
+              <PhoneField
+                label={t.auth.phone}
+                number={phone.number}
+                country={phone.country}
+                onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
+                onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
+              />
               {inviteOnly && (
                 <>
                   <TextInput

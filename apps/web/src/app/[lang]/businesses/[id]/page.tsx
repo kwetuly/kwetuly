@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ExternalLink, MapPin } from 'lucide-react';
-import { BUSINESS_TYPES, ORDER_TYPES } from '@kwetuly/shared';
+import { BUSINESS_TYPES, ORDER_TYPES, USER_LINK_REL, limitTexts, normaliseWebsite } from '@kwetuly/shared';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -45,6 +45,8 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
   const [business, status, now] = await Promise.all([getBusiness(id), searchParams, today()]);
   if (!business) notFound();
   const bt = t.business;
+  // Shown with its host so travellers see where it goes; a stored value that is not a valid site is left out.
+  const website = business.website ? normaliseWebsite(business.website) : null;
   const isShop = ORDER_TYPES.includes(business.business_type);
   const photos = [business.photo_url, ...business.photos].filter((p): p is string => !!p).slice(0, 7);
 
@@ -68,9 +70,9 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
         </div>
         {business.has_referral_agreement && <p className="mt-3 text-sm text-muted">{bt.commissionNote}</p>}
         {business.story && <p className="mt-6 whitespace-pre-line leading-relaxed">{business.story}</p>}
-        {business.website && (
-          <a href={business.website} target="_blank" rel="nofollow noopener" className="mt-4 inline-flex items-center gap-1 font-semibold text-forest underline">
-            {bt.website} <ExternalLink className="size-4" aria-hidden />
+        {website?.ok && (
+          <a href={website.url} target="_blank" rel={USER_LINK_REL} className="mt-4 inline-flex flex-wrap items-center gap-1 font-semibold text-forest underline">
+            {bt.website}: <span className="break-all font-normal">{website.host}</span> <ExternalLink className="size-4" aria-hidden />
           </a>
         )}
       </div>
@@ -83,7 +85,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
           <p className="mt-4 rounded-[5px] bg-mint p-4 text-forest">{bt.sent}</p>
         ) : (
           <form action={askBusiness} className="mt-4 space-y-3">
-            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{status.error === 'busy' ? limitTexts(locale).tooMany : t.auth.error}</p>}
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="provider_id" value={business.id} />
             <label className="block">

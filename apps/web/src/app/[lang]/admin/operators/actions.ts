@@ -2,6 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { normaliseTripadvisor, normaliseWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -45,6 +46,14 @@ export async function saveOperator(formData: FormData) {
     if (raw && !url) warnings.push(`${key.replace('_', ' ')} was not saved: it must start with https://.`);
     return url;
   };
+  // Website and TripAdvisor links are stored in the same clean form the database checks for.
+  const cleanLink = (key: 'website' | 'tripadvisor_url') => {
+    const raw = text(key, 1000);
+    if (!raw) return null;
+    const result = key === 'website' ? normaliseWebsite(raw) : normaliseTripadvisor(raw);
+    if (!result.ok) warnings.push(`${key === 'website' ? 'Website' : 'TripAdvisor page'} was not saved: use the full https:// address${key === 'website' ? '' : ' of a tripadvisor page'} (no user name, password or port).`);
+    return result.ok ? result.url : null;
+  };
 
   let licenceNumber = nullable('licence_number', 80);
   const licenceChecked = date('licence_checked_at');
@@ -75,14 +84,14 @@ export async function saveOperator(formData: FormData) {
     name,
     logo_url: logo,
     description: nullable('description', 2000),
-    website: link('website', 300),
+    website: cleanLink('website'),
     contact_email: nullable('contact_email', 160),
     contact_phone: nullable('contact_phone', 40),
     location: nullable('location', 120),
     licence_number: licenceNumber,
     licence_authority: licenceNumber ? nullable('licence_authority', 120) : null,
     licence_checked_at: licenceNumber ? licenceChecked : null,
-    tripadvisor_url: link('tripadvisor_url', 400),
+    tripadvisor_url: cleanLink('tripadvisor_url'),
     tripadvisor_rating: rating,
     tripadvisor_reviews: reviews,
     tripadvisor_checked_at: rating != null || reviews != null || text('tripadvisor_url', 400) ? taChecked : null,

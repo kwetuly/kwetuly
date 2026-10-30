@@ -4,7 +4,8 @@ import { Suspense } from 'react';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { UX_TEXT } from '@kwetuly/shared';
 import { LoginForm } from './login-form';
-import { SocialSignIn } from '@/components/social-sign-in';
+import { PROVIDER_NAMES, SocialSignIn } from '@/components/social-sign-in';
+import type { SocialProvider } from '@/lib/auth-providers';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).auth.signInTitle };
@@ -23,7 +24,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
         locale={locale}
         notice={
           <Suspense fallback={null}>
-            <ErrorNote searchParams={searchParams} message={t.auth.error} linkExpired={t.ux.linkExpired} />
+            <ErrorNote searchParams={searchParams} message={t.auth.error} linkExpired={t.ux.linkExpired} noEmail={t.ux.noEmail} noEmailGeneric={t.ux.noEmailGeneric} />
           </Suspense>
         }
         labels={{
@@ -51,18 +52,27 @@ export default async function LoginPage({ searchParams }: PageProps<'/[lang]/log
 }
 
 // ?error=link: an email link (sign-up confirmation, magic link) that expired or was already used.
+// ?error=no_email: Facebook or X shared no email address, so Supabase refused to create the account.
 async function ErrorNote({
   searchParams,
   message,
   linkExpired,
+  noEmail,
+  noEmailGeneric,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
   message: string;
   linkExpired: string;
+  noEmail: string;
+  noEmailGeneric: string;
 }) {
   const params = await searchParams;
   if (params.deleted) return <p role="status" className="rounded-[5px] bg-mint p-4 font-semibold text-forest">{UX_TEXT[(await getLocale())].deleteDone}</p>;
   if (!params.error) return null;
+  if (params.error === 'no_email') {
+    const provider = typeof params.provider === 'string' && Object.hasOwn(PROVIDER_NAMES, params.provider) ? PROVIDER_NAMES[params.provider as SocialProvider] : null;
+    return <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{provider ? noEmail.replace('{provider}', provider) : noEmailGeneric}</p>;
+  }
   return <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{params.error === 'link' ? linkExpired : message}</p>;
 }
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@kwetuly/shared';
@@ -10,6 +9,7 @@ import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitl
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
+import { openExternal } from '@/lib/open-external';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -70,7 +70,7 @@ export default function BusinessScreen() {
       <BusinessBadge business={b} full />
       {b.has_referral_agreement && <Muted>{bt.commissionNote}</Muted>}
       {b.story && <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{b.story}</Text>}
-      {b.website && <Button title={bt.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(b.website!)} />}
+      {b.website && <Button title={bt.website} variant="outline" onPress={() => openExternal(b.website, { inApp: true })} />}
 
       <Card>
         <SectionTitle>{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', b.business_name)}</SectionTitle>

@@ -1,8 +1,9 @@
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { PLACE_KINDS, altitudeProfile, overnightFor, type ItineraryDay, type Place, type TourStop } from '@kwetuly/shared';
 import { Card, Muted, SectionTitle } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { openExternal } from '@/lib/open-external';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 const metres = (n: number) => `${Math.round(n).toLocaleString('en-US')} m`;
@@ -95,7 +96,7 @@ export function PlaceSource({ place }: { place: Place }) {
   if (!place.source_url) return <Muted>{tt.writtenByGuides}</Muted>;
   const date = place.source_checked_at ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(place.source_checked_at)) : null;
   return (
-    <Text accessibilityRole="link" onPress={() => Linking.openURL(place.source_url!)} style={{ color: brand.leafDark, fontSize: textSize.caption, fontWeight: '700' }}>
+    <Text accessibilityRole="link" onPress={() => openExternal(place.source_url)} style={{ color: brand.leafDark, fontSize: textSize.caption, fontWeight: '700' }}>
       {tt.factsFrom} {place.source_name ?? place.source_url}{date ? ` · ${tt.lastChecked}: ${date}` : ''}
     </Text>
   );

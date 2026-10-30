@@ -116,12 +116,14 @@ export async function requireAdmin(locale: string): Promise<CurrentUser> {
 }
 
 /**
- * Business accounts may make offers and run group trips only once Kwetuly has approved one of
- * their listings (the database checks the same). 'none' for accounts that are not businesses.
+ * Anyone who owns a listing Kwetuly has approved may act as a business (make offers, run group trips),
+ * whatever account type they picked at sign-up: the database checks the same (private.has_approved_business).
+ * 'waiting' only for business accounts whose listing is not approved yet; 'none' for everyone else.
  */
 export async function businessApproval(user: CurrentUser | null): Promise<'approved' | 'waiting' | 'none'> {
-  if (user?.role !== 'provider') return 'none';
+  if (!user) return 'none';
   const supabase = await createClient();
   const { data } = await supabase.from('providers').select('id').eq('owner_id', user.id).eq('verification_status', 'approved').eq('is_sample', false).limit(1);
-  return data && data.length > 0 ? 'approved' : 'waiting';
+  if (data && data.length > 0) return 'approved';
+  return user.role === 'provider' ? 'waiting' : 'none';
 }

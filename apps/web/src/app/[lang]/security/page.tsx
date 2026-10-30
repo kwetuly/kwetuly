@@ -1,13 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { Trash2 } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { adminSecondStep, requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { TwoStepSetup } from '@/components/two-step-setup';
+import { ConnectedSignIns } from '@/components/connected-sign-ins';
 import { deleteAccount } from './actions';
+import { SIGNIN_NOTICE_COOKIE, signInNoticeIsValid } from '@/lib/signin-notice';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getDictionary()).ux.securityTitle, robots: { index: false } };
@@ -30,6 +33,10 @@ async function Settings({ t, locale, searchParams }: { t: Dictionary; locale: Lo
   const [user, status] = await Promise.all([requireUser(locale), searchParams]);
   const { data } = await (await createClient()).auth.mfa.listFactors();
   const enabled = (data?.totp ?? []).some((f) => f.status === 'verified');
+  // Admin accounts change their sign-ins only in a two-step session (checked again in the actions).
+  const signInsLocked = user.role === 'admin' && (await adminSecondStep()) !== 'ok';
+  // "Connected" / "removed" notes only when this account really just asked for that change.
+  const changeProven = signInNoticeIsValid((await cookies()).get(SIGNIN_NOTICE_COOKIE)?.value, user.id, status.signin, status.provider);
   return (
     <div className="mt-6 space-y-6">
       {status.admin === 'two-step' && user.role === 'admin' && (
@@ -45,6 +52,7 @@ async function Settings({ t, locale, searchParams }: { t: Dictionary; locale: Lo
         </p>
       )}
       <TwoStepSetup enabled={enabled} labels={t.ux} />
+      <ConnectedSignIns t={t} locale={locale} status={status} locked={signInsLocked} changeProven={changeProven} />
 
       <section id="delete" className="card scroll-mt-28 space-y-4" aria-labelledby="delete-title">
         <div className="flex items-start gap-3">

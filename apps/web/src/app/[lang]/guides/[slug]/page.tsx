@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS, EVENTS, formatUsd } from '@kwetuly/shared';
+import { CALL_TOPICS, EVENTS, SOCIAL_NAMES, SOCIAL_PLATFORMS, USER_LINK_REL, formatUsd, limitTexts, normaliseSocial } from '@kwetuly/shared';
 import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
@@ -176,7 +176,7 @@ async function Profile({
             <Icon name="handshake" className="size-6 shrink-0" />
             <span>
               <strong className="block">{t.guides.partners}</strong>
-              {t.partners.applyTitle} →
+              {t.partners.applyTitle}
             </span>
           </Link>
         )}
@@ -197,10 +197,20 @@ async function Profile({
           </section>
         )}
 
-        <div className="mt-8 flex gap-4 text-sm">
-          {guide.instagram_url && <a className="text-forest underline" href={guide.instagram_url} rel="nofollow noopener" target="_blank">Instagram</a>}
-          {guide.facebook_url && <a className="text-forest underline" href={guide.facebook_url} rel="nofollow noopener" target="_blank">Facebook</a>}
-          {guide.tiktok_url && <a className="text-forest underline" href={guide.tiktok_url} rel="nofollow noopener" target="_blank">TikTok</a>}
+        {/* The guide's own profiles, with the name so travellers see where the link goes. Links that
+            are not a valid profile address (from before the checks) are left out. */}
+        <div className="mt-8 flex flex-wrap gap-4 text-sm">
+          {SOCIAL_PLATFORMS.map((platform) => {
+            const stored = guide[`${platform}_url`];
+            const profile = stored ? normaliseSocial(platform, stored) : null;
+            if (!profile?.ok) return null;
+            return (
+              <a key={platform} className="text-forest underline" href={profile.url} rel={USER_LINK_REL} target="_blank">
+                {SOCIAL_NAMES[platform]}
+                {profile.handle && <span className="ml-1 font-semibold">@{profile.handle}</span>}
+              </a>
+            );
+          })}
         </div>
 
         <div className="mt-6">
@@ -224,7 +234,7 @@ async function Profile({
           <InViewNote className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{t.profile.sent}</InViewNote>
         ) : (
           <form action={requestGuide} className="mt-4 space-y-3">
-            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.error}</p>}
+            {status.error && <p className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{status.error === 'busy' ? limitTexts(locale).tooMany : t.auth.error}</p>}
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="slug" value={guide.slug} />
             <input type="hidden" name="guide_id" value={guide.id} />

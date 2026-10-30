@@ -73,7 +73,7 @@ function ListingForm({ locale, item }: { locale: Locale; item?: Listing }) {
       </label>
       <label className="block">
         <span className="label">Website (https://…)</span>
-        <input name="website" type="url" className="field" maxLength={400} defaultValue={item?.website ?? ''} />
+        <input name="website" type="url" className="field" maxLength={300} defaultValue={item?.website ?? ''} />
       </label>
       <label className="block">
         <span className="label">Where the information came from (https://…)</span>
@@ -117,7 +117,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
       {params.saved && <p className="mt-4 rounded-[5px] bg-mint p-3 font-semibold text-forest">Saved.</p>}
       {params.deleted && <p className="mt-4 rounded-[5px] bg-mint p-3 font-semibold text-forest">Deleted.</p>}
       {params.error === 'confirm' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Nothing was deleted. Type DELETE exactly to confirm.</p>}
-      {params.error && params.error !== 'confirm' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Could not save. Check the name, type and region (links must start with https://).</p>}
+      {params.error === 'website' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Nothing was saved: the website is not a valid address. Use the full https:// address of the business&apos;s own site (no user name, password or port).</p>}
+      {params.error && params.error !== 'confirm' && params.error !== 'website' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">Could not save. Check the name, type and region (links must start with https://).</p>}
       {(params.samples_deleted || params.samples_failed) && <SampleReport params={params} />}
 
       <nav className="mt-6 flex flex-wrap gap-2 text-sm">

@@ -6,6 +6,7 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import { InviteCodeField } from '@/components/invite-code-field';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
+import { PhoneField } from '@/components/phone-field';
 import { signUp } from '../actions';
 
 const roles = [
@@ -17,9 +18,10 @@ const roles = [
 export type JoinLabels = {
   auth: Pick<
     Dictionary['auth'],
-    'welcomeRole' | 'fullName' | 'phone' | 'phoneHint' | 'email' | 'password' | 'createAccount' | 'error' | 'phoneError' | 'nameReserved' | 'inviteCode' | 'inviteError' | 'inviteHint'
+    'welcomeRole' | 'fullName' | 'phone' | 'email' | 'password' | 'createAccount' | 'error' | 'nameReserved' | 'inviteCode' | 'inviteError' | 'inviteHint'
   >;
   join: Pick<Dictionary['join'], 'traveler' | 'guide' | 'provider'>;
+  phone: Dictionary['phone'];
 };
 
 // Email sign-up. A refused sign-up (wrong invite code, bad phone number) keeps the account type,
@@ -29,9 +31,12 @@ export function JoinForm({
   selected,
   invite,
   initialError,
+  phoneCountry,
   t,
 }: {
   locale: string;
+  /** First guess for the phone country (geo hint or Tanzania). */
+  phoneCountry: string;
   selected: string;
   invite: boolean;
   initialError: string | null;
@@ -43,8 +48,9 @@ export function JoinForm({
 
   return (
     <form action={action} className="space-y-5">
-      {error && error !== 'invite' && (
-        <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{error === 'phone' ? t.auth.phoneError : error === 'name' ? t.auth.nameReserved : t.auth.error}</p>
+      {/* Invite code and phone number show their own message next to the field. */}
+      {error && error !== 'invite' && error !== 'phone' && (
+        <p role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800">{error === 'name' ? t.auth.nameReserved : t.auth.error}</p>
       )}
       <input type="hidden" name="locale" value={locale} />
       {invite && <InviteCodeField key={state ? 'retry' : 'first'} t={t} invalid={error === 'invite'} />}
@@ -76,23 +82,17 @@ export function JoinForm({
         {/* React resets the form after the action; the defaults bring back what was typed. */}
         <NameInput reservedMessage={t.auth.nameReserved} className="field" id="full_name" name="full_name" required autoComplete="name" defaultValue={state?.fullName ?? ''} />
       </div>
-      <div>
-        <label className="label" htmlFor="phone">{t.auth.phone}</label>
-        <input
-          className="field"
-          id="phone"
-          name="phone"
-          type="tel"
-          required
-          autoComplete="tel"
-          inputMode="tel"
-          placeholder="+255 712 345 678"
-          aria-describedby="phone-hint"
-          aria-invalid={error === 'phone' || undefined}
-          defaultValue={state?.phone ?? ''}
-        />
-        <p id="phone-hint" className="mt-1 text-xs text-muted">{t.auth.phoneHint}</p>
-      </div>
+      <PhoneField
+        key={state ? `retry-${state.phoneCountry}` : 'first'}
+        id="phone"
+        label={t.auth.phone}
+        locale={locale}
+        t={t.phone}
+        required
+        defaultValue={state?.phone ?? ''}
+        defaultCountry={state?.phoneCountry ?? phoneCountry}
+        invalid={error === 'phone'}
+      />
       <div>
         <label className="label" htmlFor="email">{t.auth.email}</label>
         <input className="field" id="email" name="email" type="email" required autoComplete="email" defaultValue={state?.email ?? ''} />

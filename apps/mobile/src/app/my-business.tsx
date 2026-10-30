@@ -4,13 +4,14 @@ import { Redirect, Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, linkTexts, normaliseWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { SignInPrompt } from '@/components/sign-in-prompt';
+import { PhoneField, initialPhone } from '@/components/phone-field';
 import { BusinessSalesCard } from '@/components/referral';
 import { brand, colors, space } from '@/theme';
 
@@ -71,8 +72,10 @@ function Editor({
     location: business?.location ?? '',
     story: business?.story ?? '',
     website: business?.website ?? '',
-    whatsapp: business?.provider_private?.whatsapp_number ?? defaultPhone,
   });
+  // WhatsApp: country plus the number as typed; a saved +255… number is shown the local way.
+  const savedWhatsapp = business?.provider_private?.whatsapp_number ?? defaultPhone;
+  const [whatsapp, setWhatsapp] = useState(() => initialPhone(savedWhatsapp));
   const [photo, setPhoto] = useState<Upload | null>(null);
   const [extra, setExtra] = useState<Upload | null>(null);
   const [licence, setLicence] = useState<Upload | null>(null);
@@ -83,13 +86,18 @@ function Editor({
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 
   async function save() {
-    if (!f.name.trim() || !f.region[0] || !f.whatsapp.trim()) return setMessage({ tone: 'error', text: t.auth.error });
+    if (!f.name.trim() || !f.region[0] || !whatsapp.number.trim()) return setMessage({ tone: 'error', text: t.auth.error });
+    // Saved as one international number; an unchanged saved number is kept as it was.
+    const whatsappNumber = resolvePhone(whatsapp.number, whatsapp.country, business?.provider_private?.whatsapp_number);
+    if (!whatsappNumber) return setMessage({ tone: 'error', text: `${bt.whatsappField}: ${t.phone.invalidGeneric}` });
     // Names that look like Kwetuly are kept for its own team (the database refuses them too).
     if (isReservedDisplayName(f.name)) return setMessage({ tone: 'error', text: t.auth.nameReserved });
+    // The website is stored in one clean https form (the database refuses anything else).
+    const website = f.website.trim() ? normaliseWebsite(f.website) : null;
+    if (website && !website.ok) return setMessage({ tone: 'error', text: linkTexts(locale).websiteInvalid });
     setBusy(true);
     setMessage(null);
     try {
-      const website = f.website.trim();
       await saveMyBusiness(
         userId,
         business,
@@ -99,8 +107,8 @@ function Editor({
           base_region: f.region[0],
           location: f.location.trim() || null,
           story: f.story.trim() || null,
-          website: /^https:\/\/\S+$/i.test(website) ? website : null,
-          whatsapp_number: f.whatsapp.trim(),
+          website: website?.ok ? website.url : null,
+          whatsapp_number: whatsappNumber,
         },
         { photo: photo ?? undefined, extraPhoto: extra ?? undefined, licence: licence ?? undefined },
       );
@@ -141,7 +149,13 @@ function Editor({
         <ChipSelect label={bt.typeField} options={(business?.business_type === 'merch' ? BUSINESS_TYPES : OWNER_BUSINESS_TYPES).map((b) => ({ value: b.id, label: b[locale] }))} selected={f.type} onChange={set('type')} multiple={false} />
         <ChipSelect label={bt.regionField} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.region} onChange={set('region')} multiple={false} />
         <Field label={bt.locationField} value={f.location} onChangeText={set('location')} />
-        <Field label={bt.whatsappField} value={f.whatsapp} onChangeText={set('whatsapp')} keyboardType="phone-pad" />
+        <PhoneField
+          label={bt.whatsappField}
+          number={whatsapp.number}
+          country={whatsapp.country}
+          onChangeNumber={(number) => setWhatsapp((w) => ({ ...w, number }))}
+          onChangeCountry={(country) => setWhatsapp((w) => ({ ...w, country }))}
+        />
         <Field label={bt.storyField} value={f.story} onChangeText={set('story')} multiline />
         <Field label={bt.websiteField} value={f.website} onChangeText={set('website')} autoCapitalize="none" keyboardType="url" />
         <Button title={`${bt.morePhotosField} (${business?.photos.length ?? 0}/6)${extra ? ' ✓' : ''}`} variant="outline" onPress={async () => setExtra((await pickPhoto()) ?? extra)} />

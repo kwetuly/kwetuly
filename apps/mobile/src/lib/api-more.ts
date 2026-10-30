@@ -1,6 +1,6 @@
 // More data access: reviews, calls, enquiries, Guide Hub, guide profile, organiser tools and business tools.
 // Same tables and rules as the website; row-level security enforces who may do what.
-import { isDisplayNameReservedError, isReservedDisplayName, normalizePhone, type GuideCheckFields } from '@kwetuly/shared';
+import { isDisplayNameReservedError, isReservedDisplayName, normaliseWebsite, normalizePhone, type GuideCheckFields } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 function check(error: { message: string } | null) {
@@ -132,8 +132,9 @@ export async function registerInterest(input: { section: string; item: string; k
 // ---------------------------------------------------------------------------
 // While Kwetuly is invite-only, the database refuses to finish an account without a valid invite
 // code (error 'invite'). Accounts that already used a code at sign-up are not asked again.
-export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '') {
-  const normalized = normalizePhone(phone);
+export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '', phoneCountry?: string) {
+  // The number as typed plus the country picked next to it, saved as one international number.
+  const normalized = normalizePhone(phone, phoneCountry);
   if (!normalized) throw new Error('phone');
   if (isReservedDisplayName(fullName)) throw new Error('name');
   const code = inviteCode.trim().slice(0, 200);
@@ -232,6 +233,8 @@ export async function saveGuideProfile(
   }
   const { data: saved, error } = await supabase.from('guides').upsert(guide, { onConflict: 'owner_id' }).select('id').single();
   if (error?.code === '23505') throw new Error('slug');
+  // 23514: a database check refused the row, which on guides means a profile link saved before the checks.
+  if (error?.code === '23514') throw new Error('links');
   check(error);
 
   const privateData: Record<string, string | null> = { guide_id: saved!.id, ...details };
@@ -272,7 +275,8 @@ export async function respondToCall(callId: string, accept: boolean, scheduledAt
   if (accept) {
     const when = scheduledAt ? new Date(scheduledAt) : null;
     update.scheduled_at = when && !Number.isNaN(when.getTime()) ? when.toISOString() : null;
-    update.meeting_link = meetingLink && /^https:\/\/\S+$/i.test(meetingLink) ? meetingLink : null;
+    const link = normaliseWebsite(meetingLink);
+    update.meeting_link = link.ok ? link.url : null;
   }
   check((await supabase.from('call_requests').update(update).eq('id', callId)).error);
 }

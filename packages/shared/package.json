@@ -11,5 +11,8 @@
   "devDependencies": {
     "typescript": "~6.0.3",
     "vitest": "^3.2.7"
+  },
+  "dependencies": {
+    "libphonenumber-js": "1.13.15"
   }
 }

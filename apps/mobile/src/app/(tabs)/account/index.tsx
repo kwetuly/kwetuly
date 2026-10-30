@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { openExternal } from '@/lib/open-external';
 import { useQuery } from '@tanstack/react-query';
 import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@kwetuly/shared';
+import { ConnectedSignIns } from '@/components/connected-sign-ins';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui';
+import { useCanOffer } from '@/hooks/use-can-offer';
 import { getMyGuide, listMyCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -23,7 +26,9 @@ export default function AccountScreen() {
   const guide = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const calls = useQuery({ queryKey: ['my-calls', userId], queryFn: () => listMyCalls(userId!), enabled: !!userId });
   const myGuide = guide.data?.guide;
-  const isBusiness = role === 'provider' || role === 'admin';
+  // Anyone who owns an approved listing gets the business tools, whatever account type they picked.
+  const { approvedBusiness } = useCanOffer();
+  const isBusiness = role === 'provider' || role === 'admin' || approvedBusiness;
   const canOffer = isBusiness || myGuide?.verification_status === 'approved';
   const [push, setPush] = useState<PushState | null>(null);
 
@@ -115,8 +120,8 @@ export default function AccountScreen() {
                   {c.scheduled_at ? ` · ${new Date(c.scheduled_at).toLocaleString(locale)}` : ''}
                 </Muted>
                 {c.status === 'accepted' && c.meeting_link && (
-                  <Text style={{ color: brand.leafDark, fontWeight: '700' }} onPress={() => WebBrowser.openBrowserAsync(c.meeting_link!)}>
-                    {t.traveler.joinCall} ›
+                  <Text style={{ color: brand.leafDark, fontWeight: '700' }} onPress={() => openExternal(c.meeting_link, { inApp: true })}>
+                    {t.traveler.joinCall}
                   </Text>
                 )}
               </View>
@@ -133,6 +138,8 @@ export default function AccountScreen() {
               </Text>
             )}
           </Card>
+
+          <ConnectedSignIns />
 
           <Button title={t.ux.securityLink} variant="outline" onPress={() => router.push('/security')} />
           <Button title={t.nav.signOut} variant="dark" onPress={signOut} />

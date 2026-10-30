@@ -3,10 +3,10 @@ import type { Dictionary } from '@/i18n/dictionaries';
 import { enabledSocialProviders, type SocialProvider } from '@/lib/auth-providers';
 import { signInWithProvider } from '@/app/[lang]/(auth)/actions';
 
-const NAMES: Record<SocialProvider, string> = { google: 'Google', facebook: 'Facebook', apple: 'Apple' };
+export const PROVIDER_NAMES: Record<SocialProvider, string> = { google: 'Google', facebook: 'Facebook', apple: 'Apple' };
 
 // Brand marks drawn inline so they load instantly and need no external files.
-function Mark({ provider }: { provider: SocialProvider }) {
+export function ProviderMark({ provider }: { provider: SocialProvider }) {
   if (provider === 'google') {
     return (
       <svg viewBox="0 0 48 48" className="size-5" aria-hidden>
@@ -44,7 +44,7 @@ export async function SocialSignIn({ locale, t, role }: { locale: Locale; t: Dic
           <input type="hidden" name="provider" value={provider} />
           {role && <input type="hidden" name="role" value={role} />}
           <button className="flex w-full items-center justify-center gap-3 rounded-[5px] border-2 border-line bg-white px-4 py-3 font-semibold text-charcoal transition hover:border-charcoal">
-            <Mark provider={provider} /> {t.auth.continueWith} {NAMES[provider]}
+            <ProviderMark provider={provider} /> {t.auth.continueWith} {PROVIDER_NAMES[provider]}
           </button>
         </form>
       ))}

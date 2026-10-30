@@ -2,10 +2,11 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
+import { OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, linkErrorCode, normaliseWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { phoneFromForm } from '@/lib/phone';
 
 const text = (formData: FormData, key: string, max: number) => {
   const value = String(formData.get(key) ?? '').trim().slice(0, max);
@@ -33,16 +34,28 @@ export async function saveBusiness(formData: FormData) {
   const name = text(formData, 'business_name', 120);
   const type = String(formData.get('business_type') ?? '');
   const region = text(formData, 'base_region', 60);
-  const whatsapp = text(formData, 'whatsapp_number', 30);
-  const website = text(formData, 'website', 200);
+  const websiteInput = text(formData, 'website', 1000);
   // The Kwetuly Shop type ('merch') is kept for Kwetuly; the database refuses it from owners too.
   const { data: existing } = await supabase.from('providers').select('id, photos, business_type').eq('owner_id', user.id).maybeSingle<{ id: string; photos: string[]; business_type: string }>();
   const typeAllowed = OWNER_BUSINESS_TYPES.some((b) => b.id === type) || (type === 'merch' && existing?.business_type === 'merch');
-  if (!name || !typeAllowed || !region || !(REGIONS as readonly string[]).includes(region) || !whatsapp) {
-    redirect(`${back}?error=missing#business`);
+  if (!name || !typeAllowed || !region || !(REGIONS as readonly string[]).includes(region)) {
+    redirect(`${back}?business_error=missing#business`);
   }
+  // The WhatsApp number as typed plus its country, saved as one international number; an unchanged
+  // saved number is kept as it was. Checked before anything is written.
+  const { data: savedPrivate } = existing
+    ? await supabase.from('provider_private').select('whatsapp_number').eq('provider_id', existing.id).maybeSingle<{ whatsapp_number: string | null }>()
+    : { data: null };
+  const whatsappField = phoneFromForm(formData, 'whatsapp_number', 'whatsapp_country', savedPrivate?.whatsapp_number);
+  if (!whatsappField.input) redirect(`${back}?business_error=missing#business`);
+  const whatsapp = whatsappField.phone;
+  if (!whatsapp) redirect(`${back}?business_error=whatsapp#business`);
   // Names that look like Kwetuly are kept for its own team (the database refuses them too).
-  if (isReservedDisplayName(name)) redirect(`${back}?error=name#business`);
+  if (isReservedDisplayName(name)) redirect(`${back}?business_error=name#business`);
+  // The website is stored in one clean https form. A website that is not one is not saved (the
+  // saved one stays) but everything else is, and the form says which link was refused.
+  const website = websiteInput ? normaliseWebsite(websiteInput) : null;
+  const badWebsite = !!website && !website.ok;
 
   const row: Record<string, unknown> = {
     business_name: name,
@@ -50,8 +63,8 @@ export async function saveBusiness(formData: FormData) {
     base_region: region,
     location: text(formData, 'location', 160),
     story: text(formData, 'story', 4000),
-    website: website && /^https:\/\/\S+$/i.test(website) ? website : null,
   };
+  if (!badWebsite) row.website = website?.ok ? website.url : null;
   const avatars = supabase.storage.from('avatars');
   const photo = ownPath(formData.get('photo_path'), user.id, 'business', ['jpg', 'png', 'webp']);
   if (photo) row.photo_url = avatars.getPublicUrl(photo).data.publicUrl;
@@ -62,17 +75,17 @@ export async function saveBusiness(formData: FormData) {
   const saved = existing
     ? await supabase.from('providers').update(row).eq('id', existing.id).select('id').single<{ id: string }>()
     : await supabase.from('providers').insert({ ...row, owner_id: user.id }).select('id').single<{ id: string }>();
-  if (isDisplayNameReservedError(saved.error)) redirect(`${back}?error=name#business`);
-  if (saved.error || !saved.data) redirect(`${back}?error=save#business`);
+  if (isDisplayNameReservedError(saved.error)) redirect(`${back}?business_error=name#business`);
+  if (saved.error || !saved.data) redirect(`${back}?business_error=save#business`);
 
   // WhatsApp number and licence stay private: only the owner and Kwetuly can read them.
   const privateRow: Record<string, string> = { provider_id: saved.data.id, whatsapp_number: whatsapp };
   if (licence) privateRow.licence_document_path = licence;
   const { error } = await supabase.from('provider_private').upsert(privateRow);
-  if (error) redirect(`${back}?error=save#business`);
+  if (error) redirect(`${back}?business_error=save#business`);
 
   revalidateTag('businesses', 'max');
-  redirect(`${back}?saved=1#business`);
+  redirect(badWebsite ? `${back}?business_error=${linkErrorCode('website')}#business` : `${back}?business=saved#business`);
 }
 
 // The owner asks for the paid badge check; Kwetuly then arranges the check and the payment.

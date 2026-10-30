@@ -2,6 +2,7 @@ import { ux_sw } from './ux';
 import { packages_sw } from './packages';
 import { travel_sw } from './travel';
 import { legal_sw } from './legal';
+import { phone_sw } from './phone';
 import { business_sw } from './business';
 import { extras_sw } from './extras';
 import type { Dictionary } from './en';
@@ -844,4 +845,5 @@ export const sw: Dictionary = {
     rights: 'Haki zote zimehifadhiwa.',
   },
   legal: legal_sw,
+  phone: phone_sw,
 };
