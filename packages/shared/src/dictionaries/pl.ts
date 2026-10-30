@@ -1,6 +1,7 @@
 import { ux_pl } from './ux';
 import { packages_pl } from './packages';
 import { travel_pl } from './travel';
+import { legal_pl } from './legal';
 import { business_pl } from './business';
 import { extras_pl } from './extras';
 import { en, type Dictionary } from './en';
@@ -676,4 +677,5 @@ export const pl: Dictionary = {
     tagline: 'Dom tanzańskich przewodników.',
     rights: 'Wszelkie prawa zastrzeżone.',
   },
+  legal: legal_pl,
 };

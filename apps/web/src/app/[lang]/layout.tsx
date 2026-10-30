@@ -114,9 +114,20 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
             ))}
           </div>
           <div className="border-t border-white/10">
-            <p className="mx-auto max-w-7xl px-4 py-5 text-xs text-white/90">
-              © 2026 Kwetuly. {t.footer.rights} · Photos: Unsplash photographers
-            </p>
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-5 text-xs text-white/90">
+              <p>© 2026 Kwetuly. {t.footer.rights} · Photos: Unsplash photographers</p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-2">
+                <li>
+                  <Link href={`/${locale}/privacy`} className="underline-offset-2 hover:text-white hover:underline">{t.legal.privacy}</Link>
+                </li>
+                <li>
+                  <Link href={`/${locale}/terms`} className="underline-offset-2 hover:text-white hover:underline">{t.legal.terms}</Link>
+                </li>
+                <li>
+                  <Link href={`/${locale}/data-deletion`} className="underline-offset-2 hover:text-white hover:underline">{t.legal.dataDeletion}</Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </footer>
       </body>

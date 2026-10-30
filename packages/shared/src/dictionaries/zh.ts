@@ -1,6 +1,7 @@
 import { ux_zh } from './ux';
 import { packages_zh } from './packages';
 import { travel_zh } from './travel';
+import { legal_zh } from './legal';
 import { business_zh } from './business';
 import { extras_zh } from './extras';
 import { en, type Dictionary } from './en';
@@ -671,4 +672,5 @@ export const zh: Dictionary = {
     tagline: '坦桑尼亚导游之家。',
     rights: '版权所有。',
   },
+  legal: legal_zh,
 };

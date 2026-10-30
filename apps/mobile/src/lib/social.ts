@@ -13,7 +13,10 @@ export async function enabledProviders(): Promise<SocialProvider[]> {
     });
     if (!res.ok) return [];
     const settings = (await res.json()) as { external?: Record<string, boolean> };
-    return SOCIAL_PROVIDERS.filter((p) => settings.external?.[p]);
+    const enabled = SOCIAL_PROVIDERS.filter((p) => settings.external?.[p]);
+    // App Store rule: an iPhone app that offers Google or Facebook must also offer Apple.
+    if (process.env.EXPO_OS === 'ios' && !enabled.includes('apple')) return [];
+    return enabled;
   } catch {
     return [];
   }

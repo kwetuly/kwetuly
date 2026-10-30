@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!INDEXING_ON) return [];
   const [guides, trips, groups, operators, places] = await Promise.all([listGuides({}), listTours(), listGroupTrips(), listOperators(), listPlaces()]);
 
-  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/operators', '/places', '/moments', '/join']);
+  const paths = new Set<string>(['', '/guides', '/tours', '/calls', '/partners/agents', '/group-trips', '/operators', '/places', '/moments', '/join', '/privacy', '/terms', '/data-deletion']);
   for (const section of ALL_SECTIONS) {
     paths.add(`/${section.slug}`);
     for (const item of section.items) {

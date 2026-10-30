@@ -1,6 +1,7 @@
 import { ux_sw } from './ux';
 import { packages_sw } from './packages';
 import { travel_sw } from './travel';
+import { legal_sw } from './legal';
 import { business_sw } from './business';
 import { extras_sw } from './extras';
 import type { Dictionary } from './en';
@@ -842,4 +843,5 @@ export const sw: Dictionary = {
     tagline: 'Nyumbani kwa waongozaji wa Tanzania.',
     rights: 'Haki zote zimehifadhiwa.',
   },
+  legal: legal_sw,
 };

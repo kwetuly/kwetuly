@@ -21,11 +21,21 @@ function preferredLocale(request: NextRequest): Locale {
 // Pages a visitor can open while the site is closed (see src/lib/coming-soon.ts).
 const OPEN_WHILE_CLOSED = ['/coming-soon', '/team-access'];
 
+// Legal pages Google and Meta reviewers must reach without the team cookie: /privacy, /terms and
+// /data-deletion, with or without a language prefix (/en/privacy, /sw/terms, ...). They then go
+// through the normal language redirect and session handling below.
+const LEGAL_PAGES = ['privacy', 'terms', 'data-deletion'];
+function isLegalPage(pathname: string) {
+  const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
+  if (parts.length === 1) return LEGAL_PAGES.includes(parts[0]);
+  return parts.length === 2 && hasLocale(parts[0]) && LEGAL_PAGES.includes(parts[1]);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const firstSegment = pathname.split('/')[1] ?? '';
 
-  if (siteClosed() && !OPEN_WHILE_CLOSED.includes(pathname) && !(await hasPreviewAccess(request.cookies.get(PREVIEW_COOKIE)?.value))) {
+  if (siteClosed() && !OPEN_WHILE_CLOSED.includes(pathname) && !isLegalPage(pathname) && !(await hasPreviewAccess(request.cookies.get(PREVIEW_COOKIE)?.value))) {
     const response = NextResponse.rewrite(new URL('/coming-soon', request.url));
     response.headers.set('Cache-Control', 'private, no-store');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow');

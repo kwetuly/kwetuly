@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Logo } from '@/components/logo';
 import { SUPPORT_EMAIL } from '@/lib/site';
 
@@ -14,6 +15,12 @@ export default function ComingSoon() {
           <a className="font-semibold text-forest underline" href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
         </p>
       )}
+      {/* These pages stay open while the site is closed (LEGAL_PAGES in src/proxy.ts). */}
+      <nav aria-label="Legal" className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+        <Link className="font-semibold text-forest underline" href="/en/privacy">Privacy</Link>
+        <Link className="font-semibold text-forest underline" href="/en/terms">Terms</Link>
+        <Link className="font-semibold text-forest underline" href="/en/data-deletion">Delete your data</Link>
+      </nav>
     </main>
   );
 }

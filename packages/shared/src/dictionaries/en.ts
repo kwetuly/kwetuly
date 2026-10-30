@@ -2,6 +2,7 @@
 import { ux_en } from './ux';
 import { packages_en } from './packages';
 import { travel_en } from './travel';
+import { legal_en } from './legal';
 import { business_en } from './business';
 import { extras_en } from './extras';
 export const en = {
@@ -840,6 +841,7 @@ export const en = {
     tagline: 'The home of Tanzanian guides.',
     rights: 'All rights reserved.',
   },
+  legal: legal_en,
 };
 
 export type Dictionary = typeof en;

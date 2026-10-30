@@ -13,6 +13,7 @@
 | deposit-and-refund-policy.md | Deposits and refunds (deposits are OFF at soft launch) | Draft 0.1 |
 | group-chat-media-consent.md | Group-chat photos and videos, and public sharing | Draft 0.1 |
 | brand-name-search-brief.md | One-page brief asking an advocate for a BRELA/Zanzibar name and trademark search for "Kwetuly", filing advice, later Africa-wide options, fees and timelines (added 2026-10-24; Walter sends it) | Draft 0.1 |
+| lessons-payments-items-research.md | Research and 26 advocate questions: crypto (BoT, s. 83C, GN 198), holding and paying out money, online lessons, banned and licensed goods for the item catalogue, consumer protection (added 2026-10-30) | Draft 0.1 |
 
 No earlier legal drafts existed under docs/ (checked 2026-10-16). The drafts were written against the database migrations in supabase/migrations and the site texts in packages/shared/src/dictionaries.
 

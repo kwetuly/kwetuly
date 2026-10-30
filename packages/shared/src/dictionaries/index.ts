@@ -13,3 +13,4 @@ export type { Dictionary };
 export const DICTIONARIES: Record<Locale, Dictionary> = { en, sw, fr, it, de, pl, zh };
 export { UX_TEXT } from './ux';
 export { TRAVEL_LINKS } from './travel';
+export { LEGAL_PUBLISHED } from './legal';

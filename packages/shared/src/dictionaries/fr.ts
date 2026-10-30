@@ -1,6 +1,7 @@
 import { ux_fr } from './ux';
 import { packages_fr } from './packages';
 import { travel_fr } from './travel';
+import { legal_fr } from './legal';
 import { business_fr } from './business';
 import { extras_fr } from './extras';
 import { en, type Dictionary } from './en';
@@ -676,4 +677,5 @@ export const fr: Dictionary = {
     tagline: 'La maison des guides tanzaniens.',
     rights: 'Tous droits réservés.',
   },
+  legal: legal_fr,
 };
