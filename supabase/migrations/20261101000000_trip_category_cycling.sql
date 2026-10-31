@@ -1,0 +1,25 @@
+-- DRAFT, NOT APPLIED. Tour category 'cycling' (board 2026-10-31 DECIDED: "Bike, village and hosts").
+-- Apply on live only with Walter's approval. Design note: docs/tech/bike-village-hosts-fit.md section 5.
+--
+-- What it does: adds the value 'cycling' to the enum public.trip_category (used by trips.categories).
+-- Nothing else. It is its own migration because Postgres does not let a new enum value be used in the
+-- same transaction that adds it; 20261101000100_host_package_kinds.sql then tags the Mto wa Mbu bike tour.
+--
+-- Before applying: packages/shared/src/trips.ts TRIP_CATEGORIES should get a 'cycling' entry (icon and
+-- 7 labels) and packages/shared/src/tours.ts SPECIALTIES_BY_CATEGORY.cycling = ['cultural', 'day_trips']
+-- (frontend). Until then the website falls back to the 'compass' icon and the app prints the raw id
+-- "cycling" (apps/mobile/src/lib/labels.ts categoryName), so nothing breaks, it just looks unfinished.
+--
+-- Access rules: unchanged. trips and their categories keep the existing policies (public read of
+-- published tours, admin write).
+--
+-- Idempotent: "if not exists", so running it twice is harmless.
+--
+-- Undo: Postgres cannot drop a single enum value. Remove its use instead (data only, nothing deleted):
+--   update public.trips set categories = array_remove(categories, 'cycling'::public.trip_category)
+--   where 'cycling' = any (categories);
+-- The unused value can stay. Removing it for real means recreating the type (rename the old type,
+-- create the new one without 'cycling', alter trips.categories using a cast through text[], drop the
+-- old type) and is not worth the risk for an unused label.
+
+alter type public.trip_category add value if not exists 'cycling';
