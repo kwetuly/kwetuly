@@ -11,6 +11,7 @@ import { expertiseOf, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 import { GuidePackages } from '@/components/guide-packages';
+import { PhotoCredits } from '@/components/sample-offer';
 import { getGuidePackages } from '@/lib/packages';
 
 import { EVENTS, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
@@ -125,7 +126,8 @@ export default function GuideScreen() {
         </Card>
       )}
 
-      <GuidePackages packages={packages.data ?? []} guideId={g.id} guideName={g.display_name} guideSlug={g.slug} />
+      <GuidePackages packages={packages.data ?? []} guideId={g.id} guideName={g.display_name} guideSlug={g.slug} sample={g.is_sample} />
+      {g.is_sample && <PhotoCredits urls={[g.photo_url, ...(packages.data ?? []).map((p) => p.photo_url)]} />}
 
       <Card>
         <Facts title={t.profile.specialties} items={g.specialties.map((s) => specialtyName(s, locale))} />

@@ -45,13 +45,18 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
 // Badges for who the guide is: verified, Pro, female guide, works with agencies.
 const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs font-bold';
 
+/** The sand "Sample guide" / "Sample trip" / "Sample package" badge for test data. */
+export function SampleBadge({ label }: { label: string }) {
+  return <span className={`${pill} border border-gold bg-sand text-charcoal`}>{label}</span>;
+}
+
 // "Verified guide" only once Kwetuly has recorded at least one document check. On the profile page
 // (`showApproved`), an approved guide without checks gets a neutral label that links to the explanation.
 export function GuideBadges({ guide, t, showApproved }: { guide: Guide; t: Dictionary; showApproved?: boolean }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {guide.is_sample ? (
-        <span className={`${pill} border border-gold bg-sand text-charcoal`}>{t.extras.sampleGuide}</span>
+        <SampleBadge label={t.extras.sampleGuide} />
       ) : guide.verification_status !== 'approved' ? null : hasRecordedCheck(guide) ? (
         <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
       ) : (

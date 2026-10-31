@@ -1,4 +1,4 @@
-import { BUSINESS_COLUMNS, SHOP_PROVIDER_SETTING, type Business, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_COLUMNS, SAMPLE_LISTING_COLUMNS, SHOP_PROVIDER_SETTING, type Business, type BusinessType, type PhotoCredit, type SampleListing } from '@kwetuly/shared';
 import { supabase } from '@/lib/supabase';
 
 // Business listings, the same rules as the website: visitors see approved businesses; the owner's
@@ -25,6 +25,30 @@ export async function getBusiness(id: string): Promise<Business | null> {
   const { data, error } = await supabase.from('providers').select(BUSINESS_COLUMNS).eq('id', id).maybeSingle();
   check(error);
   return (data as Business | null) ?? null;
+}
+
+/**
+ * "What they offer": published items of a SAMPLE business only (security finding F1: owners can still
+ * publish listings without review, so real owners' items stay hidden until the review rules exist).
+ */
+export async function getSampleListings(providerId: string): Promise<SampleListing[]> {
+  const { data, error } = await supabase
+    .from('listings')
+    .select(SAMPLE_LISTING_COLUMNS)
+    .eq('provider_id', providerId)
+    .eq('is_published', true)
+    .eq('providers.is_sample', true)
+    .order('created_at')
+    .limit(30);
+  check(error);
+  return ((data ?? []) as SampleListing[]).map((x) => ({ id: x.id, title: x.title, description: x.description, photos: x.photos ?? [], price_note: x.price_note }));
+}
+
+/** Credit lines for sample photos, by storage path. Empty when the credits table does not exist yet. */
+export async function getPhotoCredits(paths: string[]): Promise<PhotoCredit[]> {
+  if (paths.length === 0) return [];
+  const { data } = await supabase.from('sample_media_credits').select('path, credit, source_url, licence').in('path', paths.slice(0, 100));
+  return (data ?? []) as PhotoCredit[];
 }
 
 export async function askBusiness(input: { providerId: string; userId?: string; name: string; contact: string; message: string }) {

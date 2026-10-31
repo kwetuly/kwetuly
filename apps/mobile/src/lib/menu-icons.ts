@@ -39,6 +39,7 @@ const ICONS: Record<string, GlyphName> = {
   'book-open': { ios: 'book', android: 'menu_book' },
   camera: { ios: 'camera', android: 'photo_camera' },
   trophy: { ios: 'trophy', android: 'emoji_events' },
+  bike: { ios: 'bicycle', android: 'directions_bike' },
   'trending-up': { ios: 'chart.line.uptrend.xyaxis', android: 'trending_up' },
   handshake: { ios: 'briefcase', android: 'handshake' },
   plane: { ios: 'airplane', android: 'flight' },

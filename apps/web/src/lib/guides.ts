@@ -142,7 +142,8 @@ export async function siteStats(): Promise<{ guides: number; reviews: number }> 
     .from('guides')
     .select('rating_count')
     .eq('verification_status', 'approved')
-    .eq('visibility', 'public');
+    .eq('visibility', 'public')
+    .eq('is_sample', false);
   const rows = (data ?? []) as { rating_count: number | null }[];
   return { guides: rows.length, reviews: rows.reduce((sum, g) => sum + (g.rating_count ?? 0), 0) };
 }
@@ -163,7 +164,7 @@ export async function getGuidePackages(guideId: string): Promise<GuidePackage[]>
   return (data ?? []) as GuidePackage[];
 }
 
-export type PackageWithGuide = GuidePackage & { guides: { display_name: string; slug: string; photo_url: string | null; visibility: string } | null };
+export type PackageWithGuide = GuidePackage & { guides: { display_name: string; slug: string; photo_url: string | null; visibility: string; is_sample: boolean } | null };
 
 // Approved packages from all public guides, optionally of one kind, for the catalogue.
 export async function listPackages(kind?: string): Promise<PackageWithGuide[]> {
@@ -173,7 +174,7 @@ export async function listPackages(kind?: string): Promise<PackageWithGuide[]> {
 
   let query = publicClient()
     .from('guide_packages')
-    .select(`${PACKAGE_COLUMNS}, guides!inner(display_name, slug, photo_url, visibility)`)
+    .select(`${PACKAGE_COLUMNS}, guides!inner(display_name, slug, photo_url, visibility, is_sample)`)
     .eq('status', 'approved')
     .eq('guides.visibility', 'public')
     .order('created_at', { ascending: false })

@@ -72,6 +72,7 @@ export async function getTourStops(tour: Pick<Tour, 'id' | 'status'>): Promise<T
 /**
  * "Meet your guides": the guides an admin assigned to this tour, or, when there are none,
  * verified guides whose specialties fit the tour (mountain guides for Kilimanjaro, and so on).
+ * Real guides come before sample guides.
  */
 export async function getTourGuides(tourId: string, categories: string[]): Promise<{ assigned: boolean; guides: Guide[] }> {
   'use cache';
@@ -97,6 +98,7 @@ export async function getTourGuides(tourId: string, categories: string[]): Promi
     .eq('verification_status', 'approved')
     .eq('visibility', 'public')
     .overlaps('specialties', specialties)
+    .order('is_sample', { ascending: true })
     .order('rating_count', { ascending: false })
     .order('plan', { ascending: false })
     .limit(4);

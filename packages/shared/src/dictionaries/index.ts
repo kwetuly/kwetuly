@@ -21,3 +21,5 @@ export { LIMIT_TEXT, limitTexts, isRateLimited, RATE_LIMIT_SQLSTATE, RATE_LIMIT_
 export { linkCheckText, type LinkCheckText } from './link-check';
 export { guideStatusText, type GuideStatusText } from './guide-status';
 export { SIGN_INS_TEXT } from './sign-ins';
+export { CATALOGUE_TEXT, catalogueText, type CatalogueText } from './catalogue';
+export { HOSTS_TEXT, hostsText, type HostsText } from './hosts';

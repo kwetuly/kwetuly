@@ -15,6 +15,7 @@ import {
   TRANSFER_MODES,
   TRAVEL_STYLES,
   formatPrice,
+  hasRecordedCheck,
   straightLineKm,
   tourMatchesTheme,
   tourSummary,
@@ -256,6 +257,7 @@ export default function TourScreen() {
               {team.data!.guides.map((g) => (
                 <GuideRow key={g.id} guide={g} />
               ))}
+              {team.data!.guides.some((g) => g.is_sample) && <Muted>{t.extras.sampleGuideNote}</Muted>}
             </Card>
           )}
 
@@ -327,20 +329,27 @@ function StopList({ stops, kinds, onFocus }: { stops: TourStop[]; kinds: Record<
   );
 }
 
+// Sample guides get the "Sample guide" badge and no "New guide" line; the tick only shows
+// once Kwetuly has recorded a document check (same rule as the guide cards).
 function GuideRow({ guide }: { guide: Guide }) {
   const { t, locale } = useI18n();
+  const checked = !guide.is_sample && guide.verification_status === 'approved' && hasRecordedCheck(guide);
   return (
     <Link href={`/guide/${guide.slug}`} asChild>
       <Pressable accessibilityRole="link" style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
         <Avatar name={guide.display_name} uri={guide.photo_url} size={52} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ color: colors.label, fontWeight: '800' }}>{guide.display_name} <Text style={{ color: brand.leafDark }}>✓</Text></Text>
+          <Text style={{ color: colors.label, fontWeight: '800' }}>
+            {guide.display_name}
+            {checked && <Text style={{ color: brand.leafDark }} accessibilityLabel={t.guides.verified}> ✓</Text>}
+          </Text>
+          {guide.is_sample && <Badge label={t.extras.sampleGuide} tone="sand" />}
           <Text numberOfLines={1} style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>
             {guide.specialties.slice(0, 2).map((s) => specialtyName(s, locale)).join(', ')}
             {guide.years_experience != null ? ` · ${guide.years_experience} ${t.tours.yearsShort}` : ''}
           </Text>
           <Text numberOfLines={1} style={{ color: brand.forest, fontSize: textSize.caption, fontWeight: '600' }}>{guide.languages.map(languageName).join(', ')}</Text>
-          {guide.rating_count > 0 && guide.rating_avg != null ? (
+          {guide.is_sample ? null : guide.rating_count > 0 && guide.rating_avg != null ? (
             <Stars value={guide.rating_avg} size={12} />
           ) : (
             <Text style={{ color: brand.leafDark, fontSize: textSize.caption, fontWeight: '700' }}>✦ {t.reviews.newGuide}</Text>

@@ -1,539 +1,294 @@
-import { GUIDE_EXPERTISE } from '@kwetuly/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
+import { Backpack, BadgeCheck, Briefcase, FileCheck, MessagesSquare, Route, Store, UserRound, UsersRound, Wallet, type LucideIcon } from 'lucide-react';
+import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { languageName, specialtyName } from '@/components/guide-card';
-import { jobRoleName } from '@/lib/labels';
-import { reviewGroupTrip, confirmPhone, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from './actions';
-import { PendingPackages } from './pending-packages';
-import { BusinessesAdmin } from './businesses-admin';
-
-type PendingJob = {
-  id: string;
-  company_name: string;
-  role_needed: string;
-  title: string;
-  kind: 'crew' | 'handover';
-  location: string;
-  pay: string | null;
-  how_to_apply: string;
-  description: string | null;
-};
-
-async function PendingJobs({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('jobs')
-    .select('id, company_name, role_needed, title, location, pay, how_to_apply, description, kind')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: true })
-    .returns<PendingJob[]>();
-  const jobs = data ?? [];
-
-  return (
-    <section id="jobs" className="mt-12">
-      <h2 className="text-2xl font-bold">Jobs ({jobs.length})</h2>
-      {jobs.length === 0 && <p className="mt-3 text-muted">—</p>}
-      <div className="mt-4 space-y-4">
-        {jobs.map((j) => (
-          <div key={j.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
-            <div className="space-y-1 text-sm">
-              <p className="text-base font-semibold">{j.title} · {j.kind === 'handover' ? 'Client handover' : jobRoleName(j.role_needed, locale)}</p>
-              <p>{j.company_name} · {j.location} · {j.pay ?? '—'}</p>
-              <p className="text-muted">{j.description}</p>
-              <p>{j.how_to_apply}</p>
-            </div>
-            <form action={reviewJob} className="flex items-start gap-2">
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="job_id" value={j.id} />
-              <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
-              <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
-            </form>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+import { paymentsEnabled } from '@/lib/payments';
+import { adminDateTime, hoursSince, waitedFor } from '@/lib/admin-format';
+import { TARGET_HOURS, loadQueue, type QueueItem, type ReviewKind } from '@/lib/admin-queue';
+import { AdminMenu } from './admin-menu';
 
 export const metadata: Metadata = { title: 'Admin', robots: { index: false } };
 
-type PendingGuide = {
-  id: string;
-  slug: string;
-  display_name: string;
-  headline: string | null;
-  base_region: string;
-  specialties: string[];
-  languages: string[];
-  expertise: string[];
-  female_guide: boolean;
-  association: string | null;
-  created_at: string;
-  verification_status: 'pending' | 'approved' | 'rejected';
-  identity_checked_at: string | null;
-  licence_checked_at: string | null;
-  first_aid_checked_at: string | null;
-  first_aid_valid_until: string | null;
-  guide_private: {
-    phone: string | null;
-    whatsapp_number: string | null;
-    registration_number: string | null;
-    kinapa_tanapa_id: string | null;
-    id_document_path: string | null;
-    license_document_path: string | null;
-    first_aid_document_path: string | null;
-  } | null;
-};
-
-const DOCUMENTS = [
-  { path: 'id_document_path', check: 'identity_checked_at', field: 'identity', label: 'ID document' },
-  { path: 'license_document_path', check: 'licence_checked_at', field: 'licence', label: 'Guide licence' },
-  { path: 'first_aid_document_path', check: 'first_aid_checked_at', field: 'first_aid', label: 'First-aid certificate' },
-] as const;
-
-// An uploaded document nobody has checked yet (e.g. an approved guide uploaded a new one).
-function hasUncheckedDocument(g: PendingGuide) {
-  return DOCUMENTS.some((doc) => g.guide_private?.[doc.path] && !g[doc.check]);
-}
-
-export default async function AdminPage({ searchParams }: PageProps<'/[lang]/admin'>) {
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+// Admin home: what is waiting, and for how long. One main action: "Review waiting items".
+export default async function AdminHome() {
+  const locale = await getLocale();
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="flex flex-wrap items-center gap-4">
-        <h1 className="text-3xl font-bold">{t.admin.title}</h1>
-        <Link href={`/${locale}/admin/media`} className="btn-outline ml-auto px-4 py-2 text-sm">Shared media</Link>
-        <Link href={`/${locale}/admin/messages`} className="btn-outline px-4 py-2 text-sm">Message safety</Link>
-        <Link href={`/${locale}/admin/commissions`} className="btn-outline px-4 py-2 text-sm">Commissions</Link>
-        <Link href={`/${locale}/admin/news`} className="btn-outline px-4 py-2 text-sm">News</Link>
-        <Link href={`/${locale}/admin/listings`} className="btn-outline px-4 py-2 text-sm">Business listings</Link>
-        <Link href={`/${locale}/admin/shop`} className="btn-outline px-4 py-2 text-sm">Merchandise</Link>
-        <Link href={`/${locale}/admin/places`} className="btn-outline px-4 py-2 text-sm">Places</Link>
-        <Link href={`/${locale}/admin/invites`} className="btn-outline px-4 py-2 text-sm">Invite codes</Link>
-        <Link href={`/${locale}/admin/trips`} className="btn-dark px-4 py-2 text-sm">Tours &amp; operators</Link>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+      <div className="grid gap-10 lg:grid-cols-[240px_1fr]">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold sm:text-3xl">Admin</h1>
+          <Suspense fallback={<HomeSkeleton />}>
+            <HomeContent locale={locale} />
+          </Suspense>
+        </div>
+        <div className="lg:order-first lg:border-r lg:border-line lg:pr-6">
+          <AdminMenu locale={locale} current={`/${locale}/admin`} />
+        </div>
       </div>
-      <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
-        <PendingList t={t} locale={locale} />
-        <PendingPackages t={t} locale={locale} />
-        <BusinessesAdmin t={t} locale={locale} />
-        <PendingJobs t={t} locale={locale} />
-        <PendingGroupTrips t={t} locale={locale} searchParams={searchParams} />
-        <Payments t={t} locale={locale} />
-        <LatestRequests t={t} locale={locale} />
-        <Inbox locale={locale} />
-        <RecentReviews locale={locale} />
-      </Suspense>
     </div>
   );
 }
 
-// Group trips wait here until approved. Check the organiser, dates, price and what is included.
-async function PendingGroupTrips({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('group_trips')
-    .select('id, organizer_id, organizer_kind, already_going, title, description, company_name, region, start_date, end_date, price_per_person_usd, min_people, max_people, includes, guides(display_name, slug), group_trip_private(contact)')
-    .eq('status', 'pending')
-    .eq('cancelled', false)
-    .order('created_at', { ascending: true })
-    .returns<{ id: string; organizer_id: string; organizer_kind: string; already_going: number; group_trip_private: { contact: string } | null; title: string; description: string; company_name: string | null; region: string; start_date: string; end_date: string; price_per_person_usd: number; min_people: number; max_people: number; includes: string | null; guides: { display_name: string; slug: string } | null }[]>();
-  const trips = data ?? [];
-  // Travellers' groups need a confirmed phone before approval: call the number, then confirm it here.
-  const ids = trips.filter((g) => g.organizer_kind === 'traveller').map((g) => g.organizer_id);
-  const { data: people } = ids.length
-    ? await supabase.from('profiles').select('id, full_name, phone, phone_verified_at').in('id', ids)
-    : { data: [] as { id: string; full_name: string | null; phone: string | null; phone_verified_at: string | null }[] };
-  const person = new Map((people ?? []).map((p) => [p.id, p]));
-  const { error: errorParam } = await searchParams;
-  const notice =
-    errorParam === 'phone_changed'
-      ? 'Not confirmed: the organiser’s phone number changed after this page was loaded (or none was shown). Check the new number below, call it, then press "Phone confirmed" again.'
-      : errorParam === 'phone_confirm'
-        ? 'Could not save the phone confirmation. Please try again.'
-        : errorParam === 'phone'
-          ? 'Not approved: the traveller organiser’s phone number is not confirmed yet.'
-          : null;
-
+function HomeSkeleton() {
   return (
-    <section id="groups" className="mt-12">
-      <h2 className="text-2xl font-bold">Group trips ({trips.length})</h2>
-      {notice && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{notice}</p>}
-      {trips.length === 0 && <p className="mt-3 text-muted">—</p>}
-      <div className="mt-4 space-y-4">
-        {trips.map((g) => (
-          <div key={g.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
-            <div className="space-y-1 text-sm">
-              <Link href={`/${locale}/group-trips/${g.id}`} className="text-base font-semibold underline">{g.title}</Link>
-              <p>
-                {g.guides ? `Guide: ${g.guides.display_name}` : g.organizer_kind === 'traveller' ? `Traveller: ${person.get(g.organizer_id)?.full_name ?? '—'}` : `Company: ${g.company_name}`} · {g.region} · {g.start_date} → {g.end_date}
-              </p>
-              {g.already_going > 0 && <p>Completing a group: {g.already_going} already going</p>}
-              {g.group_trip_private && <p>Contact given: {g.group_trip_private.contact}</p>}
-              {g.organizer_kind === 'traveller' && (
-                <p className={person.get(g.organizer_id)?.phone_verified_at ? 'font-semibold text-forest' : 'font-semibold text-red-800'}>
-                  Phone {person.get(g.organizer_id)?.phone ?? '—'}:{' '}
-                  {person.get(g.organizer_id)?.phone_verified_at ? 'confirmed' : 'not confirmed yet. Call this number, then press "Phone confirmed".'}
-                </p>
-              )}
-              <p>${g.price_per_person_usd} per person · {g.min_people}–{g.max_people} people</p>
-              <p className="whitespace-pre-line text-muted">{g.description}</p>
-              {g.includes && <p className="text-muted">Includes: {g.includes}</p>}
-            </div>
-            <form action={reviewGroupTrip} className="flex items-start gap-2">
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="group_trip_id" value={g.id} />
-              <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
-              <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
-            </form>
-            {g.organizer_kind === 'traveller' && !person.get(g.organizer_id)?.phone_verified_at && (
-              <form action={confirmPhone} className="sm:col-span-2">
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="user_id" value={g.organizer_id} />
-                <input type="hidden" name="phone" value={person.get(g.organizer_id)?.phone ?? ''} />
-                <button className="btn-outline px-4 py-2 text-sm">Phone confirmed</button>
-              </form>
-            )}
-          </div>
+    <div aria-busy="true" aria-label="Loading counts">
+      <div className="mt-1 h-5 w-48 animate-pulse rounded-[5px] bg-line" />
+      <div className="mt-5 h-12 animate-pulse rounded-[5px] bg-line" />
+      <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="h-28 animate-pulse rounded-[5px] bg-line" />
         ))}
       </div>
-    </section>
+    </div>
   );
 }
 
-const when = (iso: string) =>
-  new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam', dateStyle: 'medium', timeStyle: 'short' });
+type Tile = {
+  key: string;
+  name: string;
+  icon: LucideIcon;
+  href: string;
+  /** null = could not load */
+  count: number | null;
+  line?: string | null;
+  /** extra line in gold, e.g. "1 needs a call" */
+  flag?: string | null;
+  samples?: number;
+  late?: boolean;
+};
 
-// Trip enquiries (not addressed to a single guide) and sign-ups from partner and coming-soon pages.
-async function Inbox({ locale }: { locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
+function oldest(dates: string[]) {
+  return dates.length ? dates.reduce((a, b) => (a < b ? a : b)) : null;
+}
+
+async function HomeContent({ locale }: { locale: Locale }) {
+  await requireAdmin(locale);
   const supabase = await createClient();
-  // Enquiries to sample guides have no guide to read them, so they come here too.
-  const { data: sampleGuides } = await supabase.from('guides').select('id').eq('is_sample', true);
-  const sampleIds = (sampleGuides ?? []).map((g) => g.id as string);
-  const [leads, signups] = await Promise.all([
+  const now = new Date();
+  const week = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+  const head = { count: 'exact' as const, head: true };
+
+  const [queue, docGuides, badges, reports, paymentsReview, paymentsToPay, tripsFlagged, enquiries, requests, signups, reviews, hidden, depositsOn] = await Promise.all([
+    loadQueue(supabase),
     supabase
-      .from('leads')
-      .select('id, traveler_name, traveler_contact, message, created_at, trips(title_en), providers(business_name, is_sample), guides(display_name)')
-      .or(sampleIds.length ? `guide_id.is.null,guide_id.in.(${sampleIds.join(',')})` : 'guide_id.is.null')
-      .order('created_at', { ascending: false })
-      .limit(30)
-      .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null; providers: { business_name: string; is_sample: boolean } | null; guides: { display_name: string } | null }[]>(),
-    supabase
-      .from('interest_signups')
-      .select('id, section, item, kind, name, contact, business_name, message, locale, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .returns<{ id: string; section: string; item: string; kind: string; name: string; contact: string; business_name: string | null; message: string | null; locale: string; created_at: string }[]>(),
+      .from('guides')
+      .select('identity_checked_at, licence_checked_at, first_aid_checked_at, guide_private(id_document_path, license_document_path, first_aid_document_path)')
+      .eq('verification_status', 'approved')
+      .eq('is_sample', false)
+      .returns<{ identity_checked_at: string | null; licence_checked_at: string | null; first_aid_checked_at: string | null; guide_private: { id_document_path: string | null; license_document_path: string | null; first_aid_document_path: string | null } | null }[]>(),
+    supabase.from('providers').select('badge_requested_at').not('badge_requested_at', 'is', null).eq('is_sample', false).returns<{ badge_requested_at: string }[]>(),
+    supabase.from('message_reports').select('created_at').eq('resolved', false).returns<{ created_at: string }[]>(),
+    supabase.from('payments').select('id', head).eq('status', 'review'),
+    supabase.from('payments').select('id', head).eq('status', 'paid').eq('payout_done', false),
+    supabase.from('trips').select('id', head).eq('needs_review', true),
+    supabase.from('leads').select('id', head).is('guide_id', null).gte('created_at', week),
+    supabase.from('trip_requests').select('id', head).eq('status', 'open').eq('offers_count', 0),
+    supabase.from('interest_signups').select('id', head).gte('created_at', week),
+    supabase.from('guide_reviews').select('id', head).gte('created_at', week),
+    supabase.from('guide_reviews').select('id', head).eq('hidden', true),
+    paymentsEnabled(),
   ]);
 
-  return (
-    <section id="inbox" className="mt-12 grid gap-8 lg:grid-cols-2">
-      <div>
-        <h2 className="text-2xl font-bold">Trip enquiries ({leads.data?.length ?? 0})</h2>
-        <ul className="mt-4 space-y-3">
-          {(leads.data ?? []).map((l) => (
-            <li key={l.id} className="card p-4 text-sm">
-              <p className="font-semibold">{l.trips?.title_en ?? (l.guides ? `To ${l.guides.display_name}` : l.providers ? `To ${l.providers.business_name}${l.providers.is_sample ? ' (sample listing)' : ''}` : 'General enquiry')}</p>
-              <p>{l.traveler_name} · {l.traveler_contact}</p>
-              {l.message && <p className="mt-1 whitespace-pre-line text-muted">{l.message}</p>}
-              <p className="mt-1 text-xs text-muted">{when(l.created_at)}</p>
-            </li>
-          ))}
-          {!leads.data?.length && <li className="text-muted">—</li>}
-        </ul>
-      </div>
-      <div>
-        <h2 className="text-2xl font-bold">Sign-ups & partner applications ({signups.data?.length ?? 0})</h2>
-        <ul className="mt-4 space-y-3">
-          {(signups.data ?? []).map((s) => (
-            <li key={s.id} className={`card p-4 text-sm ${s.section === 'partners' ? 'border-leaf' : ''}`}>
-              <p className="font-semibold">
-                {s.section === 'partners' ? 'Travel agent application' : `${s.kind === 'business' ? 'Business listing' : 'Traveller interest'}: ${s.section} / ${s.item}`}
-              </p>
-              <p>{s.business_name ? `${s.business_name} · ` : ''}{s.name} · {s.contact} · {s.locale.toUpperCase()}</p>
-              {s.message && <p className="mt-1 whitespace-pre-line text-muted">{s.message}</p>}
-              <p className="mt-1 text-xs text-muted">{when(s.created_at)}</p>
-            </li>
-          ))}
-          {!signups.data?.length && <li className="text-muted">—</li>}
-        </ul>
-      </div>
-    </section>
-  );
-}
+  const items = queue.items;
+  const real = (kind: ReviewKind) => items.filter((i) => i.kind === kind && !i.sample);
+  const samples = (kind: ReviewKind) => items.filter((i) => i.kind === kind && i.sample).length;
+  const late = (list: { since: string }[], hours: number) => list.filter((i) => hoursSince(i.since, now) > hours).length;
 
-async function RecentReviews({ locale }: { locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('guide_reviews')
-    .select('id, author_name, rating, body, hidden, created_at, guides(display_name, slug)')
-    .order('created_at', { ascending: false })
-    .limit(30)
-    .returns<{ id: string; author_name: string; rating: number; body: string; hidden: boolean; created_at: string; guides: { display_name: string; slug: string } | null }[]>();
-
-  return (
-    <section id="reviews" className="mt-12">
-      <h2 className="text-2xl font-bold">Latest reviews</h2>
-      <ul className="mt-4 space-y-3">
-        {(data ?? []).map((r) => (
-          <li key={r.id} className={`card grid gap-3 p-4 text-sm sm:grid-cols-[1fr_auto] ${r.hidden ? 'opacity-60' : ''}`}>
-            <div>
-              <p className="font-semibold">
-                {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)} · {r.guides?.display_name} · by {r.author_name}
-                {r.hidden && ' · HIDDEN'}
-              </p>
-              <p className="mt-1 whitespace-pre-line">{r.body}</p>
-              <p className="mt-1 text-xs text-muted">{when(r.created_at)}</p>
-            </div>
-            <form action={setReviewHidden}>
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="review_id" value={r.id} />
-              <input type="hidden" name="hidden" value={r.hidden ? 'false' : 'true'} />
-              <button className="btn-outline px-4 py-2 text-sm">{r.hidden ? 'Show' : 'Hide'}</button>
-            </form>
-          </li>
-        ))}
-        {!data?.length && <li className="text-muted">—</li>}
-      </ul>
-    </section>
-  );
-}
-
-async function PendingList({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') redirect(`/${locale}`);
-
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('guides')
-    .select(
-      'id, slug, display_name, headline, base_region, specialties, languages, expertise, female_guide, association, created_at, verification_status, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path, license_document_path, first_aid_document_path)',
-    )
-    .in('verification_status', ['pending', 'approved'])
-    .order('created_at', { ascending: true })
-    .returns<PendingGuide[]>();
-  // New applications, plus approved guides who uploaded a document that still needs a check.
-  const guides = (data ?? []).filter((g) => g.verification_status === 'pending' || hasUncheckedDocument(g));
-
-  // Short-lived links to the private documents, keyed "guideId:path".
-  const docLinks = new Map<string, string>();
-  await Promise.all(
-    guides.flatMap((g) =>
-      DOCUMENTS.map(async (doc) => {
-        const path = g.guide_private?.[doc.path];
-        if (!path) return;
-        const { data: signed } = await supabase.storage.from('verification').createSignedUrl(path, 600);
-        if (signed) docLinks.set(`${g.id}:${doc.path}`, signed.signedUrl);
-      }),
-    ),
-  );
-
-  if (guides.length === 0) return <p className="mt-6 text-muted">{t.admin.none}</p>;
-
-  return (
-    <div className="mt-6 space-y-4">
-      <h2 className="font-semibold text-muted">
-        {t.admin.pending} ({guides.length})
-      </h2>
-      {guides.map((g) => {
-        const p = g.guide_private;
-        return (
-          <div key={g.id} className="card grid gap-4 sm:grid-cols-[1fr_auto]">
-            <div className="space-y-1 text-sm">
-              <p className="text-base font-semibold">{g.display_name}</p>
-              {g.headline && <p className="text-muted">{g.headline}</p>}
-              <p>{g.base_region} · {g.specialties.map((s) => specialtyName(s, locale)).join(', ')}</p>
-              <p>{g.languages.map(languageName).join(', ')}</p>
-              {(g.expertise.length > 0 || g.female_guide) && (
-                <p className="font-semibold text-amber-700">
-                  {/* Special skills are self-declared: ask for proof before approving. */}
-                  Check proof: {[...(g.female_guide ? ['Female guide'] : []), ...GUIDE_EXPERTISE.filter((e) => g.expertise.includes(e.id)).map((e) => e.label.en)].join(', ')}
-                </p>
-              )}
-              <p>Registration: <strong>{p?.registration_number ?? '—'}</strong> · KINAPA/TANAPA: {p?.kinapa_tanapa_id ?? '—'}</p>
-              <p>Phone: {p?.phone ?? '—'} · WhatsApp: {p?.whatsapp_number ?? '—'} · {g.association ?? ''}</p>
-              {g.verification_status === 'approved' && <p className="font-semibold text-leaf-dark">Approved guide: new document to check</p>}
-            </div>
-            {/* Tick only what you actually looked at: each tick shows publicly as "… checked". */}
-            <form action={reviewGuide} className="space-y-2 text-sm sm:w-72">
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="guide_id" value={g.id} />
-              {DOCUMENTS.map((doc) => {
-                const link = docLinks.get(`${g.id}:${doc.path}`);
-                return (
-                  <label key={doc.field} className="flex items-center gap-2">
-                    <input type="checkbox" name={doc.field} defaultChecked={!!g[doc.check]} disabled={!link} className="size-4 accent-leaf" />
-                    {link ? (
-                      <a href={link} target="_blank" rel="noopener" className="font-semibold text-leaf-dark underline">
-                        {doc.label} checked
-                      </a>
-                    ) : (
-                      <span className="text-muted">{doc.label}: not uploaded</span>
-                    )}
-                  </label>
-                );
-              })}
-              <label className="block">
-                <span className="text-xs text-muted">First aid valid until</span>
-                <input type="date" name="first_aid_valid_until" defaultValue={g.first_aid_valid_until ?? ''} className="field py-1.5" />
-              </label>
-              <div className="flex gap-2 pt-1">
-                {g.verification_status === 'pending' ? (
-                  <>
-                    <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
-                    <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
-                  </>
-                ) : (
-                  <button name="decision" value="checks" className="btn px-4 py-2 text-sm">Save checks</button>
-                )}
-              </div>
-            </form>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-type PaymentRow = {
-  id: string;
-  user_id: string;
-  payee_user_id: string | null;
-  description: string;
-  amount_tzs: number;
-  amount_usd: number;
-  status: string;
-  provider_reference: string | null;
-  provider_channel: string | null;
-  payout_done: boolean;
-  // Added by 20261016001100_security_review_fixes.sql; optional until that migration is applied.
-  payout_by?: string | null;
-  payout_at?: string | null;
-  // Added by 20261016001600_payments_review_fixes.sql; optional until that migration is applied.
-  provider_amount?: number | null;
-  created_at: string;
-};
-
-// Phone numbers on the payments list are masked (e.g. 2557XX…678): enough to tell people apart,
-// not enough to copy. Full numbers stay on the profile.
-function maskPhone(phone: string | null) {
-  const digits = (phone ?? '').replace(/\D/g, '');
-  if (!digits) return null;
-  return digits.length < 8 ? '…' : `${digits.slice(0, 4)}XX…${digits.slice(-3)}`;
-}
-
-// Deposits paid through Selcom. Kwetuly pays them out to the guide or company, then ticks them here.
-async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('payments')
-    // '*' keeps this list working before and after the payout_by / payout_at columns exist.
-    .select('*')
-    .neq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(50)
-    .returns<PaymentRow[]>();
-  const rows = data ?? [];
-  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id, r.payout_by ?? null]).filter(Boolean) as string[])];
-  const { data: people } = ids.length
-    ? await supabase.from('profiles').select('id, full_name, phone').in('id', ids).returns<{ id: string; full_name: string | null; phone: string | null }[]>()
-    : { data: [] };
-  const who = (id: string | null) => {
-    const person = people?.find((p) => p.id === id);
-    return person ? [person.full_name, maskPhone(person.phone)].filter(Boolean).join(' · ') : '—';
+  const queueTile = (kind: ReviewKind, name: string, icon: LucideIcon, extra?: (list: QueueItem[]) => { line?: string | null; flag?: string | null }): Tile => {
+    const list = real(kind);
+    const failed = queue.failed.includes(kind);
+    const first = oldest(list.map((i) => i.since));
+    const more = extra?.(list) ?? {};
+    return {
+      key: kind,
+      name,
+      icon,
+      href: `/${locale}/admin/review?kind=${kind}`,
+      count: failed ? null : list.length,
+      line: more.line ?? (first ? `oldest ${waitedFor(first, now)}` : null),
+      flag: more.flag,
+      samples: samples(kind),
+      late: late(list, TARGET_HOURS[kind]) > 0,
+    };
   };
-  const a = t.admin;
+
+  const ready = (list: QueueItem[]) => list.filter((i) => i.readiness.state === 'ready').length;
+  const docsToCheck = docGuides.error
+    ? null
+    : (docGuides.data ?? []).filter(
+        (g) =>
+          (g.guide_private?.id_document_path && !g.identity_checked_at) ||
+          (g.guide_private?.license_document_path && !g.licence_checked_at) ||
+          (g.guide_private?.first_aid_document_path && !g.first_aid_checked_at),
+      ).length;
+  const badgeDates = (badges.data ?? []).map((b) => b.badge_requested_at);
+  const reportDates = (reports.data ?? []).map((r) => r.created_at);
+  const toPay = (paymentsReview.count ?? 0) + (paymentsToPay.count ?? 0);
+  const showPayments = depositsOn || toPay > 0;
+
+  const tiles: Tile[] = [
+    queueTile('guide', 'Guides', UserRound, (list) => {
+      const first = oldest(list.map((i) => i.since));
+      return { line: first ? `oldest ${waitedFor(first, now)}` : null, flag: list.length ? `${ready(list)} ready to approve` : null };
+    }),
+    queueTile('business', 'Businesses', Store),
+    queueTile('package', 'Packages', Backpack, (list) => {
+      const first = oldest(list.map((i) => i.since));
+      return { line: first ? `oldest ${waitedFor(first, now)}` : null, flag: list.length ? `${ready(list)} ready` : null };
+    }),
+    queueTile('group', 'Group trips', UsersRound, (list) => {
+      const calls = list.filter((i) => i.kind === 'group' && i.row.organizer_kind === 'traveller' && !i.row.organiser?.phone_verified_at).length;
+      const first = oldest(list.map((i) => i.since));
+      return { line: first ? `oldest ${waitedFor(first, now)}` : null, flag: calls ? `${calls} ${calls === 1 ? 'needs' : 'need'} a phone call` : null };
+    }),
+    queueTile('job', 'Jobs', Briefcase),
+    { key: 'documents', name: 'Documents to re-check', icon: FileCheck, href: `/${locale}/admin/all`, count: docsToCheck, line: 'Approved guides, new document' },
+    {
+      key: 'badges',
+      name: 'Badge requests',
+      icon: BadgeCheck,
+      href: `/${locale}/admin/all#businesses`,
+      count: badges.error ? null : badgeDates.length,
+      line: oldest(badgeDates) ? `oldest ${waitedFor(oldest(badgeDates)!, now)}` : null,
+      late: badgeDates.some((d) => hoursSince(d, now) > TARGET_HOURS.badges),
+    },
+    ...(showPayments
+      ? [
+          {
+            key: 'payments',
+            name: 'Payments',
+            icon: Wallet,
+            href: `/${locale}/admin/all#payments`,
+            count: paymentsReview.error || paymentsToPay.error ? null : toPay,
+            line: `${paymentsReview.count ?? 0} to check with Selcom, ${paymentsToPay.count ?? 0} to pay out`,
+          } satisfies Tile,
+        ]
+      : []),
+    {
+      key: 'reports',
+      name: 'Message reports',
+      icon: MessagesSquare,
+      href: `/${locale}/admin/messages`,
+      count: reports.error ? null : reportDates.length,
+      line: oldest(reportDates) ? `oldest ${waitedFor(oldest(reportDates)!, now)}` : null,
+      late: reportDates.some((d) => hoursSince(d, now) > TARGET_HOURS.reports),
+    },
+    { key: 'trips', name: 'Trips to re-check', icon: Route, href: `/${locale}/admin/trips?show=review`, count: tripsFlagged.error ? null : (tripsFlagged.count ?? 0), line: 'Flagged for a facts check' },
+  ];
+
+  const reviewCount = items.filter((i) => !i.sample).length;
+  // "Waiting for you": the review queues, documents, badge requests, message reports and payments.
+  const waiting =
+    reviewCount + (docsToCheck ?? 0) + badgeDates.length + reportDates.length + (showPayments ? toPay : 0);
+  const pastTarget =
+    (['guide', 'business', 'package', 'group', 'job'] as ReviewKind[]).reduce((n, k) => n + late(real(k), TARGET_HOURS[k]), 0) +
+    badgeDates.filter((d) => hoursSince(d, now) > TARGET_HOURS.badges).length +
+    reportDates.filter((d) => hoursSince(d, now) > TARGET_HOURS.reports).length;
+  const someFailed = tiles.some((t) => t.count === null);
 
   return (
-    <section id="payments" className="mt-12 scroll-mt-24">
-      <h2 className="text-2xl font-bold">{a.paymentsTitle} ({rows.length})</h2>
-      {rows.length === 0 && <p className="mt-3 text-muted">{a.noPayments}</p>}
-      <ul className="mt-4 space-y-3">
-        {rows.map((p) => (
-          <li key={p.id} className="card grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
-            <div className="text-sm">
-              <p className="font-bold">
-                {p.description} · TZS {p.amount_tzs.toLocaleString('en')} (${p.amount_usd})
-                <span
-                  className={`ml-2 rounded-[5px] px-2 py-0.5 text-xs font-semibold ${
-                    p.status === 'paid' ? 'bg-mint text-forest' : p.status === 'review' ? 'bg-gold/25 text-charcoal' : 'bg-red-50 text-red-800'
-                  }`}
-                >
-                  {p.status === 'review' ? 'review: check with Selcom' : p.status}
-                </span>
-              </p>
-              {p.provider_amount != null && Number(p.provider_amount) !== p.amount_tzs && (
-                <p className="font-semibold">Selcom reported TZS {Number(p.provider_amount).toLocaleString('en')}</p>
-              )}
-              <p className="text-muted">
-                {new Date(p.created_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {p.provider_channel ?? ''} {p.provider_reference ?? ''}
-              </p>
-              <p>From: {who(p.user_id)}</p>
-              <p className="font-semibold">{a.payee}: {who(p.payee_user_id)}</p>
-              {p.payout_done && p.payout_at && (
-                <p className="text-muted">
-                  {a.paidOut}: {new Date(p.payout_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {who(p.payout_by ?? null)}
-                </p>
-              )}
-            </div>
-            {p.status === 'paid' && (
-              <form action={setPaidOut}>
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="payment_id" value={p.id} />
-                <input type="hidden" name="done" value={p.payout_done ? 'false' : 'true'} />
-                <button className={p.payout_done ? 'btn-outline px-4 py-2 text-sm' : 'btn px-4 py-2 text-sm'}>
-                  {p.payout_done ? `✓ ${a.paidOut}` : a.markPaidOut}
-                </button>
-              </form>
-            )}
+    <>
+      <p className="mt-1 text-sm text-muted">{adminDateTime(now)} (Dar es Salaam)</p>
+
+      {someFailed && (
+        <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">
+          Some counts could not load. Reload the page to try again.
+        </p>
+      )}
+
+      {reviewCount > 0 ? (
+        <Link href={`/${locale}/admin/review`} className="btn mt-5 min-h-12 w-full sm:w-auto">
+          Review waiting items ({reviewCount})
+        </Link>
+      ) : (
+        <>
+          <p className="mt-5 rounded-[5px] bg-mint p-4 font-semibold text-forest">All caught up. New items will show here.</p>
+          <Link href={`/${locale}/admin/review?sample=all`} className="btn-outline mt-3 min-h-12 w-full sm:w-auto">
+            Nothing waiting. Look at all items
+          </Link>
+        </>
+      )}
+
+      <h2 className="mt-8 text-lg font-bold">Waiting for you: {waiting}</h2>
+      <p className="text-sm text-muted">
+        {pastTarget > 0 ? (
+          <>
+            <span className="mr-1.5 inline-block size-2.5 rounded-full bg-gold align-middle" aria-hidden />
+            Past target time: {pastTarget}
+          </>
+        ) : (
+          'Nothing is past its target time.'
+        )}
+      </p>
+      <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+        {tiles.map((tile) => (
+          <li key={tile.key}>
+            <TileCard tile={tile} />
           </li>
         ))}
       </ul>
-    </section>
+
+      <h2 className="mt-8 text-lg font-bold">In the last 7 days</h2>
+      <ul className="mt-2 flex flex-wrap gap-x-5 text-sm">
+        <SmallCount href={`/${locale}/admin/all#inbox`} label="Enquiries with no guide" count={enquiries.error ? null : enquiries.count} />
+        <SmallCount href={`/${locale}/admin/all#inbox`} label="Sign-ups" count={signups.error ? null : signups.count} />
+        <SmallCount href={`/${locale}/admin/all#reviews`} label="New reviews" count={reviews.error ? null : reviews.count} />
+        <SmallCount href={`/${locale}/admin/all#reviews`} label="Hidden reviews (all time)" count={hidden.error ? null : hidden.count} />
+        <SmallCount href={`/${locale}/admin/all#requests`} label="Open trip requests with no offer" count={requests.error ? null : requests.count} />
+      </ul>
+    </>
   );
 }
 
-async function LatestRequests({ t, locale }: { t: Dictionary; locale: Locale }) {
-  const user = await requireAdmin(locale);
-  if (user.role !== 'admin') return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from('trip_requests')
-    .select('id, title, traveler_name, status, offers_count, created_at')
-    .order('created_at', { ascending: false })
-    .limit(15)
-    .returns<{ id: string; title: string; traveler_name: string; status: string; offers_count: number; created_at: string }[]>();
-  const rows = data ?? [];
-
+function SmallCount({ href, label, count }: { href: string; label: string; count: number | null }) {
   return (
-    <section id="requests" className="mt-12 scroll-mt-24">
-      <h2 className="text-2xl font-bold">{t.admin.requestsTitle} ({rows.length})</h2>
-      {rows.length === 0 && <p className="mt-3 text-muted">—</p>}
-      <ul className="mt-4 divide-y divide-line rounded-[5px] border border-line bg-white">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <Link href={`/${locale}/requests/${r.id}`} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm hover:bg-surface">
-              <span className="font-semibold">{r.title} · {r.traveler_name}</span>
-              <span className="text-muted">{r.status} · {r.offers_count} offers · {new Date(r.created_at).toLocaleDateString('en-GB')}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <li>
+      <Link href={href} className="inline-flex min-h-11 items-center underline-offset-2 hover:underline">
+        {label}: <strong className="ml-1">{count === null ? 'could not load' : count}</strong>
+      </Link>
+    </li>
+  );
+}
+
+function TileCard({ tile }: { tile: Tile }) {
+  const Icon = tile.icon;
+  const failed = tile.count === null;
+  const zero = tile.count === 0;
+  const spoken = failed
+    ? `${tile.name}, could not load`
+    : `${tile.name}, ${tile.count} waiting${tile.line && !zero ? `, ${tile.line}` : ''}${tile.late ? ', waiting long' : ''}`;
+  return (
+    <Link href={tile.href} aria-label={spoken} className="flex h-full min-h-24 flex-col rounded-[5px] border border-line bg-white p-3 hover:border-leaf sm:p-4">
+      <span className="flex items-center gap-2">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-[5px] bg-leaf text-white" aria-hidden>
+          <Icon size={20} strokeWidth={2} />
+        </span>
+        <span className="min-w-0 font-semibold leading-tight">{tile.name}</span>
+      </span>
+      {failed ? (
+        <span className="mt-2 text-sm text-muted">Could not load</span>
+      ) : (
+        <>
+          <span className={`mt-2 text-[28px] font-bold leading-none ${zero ? 'text-muted' : ''}`}>{tile.count}</span>
+          <span className="mt-1 text-sm text-muted">
+            {zero ? (
+              'Nothing waiting'
+            ) : (
+              <>
+                {tile.late && <span className="mr-1.5 inline-block size-2.5 rounded-full bg-gold align-middle" aria-hidden />}
+                {tile.line}
+                {tile.late && ', waiting long'}
+              </>
+            )}
+          </span>
+          {tile.flag && !zero && <span className="mt-0.5 text-sm font-semibold text-charcoal">{tile.flag}</span>}
+          {!!tile.samples && <span className="mt-0.5 text-xs text-muted">samples: {tile.samples}</span>}
+        </>
+      )}
+    </Link>
   );
 }

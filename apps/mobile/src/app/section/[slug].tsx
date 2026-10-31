@@ -21,7 +21,7 @@ export default function SectionScreen() {
       <Stack.Title>{section.label[locale]}</Stack.Title>
       <Muted>{section.tagline[locale]}</Muted>
       <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, overflow: 'hidden' }}>
-        {section.items.map((item, i) => (
+        {section.items.filter((item) => !item.webOnly).map((item, i) => (
           <Link key={item.slug} href={appHref(section, item)} asChild>
             <Pressable accessibilityRole="link" style={{ borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg }}>

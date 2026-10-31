@@ -62,13 +62,13 @@ export async function deletePackage(id: string) {
   check(error);
 }
 
-export type PackageWithGuide = GuidePackage & { guides: { id: string; display_name: string; slug: string } | null };
+export type PackageWithGuide = GuidePackage & { guides: { id: string; display_name: string; slug: string; is_sample: boolean } | null };
 
 // Approved packages from all public guides, optionally of one kind, for the catalogue.
 export async function listPackages(kind?: string): Promise<PackageWithGuide[]> {
   let query = supabase
     .from('guide_packages')
-    .select(`${PACKAGE_COLUMNS}, guides!inner(id, display_name, slug, visibility)`)
+    .select(`${PACKAGE_COLUMNS}, guides!inner(id, display_name, slug, visibility, is_sample)`)
     .eq('status', 'approved')
     .eq('guides.visibility', 'public')
     .order('created_at', { ascending: false })

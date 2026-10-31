@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@kwetuly/shared';
 import { BusinessBadge } from '@/components/business-card';
+import { PhotoCredits, SampleOffer } from '@/components/sample-offer';
 import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { askBusiness, getBusiness } from '@/lib/businesses';
@@ -67,10 +68,13 @@ export default function BusinessScreen() {
           ))}
         </ScrollView>
       )}
+      {b.is_sample && <PhotoCredits urls={photos} />}
       <BusinessBadge business={b} full />
       {b.has_referral_agreement && <Muted>{bt.commissionNote}</Muted>}
       {b.story && <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{b.story}</Text>}
       {b.website && <Button title={bt.website} variant="outline" onPress={() => openExternal(b.website, { inApp: true })} />}
+      {/* Sample businesses only (security finding F1). */}
+      {b.is_sample && <SampleOffer providerId={b.id} />}
 
       <Card>
         <SectionTitle>{(isShop ? bt.orderTitle : bt.askTitle).replace('{name}', b.business_name)}</SectionTitle>

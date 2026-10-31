@@ -30,7 +30,7 @@ export default function PackagesScreen() {
       <ScreenState loading={packages.isLoading} error={packages.error} onRetry={() => packages.refetch()} empty={packages.data?.length === 0} emptyText={pt.catalogEmpty} />
       <View style={{ gap: space.md }}>
         {(packages.data ?? []).map((p) =>
-          p.guides ? <PackageCard key={p.id} p={p} guideId={p.guides.id} guideName={p.guides.display_name} guideSlug={p.guides.slug} showGuide /> : null,
+          p.guides ? <PackageCard key={p.id} p={p} guideId={p.guides.id} guideName={p.guides.display_name} guideSlug={p.guides.slug} sample={p.guides.is_sample} showGuide /> : null,
         )}
       </View>
     </ScrollView>

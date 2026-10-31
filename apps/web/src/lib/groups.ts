@@ -26,7 +26,7 @@ export type GroupTrip = {
   deposit_percent: number;
   status: 'pending' | 'approved' | 'rejected';
   cancelled: boolean;
-  guides: { display_name: string; slug: string; photo_url: string | null; rating_avg: number | null; rating_count: number } | null;
+  guides: { display_name: string; slug: string; photo_url: string | null; rating_avg: number | null; rating_count: number; is_sample: boolean } | null;
 };
 
 export type GroupMember = {
@@ -41,7 +41,7 @@ export type GroupMember = {
 };
 
 const COLUMNS =
-  'id, organizer_id, guide_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url, rating_avg, rating_count)';
+  'id, organizer_id, guide_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url, rating_avg, rating_count, is_sample)';
 
 // People already going (a group being completed) count against the spots.
 export const spotsLeft = (trip: Pick<GroupTrip, 'max_people' | 'seats_taken' | 'already_going'>) =>

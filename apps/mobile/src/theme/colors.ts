@@ -16,7 +16,7 @@ export const brand = {
   ink: '#2b3631', // dark text on gold or light surfaces
   forest: '#187a16',
   mint: '#e5f5e3',
-  leaf: '#1d951a', // green for buttons and fills; links use leafDark
+  leaf: '#1d951a', // green for icons, accents and fills; button backgrounds use forest; links use leafDark
   leafDark: '#187a16',
   gold: '#ffb627',
   sand: '#fff8ee',

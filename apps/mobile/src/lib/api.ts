@@ -28,6 +28,7 @@ export type Guide = {
   association: string | null;
   plan: 'msingi' | 'pro';
   verification_status: 'pending' | 'approved' | 'rejected';
+  visibility: 'public' | 'link_only';
   call_enabled: boolean;
   call_price_usd: number | null;
   call_minutes: number;
@@ -40,7 +41,7 @@ export type Guide = {
 };
 
 const GUIDE_COLUMNS =
-  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
+  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, visibility, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
 
 export type GuideFilters = { specialty?: string; language?: string; expertise?: string; female?: boolean; partners?: boolean };
 
@@ -119,10 +120,13 @@ export async function getTourStops(tripId: string): Promise<TourStop[]> {
   return must(await supabase.from('trip_stops').select(STOP_COLUMNS).eq('trip_id', tripId).order('position')) as TourStop[];
 }
 
-/** Guides assigned to the tour, or verified guides whose specialties fit it when none are assigned. */
+/**
+ * Guides assigned to the tour, or verified guides whose specialties fit it when none are assigned.
+ * Same rules as the website: approved and public only, real guides before sample guides.
+ */
 export async function getTourGuides(tripId: string, categories: string[]): Promise<{ assigned: boolean; guides: Guide[] }> {
   const rows = must(await supabase.from('trip_guides').select(`position, guides(${GUIDE_COLUMNS})`).eq('trip_id', tripId).order('position')) as unknown as { guides: Guide | null }[];
-  const chosen = rows.map((r) => r.guides).filter((g): g is Guide => g != null && g.verification_status === 'approved');
+  const chosen = rows.map((r) => r.guides).filter((g): g is Guide => g != null && g.verification_status === 'approved' && g.visibility === 'public');
   if (chosen.length > 0) return { assigned: true, guides: chosen };
   const specialties = guideSpecialtiesForTour(categories);
   if (specialties.length === 0) return { assigned: false, guides: [] };
@@ -133,6 +137,7 @@ export async function getTourGuides(tripId: string, categories: string[]): Promi
       .eq('verification_status', 'approved')
       .eq('visibility', 'public')
       .overlaps('specialties', specialties)
+      .order('is_sample', { ascending: true })
       .order('rating_count', { ascending: false })
       .limit(4),
   ) as unknown as Guide[];
@@ -183,11 +188,11 @@ export type GroupTrip = {
   seats_taken: number;
   status: 'pending' | 'approved' | 'rejected';
   cancelled: boolean;
-  guides: { display_name: string; slug: string; photo_url: string | null } | null;
+  guides: { display_name: string; slug: string; photo_url: string | null; is_sample: boolean } | null;
 };
 
 const GROUP_COLUMNS =
-  'id, organizer_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url)';
+  'id, organizer_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url, is_sample)';
 
 export async function listGroupTrips(): Promise<GroupTrip[]> {
   const today = new Date().toISOString().slice(0, 10);

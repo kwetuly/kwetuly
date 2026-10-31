@@ -4,7 +4,9 @@ import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
 import { isDisplayNameReservedError, isReservedDisplayName } from './display-name';
 import { hasRecordedCheck } from './guide-checks';
-import { filterTours, formatPrice, readTourFilters, verifiedPrice, type Tour } from './tours';
+import { PACKAGE_KINDS } from './packages';
+import { filterTours, formatPrice, guideSpecialtiesForTour, readTourFilters, tourMatchesTheme, verifiedPrice, type Tour } from './tours';
+import { TRIP_CATEGORIES } from './trips';
 
 describe('analytics', () => {
   it('drops properties that could hold personal details', () => {
@@ -87,6 +89,28 @@ describe('tour filters', () => {
     expect(filterTours(tours, { q: 'serengeti' }).map((t) => t.title_en)).toEqual(['Serengeti migration']);
     expect(filterTours(tours, { theme: 'mountain' }).map((t) => t.title_en)).toEqual(['Kilimanjaro Machame']);
     expect(filterTours(tours, { duration: 'day' })).toEqual([]);
+  });
+
+  it('counts cycling tours as culture and matches cultural and day-trip guides', () => {
+    const bike = tour({ categories: ['cultural', 'cycling'] });
+    const onlyBike = tour({ categories: ['cycling'] });
+    expect(tourMatchesTheme(onlyBike, 'cultural')).toBe(true);
+    expect(tourMatchesTheme(onlyBike, 'safari')).toBe(false);
+    expect(filterTours([bike, onlyBike, tour({})], { theme: 'cultural' })).toHaveLength(2);
+    expect(guideSpecialtiesForTour(['cycling'])).toEqual(['cultural', 'day_trips']);
+    const cycling = TRIP_CATEGORIES.find((c) => c.id === 'cycling');
+    expect(cycling?.icon).toBe('bike');
+    expect(cycling?.sw).toBeTruthy();
+  });
+});
+
+describe('package kinds', () => {
+  it('has the two host kinds labelled in every language', () => {
+    for (const id of ['personal_host', 'investment_visit']) {
+      const kind = PACKAGE_KINDS.find((k) => k.id === id);
+      expect(kind).toBeDefined();
+      for (const locale of ['en', 'sw', 'fr', 'it', 'de', 'pl', 'zh'] as const) expect(kind?.[locale]).toBeTruthy();
+    }
   });
 });
 

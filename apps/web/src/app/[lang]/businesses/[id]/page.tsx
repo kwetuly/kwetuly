@@ -13,6 +13,7 @@ import { BusinessBadge } from '@/components/business-card';
 import { askBusiness } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
 import { SubmitButton } from '@/components/submit-button';
+import { PhotoCredits, SampleOffer } from '@/components/sample-offer';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/businesses/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -65,6 +66,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
             ))}
           </div>
         )}
+        {business.is_sample && <PhotoCredits urls={photos} locale={locale} />}
         <div className="mt-6">
           <BusinessBadge business={business} t={t} locale={locale} today={now.toISOString().slice(0, 10)} full />
         </div>
@@ -74,6 +76,12 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
           <a href={website.url} target="_blank" rel={USER_LINK_REL} className="mt-4 inline-flex flex-wrap items-center gap-1 font-semibold text-forest underline">
             {bt.website}: <span className="break-all font-normal">{website.host}</span> <ExternalLink className="size-4" aria-hidden />
           </a>
+        )}
+        {/* Sample businesses only (security finding F1). */}
+        {business.is_sample && (
+          <Suspense fallback={<div className="mt-8 h-40 animate-pulse rounded-[5px] bg-surface" aria-hidden />}>
+            <SampleOffer providerId={business.id} sampleLabel={t.extras.sampleBadge} locale={locale} />
+          </Suspense>
         )}
       </div>
 

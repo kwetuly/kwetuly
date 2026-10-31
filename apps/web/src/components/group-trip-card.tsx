@@ -1,12 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { CalendarDays, Languages, MapPin, Users } from 'lucide-react';
-import { formatUsd } from '@kwetuly/shared';
+import { formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { peopleIn, spotsLeft, type GroupTrip } from '@/lib/groups';
 import { photoUrl, specialtyPhoto } from '@/lib/photos';
-import { languageName, specialtyName } from './guide-card';
+import { SampleBadge, languageName, specialtyName } from './guide-card';
 
 export function formatDates(trip: GroupTrip, locale: Locale) {
   const format = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' });
@@ -44,10 +44,17 @@ export function GroupTripCard({ trip, locale, t }: { trip: GroupTrip; locale: Lo
           {specialtyName(trip.specialty, locale)}
         </span>
         <span className="absolute bottom-4 right-4 rounded-[5px] bg-night px-3 py-1.5 text-sm font-extrabold text-white">
-          <span className="tabular-nums">{formatUsd(trip.price_per_person_usd)}</span> <span className="text-xs font-semibold text-white/70">{t.groups.perPerson}</span>
+          {groupPriceOnRequest(trip) ? (
+            t.extras.priceOnRequest
+          ) : (
+            <>
+              <span className="tabular-nums">{formatUsd(trip.price_per_person_usd)}</span> <span className="text-xs font-semibold text-white/70">{t.groups.perPerson}</span>
+            </>
+          )}
         </span>
       </div>
       <div className="flex flex-1 flex-col p-5">
+        {trip.guides?.is_sample && <div className="mb-2"><SampleBadge label={t.extras.sampleTrip} /></div>}
         <h3 className="text-lg font-bold leading-snug group-hover:text-leaf-dark">{trip.title}</h3>
         {organizer && <p className="mt-1 text-sm text-muted">{t.groups.organisedBy} {organizer}</p>}
         {trip.organizer_kind === 'traveller' && <p className="mt-1 text-sm text-muted">{t.extras.byTraveller}</p>}

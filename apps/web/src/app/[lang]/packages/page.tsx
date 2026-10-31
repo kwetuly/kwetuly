@@ -58,6 +58,7 @@ async function List({ t, locale, searchParams }: { t: Dictionary; locale: Locale
                 p={p}
                 t={t}
                 locale={locale}
+                sample={p.guides?.is_sample}
                 askHref={p.guides ? `/${locale}/guides/${p.guides.slug}?package=${p.id}#contact` : undefined}
                 guide={p.guides ? { name: p.guides.display_name, href: `/${locale}/guides/${p.guides.slug}#packages` } : undefined}
               />

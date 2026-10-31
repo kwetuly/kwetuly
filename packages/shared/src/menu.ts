@@ -20,6 +20,7 @@ export type MenuItem = {
   blurb: Label;
   href?: string; // set when the item lives at a dedicated page instead of /[section]/[item]
   status?: 'live' | 'soon';
+  webOnly?: true; // a website page with no app screen yet; the app leaves the item out
 };
 
 export type MenuSection = {
@@ -469,6 +470,11 @@ const PARTNERS: MenuSection = {
       slug: 'list-business', icon: 'store', href: '/join?role=provider', status: 'live',
       label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Kwetuly'),
       blurb: L('Hotels, drivers, shops and tour companies', 'Hoteli, madereva, maduka na kampuni za utalii', 'Hôtels, chauffeurs, boutiques et agences', 'Hotel, autisti, negozi e tour operator', 'Hotels, Fahrer, Shops und Veranstalter', 'Hotele, kierowcy, sklepy i biura', '酒店、司机、商店和旅行社'),
+    },
+    {
+      slug: 'become-host', icon: 'crown', href: '/hosts', status: 'live', webOnly: true,
+      label: L('Become a host', 'Kuwa mwenyeji', 'Devenir hôte', 'Diventa host', 'Gastgeber werden', 'Zostań gospodarzem', '成为行程陪同'),
+      blurb: L('Personal trip and investment visit hosts, approved one by one', 'Wenyeji wa safari binafsi na ziara za uwekezaji, wanaidhinishwa mmoja mmoja', 'Hôtes de voyages privés et de visites d’investissement, approuvés un par un', 'Host per viaggi privati e visite d’investimento, approvati uno a uno', 'Begleitung für Privatreisen und Investitionsbesuche, einzeln geprüft', 'Opiekunowie podróży prywatnych i wizyt inwestycyjnych, zatwierdzani pojedynczo', '私人行程与投资考察陪同，逐一审核'),
     },
   ],
 };

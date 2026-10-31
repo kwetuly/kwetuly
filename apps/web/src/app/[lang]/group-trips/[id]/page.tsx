@@ -12,12 +12,12 @@ import { FinishSetup } from '@/components/finish-setup';
 import { peopleIn, getGroupTripForViewer, spotsLeft, type GroupMember, type GroupTrip } from '@/lib/groups';
 import { photoUrl, specialtyPhoto } from '@/lib/photos';
 import { createClient } from '@/lib/supabase/server';
-import { languageName, specialtyName } from '@/components/guide-card';
+import { SampleBadge, languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { EVENTS, approxTzs, formatUsd } from '@kwetuly/shared';
+import { EVENTS, approxTzs, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
@@ -90,6 +90,12 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
           {!trip.cancelled && trip.status === 'pending' && <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">{g.statusPending}</p>}
           {trip.status === 'rejected' && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
+          {trip.guides?.is_sample && (
+            <div className="rounded-[5px] border border-gold bg-sand p-4 text-charcoal">
+              <SampleBadge label={t.extras.sampleTrip} />
+              <p className="mt-2 text-sm">{t.extras.sampleTripNote}</p>
+            </div>
+          )}
 
           <p className="whitespace-pre-line text-lg leading-relaxed">{trip.description}</p>
 
@@ -115,9 +121,15 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
           <div className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
             <div className="bg-leaf px-6 py-5 text-white">
-              <p className="text-3xl font-extrabold tabular-nums">{formatUsd(trip.price_per_person_usd)}</p>
-              {approxTzs(trip.price_per_person_usd, rate) && <p className="text-xs font-semibold tabular-nums">{approxTzs(trip.price_per_person_usd, rate)}</p>}
-              <p className="text-sm font-bold">{g.perPerson}</p>
+              {groupPriceOnRequest(trip) ? (
+                <p className="text-2xl font-extrabold">{t.extras.priceOnRequest}</p>
+              ) : (
+                <>
+                  <p className="text-3xl font-extrabold tabular-nums">{formatUsd(trip.price_per_person_usd)}</p>
+                  {approxTzs(trip.price_per_person_usd, rate) && <p className="text-xs font-semibold tabular-nums">{approxTzs(trip.price_per_person_usd, rate)}</p>}
+                  <p className="text-sm font-bold">{g.perPerson}</p>
+                </>
+              )}
             </div>
             <div className="space-y-4 p-6">
               <div className="rounded-[5px] bg-white p-3 text-charcoal"><SpotsBar trip={trip} t={t} /></div>
@@ -154,9 +166,13 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
       {trip.guides ? (
         <Link href={`/${locale}/guides/${trip.guides.slug}`} className="mt-2 block hover:text-leaf-dark">
           <span className="text-xl font-bold">{trip.guides.display_name}</span>
-          <span className="mt-1 block">
-            <RatingSummary avg={trip.guides.rating_avg} count={trip.guides.rating_count} labels={t.reviews} />
-          </span>
+          {trip.guides.is_sample ? (
+            <span className="mt-1 block"><SampleBadge label={t.extras.sampleGuide} /></span>
+          ) : (
+            <span className="mt-1 block">
+              <RatingSummary avg={trip.guides.rating_avg} count={trip.guides.rating_count} labels={t.reviews} />
+            </span>
+          )}
         </Link>
       ) : trip.organizer_kind === 'traveller' ? (
         <p className="mt-2 text-xl font-bold">{t.extras.byTraveller}</p>

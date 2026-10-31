@@ -12,6 +12,8 @@ export const PACKAGE_KINDS = [
   { id: 'food', ...L('Food & cooking', 'Chakula na mapishi', 'Cuisine & repas', 'Cibo e cucina', 'Essen & Kochen', 'Jedzenie i gotowanie', '美食与烹饪') },
   { id: 'city', ...L('City walk', 'Matembezi ya mjini', 'Balade en ville', 'Passeggiata in città', 'Stadtrundgang', 'Spacer po mieście', '城市漫步') },
   { id: 'nature', ...L('Nature & hiking', 'Asili na matembezi', 'Nature & randonnée', 'Natura ed escursioni', 'Natur & Wandern', 'Przyroda i wędrówki', '自然与徒步') },
+  { id: 'personal_host', ...L('Personal trip host', 'Mwenyeji wa safari binafsi', 'Hôte de voyage personnel', 'Accompagnatore di viaggio personale', 'Persönliche Reisebegleitung', 'Osobisty opiekun podróży', '私人行程陪同') },
+  { id: 'investment_visit', ...L('Investment visit host', 'Mwenyeji wa ziara za uwekezaji', 'Accompagnement de visite d’investissement', 'Accompagnatore per visite d’investimento', 'Begleitung für Investitionsbesuche', 'Opiekun wizyty inwestycyjnej', '投资考察陪同') },
   { id: 'other', ...L('Other', 'Nyingine', 'Autre', 'Altro', 'Sonstiges', 'Inne', '其他') },
 ] as const;
 

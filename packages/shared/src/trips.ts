@@ -26,6 +26,7 @@ export const TRIP_CATEGORIES = [
   { id: 'marine', icon: 'globe', ...L('Marine', 'Bahari', 'Mer', 'Mare', 'Meer', 'Morze', '海洋') },
   { id: 'chimpanzee', icon: 'tent', ...L('Chimpanzees', 'Sokwe', 'Chimpanzés', 'Scimpanzé', 'Schimpansen', 'Szympansy', '黑猩猩') },
   { id: 'walking', icon: 'route', ...L('Walking', 'Matembezi', 'Randonnée', 'Trekking a piedi', 'Wandern', 'Piesze wędrówki', '徒步') },
+  { id: 'cycling', icon: 'bike', ...L('Cycling', 'Baiskeli', 'Vélo', 'Bicicletta', 'Radfahren', 'Rower', '骑行') },
   { id: 'event', icon: 'trophy', ...L('Events', 'Matukio', 'Événements', 'Eventi', 'Events', 'Wydarzenia', '活动') },
 ] as const;
 

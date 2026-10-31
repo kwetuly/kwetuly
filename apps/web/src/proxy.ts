@@ -55,7 +55,34 @@ export async function proxy(request: NextRequest) {
   if (hasLocale(firstSegment)) {
     response.cookies.set('lang', firstSegment, { path: '/', maxAge: 60 * 60 * 24 * 365 });
   }
-  return updateSession(request, response, groupTripMissing(request));
+  return updateSession(request, response, adminOnly(request) ?? groupTripMissing(request));
+}
+
+// Admin pages stream behind a loading skeleton, so a redirect made inside the page arrives after
+// the page shell. Check here first, as the visitor, so everyone who is not an admin with a two-step
+// session gets a real HTTP redirect and never receives any admin page. The pages and the database
+// still check again (requireAdmin, private.is_admin()).
+function adminOnly(request: NextRequest) {
+  const match = /^\/([a-z]{2})\/admin(?:\/|$)/.exec(request.nextUrl.pathname);
+  if (!match || !hasLocale(match[1])) return undefined;
+  const lang = match[1];
+  const go = (path: string) => {
+    const response = NextResponse.redirect(new URL(path, request.url));
+    response.headers.set('Cache-Control', 'private, no-store');
+    return response;
+  };
+  return async (supabase: Parameters<NonNullable<Parameters<typeof updateSession>[2]>>[0], user: { id: string } | null) => {
+    if (!user) return go(`/${lang}/login`);
+    const [{ data: profile, error }, { data: level }] = await Promise.all([
+      supabase.from('profiles').select('role').eq('id', user.id).maybeSingle() as PromiseLike<{ data: { role: string } | null; error: unknown }>,
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    ]);
+    // On a database error stay closed: send them home rather than show admin pages.
+    if (error || profile?.role !== 'admin') return go(`/${lang}`);
+    if (level?.currentLevel === 'aal2') return null;
+    if (level?.nextLevel === 'aal2') return go(`/${lang}/login/verify?next=${encodeURIComponent(`/${lang}/admin`)}`);
+    return go(`/${lang}/security?admin=two-step`);
+  };
 }
 
 // Group trips are only visible to some people (pending trips to their organiser), so the page

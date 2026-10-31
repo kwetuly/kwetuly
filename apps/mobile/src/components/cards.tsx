@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from 'react-native';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@kwetuly/shared';
+import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, groupPriceOnRequest, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -90,7 +90,8 @@ export function GroupTripCard({ trip }: { trip: GroupTrip }) {
     <Link href={`/group-trip/${trip.id}`} asChild>
       <Pressable accessibilityRole="link">
         <Card>
-          <PhotoHeader photo={specialtyPhoto(trip.specialty)} label={specialtyName(trip.specialty, locale)} price={`${formatUsd(trip.price_per_person_usd)} ${t.groups.perPerson}`} />
+          <PhotoHeader photo={specialtyPhoto(trip.specialty)} label={specialtyName(trip.specialty, locale)} price={groupPriceOnRequest(trip) ? t.extras.priceOnRequest : `${formatUsd(trip.price_per_person_usd)} ${t.groups.perPerson}`} />
+          {trip.guides?.is_sample && <Badge label={t.extras.sampleTrip} tone="sand" />}
           <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{trip.title}</Text>
           <Text style={{ color: colors.secondaryLabel }}>
             {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.region}

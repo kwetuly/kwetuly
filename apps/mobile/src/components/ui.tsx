@@ -17,7 +17,8 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 }
 
 export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle> }) {
-  const background = variant === 'primary' ? brand.leaf : variant === 'dark' ? brand.night : 'transparent';
+  // Button backgrounds use the darker forest green so white text passes contrast (Walter, 2026-10-31); leaf stays for icons and accents.
+  const background = variant === 'primary' ? brand.forest : variant === 'dark' ? brand.night : 'transparent';
   const color = variant === 'outline' ? brand.forest : brand.onDark;
   return (
     <Pressable

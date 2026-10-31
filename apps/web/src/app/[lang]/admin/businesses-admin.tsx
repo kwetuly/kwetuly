@@ -19,6 +19,7 @@ type AdminBusiness = {
   provider_private: { whatsapp_number: string | null; licence_document_path: string | null } | null;
   verification_status: string;
   badge_requested_at: string | null;
+  updated_at: string;
 };
 
 // Business listings waiting for approval, badge check requests, and the yearly badge fee.
@@ -26,7 +27,7 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
   const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
   const supabase = await createClient();
-  const columns = 'id, business_name, business_type, base_region, location, story, website, photo_url, verification_status, badge_requested_at, provider_private(whatsapp_number, licence_document_path)';
+  const columns = 'id, business_name, business_type, base_region, location, story, website, photo_url, verification_status, badge_requested_at, updated_at, provider_private(whatsapp_number, licence_document_path)';
   const [pending, requests, fee] = await Promise.all([
     supabase.from('providers').select(columns).eq('verification_status', 'pending').order('created_at').returns<AdminBusiness[]>(),
     supabase.from('providers').select(columns).not('badge_requested_at', 'is', null).order('badge_requested_at').returns<AdminBusiness[]>(),
@@ -50,7 +51,7 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
     <>
       <p className="text-xs font-semibold text-leaf-dark">{BUSINESS_TYPES.find((x) => x.id === b.business_type)?.en}</p>
       <h3 className="text-lg font-bold">{b.business_name}</h3>
-      <p className="text-sm text-muted">{[b.location, b.base_region].filter(Boolean).join(', ')} · WhatsApp {b.provider_private?.whatsapp_number ?? '—'}</p>
+      <p className="text-sm text-muted">{[b.location, b.base_region].filter(Boolean).join(', ')} · WhatsApp {b.provider_private?.whatsapp_number ?? 'not given'}</p>
       {b.story && <p className="whitespace-pre-line text-sm">{b.story}</p>}
       <div className="flex flex-wrap gap-3 text-sm">
         {website?.ok && <a href={website.url} target="_blank" rel={USER_LINK_REL} className="text-forest underline">Website: {website.host}</a>}
@@ -75,6 +76,7 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
         <button className="btn-outline px-4 py-2 text-sm">Save fee</button>
       </form>
 
+      {(pending.data ?? []).length === 0 && <p className="mt-4 text-muted">No businesses waiting for review.</p>}
       <ul className="mt-4 space-y-4">
         {(pending.data ?? []).map((b) => (
           <li key={b.id} className="card space-y-2">
@@ -82,6 +84,7 @@ export async function BusinessesAdmin({ t, locale }: { t: Dictionary; locale: Lo
             <form action={reviewBusiness} className="flex gap-3 pt-2">
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="provider_id" value={b.id} />
+              <input type="hidden" name="updated_at" value={b.updated_at} />
               <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
               <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
             </form>

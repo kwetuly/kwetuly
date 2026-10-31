@@ -6,7 +6,7 @@ export const colors = {
   forest: '#187A16', // primary brand green
   forestDark: '#11590F',
   mint: '#E5F5E3', // soft green tint: badges, selections
-  leaf: '#1D951A', // main call-to-action green (fills); use leafDark #187A16 for small text on white
+  leaf: '#1D951A', // green for icons, accents and fills; button backgrounds use forest #187A16 (contrast); use leafDark for small text on white
   leafDark: '#187A16',
   gold: '#FFB627', // highlights
   sand: '#FFF8EE', // warm background sections

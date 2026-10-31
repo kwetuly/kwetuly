@@ -256,7 +256,7 @@ export function tourMatchesTheme(tour: Pick<Tour, 'categories' | 'kind' | 'circu
     case 'coast':
       return has('beach', 'marine') || tour.circuit === 'coast';
     case 'cultural':
-      return has('cultural', 'historical');
+      return has('cultural', 'historical', 'cycling');
     case 'combo':
       return tour.kind === 'combo';
   }
@@ -347,6 +347,7 @@ const SPECIALTIES_BY_CATEGORY: Record<string, string[]> = {
   cultural: ['cultural', 'city'],
   historical: ['cultural', 'city'],
   event: ['city'],
+  cycling: ['cultural', 'day_trips'],
 };
 
 export function guideSpecialtiesForTour(categories: string[]): string[] {

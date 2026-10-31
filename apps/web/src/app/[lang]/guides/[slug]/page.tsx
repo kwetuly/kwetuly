@@ -28,6 +28,7 @@ import { requestCall, requestGuide, submitReview } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
 import { SubmitButton } from '@/components/submit-button';
 import { InViewNote } from '@/components/in-view-note';
+import { PhotoCredits } from '@/components/sample-offer';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
@@ -126,9 +127,11 @@ async function Profile({
           <div>
             <h1 className="text-3xl font-bold">{guide.display_name}</h1>
             {guide.headline && <p className="mt-1 text-muted">{guide.headline}</p>}
-            <a href="#reviews" className="mt-2 inline-block">
-              <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
-            </a>
+            {!guide.is_sample && (
+              <a href="#reviews" className="mt-2 inline-block">
+                <RatingSummary avg={guide.rating_avg} count={guide.rating_count} labels={t.reviews} />
+              </a>
+            )}
             <div className="mt-3">
               <GuideBadges guide={guide} t={t} showApproved />
             </div>
@@ -166,7 +169,9 @@ async function Profile({
           </section>
         )}
 
-        <GuidePackages packages={packages} guideName={guide.display_name} t={t} locale={locale} />
+        <GuidePackages packages={packages} guideName={guide.display_name} sample={guide.is_sample} t={t} locale={locale} />
+
+        {guide.is_sample && <PhotoCredits urls={[guide.photo_url, ...packages.map((p) => p.photo_url)]} locale={locale} />}
 
         {guide.open_to_partners && (
           <Link

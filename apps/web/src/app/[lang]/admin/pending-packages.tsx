@@ -6,7 +6,7 @@ import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { reviewPackage } from './actions';
 
-type PendingPackage = GuidePackage & { guides: { display_name: string; slug: string } | null };
+type PendingPackage = GuidePackage & { updated_at: string; guides: { display_name: string; slug: string } | null };
 
 // Guide packages wait here until approved. Check that the price, length and description are
 // realistic and that the guide is allowed to run this kind of trip.
@@ -16,7 +16,7 @@ export async function PendingPackages({ t, locale }: { t: Dictionary; locale: Lo
   const supabase = await createClient();
   const { data } = await supabase
     .from('guide_packages')
-    .select(`${PACKAGE_COLUMNS}, guides(display_name, slug)`)
+    .select(`${PACKAGE_COLUMNS}, updated_at, guides(display_name, slug)`)
     .eq('status', 'pending')
     .order('updated_at', { ascending: true })
     .returns<PendingPackage[]>();
@@ -26,7 +26,7 @@ export async function PendingPackages({ t, locale }: { t: Dictionary; locale: Lo
   return (
     <section id="packages" className="mt-12">
       <h2 className="text-2xl font-bold">Guide packages ({packages.length})</h2>
-      {packages.length === 0 && <p className="mt-3 text-muted">—</p>}
+      {packages.length === 0 && <p className="mt-3 text-muted">No packages waiting for review.</p>}
       <ul className="mt-4 space-y-4">
         {packages.map((p) => (
           <li key={p.id} className="card space-y-2">
@@ -50,6 +50,7 @@ export async function PendingPackages({ t, locale }: { t: Dictionary; locale: Lo
             <form action={reviewPackage} className="flex flex-wrap items-end gap-3 pt-2">
               <input type="hidden" name="locale" value={locale} />
               <input type="hidden" name="package_id" value={p.id} />
+              <input type="hidden" name="updated_at" value={p.updated_at} />
               <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
               <label className="min-w-56 flex-1">
                 <span className="label">Note to the guide (if not approved)</span>

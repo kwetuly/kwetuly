@@ -3,12 +3,13 @@ import { Clock, Users } from 'lucide-react';
 import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
+import { SampleBadge } from './guide-card';
 
 /**
  * A guide's approved packages. Each card opens in place (no page change) and its button
  * fills in the contact form on the same page, so travellers decide without leaving the profile.
  */
-export function GuidePackages({ packages, guideName, t, locale }: { packages: GuidePackage[]; guideName: string; t: Dictionary; locale: Locale }) {
+export function GuidePackages({ packages, guideName, sample, t, locale }: { packages: GuidePackage[]; guideName: string; sample?: boolean; t: Dictionary; locale: Locale }) {
   if (packages.length === 0) return null;
   const pt = t.packages;
   return (
@@ -17,7 +18,7 @@ export function GuidePackages({ packages, guideName, t, locale }: { packages: Gu
       <ul className="mt-3 space-y-3">
         {packages.map((p) => (
           <li key={p.id}>
-            <PackageCard p={p} t={t} locale={locale} />
+            <PackageCard p={p} t={t} locale={locale} sample={sample} />
           </li>
         ))}
       </ul>
@@ -25,8 +26,11 @@ export function GuidePackages({ packages, guideName, t, locale }: { packages: Gu
   );
 }
 
-/** One package that opens in place. `askHref` and `guide` are set when it is shown away from the guide's profile. */
-export function PackageCard({ p, t, locale, askHref, guide }: { p: GuidePackage; t: Dictionary; locale: Locale; askHref?: string; guide?: { name: string; href: string } }) {
+/**
+ * One package that opens in place. `askHref` and `guide` are set when it is shown away from the guide's profile.
+ * `sample` marks a package from a sample guide (test data).
+ */
+export function PackageCard({ p, t, locale, askHref, guide, sample }: { p: GuidePackage; t: Dictionary; locale: Locale; askHref?: string; guide?: { name: string; href: string }; sample?: boolean }) {
   const pt = t.packages;
   const duration = packageDuration(p, pt);
   const kind = PACKAGE_KINDS.find((k) => k.id === p.kind)?.[locale];
@@ -37,7 +41,10 @@ export function PackageCard({ p, t, locale, askHref, guide }: { p: GuidePackage;
           <Image src={p.photo_url} alt="" width={96} height={96} className="size-20 shrink-0 rounded-[5px] object-cover sm:size-24" />
         )}
         <span className="min-w-0 flex-1">
-          <span className="text-xs font-semibold text-leaf-dark">{kind}</span>
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-leaf-dark">{kind}</span>
+            {sample && <SampleBadge label={t.extras.samplePackage} />}
+          </span>
           <span className="block font-bold">{p.title}</span>
           <span className="mt-1 block text-sm text-muted">{p.summary}</span>
           <span className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -77,6 +84,7 @@ export function PackageCard({ p, t, locale, askHref, guide }: { p: GuidePackage;
             {guide.name}
           </a>
         )}
+        {sample && <p className="text-sm text-muted">{t.extras.sampleGuideNote}</p>}
         <a href={askHref ?? `?package=${p.id}#contact`} className="btn" data-track="package_ask">
           {pt.ask}
         </a>

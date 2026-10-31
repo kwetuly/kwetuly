@@ -3,13 +3,13 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EVENTS, specialtyPhoto, formatUsd } from '@kwetuly/shared';
+import { EVENTS, specialtyPhoto, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
-import { Button, Card, Muted, ScreenState, SectionTitle, ErrorText } from '@/components/ui';
+import { Badge, Button, Card, Muted, ScreenState, SectionTitle, ErrorText } from '@/components/ui';
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -87,12 +87,14 @@ export default function GroupTripScreen() {
       <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
         <Card>
           <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{specialtyName(g.specialty, locale)}</Text>
+          {g.guides?.is_sample && <Badge label={t.extras.sampleTrip} tone="sand" />}
           <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.title}</Text>
           <Muted>
             {formatDateRange(g.start_date, g.end_date, locale)} · {g.region}
           </Muted>
           <Text style={{ fontSize: textSize.title1, fontWeight: '800', color: brand.forest }}>
-            {formatUsd(g.price_per_person_usd)} <Text style={{ fontSize: textSize.subhead, color: colors.secondaryLabel }}>{g10n.perPerson}</Text>
+            {groupPriceOnRequest(g) ? t.extras.priceOnRequest : formatUsd(g.price_per_person_usd)}
+            {!groupPriceOnRequest(g) && <Text style={{ fontSize: textSize.subhead, color: colors.secondaryLabel }}> {g10n.perPerson}</Text>}
           </Text>
           <SpotsBar taken={g.seats_taken + (g.already_going ?? 0)} max={g.max_people} labels={g10n} />
           {g.guides ? (
@@ -102,6 +104,7 @@ export default function GroupTripScreen() {
           ) : (
             g.organizer_kind === 'traveller' ? <Muted>{t.extras.byTraveller}</Muted> : g.company_name && <Muted>{g10n.organisedBy} {g.company_name}</Muted>
           )}
+          {g.guides?.is_sample && <Muted>{t.extras.sampleTripNote}</Muted>}
         </Card>
 
         <Card>

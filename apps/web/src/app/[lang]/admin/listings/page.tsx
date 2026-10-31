@@ -190,7 +190,7 @@ function SampleReport({ params }: { params: Record<string, string | string[] | u
     return Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0;
   };
   const failed = typeof params.samples_failed === 'string' ? params.samples_failed.slice(0, 40) : '';
-  const counts = `Sample listings: ${n('providers')}. Sample group trips: ${n('group_trips')}. Sample guides: ${n('guides')}. Their packages: ${n('packages')}.`;
+  const counts = `Sample listings: ${n('providers')}. Their shop items: ${n('listings')}. Sample group trips: ${n('group_trips')}. Sample guides: ${n('guides')}. Their packages: ${n('packages')}. Their tour links: ${n('trip_guides')}. Sample photo files: ${n('files')}. Photo credit rows: ${n('credits')}.`;
   return failed ? (
     <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-3 text-red-800">
       Stopped: removing {failed} failed, so the remaining samples were left in place. Already removed: {counts} Check the server log and try again.

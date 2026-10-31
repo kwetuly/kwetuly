@@ -46,7 +46,7 @@ import { getTourGuides, getTourStops, getTripForViewer, listTours, placesForStop
 import type { Guide } from '@/lib/guides';
 import { today } from '@/lib/today';
 import { TourTypeBadge, TripCard, TripCover, durationText, tourCoverUrl } from '@/components/trip-card';
-import { GuideAvatar, languageName, specialtyName } from '@/components/guide-card';
+import { GuideAvatar, SampleBadge, languageName, specialtyName } from '@/components/guide-card';
 import { RatingSummary } from '@/components/stars';
 import { TourMap } from '@/components/tour-map';
 import { OperatorLogo } from '@/components/operator-logo';
@@ -431,20 +431,22 @@ function MeetGuides({ guides, assigned, t, locale }: { guides: Guide[]; assigned
               <div className="min-w-0 text-sm">
                 <p className="flex items-center gap-1 font-bold group-hover:text-leaf-dark">
                   {g.display_name}
-                  {g.verification_status === 'approved' && hasRecordedCheck(g) && <BadgeCheck className="size-4 shrink-0 text-leaf-dark" aria-label={t.guides.verified} />}
+                  {!g.is_sample && g.verification_status === 'approved' && hasRecordedCheck(g) && <BadgeCheck className="size-4 shrink-0 text-leaf-dark" aria-label={t.guides.verified} />}
                 </p>
+                {g.is_sample && <div className="my-1"><SampleBadge label={t.extras.sampleGuide} /></div>}
                 <p className="truncate text-xs text-muted">{g.specialties.slice(0, 2).map((s) => specialtyName(s, locale)).join(', ')}</p>
                 <p className="truncate text-xs text-muted">
                   {g.languages.map(languageName).join(', ')}
                   {g.years_experience != null && ` · ${g.years_experience} ${tt.yearsShort}`}
                 </p>
-                <div className="mt-1"><RatingSummary avg={g.rating_avg} count={g.rating_count} labels={t.reviews} /></div>
+                {!g.is_sample && <div className="mt-1"><RatingSummary avg={g.rating_avg} count={g.rating_count} labels={t.reviews} /></div>}
                 <span className="mt-1 inline-block text-xs font-semibold text-leaf-dark underline">{tt.viewProfile}</span>
               </div>
             </Link>
           </li>
         ))}
       </ul>
+      {guides.some((g) => g.is_sample) && <p className="mt-3 text-sm text-muted">{t.extras.sampleGuideNote}</p>}
     </section>
   );
 }
@@ -520,7 +522,7 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
               <select name="guide" defaultValue="" className="field" aria-label={tt.meetGuides}>
                 <option value="">{tt.meetGuides}: {tt.any}</option>
                 {guides.map((g) => (
-                  <option key={g.id} value={g.display_name}>{g.display_name}</option>
+                  <option key={g.id} value={g.display_name}>{g.is_sample ? `${g.display_name} · ${t.extras.sampleGuide}` : g.display_name}</option>
                 ))}
               </select>
             )}

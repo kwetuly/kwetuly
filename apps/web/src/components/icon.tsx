@@ -1,5 +1,6 @@
 import {
   Backpack,
+  Bike,
   BedDouble,
   Binoculars,
   Map,
@@ -65,6 +66,7 @@ import {
 // Maps icon names from the shared menu config to icon components.
 const icons: Record<string, LucideIcon> = {
   backpack: Backpack,
+  bike: Bike,
   binoculars: Binoculars,
   map: Map,
   mountain: Mountain,
