@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, type DocumentStatus } from '@kwetuly/shared';
 import { Circle, CircleCheck, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { businessApproval, requireUser, type CurrentUser } from '@/lib/auth';
+import { businessApproval, getCurrentUser, requireUser, type CurrentUser } from '@/lib/auth';
 import { topicName, type CallStatus } from '@/lib/labels';
 import { createClient } from '@/lib/supabase/server';
 import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
@@ -19,9 +19,19 @@ import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
 import { PhoneField } from '@/components/phone-field';
 import { LinkInput } from '@/components/link-input';
+import { KeepForm } from '@/components/keep-form';
+import { SavedNote } from '@/components/saved-note';
+import { MarkedInput } from '@/components/marked-input';
 import { phoneCountryHint } from '@/lib/phone';
 
-export const metadata: Metadata = { title: 'My profile', robots: { index: false } };
+// The tab title matches the page: travellers see "My trips", guides their guide profile, business
+// owners "My account". The page itself has no <title> of its own.
+export async function generateMetadata(): Promise<Metadata> {
+  const [t, user] = await Promise.all([getDictionary(), getCurrentUser()]);
+  const title =
+    user?.role === 'guide' || user?.guide ? t.dashboard.title : user?.role === 'provider' || user?.role === 'admin' || !user ? t.nav.dashboard : t.traveler.title;
+  return { title, robots: { index: false } };
+}
 
 type PrivateDetails = {
   phone: string | null;
@@ -126,6 +136,13 @@ async function GuideEditor({
 
   const uploadLabels = { uploading: t.chats.uploading, uploaded: t.chats.uploaded, error: t.chats.uploadError };
   const stepHref = (s: GuideStep) => `/${locale}/dashboard?step=${s}`;
+  const stepMessages: Record<string, string> = {
+    name: t.auth.nameReserved,
+    phone: `${guideStatusText(locale).phoneShort}: ${t.phone.invalidGeneric}`,
+    whatsapp: `${guideStatusText(locale).whatsappShort}: ${t.phone.invalidGeneric}`,
+    slug: guideStatusText(locale).slugTaken,
+    ...Object.fromEntries(['link_facebook', 'link_instagram', 'link_tiktok', 'links'].map((code) => [code, linkErrorMessage(code, locale) ?? t.auth.error])),
+  };
   const stepDone: Record<GuideStep, boolean> = {
     basics: !!guide,
     work: (guide?.specialties.length ?? 0) > 0 && !!guide?.headline,
@@ -147,9 +164,9 @@ async function GuideEditor({
             <li key={s} className={`h-1.5 flex-1 rounded-[5px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
           ))}
         </ol>
-        {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : status.error === 'phone' || status.error === 'whatsapp' ? t.phone.invalidGeneric : t.auth.error)}</p>}
-
-        <form action={saveGuideProfile} className="card mt-6 space-y-5">
+        {/* Refusals come back into the form, which keeps everything typed (KeepForm). */}
+        {/* key: a message from one step never shows on the next. */}
+        <KeepForm key={step} action={saveGuideProfile} messages={stepMessages} fallback={t.auth.error} className="card mt-6 space-y-5">
           <input type="hidden" name="locale" value={locale} />
           <input type="hidden" name="step" value={step} />
 
@@ -208,8 +225,8 @@ async function GuideEditor({
             <>
               <p className="text-sm text-muted">{d.documentsWhy}</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                <PhoneField id="phone" label={d.phone} locale={locale} t={t.phone} defaultValue={details?.phone ?? user.phone ?? ''} defaultCountry={phoneCountry} invalid={status.error === 'phone'} maxLength={30} />
-                <PhoneField id="whatsapp_number" name="whatsapp_number" countryName="whatsapp_country" label={d.whatsapp} locale={locale} t={t.phone} defaultValue={details?.whatsapp_number ?? user.phone ?? ''} defaultCountry={phoneCountry} invalid={status.error === 'whatsapp'} maxLength={30} />
+                <PhoneField id="phone" label={d.phone} locale={locale} t={t.phone} defaultValue={details?.phone ?? user.phone ?? ''} defaultCountry={phoneCountry} errorCode="phone" maxLength={30} />
+                <PhoneField id="whatsapp_number" name="whatsapp_number" countryName="whatsapp_country" label={d.whatsapp} locale={locale} t={t.phone} defaultValue={details?.whatsapp_number ?? user.phone ?? ''} defaultCountry={phoneCountry} errorCode="whatsapp" maxLength={30} />
                 <Field label={d.registration}><input className="field" name="registration_number" defaultValue={details?.registration_number ?? ''} /></Field>
                 <Field label={d.kinapa}><input className="field" name="kinapa_tanapa_id" defaultValue={details?.kinapa_tanapa_id ?? ''} /></Field>
               </div>
@@ -257,7 +274,7 @@ async function GuideEditor({
               <p className="text-sm text-muted">{linkTexts(locale).socialHint}</p>
               <p className="text-sm text-muted">{d.followUs}</p>
               <Field label={`${d.slug} (kwetuly.com/${locale}/guides/…)`}>
-                <input className="field" name="slug" maxLength={60} pattern="[a-z0-9-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
+                <MarkedInput id="slug" errorCode="slug" message={guideStatusText(locale).slugTaken} className="field" name="slug" maxLength={60} pattern="[a-z0-9\-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
               </Field>
               <Field label={d.visibility}>
                 <select className="field" name="visibility" defaultValue={guide?.visibility ?? 'public'}>
@@ -300,7 +317,7 @@ async function GuideEditor({
               </Link>
             )}
           </div>
-        </form>
+        </KeepForm>
       </>
     );
   }
@@ -308,23 +325,20 @@ async function GuideEditor({
   return (
     <>
       <h1 className="text-3xl font-bold">{d.title}</h1>
+      {/* One status banner: saved (until the next edit), where the profile stands and its link.
+          The Guide Hub button lives in the header, so it is not repeated here. */}
       {guide && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[5px] bg-mint p-4 text-forest">
-          <span>{statusText}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[5px] bg-mint p-4 text-forest">
+          {status.saved && <SavedNote className="w-full font-semibold">{d.saved}</SavedNote>}
+          <span>{guide.verification_status === 'approved' && guide.visibility === 'link_only' ? guideStatusText(locale).approvedLinkOnly : statusText}</span>
           {guide.verification_status === 'approved' && (
-            <>
-              <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
-                {d.viewProfile}
-              </Link>
-              <Link href={`/${locale}/hub`} className="btn ml-auto px-4 py-2 text-sm">
-                {t.nav.hub}
-              </Link>
-            </>
+            <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
+              {d.viewProfile}
+            </Link>
           )}
         </div>
       )}
-      {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{d.saved}</p>}
-      {status.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : t.auth.error)}</p>}
+      {status.error && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : t.auth.error)}</p>}
 
       {/* The sign-up steps, each with its own short form. */}
       <ol className="card mt-6 divide-y divide-line">
@@ -392,15 +406,7 @@ async function TravelerDashboard({
 
   return (
     <>
-      {/* The page metadata says "My profile"; travellers' tab title matches their heading instead. */}
-      {embedded ? (
-        <h2 className="text-2xl font-bold">{t.traveler.title}</h2>
-      ) : (
-        <>
-          <title>{`${t.traveler.title} · Kwetuly`}</title>
-          <h1 className="text-3xl font-bold">{t.traveler.title}</h1>
-        </>
-      )}
+      {embedded ? <h2 className="text-2xl font-bold">{t.traveler.title}</h2> : <h1 className="text-3xl font-bold">{t.traveler.title}</h1>}
       <MyDetails t={t} locale={locale} user={user} status={details} back={back} />
       <section className="card mt-6">
         <h2 className="text-lg font-bold">{t.traveler.calls}</h2>
@@ -465,19 +471,18 @@ async function MyDetails({ t, locale, user, status, back }: { t: Dictionary; loc
   return (
     <section id="details" className="card mt-6 scroll-mt-28">
       <h2 className="text-lg font-bold">{x.detailsTitle}</h2>
-      {status === 'saved' && <p className="mt-2 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{x.detailsSaved}</p>}
-      {status === 'invalid' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.phone.invalidGeneric}</p>}
-      {status === 'name' && <p role="alert" className="mt-2 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{t.auth.nameReserved}</p>}
-      <form action={saveMyDetails} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+      {status === 'saved' && <SavedNote className="mt-2 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{x.detailsSaved}</SavedNote>}
+      {/* Refusals come back into the form, keeping the name, the number and the return page. */}
+      <KeepForm action={saveMyDetails} messages={{ invalid: t.phone.invalidGeneric, name: t.auth.nameReserved }} fallback={t.auth.error} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-start">
         <input type="hidden" name="locale" value={locale} />
         {back && <input type="hidden" name="back" value={back} />}
         <label className="block">
           <span className="label">{t.profile.name}</span>
           <NameInput reservedMessage={t.auth.nameReserved} allowReserved={user.role === 'admin'} name="full_name" className="field" maxLength={120} defaultValue={user.fullName ?? ''} autoComplete="name" />
         </label>
-        <PhoneField id="details-phone" label={t.auth.phone} locale={locale} t={t.phone} required defaultValue={user.phone ?? ''} defaultCountry={await phoneCountryHint()} />
-        <SubmitButton className="btn px-5 py-2.5">{x.saveDetails}</SubmitButton>
-      </form>
+        <PhoneField id="details-phone" label={t.auth.phone} locale={locale} t={t.phone} required defaultValue={user.phone ?? ''} defaultCountry={await phoneCountryHint()} errorCode="invalid" />
+        <SubmitButton className="btn px-5 py-2.5 sm:mt-[1.875rem]">{x.saveDetails}</SubmitButton>
+      </KeepForm>
     </section>
   );
 }

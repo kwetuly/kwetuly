@@ -1,8 +1,9 @@
 import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-// The security page says "Google connected" or "Facebook removed" only when this account really
-// asked for that change a moment ago. linkSignIn and unlinkSignIn set this short-lived cookie,
+// The security page says "Google connected" or "Facebook removed" (or that it went wrong) only when
+// this account really asked for that change a moment ago. linkSignIn and unlinkSignIn set this
+// short-lived cookie as soon as the request is valid,
 // signed with HMAC-SHA256 and bound to the user, the change and the provider; a hand-made
 // ?signin=linked or ?signin=removed link alone shows nothing.
 //
@@ -39,16 +40,16 @@ export function signSignInNotice(userId: string, change: SignInChange, provider:
   return `${change}.${provider}.${expires}.${mac(key, userId, change, provider, expires)}`;
 }
 
-/** True when the cookie proves this user asked for exactly this change to this provider recently. */
-export function signInNoticeIsValid(value: string | undefined, userId: string, change: unknown, provider: unknown): boolean {
+/** The change this user really asked for in the last few minutes, or null (no, bad or old cookie). */
+export function readSignInNotice(value: string | undefined, userId: string): { change: SignInChange; provider: string } | null {
   const key = secret();
-  if (!key || !value || typeof change !== 'string' || typeof provider !== 'string') return false;
-  const [givenChange, givenProvider, expiresText, given, extra] = value.split('.');
-  if (extra !== undefined || givenChange !== change || givenProvider !== provider) return false;
-  if (change !== 'linked' && change !== 'removed') return false;
+  if (!key || !value) return null;
+  const [change, provider, expiresText, given, extra] = value.split('.');
+  if (extra !== undefined || !provider || (change !== 'linked' && change !== 'removed')) return null;
   const expires = Number(expiresText);
-  if (!Number.isInteger(expires) || expires < Math.floor(Date.now() / 1000)) return false;
+  if (!Number.isInteger(expires) || expires < Math.floor(Date.now() / 1000)) return null;
   const expected = Buffer.from(mac(key, userId, change, provider, expires));
   const actual = Buffer.from(given ?? '');
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
+  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return null;
+  return { change, provider };
 }

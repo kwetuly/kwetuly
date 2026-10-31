@@ -45,6 +45,11 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Ombi jipya kutoka kwa ${v('name')}`, body: `${v('name')} anataka safari nawe. Mawasiliano: ${v('contact')}. Ujumbe: ${v('message')}` }
         : { subject: `New request from ${v('name')}`, body: `${v('name')} would like a trip with you. Contact: ${v('contact')}. Message: ${v('message')}` };
+    case 'lead_for_business':
+      // To the business owner. No traveller contact in the alert: it is shown under "My account".
+      return sw
+        ? { subject: `Ombi jipya kutoka kwa ${v('name')}`, body: `${v('name')} ametuma ombi au oda kwa biashara yako kwenye Kwetuly. Ujumbe: ${v('message')}. Fungua "Akaunti yangu" kwenye Kwetuly kuona mawasiliano yake na kumjibu.` }
+        : { subject: `New enquiry from ${v('name')}`, body: `${v('name')} sent your business an enquiry or order on Kwetuly. Message: ${v('message')}. Open "My account" on Kwetuly to see their contact details and reply.` };
     case 'lead_for_admin':
       return sw
         ? { subject: `Ombi jipya${p.trip ? `: ${v('trip')}` : ''}`, body: `${v('name')} (${v('contact')}) ${p.trip ? `kuhusu ${v('trip')}. ` : ''}${v('message')}` }
@@ -133,6 +138,9 @@ function render(event: string, locale: string, p: Record<string, string | null>)
         subject: `Deposit to check: order ${v('order')}`,
         body: `Selcom's result for "${v('what')}" does not match what Kwetuly expected (asked TZS ${v('amount')}, Selcom reported ${v('reported')}), or it was paid after Kwetuly gave up on the order. It is held as "review": check it in the Selcom portal before doing anything else.`,
       };
+    case 'link_changed':
+      // Admins only: an approved guide or business changed a profile link.
+      return { subject: `Profile link changed: ${v('name')}`, body: `${v('kind')} "${v('name')}" changed a link after approval: ${v('changes')}. Check that the new link still points to their own page. (At most one alert per profile every 15 minutes.)` };
     case 'interest_traveler':
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':

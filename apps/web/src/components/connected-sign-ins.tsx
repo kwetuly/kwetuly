@@ -2,6 +2,7 @@ import { KeyRound, Mail } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { enabledSocialProviders, LINKING_ON, SOCIAL_PROVIDERS, type SocialProvider } from '@/lib/auth-providers';
+import { SIGN_INS_TEXT } from '@kwetuly/shared';
 import { createClient } from '@/lib/supabase/server';
 import { linkSignIn, unlinkSignIn } from '@/app/[lang]/security/actions';
 import { PROVIDER_NAMES, ProviderMark } from '@/components/social-sign-in';
@@ -34,14 +35,14 @@ export async function ConnectedSignIns({
   locale,
   status,
   locked,
-  changeProven,
+  recentChange,
 }: {
   t: Dictionary;
   locale: Locale;
   status: Status;
   locked: boolean;
-  /** The signed cookie from linkSignIn / unlinkSignIn matches ?signin= and ?provider= (lib/signin-notice.ts). */
-  changeProven: boolean;
+  /** The change this account just asked for, proven by the signed cookie from linkSignIn / unlinkSignIn (lib/signin-notice.ts). */
+  recentChange: { change: 'linked' | 'removed'; provider: string } | null;
 }) {
   const u = t.ux;
   const supabase = await createClient();
@@ -55,19 +56,21 @@ export async function ConnectedSignIns({
   // cookie) and the account really shows it, so an old or hand-made link never claims anything.
   const asked = isSocial(status.provider) ? status.provider : null;
   const named = (text: string) => text.replace('{provider}', asked ? PROVIDER_NAMES[asked] : '');
-  const proven = LINKING_ON && changeProven && !error && asked !== null;
-  const linkedOk = proven && connected.has(asked);
-  const removedOk = proven && !connected.has(asked);
+  const proven = (change: 'linked' | 'removed') => LINKING_ON && !error && asked !== null && recentChange?.change === change && recentChange.provider === asked;
+  const linkedOk = proven('linked') && asked !== null && connected.has(asked);
+  const removedOk = proven('removed') && asked !== null && !connected.has(asked);
+  // "Taken" and "error" also only follow a real attempt from this account.
+  const attempted = LINKING_ON && recentChange !== null;
   // While linking is off, the line under the list already says so; no second "not available" note.
   const offShownBelow = !locked && !LINKING_ON;
   const notice =
     status.signin === 'linked' && linkedOk ? { ok: true, text: named(u.signInLinked) }
     : status.signin === 'removed' && removedOk ? { ok: true, text: named(u.signInRemoved) }
-    : status.signin === 'taken' && asked ? { ok: false, text: named(u.signInTaken) }
+    : status.signin === 'taken' && asked && proven('linked') ? { ok: false, text: named(u.signInTaken) }
     : status.signin === 'off' && !offShownBelow ? { ok: false, text: u.signInLinkingOff }
     : status.signin === 'only' && LINKING_ON ? { ok: false, text: u.signInOnlyOne }
     : status.signin === 'admin' && locked ? { ok: false, text: ADMIN_NOTE }
-    : status.signin === 'error' ? { ok: false, text: u.signInChangeError }
+    : status.signin === 'error' && attempted ? { ok: false, text: u.signInChangeError }
     : null;
 
   return (
@@ -78,7 +81,8 @@ export async function ConnectedSignIns({
         </span>
         <div>
           <h2 id="sign-ins-title" className="text-lg font-bold">{u.signInsTitle}</h2>
-          <p className="mt-1 text-sm text-muted">{u.signInsBody}</p>
+          {/* "Connect another one" only while connecting is switched on. */}
+          <p className="mt-1 text-sm text-muted">{LINKING_ON ? u.signInsBody : SIGN_INS_TEXT[locale].bodyNoLinking}</p>
         </div>
       </div>
 

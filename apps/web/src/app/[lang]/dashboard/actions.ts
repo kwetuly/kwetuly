@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { revalidateTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
 import { linkErrorCode, normaliseSocial, type SocialPlatform } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
@@ -9,6 +9,16 @@ import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { phoneFromForm } from '@/lib/phone';
+import type { FormResult } from '@/components/keep-form';
+
+/** A refusal inside a save: the form gets { error: code } back with everything typed kept. */
+class FormRefused {
+  constructor(readonly code: string) {}
+}
+
+function refuse(code: string): never {
+  throw new FormRefused(code);
+}
 
 /** A path the browser uploaded into this user's own storage folder, e.g. "<user id>/avatar-1791234567890.jpg". */
 function ownPath(formData: FormData, key: string, userId: string, prefix: string, extensions: string[]) {
@@ -45,14 +55,25 @@ function slugify(value: string) {
     .slice(0, 60);
 }
 
-// Saves one step of the guide profile (or every part, when no step is given) and moves on to the next step.
-export async function saveGuideProfile(formData: FormData) {
+// Saves one step of the guide profile (or every part, when no step is given) and moves on to the
+// next step. Used with KeepForm: a refusal comes back as { error } and the form keeps what was typed.
+export async function saveGuideProfile(_previous: FormResult, formData: FormData): Promise<FormResult> {
+  try {
+    await saveGuideStep(formData);
+    return null;
+  } catch (err) {
+    if (err instanceof FormRefused) return { error: err.code };
+    throw err; // redirects (success, sign-in) and real failures
+  }
+}
+
+async function saveGuideStep(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const stepValue = formData.get('step');
   const step: GuideStep | null = isGuideStep(stepValue) ? stepValue : null;
   const back = `/${locale}/dashboard`;
-  const fail = (code: string) => redirect(step ? `${back}?step=${step}&error=${code}` : `${back}?error=${code}`);
+  const fail = refuse;
 
   const supabase = await createClient();
   const {
@@ -198,16 +219,18 @@ export async function saveGuideProfile(formData: FormData) {
     if (Object.keys(cleared).length > 0) await supabase.from('guides').update(cleared).eq('id', guideId!);
   }
 
-  revalidateTag('guides', 'max');
-  // A refused profile link: everything else is saved; stay on the step and say which link.
-  if (badLink) redirect(`${back}?step=${step ?? 'story'}&error=${badLink}`);
+  // The public guide pages show the change straight away (not after the cache's next refresh).
+  updateTag('guides');
+  // A refused profile link: everything else is saved; the step stays open, with that link's message.
+  if (badLink) refuse(badLink);
   // On to the next step, or back to the overview after the last one.
   const next = step ? GUIDE_STEPS[GUIDE_STEPS.indexOf(step) + 1] : undefined;
   redirect(next ? `${back}?step=${next}` : `${back}?saved=1`);
 }
 
 // A traveller's own name and phone. Changing the phone clears its "confirmed" mark (database guard).
-export async function saveMyDetails(formData: FormData) {
+// Used with KeepForm: a refusal comes back as { error }, keeping what was typed and the return page.
+export async function saveMyDetails(_previous: FormResult, formData: FormData): Promise<FormResult> {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
   const supabase = await createClient();
@@ -220,12 +243,12 @@ export async function saveMyDetails(formData: FormData) {
   const { phone } = phoneFromForm(formData, 'phone', 'phone_country', current?.phone);
   const back = String(formData.get('back') ?? '');
   const next = back.startsWith(`/${locale}/`) && /^[/a-z0-9?=&-]+$/.test(back) ? back : `/${locale}/dashboard`;
-  if (!phone) redirect(`/${locale}/dashboard?details=invalid#details`);
+  if (!phone) return { error: 'invalid' };
   const fullName = text(formData, 'full_name', 120);
   // Names that look like Kwetuly are refused by the database unless the account is an admin (the
-  // browser normally stops them first); the form comes back with the return page kept.
-  const keepBack = next === `/${locale}/dashboard` ? '' : `&back=${encodeURIComponent(next)}`;
+  // browser normally stops them first).
   const { error } = await supabase.from('profiles').update({ full_name: fullName, phone }).eq('id', user.id);
-  if (isDisplayNameReservedError(error)) redirect(`/${locale}/dashboard?details=name${keepBack}#details`);
+  if (isDisplayNameReservedError(error)) return { error: 'name' };
+  if (error) return { error: 'save' };
   redirect(next === `/${locale}/dashboard` ? `${next}?details=saved#details` : next);
 }

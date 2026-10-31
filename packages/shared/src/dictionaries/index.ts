@@ -19,3 +19,5 @@ export type { PhoneText } from './phone';
 export { LINK_TEXT, linkTexts, linkErrorCode, linkErrorMessage, type LinkTexts, type LinkErrorCode } from './links';
 export { LIMIT_TEXT, limitTexts, isRateLimited, RATE_LIMIT_SQLSTATE, RATE_LIMIT_MESSAGE, type LimitTexts } from './limits';
 export { linkCheckText, type LinkCheckText } from './link-check';
+export { guideStatusText, type GuideStatusText } from './guide-status';
+export { SIGN_INS_TEXT } from './sign-ins';

@@ -4,7 +4,7 @@ import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, type DocumentStatus } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
@@ -224,11 +224,11 @@ export default function ProfileEditScreen() {
     const phone = resolvePhone(f.phone, phoneCountries.phone, savedPhone);
     const whatsapp = resolvePhone(f.whatsapp_number, phoneCountries.whatsapp, savedWhatsapp);
     if (f.phone.trim() && !phone) {
-      setMessage({ tone: 'error', text: `${d.phone}: ${t.phone.invalidGeneric}` });
+      setMessage({ tone: 'error', text: `${guideStatusText(locale).phoneShort}: ${t.phone.invalidGeneric}` });
       return false;
     }
     if (f.whatsapp_number.trim() && !whatsapp) {
-      setMessage({ tone: 'error', text: `${d.whatsapp}: ${t.phone.invalidGeneric}` });
+      setMessage({ tone: 'error', text: `${guideStatusText(locale).whatsappShort}: ${t.phone.invalidGeneric}` });
       return false;
     }
     setBusy(true);

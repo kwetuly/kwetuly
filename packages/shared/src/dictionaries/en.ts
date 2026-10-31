@@ -809,7 +809,7 @@ export const en = {
     validUntil: 'Valid until',
     strength: 'Profile strength',
     complete: 'complete',
-    missing: 'Still to add',
+    missing: 'Your profile',
     allDone: 'All done. Your profile is complete.',
     optional: 'optional',
     photo: 'Profile photo',

@@ -3,7 +3,7 @@
 import type { Locale } from '../locales';
 
 const en = {
-  socialCheck: 'This is not a link to a {platform} profile. Paste the link to your own profile, for example {example}, or just type your @name.',
+  socialCheck: 'This is not a link to your {platform} profile. Paste the link to your own profile, for example {example}, or just type your @name.',
   websiteCheck: 'This is not a website address. Use the full address of your own site, for example https://www.yourbusiness.co.tz.',
 };
 

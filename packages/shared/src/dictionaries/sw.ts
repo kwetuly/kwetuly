@@ -811,7 +811,7 @@ export const sw: Dictionary = {
     validUntil: 'Halali hadi',
     strength: 'Ukamilifu wa wasifu',
     complete: 'umekamilika',
-    missing: 'Bado kuongeza',
+    missing: 'Wasifu wako',
     allDone: 'Tayari. Wasifu wako umekamilika.',
     optional: 'si lazima',
     photo: 'Picha ya wasifu',

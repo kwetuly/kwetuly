@@ -11,6 +11,7 @@ import {
   splitPhone,
   type Dictionary,
 } from '@kwetuly/shared';
+import { useKeepForm } from './keep-form';
 
 type PhoneText = Dictionary['phone'];
 
@@ -28,6 +29,7 @@ export function PhoneField({
   countryName = 'phone_country',
   required = false,
   invalid = false,
+  errorCode,
   maxLength = 40,
 }: {
   id: string;
@@ -41,14 +43,25 @@ export function PhoneField({
   name?: string;
   countryName?: string;
   required?: boolean;
-  /** The server refused the number. */
+  /** The server refused the number (after a redirect). */
   invalid?: boolean;
+  /** Inside a KeepForm: the error code that means this number was refused. */
+  errorCode?: string;
   maxLength?: number;
 }) {
   const start = useMemo(() => splitPhone(defaultValue, phoneCountryOrDefault(defaultCountry)), [defaultValue, defaultCountry]);
   const [country, setCountry] = useState<string>(start.country);
   const [value, setValue] = useState(start.national);
   const [checked, setChecked] = useState(false);
+  // A refusal from a KeepForm marks this field until the number is edited again.
+  const keep = useKeepForm();
+  const refused = invalid || (!!errorCode && keep.result?.error === errorCode);
+  const [seenResult, setSeenResult] = useState(keep.result);
+  const [editedSinceRefusal, setEditedSinceRefusal] = useState(false);
+  if (keep.result !== seenResult) {
+    setSeenResult(keep.result);
+    setEditedSinceRefusal(false);
+  }
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -73,7 +86,7 @@ export function PhoneField({
   const wrong = !unchanged && value.trim() !== '' && normalizePhone(value, country) === null;
   // Checked on leaving the field (and again while correcting it), never while typing the first time.
   const looksWrong = checked && wrong;
-  const showError = looksWrong || (invalid && !checked);
+  const showError = looksWrong || (refused && !editedSinceRefusal);
   const message = looksWrong ? t.invalid.replace('{country}', current.name) : t.invalidGeneric;
 
   // The browser's own form check stops a number we already know is wrong.
@@ -104,6 +117,7 @@ export function PhoneField({
 
   function choose(code: string) {
     setCountry(code);
+    setEditedSinceRefusal(true);
     setOpen(false);
     input.current?.focus();
   }
@@ -164,7 +178,10 @@ export function PhoneField({
           maxLength={maxLength}
           placeholder={example}
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          onChange={(event) => {
+            setValue(event.target.value);
+            setEditedSinceRefusal(true);
+          }}
           onBlur={() => setChecked(true)}
           aria-describedby={showError ? `${errorId} ${hintId}` : hintId}
           aria-invalid={showError || undefined}

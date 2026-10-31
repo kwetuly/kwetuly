@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type KeyboardEvent, type MouseEvent, type RefObject, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
@@ -175,8 +175,72 @@ const TRIGGER =
   'flex items-center gap-1.5 whitespace-nowrap rounded-[5px] px-3 py-2 text-sm font-semibold text-charcoal/80 transition hover:bg-sand hover:text-charcoal';
 const GAP = 2; // gap-0.5 between the triggers
 const PANEL = 'overflow-hidden rounded-[5px] border border-line bg-white shadow-[0_24px_60px_-12px_rgba(0,0,0,0.25)]';
-const OPENS =
-  'invisible absolute top-full z-30 translate-y-2 pt-3 opacity-0 transition duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100';
+// Panels wrap their text (the row itself never wraps). Open or closed comes from DesktopNav's one
+// `openId`, so only one menu is ever open, whether by hover, focus or tap.
+const panelClass = (open: boolean) =>
+  `absolute top-full z-30 whitespace-normal pt-3 transition duration-200 ${open ? 'visible translate-y-0 opacity-100' : 'invisible translate-y-2 opacity-0'}`;
+
+type Dropdown = {
+  open: boolean;
+  /** Pointer, focus, blur and tap handlers for the menu's <li>, and its button's props. */
+  item: {
+    onPointerEnter: () => void;
+    onPointerLeave: () => void;
+    onFocus: () => void;
+    onBlur: (event: FocusEvent<HTMLLIElement>) => void;
+    onClick: (event: MouseEvent<HTMLLIElement>) => void;
+  };
+  button: { onClick: () => void; 'aria-expanded': boolean };
+};
+
+function useDropdowns(row: RefObject<HTMLDivElement | null>) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  // Set while Escape hands focus back to the menu's button, so that focus does not reopen it.
+  const closingByEscape = useRef(false);
+
+  // One Escape press closes the open menu wherever focus is, and focus returns to its button when
+  // it was inside the menu.
+  useEffect(() => {
+    if (openId === null) return;
+    function onKey(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      const button = row.current?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]');
+      const focusInside = !!button?.parentElement?.contains(document.activeElement);
+      setOpenId(null);
+      if (button && focusInside && document.activeElement !== button) {
+        closingByEscape.current = true;
+        button.focus();
+        closingByEscape.current = false;
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [openId, row]);
+
+  return (id: string): Dropdown => {
+    const close = () => setOpenId((current) => (current === id ? null : current));
+    return {
+      open: openId === id,
+      item: {
+        onPointerEnter: () => setOpenId(id),
+        onPointerLeave: close,
+        onFocus: () => {
+          if (!closingByEscape.current) setOpenId(id);
+        },
+        onBlur: (event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) close();
+        },
+        // Following a link inside the menu closes it (the header stays on the next page).
+        onClick: (event) => {
+          if ((event.target as HTMLElement).closest('a')) setOpenId(null);
+        },
+      },
+      // A click or tap opens (it also focuses, so toggling here would shut it straight away); Escape,
+      // moving away or focus leaving closes it.
+      button: { onClick: () => setOpenId(id), 'aria-expanded': openId === id },
+    };
+  };
+}
 
 // useLayoutEffect warns on the server; there the row is simply not measured yet.
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -189,6 +253,7 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
   const row = useRef<HTMLDivElement>(null);
   const ruler = useRef<HTMLUListElement>(null);
   const [fit, setFit] = useState<number | null>(null);
+  const dropdown = useDropdowns(row);
   const text = MENU_TEXT[locale];
 
   useBrowserLayoutEffect(() => {
@@ -232,10 +297,11 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
             soonLabel={soonLabel}
             // Menus in the left half open to the right, the others to the left, so none leaves the page.
             align={index < (shown + 1) / 2 ? 'left' : 'right'}
+            dropdown={dropdown(section.slug)}
           />
         ))}
         {shown < MENU.length && (
-          <MoreMenu sections={MENU.slice(shown)} locale={locale} soonLabel={soonLabel} label={text.more} />
+          <MoreMenu sections={MENU.slice(shown)} locale={locale} soonLabel={soonLabel} label={text.more} dropdown={dropdown('more')} />
         )}
       </ul>
 
@@ -260,7 +326,7 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
   );
 }
 
-function SectionMenu({ section, locale, soonLabel, align }: { section: MenuSection; locale: Locale; soonLabel: string; align: 'left' | 'right' }) {
+function SectionMenu({ section, locale, soonLabel, align, dropdown }: { section: MenuSection; locale: Locale; soonLabel: string; align: 'left' | 'right'; dropdown: Dropdown }) {
   if (section.items.length === 1)
     return (
       <li>
@@ -274,12 +340,12 @@ function SectionMenu({ section, locale, soonLabel, align }: { section: MenuSecti
   // their section sits; narrow ones hang from their own button.
   const wide = section.items.length > 6;
   return (
-    <li className={`group ${wide ? '' : 'relative'}`}>
-      <button type="button" className={`${TRIGGER} gap-1 group-focus-within:bg-sand`} aria-haspopup="true">
+    <li className={wide ? undefined : 'relative'} {...dropdown.item}>
+      <button type="button" className={`${TRIGGER} gap-1 ${dropdown.open ? 'bg-sand text-charcoal' : ''}`} aria-haspopup="true" {...dropdown.button}>
         {section.label[locale]}
-        <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
+        <ChevronDown className={`size-4 transition ${dropdown.open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
-      <div className={`${OPENS} ${wide ? 'left-0 w-[min(42rem,100%)]' : `${align === 'left' ? 'left-0' : 'right-0'} w-[22rem]`}`}>
+      <div className={`${panelClass(dropdown.open)} ${wide ? 'left-0 w-[min(42rem,100%)]' : `${align === 'left' ? 'left-0' : 'right-0'} w-[22rem]`}`}>
         <div className={PANEL}>
           <p className="bg-night px-5 py-3 text-xs font-semibold text-white">{section.tagline[locale]}</p>
           <ul className={`p-2 ${wide ? 'grid grid-cols-2' : ''}`}>
@@ -307,14 +373,14 @@ function SectionMenu({ section, locale, soonLabel, align }: { section: MenuSecti
 }
 
 // The sections that did not fit, each with its own links, in one panel that scrolls when long.
-function MoreMenu({ sections, locale, soonLabel, label }: { sections: MenuSection[]; locale: Locale; soonLabel: string; label: string }) {
+function MoreMenu({ sections, locale, soonLabel, label, dropdown }: { sections: MenuSection[]; locale: Locale; soonLabel: string; label: string; dropdown: Dropdown }) {
   return (
-    <li className="group relative">
-      <button type="button" className={`${TRIGGER} gap-1 group-focus-within:bg-sand`} aria-haspopup="true">
+    <li className="relative" {...dropdown.item}>
+      <button type="button" className={`${TRIGGER} gap-1 ${dropdown.open ? 'bg-sand text-charcoal' : ''}`} aria-haspopup="true" {...dropdown.button}>
         {label}
-        <ChevronDown className="size-4 transition group-hover:rotate-180" aria-hidden />
+        <ChevronDown className={`size-4 transition ${dropdown.open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
-      <div className={`${OPENS} right-0 w-[min(24rem,calc(100vw-2rem))]`}>
+      <div className={`${panelClass(dropdown.open)} right-0 w-[min(24rem,calc(100vw-2rem))]`}>
         <div className={`${PANEL} max-h-[calc(100vh-9rem)] overflow-y-auto p-2`}>
           {sections.map((section) => (
             <div key={section.slug} className="border-b border-line py-1 last:border-b-0">

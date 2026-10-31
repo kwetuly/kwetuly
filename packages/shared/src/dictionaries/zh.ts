@@ -640,7 +640,7 @@ export const zh: Dictionary = {
     validUntil: '有效期至',
     strength: '资料完整度',
     complete: '已完成',
-    missing: '尚需补充',
+    missing: '你的资料',
     allDone: '全部完成。你的资料已完整。',
     optional: '可选',
     photo: '头像照片',

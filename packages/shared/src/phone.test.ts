@@ -66,9 +66,11 @@ describe('normalizePhone', () => {
 });
 
 describe('phone countries', () => {
-  it('puts Tanzania first with +255', () => {
+  it('puts Tanzania first with +255, then neighbours and traveller countries, then A to Z', () => {
     const list = phoneCountries('en');
     expect(list[0]).toMatchObject({ code: 'TZ', dial: '+255', name: 'Tanzania' });
+    expect(list.slice(0, 19).map((c) => c.code).join(' ')).toBe('TZ KE UG RW BI CD ZM MW MZ US GB DE FR IT PL CN NL ES IN');
+    expect(list[19].name).toBe('Afghanistan');
     expect(list.length).toBeGreaterThan(200);
   });
 
@@ -102,6 +104,8 @@ describe('phone countries', () => {
 
   it('gives an example number written the local way', () => {
     expect(phoneExample('TZ')).toMatch(/^0\d{3} \d{3} \d{3}$/);
+    expect(phoneExample('KE')).toMatch(/^0\d{3} \d{3} \d{3}$/);
+    expect(splitPhone('+254712345678').national).toBe('0712 345 678');
     expect(phoneExample('US')).toMatch(/^\(\d{3}\) \d{3}-\d{4}$/);
   });
 });

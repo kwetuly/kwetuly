@@ -48,6 +48,20 @@ function displayNames(locale: string): ((code: string) => string | undefined) | 
   }
 }
 
+// Top of the list: Tanzania, its neighbours, then the countries most travellers come from; then A to Z.
+export const PINNED_COUNTRIES: readonly CountryCode[] = [
+  'TZ', 'KE', 'UG', 'RW', 'BI', 'CD', 'ZM', 'MW', 'MZ',
+  'US', 'GB', 'DE', 'FR', 'IT', 'PL', 'CN', 'NL', 'ES', 'IN',
+];
+
+// Kenyan mobile numbers grouped like Tanzanian ones (0712 345 678) rather than the library's
+// 0712 345678, so the two neighbours read the same way. Other countries keep the library format.
+function formatLocal(country: string | undefined, national: string): string {
+  const digits = national.replace(/\D/g, '');
+  if (country === 'KE' && /^0[17]\d{8}$/.test(digits)) return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
+  return national;
+}
+
 const listCache = new Map<string, PhoneCountry[]>();
 
 // Every country with its dial code, flag and name in the visitor's language (English names where
@@ -67,9 +81,9 @@ export function phoneCountries(locale = 'en'): PhoneCountry[] {
   } catch {
     compare = (a, b) => a.localeCompare(b);
   }
-  const first = all.filter((c) => c.code === DEFAULT_PHONE_COUNTRY);
-  const rest = all.filter((c) => c.code !== DEFAULT_PHONE_COUNTRY).sort((a, b) => compare(a.name, b.name));
-  const list = [...first, ...rest];
+  const pinned = PINNED_COUNTRIES.map((code) => all.find((c) => c.code === code)).filter((c): c is PhoneCountry => !!c);
+  const rest = all.filter((c) => !PINNED_COUNTRIES.includes(c.code)).sort((a, b) => compare(a.name, b.name));
+  const list = [...pinned, ...rest];
   listCache.set(locale, list);
   return list;
 }
@@ -113,7 +127,7 @@ export function searchPhoneCountries(list: PhoneCountry[], query: string): Phone
 // An example number for the country, written the local way (Tanzania: 0712 345 678).
 export function phoneExample(country: string): string {
   const code = phoneCountryOrDefault(country);
-  return getExampleNumber(code, examples)?.formatNational() ?? '';
+  return formatLocal(code, getExampleNumber(code, examples)?.formatNational() ?? '');
 }
 
 // Turns what people type into an international number like +255712345678, or null if it is not a
@@ -143,7 +157,7 @@ export function normalizePhone(raw: string, country: string = DEFAULT_PHONE_COUN
 export function splitPhone(saved: string | null | undefined, fallback: string = DEFAULT_PHONE_COUNTRY): { country: CountryCode; national: string } {
   const value = (saved ?? '').trim();
   const parsed = value.startsWith('+') ? parsePhoneNumberFromString(value) : undefined;
-  if (parsed?.country) return { country: parsed.country, national: parsed.formatNational() };
+  if (parsed?.country) return { country: parsed.country, national: formatLocal(parsed.country, parsed.formatNational()) };
   return { country: phoneCountryOrDefault(fallback), national: value };
 }
 

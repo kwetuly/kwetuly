@@ -39,6 +39,8 @@ export async function linkSignIn(formData: FormData) {
   const provider = LINKABLE.find((p) => p === formData.get('provider'));
   if (!provider || !(await enabledSocialProviders()).includes(provider)) redirect(securityPath(locale, 'signin=error'));
 
+  // From here on the page may report the result (connected, taken or an error).
+  await rememberChange(user.id, 'linked', provider);
   const supabase = await createClient();
   // Back to this page through /auth/confirm, which finishes the link and shows "connected".
   const next = `/${locale}/security?signin=linked&provider=${provider}`;
@@ -48,7 +50,6 @@ export async function linkSignIn(formData: FormData) {
   });
   if (error?.code === 'manual_linking_disabled') redirect(securityPath(locale, 'signin=off'));
   if (error || !data.url) redirect(securityPath(locale, 'signin=error'));
-  await rememberChange(user.id, 'linked', provider);
   redirect(data.url);
 }
 
@@ -66,6 +67,8 @@ export async function unlinkSignIn(formData: FormData) {
   if (error || !data) redirect(securityPath(locale, 'signin=error'));
   const identity = data.identities.find((i) => i.identity_id === identityId);
   if (!identity || !REMOVABLE.includes(identity.provider)) redirect(securityPath(locale, 'signin=error'));
+  // From here on the page may report the result (removed, only one left or an error).
+  await rememberChange(user.id, 'removed', identity.provider);
   if (data.identities.length < 2) redirect(securityPath(locale, 'signin=only'));
 
   const { error: unlinkError } = await supabase.auth.unlinkIdentity(identity);
@@ -74,7 +77,6 @@ export async function unlinkSignIn(formData: FormData) {
   if (unlinkError) redirect(securityPath(locale, 'signin=error'));
   // The session still lists the removed sign-in until it is refreshed.
   await supabase.auth.refreshSession();
-  await rememberChange(user.id, 'removed', identity.provider);
   redirect(securityPath(locale, `signin=removed&provider=${identity.provider}`));
 }
 

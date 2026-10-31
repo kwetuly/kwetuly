@@ -3,6 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { SOCIAL_EXAMPLES, SOCIAL_NAMES, linkCheckText, normaliseSocial, normaliseWebsite, type SocialPlatform } from '@kwetuly/shared';
 
+// A saved social profile is shown as @handle (easier to read and check), but only when that
+// @handle cleans back to exactly the saved link; anything else is shown as saved.
+function shownValue(kind: SocialPlatform | 'website', saved: string | null | undefined): string {
+  const value = saved ?? '';
+  if (!value || kind === 'website') return value;
+  const parsed = normaliseSocial(kind, value);
+  if (!parsed.ok || !parsed.handle) return value;
+  const handle = `@${parsed.handle}`;
+  const back = normaliseSocial(kind, handle);
+  return back.ok && back.url === parsed.url ? handle : value;
+}
+
 // A profile link or website field that checks itself when it is left, with the same shared rules
 // the server uses, so a wrong link is fixed before saving instead of after. The saved value shown
 // unchanged is never blocked (it already passed the database check).
@@ -21,7 +33,7 @@ export function LinkInput({
   defaultValue?: string | null;
   placeholder?: string;
 }) {
-  const start = defaultValue ?? '';
+  const start = shownValue(kind, defaultValue);
   const [value, setValue] = useState(start);
   const [checked, setChecked] = useState(false);
   const input = useRef<HTMLInputElement>(null);

@@ -645,7 +645,7 @@ export const it: Dictionary = {
     validUntil: 'Valido fino al',
     strength: 'Completezza del profilo',
     complete: 'completo',
-    missing: 'Da aggiungere',
+    missing: 'Il tuo profilo',
     allDone: 'Fatto. Il tuo profilo è completo.',
     optional: 'facoltativo',
     photo: 'Foto del profilo',
