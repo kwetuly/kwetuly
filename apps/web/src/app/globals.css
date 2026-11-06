@@ -37,8 +37,18 @@ body {
   @apply inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-forest px-6 py-2.5 font-semibold text-forest transition hover:bg-mint disabled:opacity-60;
 }
 
+.btn-outline-light {
+  @apply inline-flex items-center justify-center gap-2 rounded-[5px] border-2 border-white bg-transparent px-6 py-2.5 font-semibold text-white transition hover:bg-white/10 active:bg-white/10 disabled:opacity-60;
+}
+.btn-outline-light:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  border-radius: var(--radius-brand);
+}
+
+/* Placeholders use the muted grey (5.4:1 on white) instead of half-transparent text. */
 .field {
-  @apply w-full rounded-[5px] border border-line bg-white px-4 py-3 text-base outline-none transition focus:border-forest focus:ring-4 focus:ring-mint;
+  @apply w-full rounded-[5px] border border-line bg-white px-4 py-3 text-base outline-none transition placeholder:text-muted focus:border-forest focus:ring-4 focus:ring-mint;
 }
 
 .label {

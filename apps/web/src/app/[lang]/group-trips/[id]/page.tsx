@@ -192,7 +192,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
       <div className="space-y-3">
         <p className="text-sm text-white/80">{g.signInToJoin}</p>
         <div className="flex gap-2">
-          <Link href={`/${locale}/login`} className="btn-outline border-white text-white hover:bg-white/10">{t.nav.signIn}</Link>
+          <Link href={`/${locale}/login`} className="btn-outline-light">{t.nav.signIn}</Link>
           <Link href={`/${locale}/join`} className="btn">{t.nav.signUp}</Link>
         </div>
       </div>

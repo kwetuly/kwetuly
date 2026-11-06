@@ -510,22 +510,40 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
             <input type="hidden" name="slug" value={trip.slug} />
             <input type="hidden" name="trip_id" value={trip.id} />
             <input type="hidden" name="trip_title" value={trip.title_en} />
-            <input name="name" className="field" placeholder={t.profile.name} aria-label={t.profile.name} autoComplete="name" required maxLength={120} />
+            <div>
+              <label htmlFor="tour-enquiry-name" className="label text-white">{t.profile.name}</label>
+              <input id="tour-enquiry-name" name="name" className="field" autoComplete="name" required maxLength={120} />
+            </div>
             <PrefillContact />
-            <input name="contact" className="field" placeholder={t.profile.contact} aria-label={t.profile.contact} required maxLength={160} />
-            <div className="grid grid-cols-2 gap-2">
-              <input name="dates" className="field" placeholder={tt.dates} aria-label={tt.dates} maxLength={120} />
-              <input name="group_size" type="number" min={1} max={99} className="field" placeholder={tt.groupSize} aria-label={tt.groupSize} />
+            <div>
+              <label htmlFor="tour-enquiry-contact" className="label text-white">{t.profile.contact}</label>
+              <input id="tour-enquiry-contact" name="contact" className="field" required maxLength={160} />
+            </div>
+            <div className="grid grid-cols-2 items-end gap-2">
+              <div>
+                <label htmlFor="tour-enquiry-dates" className="label text-white">{tt.dates}</label>
+                <input id="tour-enquiry-dates" name="dates" className="field" maxLength={120} />
+              </div>
+              <div>
+                <label htmlFor="tour-enquiry-group-size" className="label text-white">{tt.groupSize}</label>
+                <input id="tour-enquiry-group-size" name="group_size" type="number" inputMode="numeric" min={1} max={99} className="field" />
+              </div>
             </div>
             {guides.length > 0 && (
-              <select name="guide" defaultValue="" className="field" aria-label={tt.meetGuides}>
-                <option value="">{tt.meetGuides}: {tt.any}</option>
-                {guides.map((g) => (
-                  <option key={g.id} value={g.display_name}>{g.is_sample ? `${g.display_name} · ${t.extras.sampleGuide}` : g.display_name}</option>
-                ))}
-              </select>
+              <div>
+                <label htmlFor="tour-enquiry-guide" className="label text-white">{tt.meetGuides}</label>
+                <select id="tour-enquiry-guide" name="guide" defaultValue="" className="field">
+                  <option value="">{tt.meetGuides}: {tt.any}</option>
+                  {guides.map((g) => (
+                    <option key={g.id} value={g.display_name}>{g.is_sample ? `${g.display_name} · ${t.extras.sampleGuide}` : g.display_name}</option>
+                  ))}
+                </select>
+              </div>
             )}
-            <textarea name="message" className="field min-h-20" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={1500} />
+            <div>
+              <label htmlFor="tour-enquiry-message" className="label text-white">{t.profile.message}</label>
+              <textarea id="tour-enquiry-message" name="message" className="field min-h-20" maxLength={1500} />
+            </div>
             <SubmitButton className="btn w-full" data-track="tour_send_enquiry">{tt.send}</SubmitButton>
             <p className="text-xs leading-relaxed text-white">{t.ux.whatNextTour}</p>
             <p className="text-xs leading-relaxed text-white">{t.ux.privacyTour}</p>

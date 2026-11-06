@@ -332,7 +332,7 @@ async function CallBooking({
   const user = await getCurrentUser();
 
   return (
-    <section id="call" className="overflow-hidden rounded-[5px] bg-shade text-white shadow-xl">
+    <section id="call" className="scroll-mt-28 overflow-hidden rounded-[5px] bg-shade text-white shadow-xl">
       <div className="bg-forest px-6 py-4 text-white">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
@@ -349,7 +349,7 @@ async function CallBooking({
           <div>
             <p className="text-white/80">{t.calls.signInFirst}</p>
             <div className="mt-4 flex gap-2">
-              <Link href={`/${locale}/login`} className="btn-outline border-white text-white hover:bg-white/10">{t.nav.signIn}</Link>
+              <Link href={`/${locale}/login`} className="btn-outline-light">{t.nav.signIn}</Link>
               <Link href={`/${locale}/join?role=traveler`} className="btn">{t.nav.signUp}</Link>
             </div>
           </div>
