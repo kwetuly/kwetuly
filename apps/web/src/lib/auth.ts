@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from './supabase/server';
 
@@ -18,7 +19,8 @@ export type CurrentUser = {
 };
 
 // Returns the signed-in user with their Kwetuly role and guide status, or null.
-export async function getCurrentUser(): Promise<CurrentUser | null> {
+// Looked up once per request: the header, page and boxes on it share the answer.
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,7 +45,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     guide: guideInfo,
     canUseHub: role === 'admin' || guideInfo?.status === 'approved',
   };
-}
+});
 
 /** True when the account has two-step sign-in on but this session has not entered the code yet. */
 export async function needsSecondStep(): Promise<boolean> {

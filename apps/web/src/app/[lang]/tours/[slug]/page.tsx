@@ -474,14 +474,14 @@ function EnquiryCard({ trip, status, t, locale, now, guides }: { trip: Trip; sta
   const price = verifiedPrice(trip, now);
   const date = dateFormat(locale);
   return (
-    <div className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
-      <div className="bg-leaf px-6 py-5 text-white">
+    <div className="overflow-hidden rounded-[5px] bg-shade text-white shadow-xl">
+      <div className="bg-forest px-6 py-5 text-white">
         {price ? (
           <>
             <p className="text-sm font-bold">{tt.priceFrom}</p>
             <p className="text-3xl font-extrabold tabular-nums">{formatPrice(price.amount, price.currency)}</p>
             {trip.price_conditions && <p className="mt-1 text-sm text-white/90">{trip.price_conditions}</p>}
-            <p className="mt-2 text-xs text-white/85">
+            <p className="mt-2 text-xs text-white/90">
               {tt.priceVerified}: {date.format(new Date(trip.price_verified_at!))}
               {trip.price_valid_until && ` · ${tt.priceValidUntil} ${date.format(new Date(trip.price_valid_until))}`}
             </p>

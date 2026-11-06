@@ -332,8 +332,8 @@ async function CallBooking({
   const user = await getCurrentUser();
 
   return (
-    <section id="call" className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
-      <div className="bg-leaf px-6 py-4 text-white">
+    <section id="call" className="overflow-hidden rounded-[5px] bg-shade text-white shadow-xl">
+      <div className="bg-forest px-6 py-4 text-white">
         <p className="flex items-center gap-2 text-sm font-bold">
           <Video className="size-4" aria-hidden /> {t.dashboard.callsSection}
         </p>

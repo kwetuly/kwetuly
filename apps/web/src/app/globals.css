@@ -68,7 +68,8 @@ body {
   border-radius: var(--radius-brand);
 }
 .pattern-kanga :where(a, button):focus-visible,
-.bg-night :where(a, button):focus-visible {
+.bg-night :where(a, button):focus-visible,
+.bg-shade :where(a, button):focus-visible {
   outline-color: #fff;
 }
 

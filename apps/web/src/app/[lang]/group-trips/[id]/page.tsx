@@ -119,8 +119,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         </div>
 
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
-          <div className="overflow-hidden rounded-[5px] bg-night text-white shadow-xl">
-            <div className="bg-leaf px-6 py-5 text-white">
+          <div className="overflow-hidden rounded-[5px] bg-shade text-white shadow-xl">
+            <div className="bg-forest px-6 py-5 text-white">
               {groupPriceOnRequest(trip) ? (
                 <p className="text-2xl font-extrabold">{t.extras.priceOnRequest}</p>
               ) : (
