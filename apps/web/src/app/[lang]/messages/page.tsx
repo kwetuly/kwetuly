@@ -21,7 +21,7 @@ export default async function MessagesPage() {
           <span className="block font-bold">{t.chats.title}</span>
           <span className="text-sm text-muted">{t.chats.subtitle}</span>
         </span>
-        <span className="btn shrink-0 px-4 py-2 text-sm">{t.chats.title} →</span>
+        <span className="btn shrink-0 px-4 py-2 text-sm">{t.chats.title}</span>
       </Link>
       <Suspense fallback={<div className="mt-6 h-64 animate-pulse rounded-[5px] bg-surface" />}>
         <Inbox t={t} locale={locale} />

@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
-import { ArrowLeft, BadgeCheck, ExternalLink, Globe, Mail, MapPin, Phone, ShieldCheck, Star } from 'lucide-react';
+import { BadgeCheck, ExternalLink, Globe, Mail, MapPin, Phone, ShieldCheck, Star } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getOperatorForViewer, listTours } from '@/lib/trips';
@@ -55,7 +55,7 @@ async function Operator({ params, t, locale }: { params: Promise<{ slug: string 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <Link href={`/${locale}/operators`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-charcoal">
-        <ArrowLeft className="size-4 text-leaf-dark" aria-hidden /> {tt.operatorsTitle}
+        {tt.operatorsTitle}
       </Link>
       <div className="mt-6 flex flex-wrap items-start gap-5">
         <OperatorLogo name={op.name} logo={op.logo_url} size={80} />

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Bell, BellOff, Globe, ShieldOff, Sparkles, UserPlus } from 'lucide-react';
+import { Bell, BellOff, Globe, ShieldOff, Sparkles, UserPlus } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -68,8 +68,8 @@ async function Chat({ params, t, locale }: { params: Promise<{ id: string }>; t:
     <>
       <LiveChatRefresh chatId={id} />
       <div className="flex items-center gap-3">
-        <Link href={`/${locale}/chats`} className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-leaf" aria-label={c.title}>
-          <ArrowLeft className="size-5" aria-hidden />
+        <Link href={`/${locale}/chats`} className="flex h-10 shrink-0 items-center justify-center rounded-[5px] border border-line px-3 text-sm font-semibold hover:border-leaf">
+          {c.title}
         </Link>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-extrabold">{chat.name}</h1>

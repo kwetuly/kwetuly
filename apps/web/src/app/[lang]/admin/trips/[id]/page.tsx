@@ -40,7 +40,7 @@ export default async function EditTourPage({ params, searchParams }: PageProps<'
   await getDictionary();
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <Link href={`/${locale}/admin/trips`} className="text-sm font-semibold text-forest underline">← All tours</Link>
+      <Link href={`/${locale}/admin/trips`} className="text-sm font-semibold text-forest underline">All tours</Link>
       <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <Editor locale={locale} params={params} searchParams={searchParams} />
       </Suspense>
@@ -103,7 +103,7 @@ async function Editor({ locale, params, searchParams }: { locale: Locale; params
     <>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-bold">{isNew ? 'New tour' : tour.title_en}</h1>
-        {!isNew && <Link href={`/${locale}/tours/${tour.slug}`} className="btn-outline ml-auto px-4 py-2 text-sm">Preview →</Link>}
+        {!isNew && <Link href={`/${locale}/tours/${tour.slug}`} className="btn-outline ml-auto px-4 py-2 text-sm">Preview</Link>}
       </div>
       {status.saved && <p className="mt-4 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">Saved.</p>}
       {typeof status.error === 'string' && <p className="mt-4 rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{status.error}</p>}

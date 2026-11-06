@@ -129,7 +129,7 @@ function OfferRow({ offer }: { offer: TripOffer }) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
         <View style={{ flex: 1, gap: space.xs }}>
           {offer.guides ? (
-            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.guides.display_name} ›</Link>
+            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.guides.display_name}</Link>
           ) : (
             <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
           )}

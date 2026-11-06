@@ -58,13 +58,14 @@ export function GuideSearch({ locale, t, defaults = {}, full = false }: Props) {
       {full && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <input type="checkbox" name="female" value="1" defaultChecked={defaults.female} className="size-5 accent-leaf" />
-              {t.guides.femaleOnly}
+            {/* Label tied to the box by id and wrapping it, so screen readers say the label, not the value "1". */}
+            <label htmlFor="filter-female" className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input id="filter-female" type="checkbox" name="female" value="1" defaultChecked={defaults.female} className="size-5 accent-leaf" />
+              <span>{t.guides.femaleOnly}</span>
             </label>
-            <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <input type="checkbox" name="partners" value="1" defaultChecked={defaults.partners} className="size-5 accent-leaf" />
-              {t.guides.partnersOnly}
+            <label htmlFor="filter-partners" className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+              <input id="filter-partners" type="checkbox" name="partners" value="1" defaultChecked={defaults.partners} className="size-5 accent-leaf" />
+              <span>{t.guides.partnersOnly}</span>
             </label>
           </div>
           <button className="btn">{t.guides.apply}</button>

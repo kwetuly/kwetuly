@@ -30,7 +30,7 @@ export default async function AdminMessagesPage() {
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="flex flex-wrap items-center gap-4">
         <h1 className="text-3xl font-bold">Message safety</h1>
-        <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">← Admin</Link>
+        <Link href={`/${locale}/admin`} className="text-sm font-semibold text-forest underline">Admin</Link>
       </div>
       <p className="mt-2 text-sm text-muted">
         Reported messages, and messages where contact details were hidden. Unlock a conversation only once a booking is confirmed.

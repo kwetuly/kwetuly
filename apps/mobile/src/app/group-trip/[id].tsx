@@ -99,7 +99,7 @@ export default function GroupTripScreen() {
           <SpotsBar taken={g.seats_taken + (g.already_going ?? 0)} max={g.max_people} labels={g10n} />
           {g.guides ? (
             <Link href={`/guide/${g.guides.slug}`} style={{ color: brand.forest, fontWeight: '700' }}>
-              {g10n.organisedBy} {g.guides.display_name} ›
+              {g10n.organisedBy} {g.guides.display_name}
             </Link>
           ) : (
             g.organizer_kind === 'traveller' ? <Muted>{t.extras.byTraveller}</Muted> : g.company_name && <Muted>{g10n.organisedBy} {g.company_name}</Muted>

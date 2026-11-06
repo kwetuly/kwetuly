@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense, type ReactNode } from 'react';
 import {
-  ArrowLeft,
   BadgeCheck,
   Backpack,
   Bed,
@@ -114,7 +113,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Params; s
         <div className="absolute inset-0 bg-gradient-to-t from-shade via-shade/60 to-shade/10" />
         <div className="relative mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/tours`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
-            <ArrowLeft className="size-4 text-gold" aria-hidden /> {tt.title}
+            {tt.title}
           </Link>
           <div className="mt-16 flex flex-wrap gap-2">
             <TourTypeBadge trip={trip} locale={locale} />

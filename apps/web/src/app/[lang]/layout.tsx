@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import '../globals.css';
 import { MENU } from '@kwetuly/shared';
-import { LOCALE_TAGS, locales } from '@/i18n/config';
+import { LOCALE_TAGS, locales, ogLocales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks, MenuAccount } from '@/components/auth-links';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -24,7 +24,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getDictionary();
+  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return {
     title: { default: `Kwetuly — ${t.home.title}`, template: '%s · Kwetuly' },
     description: t.home.subtitle,
@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: { languages: Object.fromEntries(locales.map((l) => [LOCALE_TAGS[l], `/${l}`])) },
     // Preview shown when a Kwetuly link is shared on WhatsApp, Facebook, X and others.
     metadataBase: new URL(SITE_URL),
-    openGraph: { siteName: 'Kwetuly', type: 'website', images: [DEFAULT_SHARE_IMAGE] },
+    openGraph: { siteName: 'Kwetuly', type: 'website', images: [DEFAULT_SHARE_IMAGE], ...ogLocales(locale) },
     twitter: { card: 'summary_large_image' },
     // Invite-only soft launch: keep every page out of search results until NEXT_PUBLIC_INDEXING=on.
     ...(INDEXING_ON ? {} : { robots: { index: false, follow: false } }),

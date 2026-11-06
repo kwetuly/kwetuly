@@ -25,7 +25,6 @@ import { JsonLd } from '@/components/json-ld';
 import { StickyCta } from '@/components/sticky-cta';
 import { SITE_URL } from '@/lib/site';
 import { requestCall, requestGuide, submitReview } from './actions';
-import { PrefillContact } from '@/components/prefill-contact';
 import { SubmitButton } from '@/components/submit-button';
 import { InViewNote } from '@/components/in-view-note';
 import { PhotoCredits } from '@/components/sample-offer';
@@ -77,7 +76,10 @@ async function Profile({
   const { slug } = await params;
   const guide = await getGuideBySlug(slug);
   if (!guide) notFound();
-  const [status, packages] = await Promise.all([searchParams, getGuidePackages(guide.id)]);
+  const [status, packages, user] = await Promise.all([searchParams, getGuidePackages(guide.id), getCurrentUser()]);
+  // Signed-in travellers find their name and phone (or email) already filled in; they can still change them.
+  const defaultName = user?.fullName ?? '';
+  const defaultContact = user?.phone ?? user?.email ?? '';
   // The package the traveller chose with "Ask about this package", if any.
   const askedPackage = packages.find((p) => p.id === status.package);
 
@@ -251,12 +253,11 @@ async function Profile({
             )}
             <label className="block">
               <span className="label">{t.profile.name}</span>
-              <input className="field" name="name" required maxLength={120} autoComplete="name" />
-              <PrefillContact />
+              <input className="field" name="name" required maxLength={120} autoComplete="name" defaultValue={defaultName} />
             </label>
             <label className="block">
               <span className="label">{t.profile.contact}</span>
-              <input className="field" name="contact" required maxLength={160} />
+              <input className="field" name="contact" required maxLength={160} defaultValue={defaultContact} />
             </label>
             <label className="block">
               <span className="label">{t.profile.message}</span>
@@ -368,9 +369,18 @@ async function CallBooking({
                 ))}
               </select>
             </label>
-            <textarea name="preferred_times" className="field min-h-20 text-charcoal" placeholder={t.calls.times} aria-label={t.calls.times} required maxLength={500} />
-            <input name="contact" className="field text-charcoal" placeholder={t.calls.contact} aria-label={t.calls.contact} maxLength={160} />
-            <textarea name="message" className="field min-h-20 text-charcoal" placeholder={t.profile.message} aria-label={t.profile.message} maxLength={2000} />
+            <div>
+              <label htmlFor="call-times" className="label text-white">{t.calls.times}</label>
+              <textarea id="call-times" name="preferred_times" className="field min-h-20 text-charcoal" required maxLength={500} />
+            </div>
+            <div>
+              <label htmlFor="call-contact" className="label text-white">{t.calls.contact}</label>
+              <input id="call-contact" name="contact" className="field text-charcoal" maxLength={160} defaultValue={user.phone ?? user.email ?? ''} />
+            </div>
+            <div>
+              <label htmlFor="call-message" className="label text-white">{t.profile.message}</label>
+              <textarea id="call-message" name="message" className="field min-h-20 text-charcoal" maxLength={2000} />
+            </div>
             <SubmitButton className="btn w-full">{t.calls.book}</SubmitButton>
             <p className="text-xs text-white/70">{t.calls.payNote}</p>
           </form>

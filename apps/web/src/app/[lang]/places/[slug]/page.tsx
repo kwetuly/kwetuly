@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Footprints, Landmark, PawPrint, Sparkles } from 'lucide-react';
+import { Footprints, Landmark, PawPrint, Sparkles } from 'lucide-react';
 import { PLACE_KINDS, STOP_KINDS, type TourStop } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -54,7 +54,7 @@ async function PlaceView({ params, t, locale }: { params: Promise<{ slug: string
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <Link href={`/${locale}/places`} className="inline-flex items-center gap-1 text-sm text-muted hover:text-charcoal">
-        <ArrowLeft className="size-4 text-leaf-dark" aria-hidden /> {tt.placesTitle}
+        {tt.placesTitle}
       </Link>
       <div className="mt-6 flex items-start gap-4">
         <span className="flex size-14 shrink-0 items-center justify-center rounded-[5px] bg-leaf text-white"><Landmark className="size-7" aria-hidden /></span>

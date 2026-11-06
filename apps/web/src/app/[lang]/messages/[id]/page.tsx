@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Flag, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { Flag, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -63,8 +63,8 @@ async function Thread({
     <>
       <LiveRefresh conversationId={id} />
       <div className="flex items-center gap-3">
-        <Link href={`/${locale}/messages`} className="flex size-10 items-center justify-center rounded-[5px] border border-line hover:border-leaf" aria-label={m.back}>
-          <ArrowLeft className="size-5" aria-hidden />
+        <Link href={`/${locale}/messages`} className="flex h-10 shrink-0 items-center justify-center rounded-[5px] border border-line px-3 text-sm font-semibold hover:border-leaf">
+          {m.back}
         </Link>
         <div>
           <h1 className="text-xl font-extrabold">{otherName}</h1>

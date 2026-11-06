@@ -3,7 +3,7 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, Bell, Store } from 'lucide-react';
+import { Bell, Store } from 'lucide-react';
 import { ALL_SECTIONS, BUSINESS_PAGES, findMenuItem, hasValidBadge } from '@kwetuly/shared';
 import { listBusinesses } from '@/lib/businesses';
 import { BusinessCard } from '@/components/business-card';
@@ -57,7 +57,7 @@ async function ItemContent({ params, searchParams }: PageProps<'/[lang]/[section
       <PhotoHero photo={SECTION_PHOTOS[section.slug] ?? 'safariSunset'}>
         <div className="mx-auto max-w-6xl px-4 pb-24 pt-10">
           <Link href={`/${locale}/${section.slug}`} className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white">
-            <ArrowLeft className="size-4 text-gold" aria-hidden /> {t.explore.back} {section.label[locale]}
+            {t.explore.back} {section.label[locale]}
           </Link>
           <div className="mt-6 flex items-center gap-4">
             <span className="flex size-16 items-center justify-center rounded-[5px] bg-leaf text-white">

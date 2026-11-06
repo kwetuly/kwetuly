@@ -3,7 +3,6 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { ALL_SECTIONS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
@@ -71,7 +70,6 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
               </span>
               <span className="mt-1 block text-muted">{item.blurb[locale]}</span>
             </span>
-            <ArrowRight className="mt-1 size-5 text-muted transition group-hover:translate-x-1 group-hover:text-leaf-dark" aria-hidden />
           </Link>
         ))}
       </section>

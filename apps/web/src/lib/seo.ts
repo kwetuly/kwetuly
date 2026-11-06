@@ -1,6 +1,6 @@
 // Page metadata helpers (server only).
 import type { Metadata } from 'next';
-import { LOCALE_TAGS, locales, type Locale } from '@/i18n/config';
+import { LOCALE_TAGS, locales, ogLocales, type Locale } from '@/i18n/config';
 import { getLocale } from '@/i18n/dictionaries';
 import { INDEXING_ON } from '@/lib/site';
 
@@ -31,7 +31,7 @@ export async function pageMeta({ path, title, description, image, noindex, type 
       url: `/${locale}${path}`,
       type,
       siteName: 'Kwetuly',
-      locale: locale === 'zh' ? 'zh_CN' : locale,
+      ...ogLocales(locale),
       images: [image ? { url: image, width: 1200, height: 800 } : DEFAULT_SHARE_IMAGE],
     },
     twitter: { card: 'summary_large_image', title, description: desc },

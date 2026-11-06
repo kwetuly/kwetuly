@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ArrowLeft, CalendarDays, Languages, MapPin, Users } from 'lucide-react';
+import { CalendarDays, Languages, MapPin, Users } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { getCurrentUser, type CurrentUser } from '@/lib/auth';
@@ -72,7 +72,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade via-shade/70 to-shade/20" />
         <div className="mx-auto max-w-6xl px-4 pb-12 pt-10">
           <Link href={`/${locale}/group-trips`} className="inline-flex items-center gap-1 text-sm text-white/80 hover:text-white">
-            <ArrowLeft className="size-4 text-gold" aria-hidden /> {g.title}
+            {g.title}
           </Link>
           <p className="mt-16 inline-block rounded-[5px] bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">{specialtyName(trip.specialty, locale)}</p>
           <h1 className="mt-3 max-w-3xl text-4xl font-extrabold sm:text-5xl">{trip.title}</h1>
