@@ -542,6 +542,8 @@ export const sw: Dictionary = {
     payNote: 'Mlipe mwandaaji kama mlivyokubaliana. Akiomba amana, unaweza kuilipa kwa usalama hapa. Kwetuly haitozi wasafiri.',
     closed: 'Safari hii haipokei maombi tena.',
     cancelledTrip: 'Safari hii imeghairiwa na mwandaaji.',
+    fullTrip: 'Nafasi zote za safari hii zimechukuliwa.',
+    notOpen: 'Safari hii bado haipokei maombi.',
     requestsTitle: 'Maombi ya kujiunga',
     noRequests: 'Hakuna maombi bado.',
     statusPending: 'Inasubiri ukaguzi wa Kwetuly',

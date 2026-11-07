@@ -403,6 +403,8 @@ export const pl: Dictionary = {
     payNote: 'Płacisz organizatorowi tak, jak się umówicie. Jeśli poprosi o zaliczkę, możesz ją bezpiecznie zapłacić tutaj. Kwetuly nie pobiera opłat od podróżnych.',
     closed: 'Ta wyprawa nie przyjmuje już zgłoszeń.',
     cancelledTrip: 'Organizator odwołał tę wyprawę.',
+    fullTrip: 'Wszystkie miejsca na tę wyprawę są zajęte.',
+    notOpen: 'Ta wyprawa nie przyjmuje jeszcze zgłoszeń.',
     requestsTitle: 'Prośby o dołączenie',
     noRequests: 'Brak próśb.',
     statusPending: 'Czeka na weryfikację Kwetuly',

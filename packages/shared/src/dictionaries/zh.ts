@@ -398,6 +398,8 @@ export const zh: Dictionary = {
     payNote: '按约定向组织者付款。如需订金，可在此安全支付。Kwetuly 不向旅行者收费。',
     closed: '该行程已停止接受申请。',
     cancelledTrip: '组织者已取消该行程。',
+    fullTrip: '该行程名额已满。',
+    notOpen: '该行程尚未开放申请。',
     requestsTitle: '加入申请',
     noRequests: '暂无申请。',
     statusPending: '等待 Kwetuly 审核',

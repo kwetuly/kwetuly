@@ -281,7 +281,7 @@ function FilterBar({ locale, f, counts, total, active }: { locale: Locale; f: Fi
         <label className="relative block">
           <span className="sr-only">Search by name</span>
           <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
-          <input type="search" name="q" defaultValue={f.q} placeholder="Search by name" className="field min-h-12 pl-10" maxLength={80} />
+          <input type="search" name="q" defaultValue={f.q} placeholder="Search by name" className="field min-h-12 pl-10!" maxLength={80} />
         </label>
         <div className="grid gap-2 sm:grid-cols-3">
           <label className="block">

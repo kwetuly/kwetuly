@@ -105,7 +105,7 @@ async function UsersContent({ locale, searchParams }: { locale: Locale; searchPa
           <label className="relative block flex-1">
             <span className="sr-only">Search by name</span>
             <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" aria-hidden />
-            <input type="search" name="q" defaultValue={q} placeholder="Search by name" className="field min-h-11 pl-10" maxLength={80} />
+            <input type="search" name="q" defaultValue={q} placeholder="Search by name" className="field min-h-11 pl-10!" maxLength={80} />
           </label>
           <button className="btn min-h-11 px-5 py-2">Show</button>
         </div>

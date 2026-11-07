@@ -403,6 +403,8 @@ export const it: Dictionary = {
     payNote: 'Paga l’organizzatore come concordato. Se chiede un acconto, puoi pagarlo qui in sicurezza. Kwetuly non addebita nulla ai viaggiatori.',
     closed: 'Questo viaggio non accetta più richieste.',
     cancelledTrip: 'Questo viaggio è stato annullato dall’organizzatore.',
+    fullTrip: 'Tutti i posti per questo viaggio sono esauriti.',
+    notOpen: 'Questo viaggio non accetta ancora richieste.',
     requestsTitle: 'Richieste di partecipazione',
     noRequests: 'Ancora nessuna richiesta.',
     statusPending: 'In attesa di verifica da Kwetuly',

@@ -540,6 +540,8 @@ export const en = {
     payNote: 'Pay the organiser as you agree. If they ask for a deposit, you can pay it safely here. Kwetuly does not charge travellers.',
     closed: 'This trip is no longer taking requests.',
     cancelledTrip: 'This trip was cancelled by the organiser.',
+    fullTrip: 'All places on this trip are taken.',
+    notOpen: 'This trip is not open for requests yet.',
     requestsTitle: 'Requests to join',
     noRequests: 'No requests yet.',
     statusPending: 'Waiting for Kwetuly review',

@@ -403,6 +403,8 @@ export const de: Dictionary = {
     payNote: 'Sie bezahlen den Organisator wie vereinbart. Verlangt er eine Anzahlung, können Sie sie hier sicher bezahlen. Kwetuly berechnet Reisenden nichts.',
     closed: 'Diese Reise nimmt keine Anfragen mehr an.',
     cancelledTrip: 'Diese Reise wurde vom Organisator abgesagt.',
+    fullTrip: 'Alle Plätze für diese Reise sind vergeben.',
+    notOpen: 'Diese Reise nimmt noch keine Anfragen an.',
     requestsTitle: 'Teilnahmeanfragen',
     noRequests: 'Noch keine Anfragen.',
     statusPending: 'Wartet auf Prüfung durch Kwetuly',

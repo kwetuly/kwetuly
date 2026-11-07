@@ -19,6 +19,11 @@
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 }
 
+/* The component classes below (.btn, .field, .card, ...) are deliberately NOT in a cascade layer,
+   so they beat any Tailwind utility on the same element: "field py-2" keeps .field's padding.
+   To override one of their properties, use the important form, e.g. "field pl-10!" for a search
+   field with an icon. Moving them into @layer components would change ~150 existing elements. */
+
 body {
   /* Warm off-white page; cards are white with a thin border. */
   background: var(--color-surface);

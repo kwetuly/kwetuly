@@ -62,7 +62,11 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
     ? (await (await createClient()).from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle()).data
     : null;
 
-  const joinable = trip.status === 'approved' && !trip.cancelled && !isOrganizer && spotsLeft(trip) > 0;
+  const closed = closedReason(trip);
+  const joinable = !closed && !isOrganizer;
+  // "Spots left" means nothing once a trip is cancelled or has started; a full trip still shows "Full".
+  // Organisers keep the bar on a trip that is waiting for review.
+  const showSpots = !trip.cancelled && !isPast(trip) && (isOrganizer || trip.status === 'approved');
   return (
     <>
       {status.sent && <LogEvent event={EVENTS.groupTripJoined} props={{ trip: trip.id, locale }} />}
@@ -132,7 +136,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
               )}
             </div>
             <div className="space-y-4 p-6">
-              <div className="rounded-[5px] bg-white p-3 text-charcoal"><SpotsBar trip={trip} t={t} /></div>
+              {showSpots && <div className="rounded-[5px] bg-white p-3 text-charcoal"><SpotsBar trip={trip} t={t} /></div>}
               {isOrganizer ? (
                 <OrganizerTools trip={trip} t={t} locale={locale} />
               ) : (
@@ -183,9 +187,33 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
   );
 }
 
+type ClosedReason = 'cancelled' | 'notOpen' | 'past' | 'full';
+
+const isPast = (trip: GroupTrip) => trip.start_date < new Date().toISOString().slice(0, 10);
+
+// Why nobody can ask to join this trip, or null when it is open. Mirrors private.group_trip_open
+// (approved, not cancelled, not started) plus the free-spots check in request_group_trip.
+function closedReason(trip: GroupTrip): ClosedReason | null {
+  if (trip.cancelled) return 'cancelled';
+  if (trip.status === 'rejected') return 'past'; // will not open, so "no longer taking requests"
+  if (trip.status !== 'approved') return 'notOpen'; // 'pending'
+  if (isPast(trip)) return 'past';
+  if (spotsLeft(trip) <= 0) return 'full';
+  return null;
+}
+
+function ClosedNote({ reason, t }: { reason: ClosedReason; t: Dictionary }) {
+  const g = t.groups;
+  const text = { cancelled: g.cancelledTrip, notOpen: g.notOpen, past: g.closed, full: g.fullTrip }[reason];
+  return <p className="rounded-[5px] bg-white/10 p-4 font-semibold">{text}</p>;
+}
+
 async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; user: CurrentUser | null; status: Search; t: Dictionary; locale: Locale }) {
   const g = t.groups;
-  const open = trip.status === 'approved' && !trip.cancelled && trip.start_date >= new Date().toISOString().slice(0, 10);
+  const closed = closedReason(trip);
+
+  // Signed out or unfinished accounts: say why the trip cannot be joined before offering sign-in.
+  if ((!user || !user.onboarded) && closed) return <ClosedNote reason={closed} t={t} />;
 
   if (!user) {
     return (
@@ -200,9 +228,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
   }
   // Unfinished accounts (no invite code yet) cannot ask to join until they finish the welcome step.
   if (!user.onboarded) {
-    return open && spotsLeft(trip) > 0
-      ? <FinishSetup t={t} locale={locale} next={`/${locale}/group-trips/${trip.id}#join`} dark />
-      : <p className="font-semibold text-white/80">{trip.cancelled ? g.cancelledTrip : g.closed}</p>;
+    return <FinishSetup t={t} locale={locale} next={`/${locale}/group-trips/${trip.id}#join`} dark />;
   }
 
   const supabase = await createClient();
@@ -219,6 +245,31 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
       supabase.from('group_trip_private').select('contact').eq('group_trip_id', trip.id).maybeSingle(),
       depositState('group_member_id', mine.id),
     ]);
+    // On a cancelled trip the member still sees the organiser's contact and any deposit already
+    // paid (to sort out a refund), but is never offered a new deposit payment.
+    if (trip.cancelled) {
+      return (
+        <div className="space-y-3">
+          <ClosedNote reason="cancelled" t={t} />
+          {contact && <p className="rounded-[5px] bg-white/10 p-4 text-lg font-extrabold">{contact.contact}</p>}
+          {(paid.paid || paid.review) && (
+            <PayDeposit
+              kind="group"
+              id={mine.id}
+              totalUsd={(mine.price_per_person_usd ?? trip.price_per_person_usd) * mine.seats}
+              percent={trip.deposit_percent}
+              paid={paid.paid}
+              review={paid.review}
+              paidOut={paid.paidOut}
+              back={`/${locale}/group-trips/${trip.id}`}
+              t={t}
+              locale={locale}
+              dark
+            />
+          )}
+        </div>
+      );
+    }
     return (
       <div className="space-y-3">
         <div className="rounded-[5px] bg-mint p-4 text-forest">
@@ -242,6 +293,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
       </div>
     );
   }
+  if (trip.cancelled) return <ClosedNote reason="cancelled" t={t} />;
   if (mine?.status === 'requested') {
     return (
       <form action={cancelMyRequest} className="space-y-3">
@@ -252,7 +304,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
       </form>
     );
   }
-  if (!open || spotsLeft(trip) === 0) return <p className="font-semibold text-white/80">{trip.cancelled ? g.cancelledTrip : g.closed}</p>;
+  if (closed) return <ClosedNote reason={closed} t={t} />;
 
   return (
     <form action={requestToJoin} className="space-y-3 text-charcoal">

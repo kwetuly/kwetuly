@@ -96,7 +96,7 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
           <label className="relative flex-1">
             <span className="sr-only">{tt.search}</span>
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" aria-hidden />
-            <input name="q" type="search" defaultValue={filters.q} placeholder={tt.search} maxLength={80} className="field pl-12" />
+            <input name="q" type="search" defaultValue={filters.q} placeholder={tt.search} maxLength={80} className="field pl-12!" />
           </label>
           <button className="btn shrink-0">{tt.searchButton}</button>
         </div>
