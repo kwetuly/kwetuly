@@ -56,7 +56,6 @@ export async function listGuides(filters: GuideFilters): Promise<Guide[]> {
     .select(GUIDE_COLUMNS)
     .eq('verification_status', 'approved')
     .eq('visibility', 'public')
-    .order('plan', { ascending: false })
     .order('created_at', { ascending: true })
     .limit(60);
   if (filters.specialty) query = query.contains('specialties', [filters.specialty]);
@@ -411,7 +410,7 @@ export async function markChatRead(chatId: string, userId: string) {
 
 /** Approved, public guides who offer 1-on-1 prep calls, optionally for one topic. */
 export async function listCallGuides(topic?: string): Promise<Guide[]> {
-  let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('plan', { ascending: false }).limit(60);
+  let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('created_at', { ascending: true }).limit(60);
   if (topic) query = query.contains('call_topics', [topic]);
   return must(await query) as unknown as Guide[];
 }

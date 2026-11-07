@@ -10,7 +10,7 @@ import { LOCALES, PHOTOS } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { useI18n } from '@/lib/i18n';
 import { markIntroSeen } from '@/lib/intro';
-import { brand, radius, space, textSize } from '@/theme';
+import { brand, colors, radius, space, textSize } from '@/theme';
 
 const SHORT: Record<string, string> = { en: 'EN', sw: 'SW', fr: 'FR', it: 'IT', de: 'DE', pl: 'PL', zh: '中文' };
 
@@ -82,7 +82,7 @@ export default function IntroScreen() {
       >
         {slides.map((slide, index) => (
           <View key={slide.photo.id} style={{ width, height }}>
-            <Image source={photoSource(slide.photo)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
+            <Image source={photoSource(slide.photo)} style={{ backgroundColor: colors.fill, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={slide.photo.alt} transition={300} />
             {/* The photo fills the screen: a light fade at the top for the language chips, a fade at the bottom for the text. */}
             <LinearGradient
               colors={['rgba(30,30,30,0.55)', 'rgba(30,30,30,0)']}

@@ -6,7 +6,7 @@ import { GLYPHS, Glyph } from '@/components/glyph';
 import { useI18n } from '@/lib/i18n';
 import { openExternal } from '@/lib/open-external';
 import { useType } from '@/lib/use-type';
-import { brand, colors, icon, layout, media, radius, space } from '@/theme';
+import { brand, colors, control, icon, layout, media, radius, space } from '@/theme';
 
 const metres = (n: number) => `${Math.round(n).toLocaleString('en-US')} m`;
 
@@ -111,7 +111,7 @@ export function PlaceSource({ place }: { place: Place }) {
   const date = place.source_checked_at ? new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(place.source_checked_at)) : null;
   return (
     <View style={{ gap: space.xxs }}>
-      <Text accessibilityRole="link" onPress={() => openExternal(place.source_url)} style={{ ...type.caption, ...font.bold, color: brand.link, paddingVertical: space.xs }}>
+      <Text accessibilityRole="link" onPress={() => openExternal(place.source_url)} style={{ ...type.caption, ...font.bold, color: brand.link, minHeight: control.touch, textAlignVertical: 'center', paddingVertical: space.md }}>
         {tt.factsFrom} {place.source_name ?? place.source_url}
       </Text>
       {date ? <Text style={type.caption}>{`${tt.lastChecked}: ${date}`}</Text> : null}

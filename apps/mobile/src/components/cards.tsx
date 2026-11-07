@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Link } from 'expo-router';
 import { Image } from 'expo-image';
-import { TOUR_TYPES, formatPrice, hasRecordedCheck, formatUsd, groupPriceOnRequest, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@kwetuly/shared';
+import { TOUR_TYPES, formatPrice, hasIdAndLicenceCheck, formatUsd, groupPriceOnRequest, specialtyPhoto, tourSummary, tourTitle, tripPhoto, verifiedPrice, type Photo } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import type { GroupTrip, Guide, Tour } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -42,10 +42,14 @@ export function GuideCard({ guide }: { guide: Guide }) {
           </View>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
-          {guide.is_sample ? <Badge label={t.extras.sampleGuide} tone="sand" /> : hasRecordedCheck(guide) ? <Badge label={t.guides.verified} icon={GLYPHS.check} /> : null}
-          {guide.female_guide && <Badge label={t.guides.female} tone="sand" />}
+          {guide.is_sample ? (
+            <Badge label={t.extras.sampleGuide} tone="sand" />
+          ) : guide.verification_status === 'approved' && hasIdAndLicenceCheck(guide) ? (
+            <Badge label={t.guides.idLicenceChecked} icon={GLYPHS.check} />
+          ) : null}
+          {/* Stated by the guide, so grey, not green. */}
+          {guide.female_guide && <Badge label={t.guides.female} tone="neutral" />}
           {guide.open_to_partners && <Badge label={t.guides.partners} tone="neutral" />}
-          {guide.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}
         </View>
         <Text style={{ ...type.meta, color: colors.label }}>{guide.specialties.map((s) => specialtyName(s, locale)).join(', ')}</Text>
         <Text style={{ ...type.meta, ...font.semibold, color: brand.forest }}>{guide.languages.map(languageName).join(', ')}</Text>
@@ -59,7 +63,7 @@ function PhotoHeader({ photo, uri, label, price, tone = 'gold', signature }: { p
   const { font } = useType();
   return (
     <View style={{ height: media.cardPhoto, marginHorizontal: -layout.cardPadding, marginTop: -layout.cardPadding, marginBottom: space.xxs, overflow: 'hidden', borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card }}>
-      <Image source={uri ? { uri } : photoSource(photo, 900)} style={{ flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
+      <Image source={uri ? { uri } : photoSource(photo, 900)} style={{ backgroundColor: colors.fill, flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
       {!!label && (
         <View style={{ position: 'absolute', top: space.md, left: space.md }}>
           <Badge label={label} tone={tone} icon={signature ? GLYPHS.sparkles : undefined} />

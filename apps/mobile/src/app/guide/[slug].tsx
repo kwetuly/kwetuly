@@ -16,11 +16,12 @@ import { GuidePackages } from '@/components/guide-packages';
 import { PhotoCredits } from '@/components/sample-offer';
 import { getGuidePackages } from '@/lib/packages';
 
-import { EVENTS, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
+import { EVENTS, formatUsd, guideChecks, hasIdAndLicenceCheck } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
 import { brand, colors, layout, space, textSize } from '@/theme';
 import { useType } from '@/lib/use-type';
 
+// Plain grey chips: green with a tick is kept for what Kwetuly itself checked.
 function Facts({ title, items }: { title: string; items: string[] }) {
   const { type } = useType();
   if (items.length === 0) return null;
@@ -29,7 +30,7 @@ function Facts({ title, items }: { title: string; items: string[] }) {
       <Text style={type.label}>{title}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
         {items.map((item) => (
-          <Badge key={item} label={item} />
+          <Badge key={item} label={item} tone="neutral" />
         ))}
       </View>
     </View>
@@ -73,6 +74,14 @@ export default function GuideScreen() {
 
   const dateFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
 
+  const approved = g.verification_status === 'approved';
+  // A stated first-aid certificate is left out here when Kwetuly's own first-aid check is current: it shows once, in the checks card.
+  const firstAidChecked = !g.is_sample && approved && guideChecks(g).some((c) => c.id === 'firstAid');
+  const certificates = g.certifications.filter((c) => !(firstAidChecked && /first[\s-]*aid|huduma ya kwanza/i.test(c)));
+  const stated = [
+    { title: t.profile.certifications, items: [...certificates, ...(g.association ? [t.profile.memberOf.replace('{association}', g.association)] : [])] },
+    { title: t.profile.expertise, items: [...expertiseOf(g.expertise).map((e) => e.label[locale]), ...(g.female_guide ? [t.guides.female] : [])] },
+  ].filter((group) => group.items.length > 0);
   const callPrice = g.call_price_usd != null ? formatUsd(g.call_price_usd) : null;
   const stats = [
     g.years_experience != null ? { value: String(g.years_experience), label: t.guides.years } : null,
@@ -104,17 +113,16 @@ export default function GuideScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
+          {/* "ID and licence checked" only with both current checks; one check alone shows as its own pill. */}
           {g.is_sample ? (
             <Badge label={t.extras.sampleGuide} tone="sand" />
-          ) : hasRecordedCheck(g) ? (
-            <Badge label={t.guides.verified} icon={GLYPHS.check} />
-          ) : g.verification_status === 'approved' ? (
+          ) : approved && hasIdAndLicenceCheck(g) ? (
+            <Badge label={t.guides.idLicenceChecked} icon={GLYPHS.check} />
+          ) : approved ? (
             <Badge label={t.extras.approvedGuide} tone="sand" />
           ) : null}
-          {checkLabels.map((label) => <Badge key={label} label={label} icon={GLYPHS.check} />)}
-          {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
+          {!g.is_sample && approved && checkLabels.map((label) => <Badge key={label} label={label} icon={GLYPHS.check} />)}
           {g.open_to_partners && <Badge label={t.guides.partners} tone="neutral" />}
-          {g.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}
         </View>
         <StatRow items={stats} />
         {(g.years_experience != null || !!g.summits) && <Text style={type.caption}>{t.extras.ownFigures}</Text>}
@@ -158,10 +166,21 @@ export default function GuideScreen() {
       <Card style={{ gap: space.lg }}>
         <Facts title={t.profile.specialties} items={g.specialties.map((s) => specialtyName(s, locale))} />
         <Facts title={t.guides.languages} items={g.languages.map(languageName)} />
-        <Facts title={t.profile.expertise} items={expertiseOf(g.expertise).map((e) => e.label[locale])} />
         <Facts title={t.profile.regions} items={[g.base_region, ...g.regions.filter((r) => r !== g.base_region)]} />
-        <Facts title={t.profile.certifications} items={[...g.certifications, ...(g.association ? [g.association] : [])]} />
       </Card>
+
+      {/* What the guide wrote about themselves, kept apart from "What Kwetuly checked" above. */}
+      {stated.length > 0 && (
+        <Card style={{ gap: space.lg }}>
+          <View style={{ gap: space.xs }}>
+            <SectionTitle>{t.profile.statedTitle}</SectionTitle>
+            <Text style={type.caption}>{t.profile.statedNote}</Text>
+          </View>
+          {stated.map((group) => (
+            <Facts key={group.title} title={group.title} items={group.items} />
+          ))}
+        </Card>
+      )}
 
       <Section title={t.reviews.title} style={{ marginTop: space.lg }}>
         {reviews.isLoading ? (

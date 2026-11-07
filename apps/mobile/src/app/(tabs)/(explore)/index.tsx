@@ -36,7 +36,7 @@ export default function ExploreScreen() {
       {/* Hero: the screen's one filled button. */}
       {/* minHeight, not height: long titles (Chinese at 320pt, large text) grow the panel instead of being cut off. */}
       <View style={{ marginHorizontal: layout.screenX, minHeight: media.hero, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.shade }}>
-        <Image source={photoSource(hero)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
+        <Image source={photoSource(hero)} style={{ backgroundColor: colors.fill, position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
         {/* The web ignores the gradient below, so it gets an even dark layer instead. */}
         {Platform.OS === 'web' && <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: scrim.heroFlat }} />}
         <View style={{ flexGrow: 1, minHeight: media.hero, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: scrim.hero }}>

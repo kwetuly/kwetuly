@@ -117,7 +117,7 @@ export default function GroupTripScreen() {
       {g.status === 'approved' && !g.cancelled && (
         <HeaderIconButton glyph={GLYPHS.share} accessibilityLabel={t.share.share} onPress={() => shareLink(`/${locale}/group-trips/${g.id}`, `${t.share.shareGroup}: ${g.title}`)} />
       )}
-      <Image source={photoSource(photo)} style={{ height: media.detailPhoto }} contentFit="cover" accessibilityLabel={photo.alt} />
+      <Image source={photoSource(photo)} style={{ backgroundColor: colors.fill, height: media.detailPhoto }} contentFit="cover" accessibilityLabel={photo.alt} />
 
       <Animated.View entering={contentFadeIn} style={{ paddingHorizontal: layout.screenX, gap: space.lg }}>
         <Card>

@@ -67,7 +67,7 @@ export default function BusinessScreen() {
       {photos.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -layout.screenX }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: layout.screenX }}>
           {photos.map((src) => (
-            <Image key={src} source={{ uri: src }} style={{ width: media.hero, height: media.cardPhoto, borderRadius: radius.media }} contentFit="cover" accessibilityLabel={b.business_name} />
+            <Image key={src} source={{ uri: src }} style={{ backgroundColor: colors.fill, width: media.hero, height: media.cardPhoto, borderRadius: radius.media }} contentFit="cover" accessibilityLabel={b.business_name} />
           ))}
         </ScrollView>
       )}

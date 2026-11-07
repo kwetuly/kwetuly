@@ -177,7 +177,7 @@ export default function MyPackagesScreen() {
           <Field label={pt.meetingField} value={f.meeting} onChangeText={set('meeting')} />
           <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
             {(photo?.uri ?? (editing !== 'new' ? editing.photo_url : null)) ? (
-              <Image source={{ uri: photo?.uri ?? (editing !== 'new' ? editing.photo_url! : '') }} style={{ width: 96, height: 72, borderRadius: radius.button }} contentFit="cover" />
+              <Image source={{ uri: photo?.uri ?? (editing !== 'new' ? editing.photo_url! : '') }} style={{ backgroundColor: colors.fill, width: 96, height: 72, borderRadius: radius.button }} contentFit="cover" />
             ) : null}
             <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{pt.photoField}</Text>
           </Pressable>

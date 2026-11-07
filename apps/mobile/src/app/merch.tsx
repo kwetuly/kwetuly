@@ -68,7 +68,7 @@ function MerchScreen() {
       {(data.products.length === 0 || !data.shopId) && <Muted>{x.merchNone}</Muted>}
       {data.products.map((p) => (
         <Card key={p.id}>
-          {p.photo_url && <Image source={{ uri: p.photo_url }} style={{ height: 200, borderRadius: radius.button }} contentFit="cover" />}
+          {p.photo_url && <Image source={{ uri: p.photo_url }} style={{ backgroundColor: colors.fill, height: 200, borderRadius: radius.button }} contentFit="cover" />}
           <Text style={{ color: colors.label, fontWeight: '800', fontSize: textSize.headline }}>{p.name}</Text>
           <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{p.price_tzs != null ? tzs(p.price_tzs) : x.priceOnRequest}</Text>
           {p.description && <Muted>{p.description}</Muted>}

@@ -57,7 +57,7 @@ export async function listCallGuides(topic?: string): Promise<Guide[]> {
     .eq('verification_status', 'approved')
     .eq('visibility', 'public')
     .eq('call_enabled', true)
-    .order('plan', { ascending: false })
+    .order('created_at', { ascending: true })
     .limit(60);
   if (topic) query = query.contains('call_topics', [topic]);
 
@@ -86,7 +86,6 @@ export async function listGuides(filters: GuideFilters): Promise<Guide[]> {
     .select(GUIDE_COLUMNS)
     .eq('verification_status', 'approved')
     .eq('visibility', 'public')
-    .order('plan', { ascending: false }) // Pro guides first
     .order('created_at', { ascending: true })
     .limit(60);
 

@@ -40,7 +40,7 @@ export function SampleOffer({ providerId }: { providerId: string }) {
       {items.data.map((item) => (
         <Card key={item.id} style={{ flexDirection: 'row', gap: space.md }}>
           {item.photos[0] && (
-            <Image source={{ uri: item.photos[0] }} accessibilityLabel={item.title} style={{ width: 80, height: 80, borderRadius: radius.button }} contentFit="cover" />
+            <Image source={{ uri: item.photos[0] }} accessibilityLabel={item.title} style={{ backgroundColor: colors.fill, width: 80, height: 80, borderRadius: radius.button }} contentFit="cover" />
           )}
           <View style={{ flex: 1, gap: space.xs }}>
             <Text style={{ color: colors.label, ...font.bold, fontSize: textSize.body }}>{item.title}</Text>

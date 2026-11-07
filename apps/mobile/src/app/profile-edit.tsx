@@ -426,7 +426,7 @@ export default function ProfileEditScreen() {
       {current === 3 && (
         <Card>
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
-          <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} />
+          <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} hint={d.certificationsHint} />
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
           <Toggle label={d.hasVehicle} value={f.has_vehicle} onChange={set('has_vehicle')} />
           <Toggle label={d.openToPartners} value={f.open_to_partners} onChange={set('open_to_partners')} />

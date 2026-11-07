@@ -41,7 +41,7 @@ export function PackageCard({ p, guideId, guideName, guideSlug, sample, showGuid
   return (
     <Card style={open ? { borderColor: brand.primary } : undefined}>
       <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ flexDirection: 'row', gap: space.md }}>
-        {p.photo_url && <Image source={{ uri: p.photo_url }} style={{ width: media.thumb, height: media.thumb, borderRadius: radius.media }} contentFit="cover" />}
+        {p.photo_url && <Image source={{ uri: p.photo_url }} style={{ backgroundColor: colors.fill, width: media.thumb, height: media.thumb, borderRadius: radius.media }} contentFit="cover" />}
         <View style={{ flex: 1, gap: space.xxs }}>
           <Text style={{ ...type.caption, ...font.bold, color: brand.link }}>{PACKAGE_KINDS.find((k) => k.id === p.kind)?.[locale]}</Text>
           {sample && <Badge label={t.extras.samplePackage} tone="sand" />}

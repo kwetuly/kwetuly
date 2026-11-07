@@ -325,7 +325,7 @@ export function Badge({ label, tone = 'mint', icon: leading }: { label: string; 
 export function Avatar({ name, uri, size = 56 }: { name: string; uri?: string | null; size?: number }) {
   const { font } = useType();
   if (uri) {
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip }} contentFit="cover" accessibilityLabel={name} />;
+    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: colors.fill }} contentFit="cover" accessibilityLabel={name} />;
   }
   return (
     <View style={{ width: size, height: size, borderRadius: radius.chip, borderCurve: 'continuous', backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
@@ -589,7 +589,8 @@ export function ScreenState({
 }
 
 // The browser's own focus ring is replaced by the green border.
-const noWebOutline: TextStyle | null = Platform.OS === 'web' ? { outlineWidth: 0 } : null;
+// RN's types have no 'none' outline style, but react-native-web needs it to drop the ring.
+const noWebOutline: TextStyle | null = Platform.OS === 'web' ? ({ outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle) : null;
 
 const fieldInput = {
   backgroundColor: colors.card,

@@ -57,6 +57,8 @@ export const GLYPHS = {
   film: { ios: 'film', android: 'movie' },
   star: { ios: 'star.fill', android: 'star' },
   bookmark: { ios: 'bookmark', android: 'bookmark' },
+  plus: { ios: 'plus', android: 'add' },
+  minus: { ios: 'minus', android: 'remove' },
   bookmarkFilled: { ios: 'bookmark.fill', android: 'bookmark_added' },
   phone: { ios: 'phone', android: 'call' },
   mail: { ios: 'envelope', android: 'mail' },

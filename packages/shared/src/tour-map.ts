@@ -135,11 +135,11 @@ export function drawTourMap(
     const body = group
       .map(
         (s) =>
-          `<strong>${s.position}. ${esc(s.name)}</strong><br>${s.day ? `${esc(labels.day)} ${s.day} · ` : ''}${esc(labels.kinds[s.kind] ?? s.kind)}` +
+          `<strong>${s.position}. ${esc(s.name)}</strong><br>${s.day ? `${esc(labels.day)} ${s.day}, ` : ''}${esc(labels.kinds[s.kind] ?? s.kind)}` +
           `${s.elevation_m != null ? `<br>${esc(labels.altitude)} ≈ ${s.elevation_m.toLocaleString('en-US')} m` : ''}${s.note ? `<br>${esc(s.note)}` : ''}`,
       )
       .join('<hr style="margin:6px 0;border:0;border-top:1px solid #e7e5e0">');
-    const element = markerElement(group.map((s) => s.position).join('·'), group.some((s) => s.kind === 'peak'));
+    const element = markerElement(group.map((s) => s.position).join(', '), group.some((s) => s.kind === 'peak'));
     element.setAttribute('aria-label', group.map((s) => `${s.position}. ${s.name}`).join(', '));
     const marker = new ml.Marker({ element })
       .setLngLat([Number(first.lng), Number(first.lat)])

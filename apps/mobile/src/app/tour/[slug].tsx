@@ -16,7 +16,7 @@ import {
   TRANSFER_MODES,
   TRAVEL_STYLES,
   formatPrice,
-  hasRecordedCheck,
+  hasIdAndLicenceCheck,
   straightLineKm,
   tourMatchesTheme,
   tourSummary,
@@ -108,7 +108,7 @@ export default function TourScreen() {
         <Stack.Title>{title}</Stack.Title>
         <HeaderIconButton glyph={GLYPHS.share} accessibilityLabel={t.share.share} onPress={() => shareLink(`/${locale}/tours/${tour.slug}`, `${t.share.shareTrip}: ${title}`)} />
         <View>
-          <Image source={tour.cover_url ? { uri: tour.cover_url } : photoSource(tripPhoto(tour.slug, tour.categories))} style={{ height: media.detailPhoto }} contentFit="cover" accessibilityLabel={title} />
+          <Image source={tour.cover_url ? { uri: tour.cover_url } : photoSource(tripPhoto(tour.slug, tour.categories))} style={{ backgroundColor: colors.fill, height: media.detailPhoto }} contentFit="cover" accessibilityLabel={title} />
           <View style={{ position: 'absolute', top: space.md, left: space.md, flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             {(typeName || tour.is_signature) && <Badge label={typeName ?? tt.signature} tone={tour.is_signature ? 'gold' : 'sand'} icon={tour.is_signature ? GLYPHS.sparkles : undefined} />}
             {tour.needs_review && <Badge label={tt.needsReview} tone="neutral" />}
@@ -120,7 +120,8 @@ export default function TourScreen() {
             <Text selectable accessibilityRole="header" style={type.title2}>{title}</Text>
             <Muted selectable>{tourSummary(tour, locale)}</Muted>
             <Text style={{ ...type.cardTitle, color: brand.forest }}>{duration}</Text>
-            <Text selectable style={{ ...type.price, color: price ? brand.forest : colors.secondaryLabel }}>
+            {/* A real price gets the price style; "subject to confirmation" is plain text. */}
+            <Text selectable style={price ? { ...type.price, color: brand.forest } : { ...type.callout, ...font.semibold, color: colors.secondaryLabel }}>
               {price ? `${tt.priceFrom} ${formatPrice(price.amount, price.currency)}` : tt.priceTbc}
             </Text>
             {price && (
@@ -148,7 +149,7 @@ export default function TourScreen() {
                 <Muted>{tt.operatorTourNote}</Muted>
                 {tour.source_url && (
                   <View style={{ gap: space.xxs }}>
-                    <Text accessibilityRole="link" onPress={() => openExternal(tour.source_url)} style={{ ...type.callout, ...font.bold, color: brand.link, paddingVertical: space.xs }}>
+                    <Text accessibilityRole="link" onPress={() => openExternal(tour.source_url)} style={{ ...type.callout, ...font.bold, color: brand.link, minHeight: control.touch, textAlignVertical: 'center', paddingVertical: space.sm }}>
                       {tt.source}: {tour.tour_operators?.name ?? tt.sourceLink}
                     </Text>
                     {tour.source_checked_at ? (
@@ -376,11 +377,11 @@ function StopList({ stops, kinds, onFocus }: { stops: TourStop[]; kinds: Record<
 }
 
 // Sample guides get the "Sample guide" badge and no "New guide" line; the tick only shows
-// once Kwetuly has recorded a document check (same rule as the guide cards).
+// once Kwetuly has checked both ID and licence (same rule as the guide cards).
 function GuideRow({ guide }: { guide: Guide }) {
   const { t, locale } = useI18n();
   const { type, font } = useType();
-  const checked = !guide.is_sample && guide.verification_status === 'approved' && hasRecordedCheck(guide);
+  const checked = !guide.is_sample && guide.verification_status === 'approved' && hasIdAndLicenceCheck(guide);
   return (
     <Link href={`/guide/${guide.slug}`} asChild>
       <Pressable accessibilityRole="link" style={({ pressed }) => ({ flexDirection: 'row', gap: space.md, alignItems: 'center', paddingVertical: space.xs, opacity: pressed ? 0.7 : 1 })}>
@@ -389,7 +390,7 @@ function GuideRow({ guide }: { guide: Guide }) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
             <Text style={{ ...type.body, ...font.bold, flexShrink: 1 }}>{guide.display_name}</Text>
             {checked && (
-              <View accessible accessibilityLabel={t.guides.verified}>
+              <View accessible accessibilityLabel={t.guides.idLicenceChecked}>
                 <Glyph name={GLYPHS.check} size={icon.inline} color={brand.leafDark} />
               </View>
             )}

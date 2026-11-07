@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { approxTzs, formatUsd, hasRecordedCheck, isDisplayNameReservedError, type Dictionary, type Locale } from '@kwetuly/shared';
+import { approxTzs, formatUsd, hasIdAndLicenceCheck, isDisplayNameReservedError, type Dictionary, type Locale } from '@kwetuly/shared';
 import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { GLYPHS } from '@/components/glyph';
+import { GLYPHS, Glyph } from '@/components/glyph';
 import { Badge, Button, Card, EmptyState, ErrorText, Field, FormMessage, MetaItems, Muted, ScreenState, SectionTitle, Stars, SuccessCheck } from '@/components/ui';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import {
@@ -30,7 +30,7 @@ import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { useType } from '@/lib/use-type';
-import { brand, colors, control, layout, radius, space } from '@/theme';
+import { brand, colors, control, icon, layout, radius, space } from '@/theme';
 
 export default function RequestScreen() {
   const { id, posted } = useLocalSearchParams<{ id: string; posted?: string }>();
@@ -142,7 +142,7 @@ function OfferRow({ offer }: { offer: TripOffer }) {
             <Text style={type.cardTitle}>{offer.company_name}</Text>
           )}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm }}>
-            {offer.guides && hasRecordedCheck(offer.guides) && <Badge label={t.guides.verified} icon={GLYPHS.check} />}
+            {offer.guides && !offer.guides.is_sample && offer.guides.verification_status === 'approved' && hasIdAndLicenceCheck(offer.guides) && <Badge label={t.guides.idLicenceChecked} icon={GLYPHS.check} />}
             {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
           </View>
         </View>
@@ -164,7 +164,11 @@ function OfferRow({ offer }: { offer: TripOffer }) {
         </View>
       ) : null}
       <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: radius.chip, borderCurve: 'continuous', padding: space.md, gap: space.sm, minHeight: control.touch }}>
-        <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{r.showItinerary}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          {/* Plus when closed, minus when open: an open or closed cue without arrows. */}
+          <Glyph name={open ? GLYPHS.minus : GLYPHS.plus} size={icon.inline} color={brand.link} />
+          <Text style={{ ...type.callout, ...font.bold, color: brand.link, flex: 1 }}>{r.showItinerary}</Text>
+        </View>
         {open && (
           <>
             <Text selectable style={type.callout}>{offer.itinerary}</Text>

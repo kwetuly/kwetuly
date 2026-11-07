@@ -28,11 +28,20 @@ export function guideChecks(guide: GuideCheckFields, today = new Date()): GuideC
 }
 
 /**
- * "Verified guide" is only shown once Kwetuly has recorded at least one document check
- * (identity, licence or first aid). An approved profile with no checks is not "verified".
+ * True when Kwetuly has at least one current document check on record (identity, licence, or first aid
+ * that has not expired). Uses the same rule as `guideChecks`, so a badge never contradicts the checks list.
  */
-export function hasRecordedCheck(guide: Pick<GuideCheckFields, 'identity_checked_at' | 'licence_checked_at' | 'first_aid_checked_at'>) {
-  return !!(guide.identity_checked_at || guide.licence_checked_at || guide.first_aid_checked_at);
+export function hasRecordedCheck(guide: GuideCheckFields, today = new Date()) {
+  return guideChecks(guide, today).length > 0;
+}
+
+/**
+ * The "ID and licence checked" badge: only when both the identity and the licence check are on record.
+ * Callers also require an approved, non-sample guide.
+ */
+export function hasIdAndLicenceCheck(guide: GuideCheckFields, today = new Date()) {
+  const ids = guideChecks(guide, today).map((c) => c.id);
+  return ids.includes('identity') && ids.includes('licence');
 }
 
 export type DocumentStatus = 'checked' | 'waiting' | 'missing' | 'expired';

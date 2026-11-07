@@ -67,10 +67,14 @@ export default function GuidesScreen() {
           {heading(t.guides.expertise)}
           <ChipRow>
             <Chip label={t.guides.femaleOnly} active={!!filters.female} onPress={() => toggle('female', true)} />
-            <Chip label={t.guides.partnersOnly} active={!!filters.partners} onPress={() => toggle('partners', true)} />
             {GUIDE_EXPERTISE.map((e) => (
               <Chip key={e.id} label={e.label[locale]} active={filters.expertise === e.id} onPress={() => toggle('expertise', e.id)} />
             ))}
+          </ChipRow>
+          {/* Working with agencies is not a special trip, so it has its own row. */}
+          {heading(t.guides.partners)}
+          <ChipRow>
+            <Chip label={t.guides.partnersOnly} active={!!filters.partners} onPress={() => toggle('partners', true)} />
           </ChipRow>
           {/* Hidden when nothing matches: the empty state then offers Clear itself. */}
           {filtered && (guides.data?.length ?? 0) > 0 && (

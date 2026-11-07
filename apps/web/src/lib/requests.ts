@@ -47,13 +47,16 @@ export type TripOffer = {
     identity_checked_at: string | null;
     licence_checked_at: string | null;
     first_aid_checked_at: string | null;
+    first_aid_valid_until: string | null;
+    is_sample: boolean;
+    verification_status: string;
   } | null;
 };
 
 export const REQUEST_COLUMNS =
   'id, traveler_id, traveler_name, title, details, specialty, expertise, regions, start_date, end_date, flexible_dates, adults, children, budget_per_person_usd, languages, female_guide, status, offers_count, created_at';
 export const OFFER_COLUMNS =
-  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, created_at, guides(display_name, slug, photo_url, rating_avg, rating_count, identity_checked_at, licence_checked_at, first_aid_checked_at)';
+  'id, request_id, offered_by, guide_id, company_name, price_total_usd, deposit_percent, itinerary, includes, excludes, valid_until, status, chat_id, created_at, guides(display_name, slug, photo_url, rating_avg, rating_count, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample, verification_status)';
 
 export const isUuid = (value: string) => /^[0-9a-f-]{36}$/i.test(value);
 export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Kwetuly partner';

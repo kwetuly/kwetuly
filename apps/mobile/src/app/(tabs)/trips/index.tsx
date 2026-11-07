@@ -113,7 +113,8 @@ export default function TripsScreen() {
             loadingCount={3}
             error={active.error}
             empty
-            emptyText={view === 'groups' ? t.groups.none : savedOnly && !saved.data?.length ? tt.noSaved : tt.empty}
+            // "Finalising" only when there are no tours at all; with a search or filters on, say nothing matches.
+            emptyText={view === 'groups' ? t.groups.none : savedOnly && !saved.data?.length ? tt.noSaved : filtered && (tours.data?.length ?? 0) > 0 ? tt.noMatch : tt.empty}
             emptyGlyph={view === 'groups' ? GLYPHS.calendar : GLYPHS.search}
             emptyAction={view === 'tours' && filtered ? { label: tt.clear, onPress: clearAll } : undefined}
             onRetry={() => active.refetch()}

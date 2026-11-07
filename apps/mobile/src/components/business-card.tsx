@@ -68,7 +68,7 @@ export function BusinessCard({ business }: { business: Business }) {
   const { type, font } = useType();
   return (
     <Card accessibilityRole="link" onPress={() => router.push({ pathname: '/business/[id]', params: { id: business.id } })} style={{ flexDirection: 'row', gap: space.md }}>
-      {business.photo_url && <Image source={{ uri: business.photo_url }} style={{ width: media.thumb, height: media.thumb, borderRadius: radius.media }} contentFit="cover" />}
+      {business.photo_url && <Image source={{ uri: business.photo_url }} style={{ backgroundColor: colors.fill, width: media.thumb, height: media.thumb, borderRadius: radius.media }} contentFit="cover" />}
       <View style={{ flex: 1, gap: space.xxs }}>
         <Text style={{ ...type.caption, ...font.bold, color: brand.link }}>{BUSINESS_TYPES.find((b) => b.id === business.business_type)?.[locale]}</Text>
         <Text style={type.cardTitle}>{business.business_name}</Text>

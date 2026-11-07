@@ -31,7 +31,7 @@ export function Bubble({ mine, children, selectable }: { mine: boolean; children
   );
 }
 
-const noWebOutline: TextStyle | null = Platform.OS === 'web' ? { outlineWidth: 0 } : null;
+const noWebOutline: TextStyle | null = Platform.OS === 'web' ? ({ outlineStyle: 'none', outlineWidth: 0 } as unknown as TextStyle) : null;
 
 /** The message box at the bottom of a chat: optional leading button, the text, and a green send button. */
 export function Composer({
