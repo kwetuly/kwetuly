@@ -4,10 +4,12 @@ import { onlineManager } from '@tanstack/react-query';
 import { addNetworkStateListener, useNetworkState } from 'expo-network';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useI18n } from '@/lib/i18n';
-import { brand, font, space, textSize } from '@/theme';
+import { brand, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 /** A thin notice at the top while the phone is offline; screens keep showing what was loaded. */
 export function OfflineBanner() {
+  const { font } = useType();
   const { t } = useI18n();
   // Lets React Query pause and retry requests when the phone loses and regains its connection.
   // Set up after mount, so it never runs during the web build's server rendering.

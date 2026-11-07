@@ -11,7 +11,7 @@ export const colors = {
   border: '#e7e5e0', // = separator: card and input borders
   pressed: '#f7f6f3', // = background: a row or card while pressed
   disabledFill: '#eeece7', // = fill: a disabled filled button
-  disabledLabel: '#5f6b66', // = secondaryLabel: disabled text (5.1:1 on fill)
+  disabledLabel: '#5f6b66', // = secondaryLabel: disabled text (4.70:1 on fill)
 };
 
 // Brand colours from the website ("savanna sunset").
@@ -35,5 +35,6 @@ export const brand = {
 
 // Fades over photos, built from shade (#3a3a3a) so white text on the photo stays readable.
 export const scrim = {
-  hero: 'linear-gradient(to top, rgba(58,58,58,0.85) 0%, rgba(58,58,58,0) 70%)',
+  hero: 'linear-gradient(to top, rgba(58,58,58,0.9) 0%, rgba(58,58,58,0.75) 50%, rgba(58,58,58,0.35) 100%)',
+  heroFlat: 'rgba(58,58,58,0.75)', // the web, which has no gradient here
 };

@@ -19,9 +19,11 @@ import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
-import { brand, colors, control, font, layout, media, space, type } from '@/theme';
+import { brand, colors, control, layout, media, space } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 export default function GroupTripScreen() {
+  const { type, font } = useType();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale } = useI18n();
   const { session } = useSession();
@@ -86,6 +88,7 @@ export default function GroupTripScreen() {
   // Only the open state has a bottom bar: Join is the screen's one filled button.
   const showBar = state === 'open';
   const priceOnRequest = groupPriceOnRequest(g);
+  const photo = specialtyPhoto(g.specialty);
   const details = [
     g.meeting_point ? { label: g10n.meeting, value: g.meeting_point } : null,
     { label: g10n.minPeople, value: `${g.min_people} ${g10n.people}` },
@@ -94,13 +97,14 @@ export default function GroupTripScreen() {
   ].filter((row): row is { label: string; value: string } => !!row);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+    // iOS pads, Android shrinks the screen, so the bottom bar stays above the keyboard on both.
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{g.title}</Stack.Title>
       {g.status === 'approved' && !g.cancelled && (
         <HeaderIconButton glyph={GLYPHS.share} accessibilityLabel={t.share.share} onPress={() => shareLink(`/${locale}/group-trips/${g.id}`, `${t.share.shareGroup}: ${g.title}`)} />
       )}
-      <Image source={photoSource(specialtyPhoto(g.specialty))} style={{ height: media.detailPhoto }} contentFit="cover" />
+      <Image source={photoSource(photo)} style={{ height: media.detailPhoto }} contentFit="cover" accessibilityLabel={photo.alt} />
 
       <Animated.View entering={contentFadeIn} style={{ paddingHorizontal: layout.screenX, gap: space.lg }}>
         <Card>
@@ -167,7 +171,6 @@ export default function GroupTripScreen() {
               <Field label={g10n.seats} value={seats} onChangeText={setSeats} keyboardType="number-pad" />
               <Field label={t.profile.contact} value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? undefined} />
               <Field label={g10n.message} value={message} onChangeText={setMessage} multiline />
-              <ErrorText>{error}</ErrorText>
             </>
           ) : (
             <EmptyState glyph={GLYPHS.calendarClosed} text={g.cancelled ? g10n.cancelledTrip : g10n.closed} />
@@ -186,6 +189,7 @@ export default function GroupTripScreen() {
     </ScrollView>
     {showBar && (
       <BottomBar>
+        <ErrorText>{error}</ErrorText>
         <Button title={userId ? g10n.joinCta : g10n.signInToJoin} onPress={join} loading={busy} />
       </BottomBar>
     )}

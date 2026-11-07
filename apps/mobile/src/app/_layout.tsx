@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import { DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps, type Theme } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,24 +13,39 @@ import { track, useScreenTracking } from '@/lib/analytics';
 import { AuthProvider } from '@/lib/auth';
 import { FONT_MAP } from '@/lib/fonts';
 import { I18nProvider, initialLocale, useI18n } from '@/lib/i18n';
-import { brand, colors, font, headerFonts, space, type } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, space, themeText, type FontFace } from '@/theme';
 
-function navFont(face: { fontFamily: string; fontWeight?: '400' | '500' | '600' | '700' | '800' }): Theme['fonts']['regular'] {
-  return { fontFamily: face.fontFamily, fontWeight: face.fontWeight ?? 'normal' };
+// Chinese has no fontFamily (it uses the phone's font), so fall back to the navigation default family.
+function navFont(face: FontFace, fallback: Theme['fonts']['regular']): Theme['fonts']['regular'] {
+  return { fontFamily: face.fontFamily ?? fallback.fontFamily, fontWeight: face.fontWeight ?? 'normal' };
 }
 
-// Always the website's light look, whatever the phone's dark-mode setting.
-const kwetulyTheme: Theme = {
-  ...DefaultTheme,
-  colors: { ...DefaultTheme.colors, primary: brand.leafDark, background: colors.background, card: colors.card, text: colors.label, border: colors.separator },
-  // Headers and back buttons in the website's font.
-  fonts: {
-    regular: navFont(font.regular),
-    medium: navFont(font.medium),
-    bold: navFont(font.bold),
-    heavy: navFont(font.extrabold),
-  },
-};
+const themes = new Map<string, Theme>();
+
+/** Always the website's light look, whatever the phone's dark-mode setting; headers and back buttons in the language's font. */
+function kwetulyTheme(locale: string): Theme {
+  const cached = themes.get(locale);
+  if (cached) return cached;
+  const { font } = themeText(locale);
+  const theme: Theme = {
+    ...DefaultTheme,
+    colors: { ...DefaultTheme.colors, primary: brand.leafDark, background: colors.background, card: colors.card, text: colors.label, border: colors.separator },
+    fonts: {
+      regular: navFont(font.regular, DefaultTheme.fonts.regular),
+      medium: navFont(font.medium, DefaultTheme.fonts.medium),
+      bold: navFont(font.bold, DefaultTheme.fonts.bold),
+      heavy: navFont(font.extrabold, DefaultTheme.fonts.heavy),
+    },
+  };
+  themes.set(locale, theme);
+  return theme;
+}
+
+function KwetulyThemeProvider({ children }: { children: ReactNode }) {
+  const { locale } = useI18n();
+  return <ThemeProvider value={kwetulyTheme(locale)}>{children}</ThemeProvider>;
+}
 
 // Keep the splash screen up until the font has loaded, so text never jumps from one font to another.
 SplashScreen.preventAutoHideAsync();
@@ -41,7 +56,9 @@ SystemUI.setBackgroundColorAsync(colors.background);
 // Shown when a screen crashes, like the website's error page. It sits outside the providers,
 // so it reads the language directly.
 export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
-  const text = UX_TEXT[initialLocale()];
+  const locale = initialLocale();
+  const text = UX_TEXT[locale];
+  const { type } = themeText(locale);
   useEffect(() => track(EVENTS.errorShown, { where: 'app' }), []);
   return (
     <View style={{ flex: 1, justifyContent: 'center', padding: space.xl, gap: space.md, backgroundColor: colors.background }}>
@@ -54,6 +71,7 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 
 function RootStack() {
   const { t } = useI18n();
+  const { headerFonts } = useType();
   useScreenTracking();
   return (
     // `title: ''`: while a detail screen loads (or is not found) the header stays empty instead of showing the file name.
@@ -78,11 +96,11 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider>
-          <ThemeProvider value={kwetulyTheme}>
+          <KwetulyThemeProvider>
             <RootStack />
             <OfflineBanner />
             <PushSetup />
-          </ThemeProvider>
+          </KwetulyThemeProvider>
         </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>

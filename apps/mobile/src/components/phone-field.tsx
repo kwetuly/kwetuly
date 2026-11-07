@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizePhone, phoneCountries, phoneCountryOrDefault, phoneExample, searchPhoneCountries, splitPhone } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, radius, space, textSize, type } from '@/theme';
+import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 /** The phone's own region (Settings, not location) as the first guess for the country, else Tanzania. */
 export function devicePhoneCountry(): string {
@@ -40,6 +41,7 @@ export function PhoneField({
   onChangeNumber: (value: string) => void;
   onChangeCountry: (code: string) => void;
 }) {
+  const { type } = useType();
   const { t, locale } = useI18n();
   const p = t.phone;
   const [open, setOpen] = useState(false);

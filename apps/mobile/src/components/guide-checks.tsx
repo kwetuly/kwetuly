@@ -3,7 +3,8 @@ import { guideChecks, type GuideCheckFields, type GuideCheckId } from '@kwetuly/
 import { Card, IconSquare, Muted, SectionTitle } from '@/components/ui';
 import type { GlyphName } from '@/components/glyph';
 import { useI18n } from '@/lib/i18n';
-import { font, space, type } from '@/theme';
+import { space } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 const ICONS: Record<GuideCheckId, GlyphName> = {
   identity: { ios: 'person.text.rectangle.fill', android: 'badge' },
@@ -14,6 +15,7 @@ const ICONS: Record<GuideCheckId, GlyphName> = {
 // "What Kwetuly checked": each check in plain words, with the date. The documents themselves stay private.
 // `approved`: Kwetuly approved the profile, which is said plainly when no document has been checked yet.
 export function GuideChecksCard({ guide, approved }: { guide: GuideCheckFields; approved?: boolean }) {
+  const { type, font } = useType();
   const { t, locale } = useI18n();
   const c = t.checks;
   const checks = guideChecks(guide);

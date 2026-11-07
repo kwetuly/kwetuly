@@ -11,10 +11,12 @@ import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib
 
 import { GLYPHS, Glyph } from './glyph';
 import { Avatar, Badge, Card, Muted, Stars } from './ui';
-import { brand, colors, control, font, icon, layout, media, motion, radius, space, textSize, type } from '@/theme';
+import { brand, colors, control, icon, layout, media, motion, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 /** Short facts side by side with a gap instead of "A · B · C"; they wrap on narrow phones. */
 function MetaItems({ items }: { items: (string | null | undefined | false)[] }) {
+  const { type } = useType();
   const shown = items.filter((x): x is string => !!x);
   if (shown.length === 0) return null;
   return (
@@ -30,6 +32,7 @@ function MetaItems({ items }: { items: (string | null | undefined | false)[] }) 
 
 // A guide at a glance: who they are, what they do, languages, special trips and badges.
 export function GuideCard({ guide }: { guide: Guide }) {
+  const { type, font } = useType();
   const { t, locale } = useI18n();
   return (
     <Link href={`/guide/${guide.slug}`} asChild>
@@ -69,6 +72,7 @@ export function GuideCard({ guide }: { guide: Guide }) {
 }
 
 function PhotoHeader({ photo, uri, label, price, tone = 'gold', signature }: { photo: Photo; uri?: string | null; label: string; price?: string; tone?: 'gold' | 'sand'; signature?: boolean }) {
+  const { font } = useType();
   return (
     <View style={{ height: media.cardPhoto, marginHorizontal: -layout.cardPadding, marginTop: -layout.cardPadding, marginBottom: space.xxs, overflow: 'hidden', borderTopLeftRadius: radius.card, borderTopRightRadius: radius.card }}>
       <Image source={uri ? { uri } : photoSource(photo, 900)} style={{ flex: 1 }} accessibilityLabel={photo.alt} contentFit="cover" transition={200} />
@@ -89,6 +93,7 @@ function PhotoHeader({ photo, uri, label, price, tone = 'gold', signature }: { p
 
 /** How full a group is: a thin bar that fills on mount (instantly with Reduce Motion), then "{left} spots left" and "{taken}/{max}". */
 export function SpotsBar({ taken, max, labels }: { taken: number; max: number; labels: { spotsLeft: string; full: string } }) {
+  const { type, font } = useType();
   const left = Math.max(max - taken, 0);
   const share = max > 0 ? Math.min(100, (taken / max) * 100) : 0;
   const width = useSharedValue(0);
@@ -114,6 +119,7 @@ export function SpotsBar({ taken, max, labels }: { taken: number; max: number; l
 }
 
 export function GroupTripCard({ trip }: { trip: GroupTrip }) {
+  const { type } = useType();
   const { t, locale } = useI18n();
   return (
     <Link href={`/group-trip/${trip.id}`} asChild>
@@ -139,6 +145,7 @@ export function GroupTripCard({ trip }: { trip: GroupTrip }) {
 }
 
 export function TourCard({ tour }: { tour: Tour }) {
+  const { type, font } = useType();
   const { t, locale } = useI18n();
   const price = verifiedPrice(tour, new Date());
   const days = `${tour.days} ${tour.days === 1 ? t.tours.day : t.tours.days}`;
@@ -149,7 +156,8 @@ export function TourCard({ tour }: { tour: Tour }) {
         <PhotoHeader
           photo={tripPhoto(tour.slug, tour.categories)}
           uri={tour.cover_url}
-          label={TOUR_TYPES.find((x) => x.id === tour.tour_type)?.[locale] ?? ''}
+          // A signature tour always shows its badge, also when it has no tour type.
+          label={TOUR_TYPES.find((x) => x.id === tour.tour_type)?.[locale] ?? (tour.is_signature ? t.tours.signature : '')}
           tone={tour.is_signature ? 'gold' : 'sand'}
           signature={tour.is_signature}
           price={price ? `${t.tours.priceFrom} ${formatPrice(price.amount, price.currency)}` : undefined}

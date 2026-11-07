@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -18,9 +18,11 @@ import { getGuidePackages } from '@/lib/packages';
 
 import { EVENTS, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
-import { brand, colors, font, layout, space, textSize, type } from '@/theme';
+import { brand, colors, layout, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 function Facts({ title, items }: { title: string; items: string[] }) {
+  const { type } = useType();
   if (items.length === 0) return null;
   return (
     <View style={{ gap: space.sm }}>
@@ -35,9 +37,9 @@ function Facts({ title, items }: { title: string; items: string[] }) {
 }
 
 export default function GuideScreen() {
+  const { type, font } = useType();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();
-  const { width } = useWindowDimensions();
   const { session } = useSession();
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
   const packages = useQuery({ queryKey: ['guide-packages', guide.data?.id], queryFn: () => getGuidePackages(guide.data!.id), enabled: !!guide.data });
@@ -72,15 +74,11 @@ export default function GuideScreen() {
   const dateFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
 
   const callPrice = g.call_price_usd != null ? formatUsd(g.call_price_usd) : null;
-  // The price goes on its own line under the label (no "A · B" joins).
-  const callTitle = callPrice ? `${t.calls.book}\n${callPrice}` : t.calls.book;
-  // Two buttons side by side only when they fit without cutting words; otherwise one under the other.
-  const sideBySide = width >= 414 && t.calls.book.length <= 16 && t.profile.contactTitle.length <= 16;
   const stats = [
     g.years_experience != null ? { value: String(g.years_experience), label: t.guides.years } : null,
     g.summits ? { value: String(g.summits), label: t.guides.summits } : null,
-    g.max_group_size ? { value: String(g.max_group_size), label: t.guides.groupUpTo } : null,
-  ].filter((x): x is { value: string; label: string } => !!x);
+    g.max_group_size ? { value: String(g.max_group_size), label: t.guides.groupUpTo, labelFirst: true } : null,
+  ].filter((x): x is { value: string; label: string; labelFirst?: boolean } => !!x);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -120,14 +118,14 @@ export default function GuideScreen() {
         <StatRow items={stats} />
         {(g.years_experience != null || !!g.summits) && <Text style={type.caption}>{t.extras.ownFigures}</Text>}
         {!isMe && (
-          <View style={{ flexDirection: sideBySide ? 'row' : 'column', gap: space.sm }}>
+          <View style={{ gap: space.sm }}>
             {g.call_enabled && (
               <Button
-                title={callTitle}
+                title={t.calls.book}
+                detail={callPrice ?? undefined}
                 accessibilityLabel={callPrice ? `${t.calls.book}, ${callPrice}` : t.calls.book}
                 variant="outline"
                 size="md"
-                style={sideBySide ? { flex: 1 } : undefined}
                 onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })}
               />
             )}
@@ -135,7 +133,6 @@ export default function GuideScreen() {
               title={t.profile.contactTitle}
               variant="outline"
               size="md"
-              style={sideBySide ? { flex: 1 } : undefined}
               onPress={() => {
                 track(EVENTS.enquiryStarted, { kind: 'guide', guide: g.slug, locale });
                 router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name, sample: g.is_sample ? '1' : '' } });
@@ -181,7 +178,7 @@ export default function GuideScreen() {
               <Text style={type.caption}>{dateFormat.format(new Date(r.created_at))}</Text>
             </View>
             <Text selectable style={type.callout}>{r.body}</Text>
-            <Text style={type.label}>— {r.author_name}</Text>
+            <Text style={type.label}>{r.author_name}</Text>
           </Card>
         ))}
         {session && !isMe ? (

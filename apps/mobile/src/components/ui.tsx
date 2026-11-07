@@ -6,8 +6,8 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
   type AccessibilityRole,
+  type GestureResponderEvent,
   type StyleProp,
   type TextInputProps,
   type ViewStyle,
@@ -28,7 +28,8 @@ import { Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, control, font, icon, iconBox, layout, maxFontScale, media, motion, radius, space, textSize, type } from '@/theme';
+import { brand, colors, control, icon, iconBox, layout, maxFontScale, media, motion, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 import { GLYPHS, Glyph, type GlyphName } from './glyph';
 
 // Small building blocks shared by every screen. Values come from '@/theme'; screens compose these
@@ -94,8 +95,11 @@ export function Button({
   loading,
   style,
   accessibilityLabel,
+  detail,
 }: {
   title: string;
+  /** A short second line under the title, for example a price. */
+  detail?: string;
   onPress: () => void;
   variant?: ButtonVariant;
   size?: 'lg' | 'md';
@@ -106,6 +110,7 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }) {
+  const { font } = useType();
   const kind = variant === 'dark' ? 'outline' : variant;
   const reduceMotion = useReducedMotion();
   const press = useSharedValue(0);
@@ -165,13 +170,20 @@ export function Button({
           ) : (
             <>
               {leading && <Glyph name={leading} size={icon.square} color={palette.fg} />}
-              <Text
-                numberOfLines={2}
-                maxFontSizeMultiplier={maxFontScale}
-                style={{ flexShrink: 1, textAlign: 'center', color: palette.fg, fontSize: textSize.body, lineHeight: 22, ...(filledOrOutline ? font.bold : font.semibold) }}
-              >
-                {title}
-              </Text>
+              <View style={{ flexShrink: 1, alignItems: 'center' }}>
+                <Text
+                  numberOfLines={2}
+                  maxFontSizeMultiplier={maxFontScale}
+                  style={{ textAlign: 'center', color: palette.fg, fontSize: textSize.body, lineHeight: 22, ...(filledOrOutline ? font.bold : font.semibold) }}
+                >
+                  {title}
+                </Text>
+                {detail ? (
+                  <Text numberOfLines={1} maxFontSizeMultiplier={maxFontScale} style={{ textAlign: 'center', color: palette.fg, fontSize: textSize.subhead, lineHeight: 20, ...font.semibold }}>
+                    {detail}
+                  </Text>
+                ) : null}
+              </View>
             </>
           )}
         </Animated.View>
@@ -225,7 +237,19 @@ export function HeaderIconButton(props: { glyph: GlyphName; onPress: () => void;
   return <Stack.Screen options={{ headerRight: () => <IconButton {...props} /> }} />;
 }
 
-export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress?: () => void }) {
+export function Chip({
+  label,
+  active,
+  onPress,
+  accessibilityRole,
+}: {
+  label: string;
+  active?: boolean;
+  /** Gets the press event, which `Link asChild` needs to navigate on the web. */
+  onPress?: (event: GestureResponderEvent) => void;
+  accessibilityRole?: AccessibilityRole;
+}) {
+  const { type } = useType();
   const on = useSharedValue(active ? 1 : 0);
   useEffect(() => {
     on.value = withTiming(active ? 1 : 0, timing(motion.chip));
@@ -236,15 +260,15 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
   }));
   // Toggle chips (with `active`) tick under the finger; chips that only open a page do not.
   const press = onPress
-    ? () => {
+    ? (event: GestureResponderEvent) => {
         if (active !== undefined) Haptics.selectionAsync().catch(() => {});
-        onPress();
+        onPress(event);
       }
     : undefined;
   return (
     <Pressable
       onPress={press}
-      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityRole={accessibilityRole ?? (onPress ? 'button' : 'text')}
       accessibilityState={{ selected: !!active }}
       hitSlop={{ top: (control.touch - control.chip) / 2, bottom: (control.touch - control.chip) / 2 }}
     >
@@ -277,6 +301,7 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
 }
 
 export function Badge({ label, tone = 'mint', icon: leading }: { label: string; tone?: 'mint' | 'sand' | 'neutral' | 'night' | 'gold'; icon?: GlyphName }) {
+  const { font } = useType();
   // `night` is an old name: it now draws as `neutral` (white text on grey failed contrast).
   const styles = {
     mint: { backgroundColor: brand.mint, color: brand.forest },
@@ -296,6 +321,7 @@ export function Badge({ label, tone = 'mint', icon: leading }: { label: string; 
 }
 
 export function Avatar({ name, uri, size = 56 }: { name: string; uri?: string | null; size?: number }) {
+  const { font } = useType();
   if (uri) {
     return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip }} contentFit="cover" accessibilityLabel={name} />;
   }
@@ -317,6 +343,7 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {
+  const { type } = useType();
   return (
     <Text accessibilityRole="header" style={type.section}>
       {children}
@@ -340,6 +367,7 @@ export function Section({ title, action, children, style }: { title: string; act
 }
 
 export function Muted({ children, selectable }: { children: ReactNode; selectable?: boolean }) {
+  const { type } = useType();
   return (
     <Text selectable={selectable} style={type.muted}>
       {children}
@@ -388,6 +416,7 @@ export function ListRow({
   accessory?: ReactNode;
   accessibilityRole?: AccessibilityRole;
 }) {
+  const { type, font } = useType();
   return (
     <Pressable
       onPress={onPress}
@@ -407,6 +436,7 @@ export function ListRow({
 
 /** A label above its value, stacked so long languages fit. */
 export function DetailRow({ label, value, selectable }: { label: string; value: ReactNode; selectable?: boolean }) {
+  const { type } = useType();
   return (
     <View style={{ gap: space.xxs }}>
       <Text style={type.meta}>{label}</Text>
@@ -418,18 +448,18 @@ export function DetailRow({ label, value, selectable }: { label: string; value: 
 }
 
 /** 2 or 3 equal figures, each a value over a short label. Cells wrap on narrow phones. */
-export function StatRow({ items }: { items: { value: string; label: string }[] }) {
-  const { width } = useWindowDimensions();
+/** `labelFirst`: the label reads before the number ("Groups up to" over "30"). */
+export function StatRow({ items }: { items: { value: string; label: string; labelFirst?: boolean }[] }) {
+  const { type } = useType();
   if (items.length === 0) return null;
-  const narrow = width < 340;
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
       {items.map((item) => (
         <View
           key={item.label}
           accessible
-          accessibilityLabel={`${item.value} ${item.label}`}
-          style={{ flexGrow: 1, flexBasis: narrow ? '40%' : 0, minWidth: 0, backgroundColor: colors.background, borderRadius: radius.card, borderCurve: 'continuous', padding: space.md, gap: space.xxs }}
+          accessibilityLabel={`${item.label}: ${item.value}`}
+          style={{ flexGrow: 1, flexBasis: 96, minWidth: 0, flexDirection: item.labelFirst ? 'column-reverse' : 'column', justifyContent: item.labelFirst ? 'flex-end' : 'flex-start', backgroundColor: colors.background, borderRadius: radius.card, borderCurve: 'continuous', padding: space.md, gap: space.xxs }}
         >
           <Text style={{ ...type.title3, fontVariant: ['tabular-nums'] }}>{item.value}</Text>
           <Text style={type.meta}>{item.label}</Text>
@@ -474,6 +504,7 @@ function Loading({ count = 1 }: { count?: number }) {
 
 /** Nothing here yet: a leaf square, the existing text and an optional next step. */
 export function EmptyState({ glyph = GLYPHS.empty, text, action }: { glyph?: GlyphName; text: string; action?: { label: string; onPress: () => void } }) {
+  const { type } = useType();
   return (
     <View style={{ alignItems: 'center', gap: space.md, paddingVertical: space.xl, paddingHorizontal: space.lg }}>
       <IconSquare glyph={glyph} size="lg" />
@@ -485,6 +516,7 @@ export function EmptyState({ glyph = GLYPHS.empty, text, action }: { glyph?: Gly
 
 /** Something went wrong, in plain words, with Try again. */
 export function ErrorState({ onRetry, retryLabel }: { onRetry?: () => void; retryLabel?: string }) {
+  const { type } = useType();
   const { t } = useI18n();
   return (
     <View accessibilityRole="alert" style={{ gap: space.md, paddingVertical: space.xl, paddingHorizontal: space.lg, alignItems: 'center' }}>
@@ -545,7 +577,6 @@ const fieldInput = {
   paddingHorizontal: space.lg,
   paddingVertical: space.md,
   fontSize: textSize.body,
-  ...font.regular,
   color: colors.label,
 };
 
@@ -574,6 +605,7 @@ export function Field({
   /** Defaults to the label. */
   accessibilityLabel?: string;
 }) {
+  const { type, font } = useType();
   const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: space.sm }}>
@@ -590,7 +622,7 @@ export function Field({
         accessibilityHint={hint}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[fieldInput, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
+        style={[fieldInput, font.regular, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
       />
       {error ? <ErrorText>{error}</ErrorText> : hint ? <Text style={type.caption}>{hint}</Text> : null}
     </View>
@@ -611,6 +643,7 @@ export function ChipSelect<T extends string>({
   onChange: (selected: T[]) => void;
   multiple?: boolean;
 }) {
+  const { type } = useType();
   const toggle = (value: T) => {
     if (!multiple) return onChange([value]);
     onChange(selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value]);
@@ -629,6 +662,7 @@ export function ChipSelect<T extends string>({
 
 /** An error message; renders nothing when there is none. */
 export function ErrorText({ children }: { children?: string | null }) {
+  const { type } = useType();
   return children ? (
     <Text selectable accessibilityRole="alert" style={{ ...type.callout, color: brand.danger }}>
       {children}
@@ -657,6 +691,7 @@ export function SuccessCheck({ haptic }: { haptic?: boolean }) {
 
 /** Success or error line under a form. */
 export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text: string } | null }) {
+  const { type, font } = useType();
   if (!message) return null;
   if (message.tone === 'error') return <ErrorText>{message.text}</ErrorText>;
   return (

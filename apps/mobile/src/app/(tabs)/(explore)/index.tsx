@@ -1,19 +1,20 @@
 import type { ReactNode } from 'react';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Link, Stack, router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@kwetuly/shared';
 import { GroupTripCard } from '@/components/cards';
-import { GLYPHS, Glyph } from '@/components/glyph';
-import { Button, Card, Chip, EmptyState, ErrorState, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Badge, Button, Card, Chip, EmptyState, ErrorState, IconSquare, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
 import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
-import { brand, colors, control, font, icon, iconBox, layout, media, radius, scrim, space, textSize, type } from '@/theme';
+import { brand, colors, control, layout, media, radius, scrim, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 /** A row of chips that scrolls sideways edge to edge, with the screen inset at both ends. */
 function ChipRow({ children }: { children: ReactNode }) {
@@ -31,6 +32,7 @@ function ChipRow({ children }: { children: ReactNode }) {
 }
 
 export default function ExploreScreen() {
+  const { type, font } = useType();
   const { t, locale } = useI18n();
   const { width } = useWindowDimensions();
   const groups = useQuery({ queryKey: ['group-trips'], queryFn: listGroupTrips });
@@ -48,10 +50,13 @@ export default function ExploreScreen() {
       <Stack.Title large>Kwetuly</Stack.Title>
 
       {/* Hero: the screen's one filled button. */}
-      <View style={{ marginHorizontal: layout.screenX, height: media.hero, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.shade }}>
+      {/* minHeight, not height: long titles (Chinese at 320pt, large text) grow the panel instead of being cut off. */}
+      <View style={{ marginHorizontal: layout.screenX, minHeight: media.hero, borderRadius: radius.hero, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: brand.shade }}>
         <Image source={photoSource(hero)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} contentFit="cover" accessibilityLabel={hero.alt} />
-        <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: scrim.hero }}>
-          <Text style={{ color: brand.gold, ...font.bold, fontSize: textSize.callout, lineHeight: 20 }}>{t.home.eyebrow}</Text>
+        {/* The web ignores the gradient below, so it gets an even dark layer instead. */}
+        {Platform.OS === 'web' && <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: scrim.heroFlat }} />}
+        <View style={{ flexGrow: 1, minHeight: media.hero, justifyContent: 'flex-end', padding: space.xl, gap: space.sm, experimental_backgroundImage: scrim.hero }}>
+          <Badge label={t.home.eyebrow} tone="gold" />
           <Text accessibilityRole="header" style={{ ...type.title1, color: brand.onDark }}>
             {t.home.title}
           </Text>
@@ -73,18 +78,18 @@ export default function ExploreScreen() {
         <ChipRow>
           {GUIDE_SPECIALTIES.map((s) => (
             <Link key={s.id} href={{ pathname: '/guides', params: { specialty: s.id } }} asChild>
-              <Chip label={s[locale]} />
+              <Chip label={s[locale]} accessibilityRole="link" />
             </Link>
           ))}
         </ChipRow>
         <Text style={type.label}>{t.guides.expertise}</Text>
         <ChipRow>
           <Link href={{ pathname: '/guides', params: { female: '1' } }} asChild>
-            <Chip label={t.guides.femaleOnly} />
+            <Chip label={t.guides.femaleOnly} accessibilityRole="link" />
           </Link>
           {GUIDE_EXPERTISE.map((e) => (
             <Link key={e.id} href={{ pathname: '/guides', params: { expertise: e.id } }} asChild>
-              <Chip label={e.label[locale]} />
+              <Chip label={e.label[locale]} accessibilityRole="link" />
             </Link>
           ))}
         </ChipRow>
@@ -97,7 +102,7 @@ export default function ExploreScreen() {
         ) : groups.error ? (
           <ErrorState onRetry={() => groups.refetch()} />
         ) : trips.length === 0 ? (
-          <EmptyState glyph={GLYPHS.calendar} text={t.groups.none} />
+          <EmptyState glyph={GLYPHS.calendar} text={t.groups.none} action={{ label: t.explore.more, onPress: () => router.push('/trips') }} />
         ) : (
           <Animated.View entering={contentFadeIn} style={{ gap: layout.listGap }}>
             {trips.slice(0, 3).map((trip) => (
@@ -117,9 +122,7 @@ export default function ExploreScreen() {
               asChild
             >
               <Card accessibilityRole="link" style={{ width: tileWidth, minHeight: control.tile, gap: space.sm }}>
-                <View style={{ width: iconBox.md, height: iconBox.md, borderRadius: radius.button, borderCurve: 'continuous', backgroundColor: brand.leaf, alignItems: 'center', justifyContent: 'center' }}>
-                  <Glyph name={menuIcon(section.icon)} size={icon.square} color={brand.onDark} />
-                </View>
+                <IconSquare glyph={menuIcon(section.icon)} size="md" />
                 <Text numberOfLines={2} style={{ ...type.cardTitle, fontSize: textSize.body }}>
                   {section.label[locale]}
                 </Text>
