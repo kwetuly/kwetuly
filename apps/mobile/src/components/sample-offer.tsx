@@ -8,10 +8,12 @@ import { getPhotoCredits, getSampleListings } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { openExternal } from '@/lib/open-external';
 import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
 // Read-only "What they offer" list on a SAMPLE business (security finding F1: real owners' items
 // are not shown until the catalogue review rules exist; the query filters on is_sample too).
 export function SampleOffer({ providerId }: { providerId: string }) {
+  const { font } = useType();
   const { t, locale } = useI18n();
   const c = catalogueText(locale);
   const items = useQuery({ queryKey: ['sample-listings', providerId], queryFn: () => getSampleListings(providerId) });
@@ -41,7 +43,7 @@ export function SampleOffer({ providerId }: { providerId: string }) {
             <Image source={{ uri: item.photos[0] }} accessibilityLabel={item.title} style={{ width: 80, height: 80, borderRadius: radius.button }} contentFit="cover" />
           )}
           <View style={{ flex: 1, gap: space.xs }}>
-            <Text style={{ color: colors.label, fontWeight: '700', fontSize: textSize.body }}>{item.title}</Text>
+            <Text style={{ color: colors.label, ...font.bold, fontSize: textSize.body }}>{item.title}</Text>
             {item.description && <Text style={{ color: colors.label, fontSize: textSize.subhead }}>{item.description}</Text>}
             {item.price_note && <Muted>{item.price_note}</Muted>}
           </View>
@@ -55,6 +57,7 @@ export function SampleOffer({ providerId }: { providerId: string }) {
 // "Photo credits": a tap opens the credit line and source of each stock photo on a sample page.
 // Shows nothing for photos outside the sample-media bucket or while the credits table is missing.
 export function PhotoCredits({ urls }: { urls: (string | null | undefined)[] }) {
+  const { font } = useType();
   const { locale } = useI18n();
   const c = catalogueText(locale);
   const paths = sampleMediaPaths(urls);
@@ -71,7 +74,7 @@ export function PhotoCredits({ urls }: { urls: (string | null | undefined)[] }) 
         hitSlop={8}
         style={{ alignSelf: 'flex-start', paddingVertical: space.xs }}
       >
-        <Text style={{ color: brand.forest, fontWeight: '700', fontSize: textSize.footnote }}>
+        <Text style={{ color: brand.forest, ...font.bold, fontSize: textSize.footnote }}>
           {c.photoCredits} ({ordered.length})
         </Text>
       </Pressable>

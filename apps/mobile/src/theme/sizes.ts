@@ -20,7 +20,7 @@ export const control = {
 } as const;
 
 /** Photo heights. */
-export const media = { cardPhoto: 160, detailPhoto: 220, hero: 260 } as const;
+export const media = { thumb: 72, chart: 140, chatMedia: 240, composerMax: 120, cardPhoto: 160, detailPhoto: 220, hero: 260, map: 300 } as const;
 
 /** Largest text scaling for buttons, chips and badges, so long labels wrap instead of being cut off. Body text is not capped. */
 export const maxFontScale = 1.4;

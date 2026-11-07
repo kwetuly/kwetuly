@@ -69,7 +69,7 @@ export default function TripsScreen() {
           {view === 'tours' && (
             <>
               <View style={{ paddingHorizontal: layout.screenX }}>
-                <SearchField value={filters.q ?? ''} onChangeText={(q) => setFilters((current) => ({ ...current, q: q || undefined }))} placeholder={tt.search} clearLabel={tt.clear} />
+                <SearchField label={tt.searchButton} value={filters.q ?? ''} onChangeText={(q) => setFilters((current) => ({ ...current, q: q || undefined }))} placeholder={tt.search} clearLabel={tt.clear} />
               </View>
               <ChipRow>
                 {TOUR_THEMES.map((theme) => (
@@ -99,7 +99,8 @@ export default function TripsScreen() {
                 <Text style={{ ...type.meta, ...font.semibold, fontVariant: ['tabular-nums'] }}>
                   {shownTours.length} {shownTours.length === 1 ? tt.tourOne : tt.tourMany}
                 </Text>
-                {filtered && <Button title={tt.clear} variant="text" size="md" icon={GLYPHS.close} onPress={clearAll} />}
+                {/* Hidden when nothing matches: the empty state then offers Clear itself. */}
+                {filtered && shownTours.length > 0 && <Button title={tt.clear} variant="text" size="md" icon={GLYPHS.close} onPress={clearAll} />}
               </View>
             </>
           )}

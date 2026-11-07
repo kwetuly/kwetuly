@@ -3,19 +3,22 @@ import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { STOP_KINDS, type TourStop } from '@kwetuly/shared';
-import { Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { GLYPHS, Glyph } from '@/components/glyph';
+import { Card, EmptyState, Muted, ScreenState, Section } from '@/components/ui';
 import { TourCard } from '@/components/cards';
 import TourMap from '@/components/tour-map';
 import { PlaceFacts, PlaceSource } from '@/components/tour-extras';
 import { getPlace, listTours, tourIdsVisiting } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import { colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, icon, layout, media, radius, space } from '@/theme';
 
 // A park or site: summary, facts with their source, wildlife, things to do, map and tours that go there.
 export default function PlaceScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();
   const tt = t.tours;
+  const { type } = useType();
   const place = useQuery({ queryKey: ['place', slug], queryFn: () => getPlace(slug) });
   const tours = useQuery({ queryKey: ['tours'], queryFn: listTours });
   const tourIds = useQuery({ queryKey: ['place-tours', place.data?.id], queryFn: () => tourIdsVisiting(place.data!.id), enabled: !!place.data });
@@ -35,32 +38,44 @@ export default function PlaceScreen() {
   const chips = (label: string, items: string[]) =>
     items.length > 0 && (
       <View style={{ gap: space.xs }}>
-        <Text style={{ fontWeight: '800', color: colors.label }}>{label}</Text>
-        <Text selectable style={{ color: colors.secondaryLabel }}>{items.join(' · ')}</Text>
+        <Text style={type.label}>{label}</Text>
+        <Text selectable style={type.muted}>{items.join(', ')}</Text>
       </View>
     );
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{p.name}</Stack.Title>
       <Card>
-        <Text selectable style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{p.name}</Text>
+        <Text selectable accessibilityRole="header" style={type.title2}>{p.name}</Text>
         <Muted selectable>{p.summary}</Muted>
         <PlaceFacts place={p} />
         {p.known_for.map((x) => (
-          <Text key={x} style={{ color: colors.label, lineHeight: 20 }}>✦ {x}</Text>
+          <View key={x} style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
+            <View style={{ paddingTop: space.xxs }}>
+              <Glyph name={GLYPHS.sparkles} size={icon.badge} color={brand.leafDark} />
+            </View>
+            <Text style={{ ...type.callout, flex: 1 }}>{x}</Text>
+          </View>
         ))}
         {chips(tt.wildlifeLabel, p.wildlife)}
         {chips(tt.placeActivities, p.activities)}
         <PlaceSource place={p} />
       </Card>
       {pin.length > 0 && (
-        <View style={{ height: 260, borderRadius: radius.card, overflow: 'hidden', borderCurve: 'continuous' }}>
-          <TourMap stops={pin} labels={labels} dom={{ scrollEnabled: false, style: { height: 260 }, matchContents: false }} />
+        <View style={{ height: media.hero, borderRadius: radius.card, overflow: 'hidden', borderCurve: 'continuous', borderWidth: 1, borderColor: colors.border }}>
+          <TourMap stops={pin} labels={labels} dom={{ scrollEnabled: false, style: { height: media.hero }, matchContents: false }} />
         </View>
       )}
-      <SectionTitle>{tt.toursHere} {p.name}</SectionTitle>
-      {theirs.length === 0 ? <Muted>{tt.empty}</Muted> : theirs.map((tour) => <TourCard key={tour.id} tour={tour} />)}
+      <Section title={`${tt.toursHere} ${p.name}`} style={{ marginTop: space.lg }}>
+        {tours.isLoading || tourIds.isLoading ? (
+          <ScreenState loading />
+        ) : theirs.length === 0 ? (
+          <EmptyState glyph={GLYPHS.search} text={tt.empty} />
+        ) : (
+          theirs.map((tour) => <TourCard key={tour.id} tour={tour} />)
+        )}
+      </Section>
     </ScrollView>
   );
 }

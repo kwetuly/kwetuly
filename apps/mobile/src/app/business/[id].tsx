@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
 import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@kwetuly/shared';
 import { BusinessBadge } from '@/components/business-card';
+import { GLYPHS } from '@/components/glyph';
 import { PhotoCredits, SampleOffer } from '@/components/sample-offer';
 import { Button, Card, Chip, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
@@ -12,13 +13,15 @@ import { askBusiness, getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { openExternal } from '@/lib/open-external';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, media, radius, space } from '@/theme';
 
 // A listed business, its badge (if any) and a question form, like /businesses/[id] on the website.
 export default function BusinessScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale } = useI18n();
   const bt = t.business;
+  const { type } = useType();
   const { session } = useSession();
   const profile = useProfile();
   const business = useQuery({ queryKey: ['business', id], queryFn: () => getBusiness(id) });
@@ -54,25 +57,25 @@ export default function BusinessScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.huge }}>
       <Stack.Title>{b.business_name}</Stack.Title>
       <View style={{ gap: space.xs }}>
-        <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{BUSINESS_TYPES.find((x) => x.id === b.business_type)?.[locale]}</Text>
-        <Text style={{ color: colors.label, fontWeight: '800', fontSize: textSize.title2 }}>{b.business_name}</Text>
+        <Text style={{ ...type.label, color: brand.link }}>{BUSINESS_TYPES.find((x) => x.id === b.business_type)?.[locale]}</Text>
+        <Text accessibilityRole="header" style={type.title2}>{b.business_name}</Text>
         <Muted>{[b.location, b.base_region].filter(Boolean).join(', ')}</Muted>
       </View>
       {photos.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -layout.screenX }} contentContainerStyle={{ gap: space.sm, paddingHorizontal: layout.screenX }}>
           {photos.map((src) => (
-            <Image key={src} source={{ uri: src }} style={{ width: 260, height: 180, borderRadius: radius.button }} contentFit="cover" />
+            <Image key={src} source={{ uri: src }} style={{ width: media.hero, height: media.cardPhoto, borderRadius: radius.media }} contentFit="cover" accessibilityLabel={b.business_name} />
           ))}
         </ScrollView>
       )}
       {b.is_sample && <PhotoCredits urls={photos} />}
       <BusinessBadge business={b} full />
       {b.has_referral_agreement && <Muted>{bt.commissionNote}</Muted>}
-      {b.story && <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{b.story}</Text>}
-      {b.website && <Button title={bt.website} variant="outline" onPress={() => openExternal(b.website, { inApp: true })} />}
+      {b.story && <Text selectable style={type.callout}>{b.story}</Text>}
+      {b.website && <Button title={bt.website} variant="outline" size="md" icon={GLYPHS.globe} onPress={() => openExternal(b.website, { inApp: true })} />}
       {/* Sample businesses only (security finding F1). */}
       {b.is_sample && <SampleOffer providerId={b.id} />}
 

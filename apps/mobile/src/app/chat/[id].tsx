@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Pressable, Switch, Text, View } from 'react-native';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ChatMedia } from '@/components/chat-media';
-import { ScreenState, ErrorText } from '@/components/ui';
+import { Bubble, Composer, chatListStyle } from '@/components/chat-ui';
+import { GLYPHS, Glyph } from '@/components/glyph';
+import { Button, ErrorText, IconButton, ScreenState } from '@/components/ui';
 import { deleteChatMessage, getGroupChat, listChatMessages, markChatRead, sendChatMessage, setObjection, setShareConsent, type ChatMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -13,7 +15,8 @@ import { shareLink, shareMediaFile } from '@/lib/share';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useLive } from '@/hooks/use-live';
 import { getChatMuted, setChatMuted } from '@/lib/api-requests';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, icon, space } from '@/theme';
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const PHOTO_SIDE = 2560; // px, same as the website
@@ -24,6 +27,7 @@ export default function GroupChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t, locale } = useI18n();
   const c = t.chats;
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session?.user.id ?? '';
   const queryClient = useQueryClient();
@@ -111,6 +115,7 @@ export default function GroupChatScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(`/chat/${id}`)} />;
+  const canSend = !sending && (!!body.trim() || !!picked);
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90} style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Title>{chat.data?.chat?.name ?? c.title}</Stack.Title>
@@ -120,24 +125,25 @@ export default function GroupChatScreen() {
         data={messages.data ?? []}
         keyExtractor={(m) => m.id}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-        contentContainerStyle={{ padding: space.lg, gap: space.md }}
+        contentContainerStyle={chatListStyle}
         ListHeaderComponent={
-          <View style={{ alignItems: 'center', gap: space.sm, paddingBottom: space.xs }}>
-            <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption, textAlign: 'center' }}>
-              {c.members}: {members.length} · {members.map((m) => m.display_name.split(' ')[0]).join(', ')}
+          <View style={{ alignItems: 'center', gap: space.xs, paddingBottom: space.xs }}>
+            <Text style={{ ...type.caption, ...font.semibold, textAlign: 'center' }}>
+              {c.members}: {members.length}
             </Text>
-            {chat.data?.chat && (
-              <Pressable
-                onPress={() => shareLink(`/${locale}/chats/join/${chat.data!.chat!.invite_code}`, `${c.invite}: ${chat.data!.chat!.name}`)}
-                accessibilityRole="button"
-                style={{ backgroundColor: brand.mint, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.sm }}
-              >
-                <Text style={{ color: brand.forest, fontWeight: '700' }}>+ {c.invite}</Text>
-              </Pressable>
-            )}
-            <Pressable onPress={toggleMuted} accessibilityRole="button" style={{ borderWidth: 1, borderColor: colors.separator, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.sm }}>
-              <Text style={{ color: colors.label, fontWeight: '600', fontSize: textSize.footnote }}>{muted.data ? `🔕 ${t.alerts.unmute}` : `🔔 ${t.alerts.mute}`}</Text>
-            </Pressable>
+            {members.length > 0 && <Text style={{ ...type.caption, textAlign: 'center' }}>{members.map((m) => m.display_name.split(' ')[0]).join(', ')}</Text>}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.xs }}>
+              {chat.data?.chat && (
+                <Button
+                  title={c.invite}
+                  variant="outline"
+                  size="md"
+                  icon={GLYPHS.invite}
+                  onPress={() => shareLink(`/${locale}/chats/join/${chat.data!.chat!.invite_code}`, `${c.invite}: ${chat.data!.chat!.name}`)}
+                />
+              )}
+              <Button title={muted.data ? t.alerts.unmute : t.alerts.mute} variant="text" size="md" icon={muted.data ? GLYPHS.bellOff : GLYPHS.bell} onPress={toggleMuted} />
+            </View>
           </View>
         }
         ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} onRetry={() => messages.refetch()} />}
@@ -146,57 +152,47 @@ export default function GroupChatScreen() {
           const blocked = item.objectors.length > 0;
           return (
             <Pressable onLongPress={() => openActions(item)} delayLongPress={300} style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: space.xs }}>
-              {!mine && <Text style={{ fontSize: textSize.caption, fontWeight: '700', color: colors.secondaryLabel }}>{item.sender_name}</Text>}
+              {!mine && <Text style={{ ...type.caption, ...font.bold }}>{item.sender_name}</Text>}
               {item.media_url && item.media_type && <ChatMedia url={item.media_url} type={item.media_type} />}
-              {item.body && (
-                <Text
-                  style={{ maxWidth: '85%', backgroundColor: mine ? brand.night : colors.card, color: mine ? brand.onDark : colors.label, paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.bubble, overflow: 'hidden', fontSize: textSize.callout }}
-                >
-                  {item.body}
-                </Text>
-              )}
-              <Text style={{ fontSize: textSize.caption, color: colors.secondaryLabel }}>
-                {time.format(new Date(item.created_at))}
-                {item.share_public ? ` · ${blocked ? c.objected : item.featured ? c.featured : c.sharedPublicly}` : ''}
-              </Text>
+              {item.body && <Bubble mine={mine}>{item.body}</Bubble>}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, justifyContent: mine ? 'flex-end' : 'flex-start' }}>
+                <Text style={type.caption}>{time.format(new Date(item.created_at))}</Text>
+                {item.share_public ? <Text style={type.caption}>{blocked ? c.objected : item.featured ? c.featured : c.sharedPublicly}</Text> : null}
+              </View>
             </Pressable>
           );
         }}
       />
 
-      <View style={{ gap: space.sm, padding: space.md, borderTopWidth: 0.5, borderColor: colors.separator, backgroundColor: colors.card }}>
+      <Composer
+        value={body}
+        onChangeText={setBody}
+        placeholder={c.placeholder}
+        maxLength={4000}
+        onSend={send}
+        sendLabel={c.send}
+        canSend={canSend}
+        leading={<IconButton glyph={GLYPHS.attach} tone="tonal" accessibilityLabel={c.attach} onPress={pick} />}
+      >
         <ErrorText>{error}</ErrorText>
+        {sending && <Text style={type.caption}>{c.uploading}</Text>}
         {picked && (
           <View style={{ gap: space.sm }}>
-            <Text numberOfLines={1} style={{ fontWeight: '700', color: colors.label }}>
-              {picked.kind === 'video' ? '🎬' : '📷'} {picked.name}{' '}
-              <Text onPress={() => setPicked(null)} style={{ color: brand.leafDark }}>✕</Text>
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-              <Switch value={sharePublic} onValueChange={setSharePublic} trackColor={{ true: brand.leaf }} />
-              <Text style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{c.shareConsent}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+              <Glyph name={picked.kind === 'video' ? GLYPHS.film : GLYPHS.photo} size={icon.inline} color={colors.secondaryLabel} />
+              <Text numberOfLines={1} style={{ ...type.callout, ...font.bold, flex: 1 }}>
+                {picked.name}
+              </Text>
+              <IconButton glyph={GLYPHS.close} accessibilityLabel={t.app.clear} onPress={() => setPicked(null)} />
             </View>
-            <Text style={{ fontSize: textSize.caption, color: colors.secondaryLabel }}>{c.consentNote}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+              <Switch value={sharePublic} onValueChange={setSharePublic} trackColor={{ true: brand.leaf }} accessibilityLabel={c.shareConsent} />
+              <Text style={{ ...type.callout, ...font.semibold, flex: 1 }}>{c.shareConsent}</Text>
+            </View>
+            <Text style={type.caption}>{c.consentNote}</Text>
           </View>
         )}
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          <Pressable onPress={pick} accessibilityRole="button" accessibilityLabel={c.attach} style={{ backgroundColor: brand.mint, borderRadius: radius.button, width: 46, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: textSize.title3 }}>＋</Text>
-          </Pressable>
-          <TextInput
-            value={body}
-            onChangeText={setBody}
-            placeholder={c.placeholder}
-            placeholderTextColor={colors.secondaryLabel}
-            multiline
-            maxLength={4000}
-            style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
-          />
-          <Pressable onPress={send} disabled={sending || (!body.trim() && !picked)} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.leaf, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: sending || (!body.trim() && !picked) ? 0.5 : 1 }}>
-            <Text style={{ color: brand.onDark, fontWeight: '800' }}>{sending ? c.uploading : c.send}</Text>
-          </Pressable>
-        </View>
-      </View>
+      </Composer>
     </KeyboardAvoidingView>
   );
 }

@@ -8,13 +8,15 @@ import { EVENTS } from '@kwetuly/shared';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, radius, space } from '@/theme';
 
 // "Ask this guide about a trip": a request that goes to the guide's Hub inbox (signed in or not).
 export default function ContactGuideScreen() {
   const { guideId, name, packageId, packageTitle, sample } = useLocalSearchParams<{ guideId: string; name?: string; packageId?: string; packageTitle?: string; sample?: string }>();
   const { t } = useI18n();
   const p = t.profile;
+  const { type, font } = useType();
   const { session } = useSession();
   const profile = useProfile();
   const [fullName, setFullName] = useState(profile.data?.full_name ?? '');
@@ -42,12 +44,12 @@ export default function ContactGuideScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{p.contactTitle}</Stack.Title>
-      {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
+      {name && <Text accessibilityRole="header" style={type.title3}>{name}</Text>}
       <Card>
-        {name && <Text style={{ fontWeight: '700', color: brand.forest }}>{sample === '1' ? t.extras.sampleGuideNote : p.askNote.replace('{name}', name)}</Text>}
-        {packageTitle && <Text style={{ color: brand.forest, fontWeight: '700', backgroundColor: brand.mint, padding: space.md, borderRadius: 5 }}>{t.packages.about.replace('{title}', packageTitle)}</Text>}
+        {name && <Text style={{ ...type.callout, ...font.bold, color: brand.forest }}>{sample === '1' ? t.extras.sampleGuideNote : p.askNote.replace('{name}', name)}</Text>}
+        {packageTitle && <Text style={{ ...type.callout, ...font.bold, color: brand.forest, backgroundColor: brand.mint, padding: space.md, borderRadius: radius.card, overflow: 'hidden' }}>{t.packages.about.replace('{title}', packageTitle)}</Text>}
         <Muted>{p.contactBody}</Muted>
         <Muted>{p.oneGroup}</Muted>
         <Field label={p.name} value={fullName} onChangeText={setFullName} />

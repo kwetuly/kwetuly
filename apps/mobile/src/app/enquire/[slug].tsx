@@ -10,13 +10,15 @@ import { enquireTour } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, space } from '@/theme';
 
 // "Plan this trip": an enquiry to Kwetuly about a catalogue tour.
 export default function EnquireScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();
   const tt = t.tours;
+  const { type, font } = useType();
   const { session } = useSession();
   const profile = useProfile();
   const tours = useQuery({ queryKey: ['tours'], queryFn: listTours });
@@ -51,9 +53,9 @@ export default function EnquireScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{tt.enquireTitle}</Stack.Title>
-      <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{title}</Text>
+      <Text accessibilityRole="header" style={type.title3}>{title}</Text>
       <Card>
         <Muted>{tt.enquireBody}</Muted>
         <Field label={t.profile.name} value={name} onChangeText={setName} />
@@ -65,7 +67,7 @@ export default function EnquireScreen() {
         <Button title={tt.send} onPress={submit} loading={busy} />
         <Muted>{t.ux.whatNextTour}</Muted>
         <Muted>{t.ux.privacyTour}</Muted>
-        <Text accessibilityRole="link" onPress={() => router.push('/travel-info')} style={{ color: brand.forest, fontWeight: '700' }}>
+        <Text accessibilityRole="link" onPress={() => router.push('/travel-info')} style={{ ...type.callout, ...font.bold, color: brand.link, paddingVertical: space.sm }}>
           {t.travel.reminder} {t.travel.reminderLink}
         </Text>
       </Card>

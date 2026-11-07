@@ -1,6 +1,7 @@
 import { Children, Fragment, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -10,6 +11,7 @@ import {
   type GestureResponderEvent,
   type StyleProp,
   type TextInputProps,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native';
 import Animated, {
@@ -434,7 +436,7 @@ export function ListRow({
     >
       {leading ?? (glyph && <IconSquare glyph={glyph} />)}
       <View style={{ flex: 1, gap: space.xxs }}>
-        <Text style={{ ...type.body, ...(strong ? font.extrabold : font.semibold) }}>{title}</Text>
+        <Text style={{ ...type.body, ...(strong ? font.bold : font.semibold) }}>{title}</Text>
         {subtitle ? (
           <Text numberOfLines={subtitleLines} style={type.meta}>
             {subtitle}
@@ -586,6 +588,9 @@ export function ScreenState({
   );
 }
 
+// The browser's own focus ring is replaced by the green border.
+const noWebOutline: TextStyle | null = Platform.OS === 'web' ? { outlineWidth: 0 } : null;
+
 const fieldInput = {
   backgroundColor: colors.card,
   borderWidth: 1,
@@ -646,7 +651,7 @@ export function Field({
         accessibilityHint={hint}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[fieldInput, font.regular, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
+        style={[fieldInput, font.regular, noWebOutline, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
       />
       {error ? <ErrorText>{error}</ErrorText> : hint ? <Text style={type.caption}>{hint}</Text> : null}
     </View>
@@ -655,20 +660,23 @@ export function Field({
 
 /** A search box: magnifier, the text, and a clear button once something is typed. */
 export function SearchField({
+  label,
   value,
   onChangeText,
   placeholder,
   clearLabel,
 }: {
+  /** A short visible label above the box; long placeholders get cut off on small phones. */
+  label?: string;
   value: string;
   onChangeText: (value: string) => void;
   /** Also the screen reader label. */
   placeholder: string;
   clearLabel: string;
 }) {
-  const { font } = useType();
+  const { font, type } = useType();
   const [focused, setFocused] = useState(false);
-  return (
+  const box = (
     <View
       style={{
         flexDirection: 'row',
@@ -693,9 +701,16 @@ export function SearchField({
         accessibilityLabel={placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={{ flex: 1, minHeight: control.field, paddingVertical: space.sm, fontSize: textSize.body, color: colors.label, ...font.regular }}
+        style={[{ flex: 1, minHeight: control.field, paddingVertical: space.sm, fontSize: textSize.body, color: colors.label, ...font.regular }, noWebOutline]}
       />
       {value ? <IconButton glyph={GLYPHS.close} accessibilityLabel={clearLabel} onPress={() => onChangeText('')} /> : <View style={{ width: space.sm }} />}
+    </View>
+  );
+  if (!label) return box;
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text style={type.label}>{label}</Text>
+      {box}
     </View>
   );
 }

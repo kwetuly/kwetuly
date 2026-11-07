@@ -72,7 +72,8 @@ export default function GuidesScreen() {
               <Chip key={e.id} label={e.label[locale]} active={filters.expertise === e.id} onPress={() => toggle('expertise', e.id)} />
             ))}
           </ChipRow>
-          {filtered && (
+          {/* Hidden when nothing matches: the empty state then offers Clear itself. */}
+          {filtered && (guides.data?.length ?? 0) > 0 && (
             <View style={{ paddingHorizontal: space.sm, alignItems: 'flex-start' }}>
               <Button title={t.guides.clear} variant="text" size="md" icon={GLYPHS.close} onPress={() => setFilters({})} />
             </View>

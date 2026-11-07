@@ -7,13 +7,15 @@ import { reviewStatus, submitReview } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, layout, space, textSize } from '@/theme';
 
 // Only travellers with a confirmed call or booking with this guide can review (checked by the database too).
 export default function ReviewScreen() {
   const { guideId, name } = useLocalSearchParams<{ guideId: string; name?: string }>();
   const { t } = useI18n();
   const r = t.reviews;
+  const { type } = useType();
   const { session } = useSession();
   const profile = useProfile();
   const queryClient = useQueryClient();
@@ -40,9 +42,9 @@ export default function ReviewScreen() {
   if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/review/${guideId}`, { name }))} />;
   if (!userId) {
     return (
-      <View style={{ padding: space.lg }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: layout.screenX }}>
         <Button title={r.signIn} onPress={() => router.replace('/sign-in')} />
-      </View>
+      </ScrollView>
     );
   }
   if (!status.data) return <ScreenState screen loading={status.isLoading} error={status.error} onRetry={() => status.refetch()} />;
@@ -65,19 +67,19 @@ export default function ReviewScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{status.data.own ? r.edit : r.write}</Stack.Title>
-      {name && <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{name}</Text>}
+      {name && <Text accessibilityRole="header" style={type.title3}>{name}</Text>}
       {!status.data.eligible ? (
         <Card>
           <Muted>{r.onlyAfter}</Muted>
         </Card>
       ) : (
         <Card>
-          <Text style={{ fontWeight: '600', color: colors.label }}>{r.rating}</Text>
+          <Text style={type.label}>{r.rating}</Text>
           <View style={{ flexDirection: 'row', gap: space.sm }} accessibilityRole="radiogroup">
             {[1, 2, 3, 4, 5].map((n) => (
-              <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="radio" accessibilityState={{ checked: rating === n }} accessibilityLabel={`${n} / 5 ${r.stars}`}>
+              <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="radio" accessibilityState={{ checked: rating === n }} accessibilityLabel={`${n} / 5 ${r.stars}`} style={{ minWidth: control.touch, minHeight: control.touch, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: textSize.display, color: n <= rating ? brand.gold : colors.separator }}>★</Text>
               </Pressable>
             ))}
