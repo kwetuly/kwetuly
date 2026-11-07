@@ -1,7 +1,7 @@
 // Data access for the app. Everything goes through Supabase with the signed-in user's session,
 // so row-level security decides what each person can see and do (exactly as on the website).
 import { randomUUID } from 'expo-crypto';
-import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, type Place, type Tour as SharedTour, type TourStop } from '@kwetuly/shared';
+import { PLACE_COLUMNS, STOP_COLUMNS, TOUR_COLUMNS, guideSpecialtiesForTour, tanzaniaDate, type Place, type Tour as SharedTour, type TourStop } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 export type Guide = {
@@ -195,7 +195,7 @@ const GROUP_COLUMNS =
   'id, organizer_id, company_name, organizer_kind, already_going, title, description, specialty, region, meeting_point, start_date, end_date, price_per_person_usd, min_people, max_people, languages, includes, seats_taken, deposit_percent, status, cancelled, guides(display_name, slug, photo_url, is_sample)';
 
 export async function listGroupTrips(): Promise<GroupTrip[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = tanzaniaDate();
   return must(
     await supabase.from('group_trips').select(GROUP_COLUMNS).eq('status', 'approved').eq('cancelled', false).gte('start_date', today).order('start_date').limit(60),
   ) as unknown as GroupTrip[];

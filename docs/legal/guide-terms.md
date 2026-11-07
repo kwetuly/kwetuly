@@ -2,8 +2,17 @@
 
 > **DRAFT - not reviewed by an advocate.**
 > DRAFT – to be reviewed by a Tanzanian advocate. Not legal advice. Do not publish, send to guides, or ask anyone to accept until Walter approves a version reviewed by a Tanzanian advocate.
-> Prepared: 2026-10-16 by the Kwetuly legal research helper (AI). Version: 0.1.
+> Prepared: 2026-10-16 by the Kwetuly legal research helper (AI). Version: 0.2 (2026-11-07).
 > Must be published in English and Kiswahili. Square brackets `[...]` are placeholders. "Drafting note" boxes must be removed before publication.
+
+> **Change note, v0.2 (2026-11-07). DRAFT for the advocate.**
+> Follows Walter's 2026-11-07 refund decision (option A, "who causes it pays"; `docs/business/deposit-refund-rule-2026-11.md`) and the Deposit and Refund Policy v0.2. Changed or new clauses are marked **[v0.2 DRAFT]**:
+> - 7.3: deposits close 8 days before the start; Kwetuly takes no commission on deposits [Walter to confirm]; Kwetuly's cancellation charge comes out of the traveller's refund, not the guide's share.
+> - 7.6 (new): if the guide cancels, the traveller gets 100% back; Kwetuly may recover amounts already passed on and its actual fees (up to 10% of the deposit) from the next payout; not for force majeure or a minimum not reached.
+> - 7.7 (new): payouts paused while a refund or card dispute is open.
+> - 9.1: cancelling accepted bookings follows 7.6.
+> - Open questions: new advocate question 8 and Walter question 6.
+> Unknown numbers kept as placeholders: Selcom's fees, the TSh cap.
 
 Effective date: [EFFECTIVE DATE]
 
@@ -61,10 +70,28 @@ These terms are between you (the guide) and [COMPANY LEGAL NAME], [BRELA REGISTR
 ## 7. Money
 
 7.1 **Membership.** Basic membership ("Msingi") is free for approved guides. [A paid "Pro" plan: price and features to be set; not available at soft launch.]
+
 7.2 **At soft launch, Kwetuly does not collect money for trips.** Travellers pay you directly.
-7.3 **Deposits (when switched on).** If you set a deposit percentage on an offer or group trip, the traveller pays that deposit through Kwetuly's payment provider (Selcom). The Deposit and Refund Policy sets out when Kwetuly passes it to you and when it is refunded. [Kwetuly's fee on deposits: NONE / [X]% — Walter to decide; must be disclosed to guides and travellers.]
+
+7.3 **[v0.2 DRAFT] Deposits (when switched on).** If you set a deposit percentage on an offer or group trip, the traveller pays that deposit through Kwetuly's payment provider (Selcom), by card or mobile money. Travellers can pay a deposit up to 8 days before the start date (Tanzania date); after that they pay you directly. The Deposit and Refund Policy sets out when Kwetuly passes the deposit to you and when it is refunded.
+- (a) **Your cancellation terms.** Show your own cancellation terms on every offer and group trip. They decide how much of a deposit you keep when a traveller cancels. If you show none, the default terms in the Deposit and Refund Policy apply (30 days or more before the start: you keep 0%; 8 to 29 days: you keep 50%; 7 days or less, or a no-show: you keep 100%).
+- (b) **Kwetuly's charge.** Kwetuly takes no commission on deposits [Walter to confirm]. When a traveller cancels, Kwetuly keeps a cancellation charge of 10% of the deposit (at most TSh [CAP]) out of the money that would otherwise go back to the traveller. It is not taken from your share. Travellers see this charge before they pay.
+
 7.4 **Referral codes.** Approved guides get a personal referral code. When a traveller uses it at a business that has a commission agreement with Kwetuly, you may earn the guide share set in that business's agreement, after the business has paid Kwetuly. You must tell travellers that you may earn a commission, and never pressure them to buy or take them only to businesses that pay you. Kwetuly shows travellers a commission note on those businesses.
+
 7.5 You are responsible for your own taxes (including income tax with TRA) on what you earn. Kwetuly may withhold tax where the law requires and will give you a statement.
+
+7.6 **[v0.2 DRAFT, new] If you cancel a trip a traveller has paid a deposit for.**
+- (a) The traveller gets 100% of the deposit back if you cancel, cannot provide the trip as agreed, change the price, dates or main itinerary and the traveller does not accept, or Kwetuly takes the trip down because of something you did.
+- (b) If Kwetuly has already passed that deposit to you, Kwetuly refunds the traveller and recovers the amount from you [from your next payout / by invoice: Walter and advocate to decide].
+- (c) Kwetuly may also deduct from your next payout the payment and refund fees it actually paid on that deposit, up to 10% of the deposit. Before deducting, Kwetuly shows you the amount and how it was worked out, and you can question it. A Kwetuly manager approves every deduction.
+- (d) Kwetuly does **not** recover fees when the cause is outside anyone's control (for example a park closure, natural disaster or government ban), or when a group trip did not reach its minimum number.
+- (e) If Kwetuly cancels a trip because of fraud or a serious breach by you, (b) and (c) apply.
+- [(f) If you have no later payout: [Kwetuly invoices you / the fees are not recovered]: Walter and advocate to decide.]
+
+> Drafting note [v0.2]: deducting from payouts depends on the payment structure (A, B or C in the Deposit and Refund Policy) and must be checked for fairness for individual guides. Advocate questions file `docs/legal/advocate-questions-refunds-2026-11.md`, Q4.
+
+7.7 **[v0.2 DRAFT, new] Payouts on hold.** Kwetuly does not pass a deposit to you while a refund request or card dispute is open on it, or after the trip is cancelled or the traveller's spot is declined. After a traveller cancels, only your share under 7.3(a) is passed to you.
 
 ## 8. Safety and conduct
 
@@ -75,7 +102,7 @@ These terms are between you (the guide) and [COMPANY LEGAL NAME], [BRELA REGISTR
 
 ## 9. Suspension and ending
 
-9.1 You can close your profile and delete your account at any time. Group trips and accepted bookings you have already agreed still need to be honoured or properly cancelled.
+9.1 You can close your profile and delete your account at any time. Group trips and accepted bookings you have already agreed still need to be honoured or properly cancelled. **[v0.2 DRAFT]** Cancelling a booking with a deposit follows 7.6.
 9.2 Kwetuly may hide a profile, package or trip, remove a check, or close an account if you break these terms, if a licence lapses, after serious complaints, or to protect travellers. Kwetuly will tell you why and give you a chance to respond, unless there is an urgent safety risk.
 
 ## 10. Responsibility
@@ -98,11 +125,13 @@ Tanzanian law applies. [Disputes: advocate to decide.] Kwetuly may change these 
 5. Should guides sign a separate data-sharing or data-processing clause because they receive travellers' contact details?
 6. Indemnity in 10.1: enforceable and fair for individual guides?
 7. Should the Kiswahili version prevail for guides?
+8. **[v0.2]** Deducting amounts already passed on and Kwetuly's actual fees from a guide's next payout (7.6): enforceable, and fair for individual guides? Does it depend on structure A, B or C? See `docs/legal/advocate-questions-refunds-2026-11.md`, Q4.
 
 ## Open questions for Walter
 
 1. Will approval require the "licence checked" step? If not, the home page wording must change.
 2. Is there a paid "Pro" plan planned? If not at soft launch, we leave 7.1 as "free".
-3. Will Kwetuly take a fee on deposits? It must be disclosed.
+3. **[v0.2]** Confirm: no commission on deposits (7.3(b)). Decided 2026-11-07: Kwetuly's 10% cancellation charge on traveller cancellations, disclosed to guides and travellers.
 4. Default guide share of referral commissions, and who pays it out (Kwetuly after the business pays)?
 5. Emergency contact for incident reports.
+6. **[v0.2]** When a guide who cancelled has no later payout: invoice, or write off (7.6(f))?

@@ -25,7 +25,8 @@ export default async function PaymentReturnPage({ searchParams }: PageProps<'/[l
 async function Result({ searchParams, t, locale }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary; locale: Locale }) {
   await requireUser(locale);
   const order = (await searchParams).order;
-  const orderId = typeof order === 'string' && /^RAF\d{10,20}$/.test(order) ? order : null;
+  // Same format as the payments Edge Function: "RAF" + 32 lower-case hex characters.
+  const orderId = typeof order === 'string' && /^RAF[0-9a-f]{32}$/.test(order) ? order : null;
   const p = t.payments;
 
   const supabase = await createClient();
@@ -54,8 +55,9 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
   // Failed orders are asked about too: one Kwetuly gave up on may still have been paid at Selcom,
   // and the Edge Function then holds it for review.
   if (state === 'pending' || state === 'failed') {
-    const result = await callPayments({ action: 'status', order_id: orderId }, session.session?.access_token).catch(() => ({ status: 'pending' }));
-    state = result.status ?? 'pending';
+    // If the function cannot be reached, show what the row says (never a made-up 'pending').
+    const result = await callPayments({ action: 'status', order_id: orderId }, session.session?.access_token).catch(() => ({ status: payment.status }));
+    state = result.status ?? payment.status;
   }
   const back = payment.trip_offers
     ? `/${locale}/requests/${payment.trip_offers.request_id}`

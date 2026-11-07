@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import { isSelcomPaymentUrl, tanzaniaDate, type Billing, type PayMethod } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
 // Trip requests with offers, deposits (Selcom) and chat alerts: the same tables and rules as the website.
@@ -59,7 +60,8 @@ function check(error: { message: string } | null) {
   if (error) throw new Error(error.message);
 }
 
-export const today = () => new Date().toISOString().slice(0, 10);
+// Today's date in Tanzania (UTC+3), the same day the Edge Function and the database go by.
+export const today = () => tanzaniaDate();
 export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Kwetuly partner';
 
 export async function listMyRequests(userId: string): Promise<TripRequest[]> {
@@ -156,11 +158,18 @@ export async function offerContacts(offerId: string) {
 // ---------------------------------------------------------------------------
 // Deposits through Selcom (the `payments` Edge Function). Hidden until Selcom is set up.
 // ---------------------------------------------------------------------------
-/** Whether Selcom is set up, and the shillings-per-dollar rate for "≈ TSh" prices (null until set). */
-export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
+/**
+ * Whether Selcom is set up, the shillings-per-dollar rate for "≈ TSh" prices (null until set), and the
+ * ways to pay offered right now (mobile money, and card once Selcom has switched cards on).
+ */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null; methods: PayMethod[] }> {
   const { data } = await supabase.functions.invoke('payments', { body: { action: 'config' } });
-  const result = (data ?? {}) as { enabled?: boolean; rate?: number | null };
-  return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
+  const result = (data ?? {}) as { enabled?: boolean; rate?: number | null; methods?: unknown };
+  const enabled = Boolean(result.enabled);
+  const listed = Array.isArray(result.methods) ? result.methods.filter((m): m is PayMethod => m === 'mobile_money' || m === 'card') : [];
+  // An older Edge Function without `methods` takes mobile money only.
+  const methods: PayMethod[] = !enabled ? [] : listed.length ? listed : ['mobile_money'];
+  return { enabled, rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null, methods };
 }
 
 export async function paymentsEnabled(): Promise<boolean> {
@@ -234,15 +243,27 @@ export async function listMyDeposits(userId: string) {
   }[];
 }
 
-/** Opens the Selcom payment page; when the traveller comes back, asks Selcom for the result. */
-export async function payDeposit(kind: 'offer' | 'group', id: string, locale: string): Promise<'paid' | 'pending' | 'failed' | string> {
-  const { data, error } = await supabase.functions.invoke('payments', { body: { action: 'checkout', kind, id, locale } });
+/**
+ * Opens the Selcom payment page; when the traveller comes back, asks Selcom for the result. For card,
+ * the billing address is sent once with the checkout and never saved on the phone.
+ */
+export async function payDeposit(
+  kind: 'offer' | 'group',
+  id: string,
+  locale: string,
+  method: PayMethod = 'mobile_money',
+  billing?: Billing,
+): Promise<'paid' | 'pending' | 'failed' | string> {
+  const body = { action: 'checkout', kind, id, locale, method, ...(method === 'card' && billing ? { billing } : {}) };
+  const { data, error } = await supabase.functions.invoke('payments', { body });
   const result = (data ?? {}) as { url?: string; order_id?: string; error?: string };
   if (error || !result.url || !result.order_id) {
     // Error responses carry a code such as "phone_required".
     const body = error && 'context' in error ? await (error.context as Response).json().catch(() => ({})) : {};
     return (body as { error?: string }).error ?? result.error ?? 'gateway_error';
   }
+  // Only ever open Selcom's own payment page; anything else is treated as a gateway error.
+  if (!isSelcomPaymentUrl(result.url)) return 'gateway_error';
   await WebBrowser.openBrowserAsync(result.url);
   const status = await supabase.functions.invoke('payments', { body: { action: 'status', order_id: result.order_id } });
   return ((status.data ?? {}) as { status?: string }).status ?? 'pending';

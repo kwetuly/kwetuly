@@ -147,6 +147,8 @@ export function Field({
   multiline,
   keyboardType,
   autoCapitalize,
+  autoComplete,
+  maxLength,
   hint,
 }: {
   label: string;
@@ -156,6 +158,8 @@ export function Field({
   multiline?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoComplete?: TextInputProps['autoComplete'];
+  maxLength?: number;
   hint?: string;
 }) {
   return (
@@ -169,6 +173,8 @@ export function Field({
         multiline={multiline}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        autoComplete={autoComplete}
+        maxLength={maxLength}
         accessibilityLabel={label}
         style={[fieldInput, multiline ? { minHeight: 100, textAlignVertical: 'top' } : null]}
       />

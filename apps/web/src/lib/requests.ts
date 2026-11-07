@@ -1,4 +1,5 @@
 import 'server-only';
+import { tanzaniaDate } from '@kwetuly/shared';
 import { createClient } from '@/lib/supabase/server';
 
 export type TripRequest = {
@@ -57,7 +58,8 @@ export const OFFER_COLUMNS =
 
 export const isUuid = (value: string) => /^[0-9a-f-]{36}$/i.test(value);
 export const offerName = (offer: TripOffer) => offer.guides?.display_name ?? offer.company_name ?? 'Kwetuly partner';
-export const today = () => new Date().toISOString().slice(0, 10);
+// Today's date in Tanzania (UTC+3), the same day the Edge Function and the database go by.
+export const today = () => tanzaniaDate();
 
 // Row-level security decides what the viewer may see: their own requests, or open ones for guides and companies.
 export async function getRequest(id: string): Promise<TripRequest | null> {

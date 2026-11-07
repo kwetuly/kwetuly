@@ -17,7 +17,7 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { EVENTS, approxTzs, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, approxTzs, formatUsd, groupPriceOnRequest, tripStarted } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
@@ -58,12 +58,21 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
   const isOrganizer = user?.id === trip.organizer_id;
   const { rate } = await paymentsConfig();
   // The trip chat is only visible to its members (organiser and accepted travellers).
-  const tripChat = user
-    ? (await (await createClient()).from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle()).data
-    : null;
+  const supabase = user ? await createClient() : null;
+  const [tripChat, mine] = supabase
+    ? await Promise.all([
+        supabase.from('group_chats').select('id').eq('group_trip_id', trip.id).maybeSingle().then((r) => r.data),
+        // Only onboarded travellers can have asked to join; organisers never do.
+        user?.onboarded && !isOrganizer ? myMembership(trip.id, user.id) : Promise.resolve(null),
+      ])
+    : [null, null];
 
   const closed = closedReason(trip);
-  const joinable = !closed && !isOrganizer;
+  // Hide the phone "Ask to join" bar from travellers who already asked or were accepted.
+  const hasAsked = mine?.status === 'requested' || mine?.status === 'accepted';
+  const joinable = !closed && !isOrganizer && !hasAsked;
+  // The deposit note only makes sense while the trip can still be joined, or for accepted members of a live trip.
+  const showPayNote = closed === null || (mine?.status === 'accepted' && !trip.cancelled);
   // "Spots left" means nothing once a trip is cancelled or has started; a full trip still shows "Full".
   // Organisers keep the bar on a trip that is waiting for review.
   const showSpots = !trip.cancelled && !isPast(trip) && (isOrganizer || trip.status === 'approved');
@@ -140,12 +149,12 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
               {isOrganizer ? (
                 <OrganizerTools trip={trip} t={t} locale={locale} />
               ) : (
-                <JoinBox trip={trip} user={user} status={status} t={t} locale={locale} />
+                <JoinBox trip={trip} user={user} mine={mine} status={status} t={t} locale={locale} />
               )}
               {tripChat && (
                 <Link href={`/${locale}/chats/${tripChat.id}`} className="btn w-full">{t.chats.openChat}</Link>
               )}
-              <p className="text-xs text-white/70">{g.payNote}</p>
+              {showPayNote && <p className="text-xs text-white/70">{g.payNote}</p>}
             </div>
           </div>
         </aside>
@@ -189,7 +198,8 @@ function Organizer({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale
 
 type ClosedReason = 'cancelled' | 'notOpen' | 'past' | 'full';
 
-const isPast = (trip: GroupTrip) => trip.start_date < new Date().toISOString().slice(0, 10);
+// By the Tanzania date (UTC+3), as the database and the Edge Function count days.
+const isPast = (trip: GroupTrip) => tripStarted(trip.start_date);
 
 // Why nobody can ask to join this trip, or null when it is open. Mirrors private.group_trip_open
 // (approved, not cancelled, not started) plus the free-spots check in request_group_trip.
@@ -208,7 +218,21 @@ function ClosedNote({ reason, t }: { reason: ClosedReason; t: Dictionary }) {
   return <p className="rounded-[5px] bg-white/10 p-4 font-semibold">{text}</p>;
 }
 
-async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; user: CurrentUser | null; status: Search; t: Dictionary; locale: Locale }) {
+type Membership = { id: string; status: GroupMember['status']; seats: number; price_per_person_usd?: number | null };
+
+async function myMembership(tripId: string, userId: string): Promise<Membership | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('group_trip_members')
+    // '*' so this keeps working before the price_per_person_usd column (20261016001400) exists.
+    .select('*')
+    .eq('group_trip_id', tripId)
+    .eq('traveler_id', userId)
+    .maybeSingle<Membership>();
+  return data;
+}
+
+async function JoinBox({ trip, user, mine, status, t, locale }: { trip: GroupTrip; user: CurrentUser | null; mine: Membership | null; status: Search; t: Dictionary; locale: Locale }) {
   const g = t.groups;
   const closed = closedReason(trip);
 
@@ -231,16 +255,8 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
     return <FinishSetup t={t} locale={locale} next={`/${locale}/group-trips/${trip.id}#join`} dark />;
   }
 
-  const supabase = await createClient();
-  const { data: mine } = await supabase
-    .from('group_trip_members')
-    // '*' so this keeps working before the price_per_person_usd column (20261016001400) exists.
-    .select('*')
-    .eq('group_trip_id', trip.id)
-    .eq('traveler_id', user.id)
-    .maybeSingle<{ id: string; status: GroupMember['status']; seats: number; price_per_person_usd?: number | null }>();
-
   if (mine?.status === 'accepted') {
+    const supabase = await createClient();
     const [{ data: contact }, paid] = await Promise.all([
       supabase.from('group_trip_private').select('contact').eq('group_trip_id', trip.id).maybeSingle(),
       depositState('group_member_id', mine.id),
@@ -261,7 +277,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
               paid={paid.paid}
               review={paid.review}
               paidOut={paid.paidOut}
-              back={`/${locale}/group-trips/${trip.id}`}
+              startDate={trip.start_date}
               t={t}
               locale={locale}
               dark
@@ -284,7 +300,7 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
           paid={paid.paid}
           review={paid.review}
           paidOut={paid.paidOut}
-          back={`/${locale}/group-trips/${trip.id}`}
+          startDate={trip.start_date}
           error={typeof status.payError === 'string' ? status.payError : undefined}
           t={t}
           locale={locale}

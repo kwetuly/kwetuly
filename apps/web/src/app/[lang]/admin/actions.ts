@@ -238,11 +238,57 @@ export async function setPaidOut(formData: FormData) {
   if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
 
   const supabase = await createClient();
-  await supabase
+  const { data, error } = await supabase
     .from('payments')
     .update({ payout_done: formData.get('done') === 'true' })
-    .eq('id', String(formData.get('payment_id') ?? ''));
+    .eq('id', String(formData.get('payment_id') ?? ''))
+    .select('id');
+  // The database refuses a payout tick unless the deposit is paid and its trip, spot or offer is
+  // still going ahead (private.guard_payout, hint 'kwetuly_payout_guard').
+  const paymentId = String(formData.get('payment_id') ?? '');
+  const row = UUID.test(paymentId) ? `&row=${paymentId}` : '';
+  if (error) {
+    const refused = error.hint === 'kwetuly_payout_guard';
+    // Which checks refused it (error details, e.g. "trip,member_declined"); only known codes go in the link.
+    const why = refused ? PAYOUT_REFUSALS.filter((code) => String(error.details ?? '').split(',').map((c) => c.trim()).includes(code)) : [];
+    redirect(`/${locale}/admin/all?payout=${refused ? 'refused' : 'error'}${row}${why.length ? `&why=${why.join(',')}` : ''}#payments`);
+  }
+  if (!data?.length) redirect(`/${locale}/admin/all?payout=error#payments`);
   redirect(`/${locale}/admin/all#payments`);
+}
+
+const PAYOUT_REFUSALS = ['trip', 'member_declined', 'payee_not_approved'] as const;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Mark a deposit paid out although the trip check refused it, with the admin's reason (stored with the
+// payout by public.admin_payout_with_override). Runs with the admin's own session, never the service role.
+export async function setPaidOutWithReason(formData: FormData) {
+  const localeValue = String(formData.get('locale') ?? '');
+  const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  const user = await getCurrentUser();
+  if (!user || !(await isAdminSession(user))) redirect(`/${locale}`);
+
+  const paymentId = String(formData.get('payment_id') ?? '');
+  if (!UUID.test(paymentId)) redirect(`/${locale}/admin/all?payout=error#payments`);
+  const back = (code: string) => `/${locale}/admin/all?payout=${code}&row=${paymentId}#payments`;
+  const reason = String(formData.get('reason') ?? '').trim();
+  if (!reason || reason.length > 500) redirect(back('reason'));
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('admin_payout_with_override', { p_payment_id: paymentId, p_reason: reason });
+  if (error) {
+    const code =
+      error.code === '42501'
+        ? 'not_admin'
+        : error.code === '22023'
+          ? 'reason'
+          : error.code === 'P0001' && error.hint === 'kwetuly_payout_guard'
+            ? 'override_refused'
+            : 'error';
+    redirect(back(code));
+  }
+  redirect(`/${locale}/admin/all?payout=overridden#payments`);
 }
 
 // Approve a guide package, or send it back with a note the guide sees.

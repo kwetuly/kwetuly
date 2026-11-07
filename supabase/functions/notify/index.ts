@@ -132,6 +132,11 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Asante! TZS ${v('amount')} zimepokelewa`, body: `Tumepokea amana yako ya "${v('what')}". Mwongozaji wako amearifiwa.` }
         : { subject: `Thank you! TZS ${v('amount')} received`, body: `We received your deposit for "${v('what')}". Your guide has been told.` };
+    case 'payment_checking':
+      // To the payer when their deposit is held for review. Neutral: no amount, no reason.
+      return sw
+        ? { subject: 'Malipo yako yanakaguliwa', body: `Tumepokea taarifa kutoka Selcom kuhusu malipo yako ya "${v('what')}". Timu ya Kwetuly inayakagua na itawasiliana nawe. Tafadhali usilipe tena.` }
+        : { subject: 'Your payment is being checked', body: `Selcom told us about your payment for "${v('what')}". The Kwetuly team is checking it and will contact you. Please do not pay again.` };
     case 'payment_review':
       // Admins only (email and push).
       return {

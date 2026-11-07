@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cacheLife, cacheTag } from 'next/cache';
+import { tanzaniaDate } from '@kwetuly/shared';
 import { createClient } from '@/lib/supabase/server';
 
 export type GroupTrip = {
@@ -62,7 +63,7 @@ export async function listGroupTrips(specialty?: string): Promise<GroupTrip[]> {
   cacheTag('groups');
   cacheLife('minutes');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = tanzaniaDate();
   let query = publicClient()
     .from('group_trips')
     .select(COLUMNS)

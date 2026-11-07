@@ -18,3 +18,5 @@ export * from './invest';
 export * from './display-name';
 export * from './links';
 export * from './catalogue';
+export * from './deposits';
+export * from './payments';

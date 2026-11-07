@@ -1,11 +1,13 @@
 import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
+import type { PayMethod } from '@kwetuly/shared';
 
 // Deposits run through the `payments` Supabase Edge Function (Selcom). It stays switched off until
 // the Selcom secrets are set there, and then the Pay buttons appear on their own.
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/payments`;
 
-export async function callPayments(body: Record<string, string>, accessToken?: string) {
+// The body may hold nested objects (the card billing address); it is sent once and never logged.
+export async function callPayments(body: Record<string, unknown>, accessToken?: string) {
   const res = await fetch(FUNCTION_URL, {
     method: 'POST',
     headers: {
@@ -19,16 +21,23 @@ export async function callPayments(body: Record<string, string>, accessToken?: s
   return (await res.json().catch(() => ({}))) as { enabled?: boolean; url?: string; order_id?: string; status?: string; error?: string };
 }
 
-/** Whether Selcom is set up, and the shillings-per-dollar rate (null until configured). */
-export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
+/**
+ * Whether Selcom is set up, the shillings-per-dollar rate (null until configured), and the ways to pay
+ * the Edge Function offers right now (mobile money, and card once Selcom has switched cards on).
+ */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null; methods: PayMethod[] }> {
   'use cache';
   cacheTag('payments-config');
   cacheLife('minutes');
   try {
-    const result = (await callPayments({ action: 'config' })) as { enabled?: boolean; rate?: number | null };
-    return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
+    const result = (await callPayments({ action: 'config' })) as { enabled?: boolean; rate?: number | null; methods?: unknown };
+    const enabled = Boolean(result.enabled);
+    const listed = Array.isArray(result.methods) ? result.methods.filter((m): m is PayMethod => m === 'mobile_money' || m === 'card') : [];
+    // An older Edge Function without `methods` takes mobile money only.
+    const methods: PayMethod[] = !enabled ? [] : listed.length ? listed : ['mobile_money'];
+    return { enabled, rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null, methods };
   } catch {
-    return { enabled: false, rate: null };
+    return { enabled: false, rate: null, methods: [] };
   }
 }
 

@@ -237,7 +237,15 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
     <View style={{ gap: space.md }}>
       {accepted && (
         <AcceptedTicket req={req} offer={accepted}>
-          <PayDeposit kind="offer" id={accepted.id} totalUsd={accepted.price_total_usd} percent={accepted.deposit_percent} />
+          <PayDeposit
+            kind="offer"
+            id={accepted.id}
+            totalUsd={accepted.price_total_usd}
+            percent={accepted.deposit_percent}
+            startDate={req.start_date}
+            validUntil={req.flexible_dates || !req.start_date ? accepted.valid_until : null}
+            closed={req.status === 'closed'}
+          />
         </AcceptedTicket>
       )}
       <SectionTitle>{r.offersTitle} ({offers.length})</SectionTitle>

@@ -3,7 +3,7 @@ import { ScrollView, Text, TextInput, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EVENTS, specialtyPhoto, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, specialtyPhoto, formatUsd, groupPriceOnRequest, tripStarted } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
@@ -49,7 +49,19 @@ export default function GroupTripScreen() {
   const g = trip.data;
   const g10n = t.groups;
   const left = Math.max(g.max_people - g.seats_taken - (g.already_going ?? 0), 0);
-  const open = g.status === 'approved' && !g.cancelled && g.start_date >= new Date().toISOString().slice(0, 10) && left > 0;
+  // Why nobody can ask to join, mirroring closedReason on the website; null when the trip is open.
+  const closedText = g.cancelled
+    ? g10n.cancelledTrip
+    : g.status === 'rejected'
+      ? g10n.closed
+      : g.status !== 'approved'
+        ? g10n.notOpen
+        : tripStarted(g.start_date) // by the Tanzania date, as the database counts days
+          ? g10n.closed
+          : left <= 0
+            ? g10n.fullTrip
+            : null;
+  const open = closedText === null;
   const isOrganizer = userId === g.organizer_id;
 
   async function join() {
@@ -122,7 +134,14 @@ export default function GroupTripScreen() {
             <>
               <Text style={{ fontWeight: '700', color: brand.forest }}>✓ {g10n.accepted}</Text>
               {contact.data && <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
-              <PayDeposit kind="group" id={mine.data.id} totalUsd={(mine.data.price_per_person_usd ?? g.price_per_person_usd) * mine.data.seats} percent={g.deposit_percent} />
+              <PayDeposit
+                kind="group"
+                id={mine.data.id}
+                totalUsd={(mine.data.price_per_person_usd ?? g.price_per_person_usd) * mine.data.seats}
+                percent={g.deposit_percent}
+                startDate={g.start_date}
+                closed={g.cancelled}
+              />
             </>
           ) : mine.data?.status === 'requested' ? (
             <>
@@ -141,7 +160,7 @@ export default function GroupTripScreen() {
               <Button title={userId ? g10n.joinCta : g10n.signInToJoin} onPress={join} loading={busy} />
             </>
           ) : (
-            <Muted>{g.cancelled ? g10n.cancelledTrip : g10n.closed}</Muted>
+            <Muted>{closedText}</Muted>
           )}
           {chat.data && <Button title={t.chats.openChat} variant="dark" onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
           <Muted>{g10n.payNote}</Muted>

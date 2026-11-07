@@ -1,7 +1,7 @@
 'use client';
 
 import type { PostHog } from 'posthog-js';
-import { POSTHOG_DEFAULT_HOST, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@kwetuly/shared';
+import { POSTHOG_DEFAULT_HOST, isPaymentPath, redactUrlProps, safeProps, type AnalyticsEvent, type AnalyticsProps } from '@kwetuly/shared';
 
 // Product analytics with PostHog in cookieless mode: no cookies or browser storage, so no consent
 // banner is needed. Turned off until NEXT_PUBLIC_POSTHOG_KEY is set. The library loads after the
@@ -30,6 +30,32 @@ export function loadAnalytics(): Promise<PostHog | null> {
         disable_session_recording: true,
         disable_surveys: true,
         capture_performance: { web_vitals: true },
+        // No heatmaps, dead-click or rage-click capture (they record what was clicked and where).
+        enable_heatmaps: false,
+        capture_dead_clicks: false,
+        rageclick: false,
+        // PostHog's own masking of personal-data URL parameters, plus our order id parameter.
+        mask_personal_data_properties: true,
+        custom_personal_data_properties: ['order'],
+        // Nothing at all is sent from payment pages (/{lang}/payments/...): they carry the order id.
+        // From every other page, page views, page leaves and web vitals carry $current_url and
+        // $referrer (Selcom's pages can carry payment tokens): the query string and hash after any
+        // payment or Selcom address are cut, in nested properties and keys too, before sending.
+        before_send: (event) => {
+          if (!event) return event;
+          const props = event.properties ?? {};
+          if (
+            (typeof window !== 'undefined' && isPaymentPath(window.location.pathname)) ||
+            isPaymentPath(typeof props.$current_url === 'string' ? props.$current_url : null) ||
+            isPaymentPath(typeof props.$pathname === 'string' ? props.$pathname : null)
+          ) {
+            return null;
+          }
+          event.properties = redactUrlProps(event.properties) ?? event.properties;
+          event.$set = redactUrlProps(event.$set);
+          event.$set_once = redactUrlProps(event.$set_once);
+          return event;
+        },
       });
       client = posthog;
       queue.splice(0).forEach(([event, props]) => posthog.capture(event, props));

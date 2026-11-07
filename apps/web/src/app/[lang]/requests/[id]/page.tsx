@@ -234,7 +234,9 @@ async function OffersForTraveller({ request, offers, status, t, locale }: { requ
                 totalUsd={accepted.price_total_usd}
                 percent={accepted.deposit_percent}
                 paid={false}
-                back={`/${locale}/requests/${request.id}`}
+                startDate={request.start_date}
+                validUntil={request.flexible_dates || !request.start_date ? accepted.valid_until : null}
+                closed={request.status === 'closed'}
                 error={payError}
                 t={t}
                 locale={locale}

@@ -11,7 +11,8 @@ import { languageName, specialtyName } from '@/components/guide-card';
 import { jobRoleName } from '@/lib/labels';
 import { dateRange, maskPhone } from '@/lib/admin-format';
 import { SavedNote } from '@/components/saved-note';
-import { reviewGroupTrip, confirmPhone, reviewGuide, reviewJob, setPaidOut, setReviewHidden } from '../actions';
+import { SubmitButton } from '@/components/submit-button';
+import { reviewGroupTrip, confirmPhone, reviewGuide, reviewJob, setPaidOut, setPaidOutWithReason, setReviewHidden } from '../actions';
 import { PendingPackages } from '../pending-packages';
 import { BusinessesAdmin } from '../businesses-admin';
 
@@ -126,7 +127,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/[lang]/adm
         <BusinessesAdmin t={t} locale={locale} />
         <PendingJobs t={t} locale={locale} />
         <PendingGroupTrips t={t} locale={locale} searchParams={searchParams} />
-        <Payments t={t} locale={locale} />
+        <Payments t={t} locale={locale} searchParams={searchParams} />
         <LatestRequests t={t} locale={locale} />
         <Inbox locale={locale} />
         <RecentReviews locale={locale} />
@@ -440,9 +441,16 @@ type PaymentRow = {
   provider_reference: string | null;
   provider_channel: string | null;
   payout_done: boolean;
+  kind: 'offer_deposit' | 'group_deposit';
+  trip_offer_id: string | null;
+  group_member_id: string | null;
   // Added by 20261016001100_security_review_fixes.sql; optional until that migration is applied.
   payout_by?: string | null;
   payout_at?: string | null;
+  // Added by the payout override migration; optional until it is applied.
+  payout_override_reason?: string | null;
+  payout_override_by?: string | null;
+  payout_override_at?: string | null;
   // Added by 20261016001600_payments_review_fixes.sql; optional until that migration is applied.
   provider_amount?: number | null;
   created_at: string;
@@ -451,9 +459,100 @@ type PaymentRow = {
 // Phone numbers on the payments list are masked with maskPhone (lib/admin-format).
 
 // Deposits paid through Selcom. Kwetuly pays them out to the guide or company, then ticks them here.
-async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
+// Paid deposits the database will refuse to mark paid out, by exactly the rule in private.guard_payout.
+// A paid, not-yet-paid-out deposit is stopped when:
+// * group deposit: its trip is cancelled or rejected (status not 'approved' or 'pending'), or the
+//   traveller's spot was declined ('cancelled' does not block);
+// * offer deposit: the offer is not 'accepted' (the request's status is not checked);
+// * the payee is not approved: for a guide-run trip or offer, the guide row must belong to the payee,
+//   be 'approved' and not a sample; otherwise the payee must own an approved, non-sample business;
+//   no payee at all is stopped;
+// * the spot or offer row is gone, or the kind is unknown.
+// Stopped rows get the reason box instead of the plain tick. If a lookup itself fails, the row keeps
+// the plain tick and the database decides.
+async function stoppedDeposits(supabase: Awaited<ReturnType<typeof createClient>>, rows: PaymentRow[]): Promise<Set<string>> {
+  const unpaidOut = rows.filter((r) => r.status === 'paid' && !r.payout_done);
+  const memberIds = unpaidOut.flatMap((r) => (r.kind === 'group_deposit' && r.group_member_id ? [r.group_member_id] : []));
+  const offerIds = unpaidOut.flatMap((r) => (r.kind === 'offer_deposit' && r.trip_offer_id ? [r.trip_offer_id] : []));
+  const [members, offers] = await Promise.all([
+    memberIds.length
+      ? supabase
+          .from('group_trip_members')
+          .select('id, status, group_trips(status, cancelled, guide_id)')
+          .in('id', memberIds)
+          .returns<{ id: string; status: string; group_trips: { status: string; cancelled: boolean; guide_id: string | null } | null }[]>()
+      : Promise.resolve({ data: [], error: null }),
+    offerIds.length
+      ? supabase.from('trip_offers').select('id, status, guide_id').in('id', offerIds).returns<{ id: string; status: string; guide_id: string | null }[]>()
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const memberRows = new Map((members.data ?? []).map((m) => [m.id, m]));
+  const offerRows = new Map((offers.data ?? []).map((o) => [o.id, o]));
+
+  // The guide behind each row (null: run by a business or a company), then the payee checks.
+  const guideOf = (r: PaymentRow): string | null =>
+    r.kind === 'group_deposit' ? (memberRows.get(r.group_member_id ?? '')?.group_trips?.guide_id ?? null) : (offerRows.get(r.trip_offer_id ?? '')?.guide_id ?? null);
+  const guideIds = [...new Set(unpaidOut.map(guideOf).filter((g): g is string => !!g))];
+  const businessPayees = [...new Set(unpaidOut.filter((r) => !guideOf(r) && r.payee_user_id).map((r) => r.payee_user_id!))];
+  const [guides, providers] = await Promise.all([
+    guideIds.length
+      ? supabase
+          .from('guides')
+          .select('id, owner_id, verification_status, is_sample')
+          .in('id', guideIds)
+          .returns<{ id: string; owner_id: string; verification_status: string; is_sample: boolean }[]>()
+      : Promise.resolve({ data: [], error: null }),
+    businessPayees.length
+      ? supabase
+          .from('providers')
+          .select('owner_id, verification_status, is_sample')
+          .in('owner_id', businessPayees)
+          .returns<{ owner_id: string; verification_status: string; is_sample: boolean }[]>()
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+  const guideRows = new Map((guides.data ?? []).map((g) => [g.id, g]));
+  const approvedBusinessOwners = new Set((providers.data ?? []).filter((p) => p.verification_status === 'approved' && !p.is_sample).map((p) => p.owner_id));
+
+  const payeeStopped = (r: PaymentRow): boolean => {
+    if (!r.payee_user_id) return true;
+    const gid = guideOf(r);
+    if (gid) {
+      if (guides.error) return false;
+      const guide = guideRows.get(gid);
+      return !guide || guide.owner_id !== r.payee_user_id || guide.verification_status !== 'approved' || guide.is_sample;
+    }
+    if (providers.error) return false;
+    return !approvedBusinessOwners.has(r.payee_user_id);
+  };
+
+  const stopped = new Set<string>();
+  for (const r of unpaidOut) {
+    let stop: boolean;
+    if (r.kind === 'group_deposit') {
+      const member = r.group_member_id ? memberRows.get(r.group_member_id) : undefined;
+      if (members.error && r.group_member_id) stop = false;
+      else if (!member) stop = true;
+      else {
+        const trip = member.group_trips;
+        stop = !trip || trip.cancelled || (trip.status !== 'approved' && trip.status !== 'pending') || member.status === 'declined' || payeeStopped(r);
+      }
+    } else if (r.kind === 'offer_deposit') {
+      const offer = r.trip_offer_id ? offerRows.get(r.trip_offer_id) : undefined;
+      if (offers.error && r.trip_offer_id) stop = false;
+      else if (!offer) stop = true;
+      else stop = offer.status !== 'accepted' || payeeStopped(r);
+    } else {
+      stop = true;
+    }
+    if (stop) stopped.add(r.id);
+  }
+  return stopped;
+}
+
+async function Payments({ t, locale, searchParams }: { t: Dictionary; locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
+  const { payout, row, why } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase
     .from('payments')
@@ -464,7 +563,7 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
     .limit(50)
     .returns<PaymentRow[]>();
   const rows = data ?? [];
-  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id, r.payout_by ?? null]).filter(Boolean) as string[])];
+  const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.payee_user_id, r.payout_by ?? null, r.payout_override_by ?? null]).filter(Boolean) as string[])];
   const { data: people } = ids.length
     ? await supabase.from('profiles').select('id, full_name, phone').in('id', ids).returns<{ id: string; full_name: string | null; phone: string | null }[]>()
     : { data: [] };
@@ -472,11 +571,47 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
     const person = people?.find((p) => p.id === id);
     return person ? [person.full_name, maskPhone(person.phone)].filter(Boolean).join(' · ') : 'unknown';
   };
+  const stopped = await stoppedDeposits(supabase, rows);
   const a = t.admin;
+  const payoutNote =
+    payout === 'refused'
+      ? a.payoutRefused
+      : payout === 'error'
+        ? a.payoutError
+        : payout === 'reason'
+          ? a.overrideReasonError
+          : payout === 'not_admin'
+            ? a.overrideNotAdmin
+            : payout === 'override_refused'
+              ? a.overrideRefused
+              : null;
+  // Which checks refused the last tick (from the database's error details), in plain words.
+  const refusalText: Record<string, string> = { trip: a.refusedTrip, member_declined: a.refusedMemberDeclined, payee_not_approved: a.refusedPayee };
+  const refusalReasons =
+    payout === 'refused' && typeof why === 'string'
+      ? [...new Set(why.split(','))].flatMap((code) => (refusalText[code.trim()] ? [refusalText[code.trim()]] : []))
+      : [];
+  // The reason box is offered only on rows shown as blocked, or the row the database just refused
+  // (or whose override just failed, so the admin can correct the reason).
+  const failedRow = payoutNote && payout !== 'error' && typeof row === 'string' ? row : null;
+  const offerOverride = (p: PaymentRow) => p.status === 'paid' && !p.payout_done && (stopped.has(p.id) || p.id === failedRow);
 
   return (
     <section id="payments" className="mt-12 scroll-mt-24">
       <h2 className="text-2xl font-bold">{a.paymentsTitle} ({rows.length})</h2>
+      {payoutNote && (
+        <div role="alert" className="mt-3 rounded-[5px] bg-red-50 p-4 text-red-800">
+          <p>{payoutNote}</p>
+          {refusalReasons.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 font-semibold">
+              {refusalReasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {payout === 'overridden' && <SavedNote className="mt-3 rounded-[5px] bg-mint p-4 font-semibold text-forest">{a.overrideDone}</SavedNote>}
       {rows.length === 0 && <p className="mt-3 text-muted">{a.noPayments}</p>}
       <ul className="mt-4 space-y-3">
         {rows.map((p) => (
@@ -505,8 +640,30 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
                   {a.paidOut}: {new Date(p.payout_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {who(p.payout_by ?? null)}
                 </p>
               )}
+              {p.payout_done && p.payout_override_reason && (
+                <div className="mt-2 rounded-[5px] bg-gold/25 p-3">
+                  <p className="font-semibold">
+                    {a.overrideBy}
+                    {p.payout_override_at ? `: ${new Date(p.payout_override_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })}` : ''} · {who(p.payout_override_by ?? null)}
+                  </p>
+                  <p className="mt-1 whitespace-pre-line break-words">{p.payout_override_reason}</p>
+                </div>
+              )}
             </div>
-            {p.status === 'paid' && (
+            {offerOverride(p) && (
+              <form action={setPaidOutWithReason} className="w-full space-y-2 sm:w-72">
+                {stopped.has(p.id) && <p className="rounded-[5px] bg-gold/25 p-3 text-sm font-semibold text-charcoal">{a.payoutBlocked}</p>}
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="payment_id" value={p.id} />
+                <label className="block">
+                  <span className="label">{a.overrideLabel}</span>
+                  <textarea name="reason" required maxLength={500} aria-describedby={`override-hint-${p.id}`} className="field min-h-20 text-sm" />
+                </label>
+                <p id={`override-hint-${p.id}`} className="text-xs text-muted">{a.overrideHint}</p>
+                <SubmitButton className="btn-outline w-full px-4 py-2 text-sm">{a.overrideCta}</SubmitButton>
+              </form>
+            )}
+            {p.status === 'paid' && !offerOverride(p) && (
               <form action={setPaidOut}>
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="payment_id" value={p.id} />
