@@ -77,8 +77,9 @@ export default function GuideScreen() {
   const stats = [
     g.years_experience != null ? { value: String(g.years_experience), label: t.guides.years } : null,
     g.summits ? { value: String(g.summits), label: t.guides.summits } : null,
-    g.max_group_size ? { value: String(g.max_group_size), label: t.guides.groupUpTo, labelFirst: true } : null,
-  ].filter((x): x is { value: string; label: string; labelFirst?: boolean } => !!x);
+    // "Maximum group size" under the number reads right in every language ("Groups up to" needs the number after it).
+    g.max_group_size ? { value: String(g.max_group_size), label: t.groups.maxPeople } : null,
+  ].filter((x): x is { value: string; label: string } => !!x);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

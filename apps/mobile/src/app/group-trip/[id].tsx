@@ -49,7 +49,20 @@ export default function GroupTripScreen() {
   const [justJoined, setJustJoined] = useState(false);
 
   const needsSetup = useNeedsSetup();
-  if (!trip.data) return <ScreenState screen loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
+  // Not found (deleted, or not public): say so plainly and offer the way back to all group trips.
+  if (!trip.data)
+    return (
+      <ScreenState
+        screen
+        loading={trip.isLoading}
+        error={trip.error}
+        onRetry={() => trip.refetch()}
+        empty
+        emptyText={t.ux.notFoundTitle}
+        emptyGlyph={GLYPHS.calendarClosed}
+        emptyAction={{ label: t.groups.title, onPress: () => router.push('/trips') }}
+      />
+    );
   const g = trip.data;
   const g10n = t.groups;
   const left = Math.max(g.max_people - g.seats_taken - (g.already_going ?? 0), 0);

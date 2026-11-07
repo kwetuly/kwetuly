@@ -10,25 +10,9 @@ import { useI18n } from '@/lib/i18n';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
 
 import { GLYPHS, Glyph } from './glyph';
-import { Avatar, Badge, Card, Muted, Stars } from './ui';
+import { Avatar, Badge, Card, MetaItems, Muted, Stars } from './ui';
 import { brand, colors, control, icon, layout, media, motion, radius, space, textSize } from '@/theme';
 import { useType } from '@/lib/use-type';
-
-/** Short facts side by side with a gap instead of "A · B · C"; they wrap on narrow phones. */
-function MetaItems({ items }: { items: (string | null | undefined | false)[] }) {
-  const { type } = useType();
-  const shown = items.filter((x): x is string => !!x);
-  if (shown.length === 0) return null;
-  return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: space.xxs }}>
-      {shown.map((item) => (
-        <Text key={item} style={type.meta}>
-          {item}
-        </Text>
-      ))}
-    </View>
-  );
-}
 
 // A guide at a glance: who they are, what they do, languages, special trips and badges.
 export function GuideCard({ guide }: { guide: Guide }) {

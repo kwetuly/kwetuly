@@ -3,15 +3,18 @@ import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
 import { CALL_TOPICS, HUB_MENU, formatUsd } from '@kwetuly/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, Field, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { GLYPHS, type GlyphName } from '@/components/glyph';
+import { Badge, Button, Card, EmptyState, Field, ListGroup, ListRow, MetaItems, Muted, ScreenState, Section } from '@/components/ui';
 import { getMyGuide, listHubInbox, respondToCall, type HubCall } from '@/lib/api-more';
 import { listMyDeposits } from '@/lib/api-requests';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, space } from '@/theme';
 
 function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
   const { t, locale } = useI18n();
+  const { type, font } = useType();
   const h = t.hub;
   const [accepting, setAccepting] = useState(false);
   const [when, setWhen] = useState('');
@@ -30,15 +33,14 @@ function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
 
   return (
     <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontWeight: '800', color: colors.label }}>{CALL_TOPICS.find((x) => x.id === call.topic)?.[locale] ?? call.topic}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: space.sm }}>
+        <Text style={{ ...type.cardTitle, flexShrink: 1 }}>{CALL_TOPICS.find((x) => x.id === call.topic)?.[locale] ?? call.topic}</Text>
         <Badge label={h.status[call.status as keyof typeof h.status] ?? call.status} tone={call.status === 'requested' ? 'sand' : 'mint'} />
       </View>
       {call.preferred_times && <Muted selectable>{call.preferred_times}</Muted>}
-      {call.message && <Text selectable style={{ color: colors.label }}>{call.message}</Text>}
-      {call.traveler_contact && <Text selectable style={{ color: brand.forest, fontWeight: '600' }}>{call.traveler_contact}</Text>}
-      {call.price_usd != null && <Muted>{formatUsd(call.price_usd)}</Muted>}
-      {call.scheduled_at && <Muted>{new Date(call.scheduled_at).toLocaleString(locale)}</Muted>}
+      {call.message && <Text selectable style={type.callout}>{call.message}</Text>}
+      {call.traveler_contact && <Text selectable style={{ ...type.callout, ...font.semibold, color: brand.forest }}>{call.traveler_contact}</Text>}
+      <MetaItems items={[call.price_usd != null ? formatUsd(call.price_usd) : null, call.scheduled_at ? new Date(call.scheduled_at).toLocaleString(locale) : null]} />
       {call.status === 'requested' &&
         (accepting ? (
           <>
@@ -47,13 +49,10 @@ function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
             <Button title={h.accept} onPress={() => respond(true)} loading={busy} />
           </>
         ) : (
-          <View style={{ flexDirection: 'row', gap: space.sm }}>
-            <View style={{ flex: 1 }}>
-              <Button title={h.accept} onPress={() => setAccepting(true)} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button title={h.decline} variant="outline" onPress={() => respond(false)} loading={busy} />
-            </View>
+          // Accept opens the time and link fields; the filled button is the confirm step inside them.
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+            <Button title={h.accept} variant="outline" size="md" style={{ flexGrow: 1 }} onPress={() => setAccepting(true)} />
+            <Button title={h.decline} variant="text" size="md" style={{ flexGrow: 1 }} onPress={() => respond(false)} loading={busy} />
           </View>
         ))}
     </Card>
@@ -63,6 +62,7 @@ function CallRequest({ call, onDone }: { call: HubCall; onDone: () => void }) {
 // Guide Hub home: only verified guides (the database also hides Hub data from everyone else).
 export default function HubScreen() {
   const { t, locale } = useI18n();
+  const { type, font } = useType();
   const h = t.hub;
   const { session } = useSession();
   const userId = session?.user.id;
@@ -74,7 +74,7 @@ export default function HubScreen() {
 
   if (!guide || guide.verification_status !== 'approved') {
     return (
-      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.md }}>
         <Stack.Title>{h.title}</Stack.Title>
         <ScreenState loading={mine.isLoading} error={mine.error} onRetry={() => mine.refetch()} />
         {!mine.isLoading && (
@@ -88,66 +88,76 @@ export default function HubScreen() {
   }
 
   const hubLabel = (slug: string) => HUB_MENU.find((i) => i.slug === slug)?.label[locale] ?? slug;
-  const links: { href: Href; label: string }[] = [
-    { href: '/requests', label: h.openRequests },
-    { href: '/hub/forum', label: hubLabel('forum') },
-    { href: '/hub/news', label: hubLabel('news') },
-    { href: '/hub/jobs', label: hubLabel('jobs') },
-    { href: '/profile-edit', label: t.dashboard.title },
-    { href: '/my-group-trips', label: t.groups.mine },
-    { href: '/group-trip/new', label: t.groups.start },
-    { href: '/chats', label: t.chats.title },
+  const links: { href: Href; label: string; icon: GlyphName }[] = [
+    { href: '/requests', label: h.openRequests, icon: GLYPHS.list },
+    { href: '/hub/forum', label: hubLabel('forum'), icon: GLYPHS.forum },
+    { href: '/hub/news', label: hubLabel('news'), icon: GLYPHS.news },
+    { href: '/hub/jobs', label: hubLabel('jobs'), icon: GLYPHS.briefcase },
+    { href: '/profile-edit', label: t.dashboard.title, icon: GLYPHS.profile },
+    { href: '/my-group-trips', label: t.groups.mine, icon: GLYPHS.calendar },
+    { href: '/group-trip/new', label: t.groups.start, icon: GLYPHS.calendarAdd },
+    { href: '/chats', label: t.chats.title, icon: GLYPHS.chat },
   ];
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
+      contentContainerStyle={{ padding: layout.screenX, gap: layout.sectionGap, paddingBottom: space.xxxl }}
       refreshControl={<RefreshControl refreshing={inbox.isRefetching} onRefresh={() => { inbox.refetch(); }} tintColor={brand.leaf} />}
     >
       <Stack.Title large>{h.title}</Stack.Title>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+      <ListGroup>
         {links.map((l) => (
-          <Button key={l.label} title={l.label} variant="outline" onPress={() => router.push(l.href)} />
+          <ListRow key={l.label} icon={l.icon} title={l.label} onPress={() => router.push(l.href)} />
         ))}
-      </View>
+      </ListGroup>
 
       {/* Deposits as statement rows: date, trip, amount, where the money is. */}
-      <SectionTitle>{h.depositsTitle}</SectionTitle>
-      <Card style={{ gap: 0, paddingVertical: space.xs }}>
-        {deposits.data?.length === 0 && <View style={{ paddingVertical: space.md }}><Muted>{h.noDeposits}</Muted></View>}
-        {(deposits.data ?? []).map((d, i) => (
-          <View key={d.id} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
-            <Text style={{ width: 52, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
-              {new Date(d.paid_at ?? d.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
-            </Text>
-            <Text numberOfLines={2} style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{d.description}</Text>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: colors.label, fontWeight: '800', fontVariant: ['tabular-nums'] }}>TSh {d.amount_tzs.toLocaleString('en-US')}</Text>
-              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{d.status === 'review' ? h.depositChecking : d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
-            </View>
-          </View>
+      <Section title={h.depositsTitle}>
+        {deposits.isLoading || deposits.error ? (
+          <ScreenState loading={deposits.isLoading} error={deposits.error} onRetry={() => deposits.refetch()} />
+        ) : deposits.data?.length === 0 ? (
+          <EmptyState text={h.noDeposits} />
+        ) : (
+          <Card style={{ gap: 0, paddingVertical: space.xs }}>
+            {(deposits.data ?? []).map((d, i) => (
+              <View key={d.id} style={{ flexDirection: 'row', gap: space.md, paddingVertical: space.md, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
+                <Text style={{ ...type.meta, minWidth: space.huge, fontVariant: ['tabular-nums'] }}>
+                  {new Date(d.paid_at ?? d.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
+                </Text>
+                <Text numberOfLines={2} style={{ ...type.callout, ...font.semibold, flex: 1 }}>
+                  {d.description}
+                </Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ ...type.callout, ...font.bold, fontVariant: ['tabular-nums'] }}>TSh {d.amount_tzs.toLocaleString('en-US')}</Text>
+                  <Text style={type.caption}>{d.status === 'review' ? h.depositChecking : d.payout_done ? h.depositPaidOut : h.depositHeld}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        )}
+      </Section>
+
+      <Section title={h.calls}>
+        <ScreenState loading={inbox.isLoading} error={inbox.error} onRetry={() => inbox.refetch()} empty={inbox.data?.calls.length === 0} emptyText={h.noRequests} emptyGlyph={GLYPHS.video} />
+        {(inbox.data?.calls ?? []).map((call) => (
+          <CallRequest key={call.id} call={call} onDone={() => queryClient.invalidateQueries({ queryKey: ['hub-inbox'] })} />
         ))}
-      </Card>
+      </Section>
 
-      <SectionTitle>{h.calls}</SectionTitle>
-      <ScreenState loading={inbox.isLoading} error={inbox.error} onRetry={() => inbox.refetch()} empty={inbox.data?.calls.length === 0} emptyText={h.noRequests} />
-      {(inbox.data?.calls ?? []).map((call) => (
-        <CallRequest key={call.id} call={call} onDone={() => queryClient.invalidateQueries({ queryKey: ['hub-inbox'] })} />
-      ))}
-
-      <SectionTitle>{h.requests}</SectionTitle>
-      {inbox.data?.leads.length === 0 && <Muted>{h.noRequests}</Muted>}
-      {(inbox.data?.leads ?? []).map((lead) => (
-        <Card key={lead.id}>
-          <Text style={{ fontWeight: '800', color: colors.label }}>{lead.traveler_name}</Text>
-          <Text selectable style={{ color: brand.forest, fontWeight: '600' }}>{lead.traveler_contact}</Text>
-          {lead.guide_packages && <Text style={{ color: brand.forest, fontWeight: '700' }}>{t.packages.about.replace('{title}', lead.guide_packages.title)}</Text>}
-          {lead.message && <Text selectable style={{ color: colors.label }}>{lead.message}</Text>}
-          <Muted>{new Date(lead.created_at).toLocaleDateString()}</Muted>
-        </Card>
-      ))}
+      <Section title={h.requests}>
+        {inbox.data?.leads.length === 0 && <EmptyState glyph={GLYPHS.chat} text={h.noRequests} />}
+        {(inbox.data?.leads ?? []).map((lead) => (
+          <Card key={lead.id}>
+            <Text style={type.cardTitle}>{lead.traveler_name}</Text>
+            <Text selectable style={{ ...type.callout, ...font.semibold, color: brand.forest }}>{lead.traveler_contact}</Text>
+            {lead.guide_packages && <Text style={{ ...type.callout, ...font.bold, color: brand.forest }}>{t.packages.about.replace('{title}', lead.guide_packages.title)}</Text>}
+            {lead.message && <Text selectable style={type.callout}>{lead.message}</Text>}
+            <Text style={type.meta}>{new Date(lead.created_at).toLocaleDateString()}</Text>
+          </Card>
+        ))}
+      </Section>
     </ScrollView>
   );
 }

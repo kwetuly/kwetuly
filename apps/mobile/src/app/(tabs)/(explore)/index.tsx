@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Link, Stack, router } from 'expo-router';
@@ -7,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@kwetuly/shared';
 import { GroupTripCard } from '@/components/cards';
 import { GLYPHS } from '@/components/glyph';
-import { Badge, Button, Card, Chip, EmptyState, ErrorState, IconSquare, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
+import { Badge, Button, Card, Chip, ChipRow, EmptyState, ErrorState, IconSquare, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
@@ -15,21 +14,6 @@ import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
 import { brand, colors, control, layout, media, radius, scrim, space, textSize } from '@/theme';
 import { useType } from '@/lib/use-type';
-
-/** A row of chips that scrolls sideways edge to edge, with the screen inset at both ends. */
-function ChipRow({ children }: { children: ReactNode }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={{ marginHorizontal: -layout.screenX }}
-      // Vertical padding keeps the chips' taller touch area inside the scroll view.
-      contentContainerStyle={{ gap: layout.inlineGap, paddingHorizontal: layout.screenX, paddingVertical: space.xs }}
-    >
-      {children}
-    </ScrollView>
-  );
-}
 
 export default function ExploreScreen() {
   const { type, font } = useType();
@@ -75,7 +59,7 @@ export default function ExploreScreen() {
 
       {/* What do you want to do? Specialties, then women guides and special trips. */}
       <Section title={t.home.specialtyLabel} style={{ paddingHorizontal: layout.screenX }}>
-        <ChipRow>
+        <ChipRow bleed>
           {GUIDE_SPECIALTIES.map((s) => (
             <Link key={s.id} href={{ pathname: '/guides', params: { specialty: s.id } }} asChild>
               <Chip label={s[locale]} accessibilityRole="link" />
@@ -83,7 +67,7 @@ export default function ExploreScreen() {
           ))}
         </ChipRow>
         <Text style={type.label}>{t.guides.expertise}</Text>
-        <ChipRow>
+        <ChipRow bleed>
           <Link href={{ pathname: '/guides', params: { female: '1' } }} asChild>
             <Chip label={t.guides.femaleOnly} accessibilityRole="link" />
           </Link>
@@ -96,7 +80,8 @@ export default function ExploreScreen() {
       </Section>
 
       {/* Group trips: loading, error, empty or up to 3 trips. */}
-      <Section title={t.groups.title} action={{ label: t.explore.more, onPress: () => router.push('/trips') }} style={{ paddingHorizontal: layout.screenX }}>
+      {/* "See all" sits in the header only when there are trips; the empty state has its own. */}
+      <Section title={t.groups.title} action={trips.length > 0 ? { label: t.explore.more, onPress: () => router.push('/trips') } : undefined} style={{ paddingHorizontal: layout.screenX }}>
         {groups.isLoading ? (
           <SkeletonCard photo />
         ) : groups.error ? (

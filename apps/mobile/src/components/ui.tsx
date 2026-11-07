@@ -403,15 +403,23 @@ export function ListGroup({ children }: { children: ReactNode }) {
 /** One row in a ListGroup. No chevron: the whole row is the button. */
 export function ListRow({
   icon: glyph,
+  leading,
   title,
   subtitle,
+  subtitleLines,
+  strong,
   onPress,
   accessory,
   accessibilityRole = 'button',
 }: {
   icon?: GlyphName;
+  /** Instead of an icon, for example an Avatar. */
+  leading?: ReactNode;
   title: string;
   subtitle?: string;
+  subtitleLines?: number;
+  /** Bolder title, for example an unread chat. */
+  strong?: boolean;
   onPress?: () => void;
   accessory?: ReactNode;
   accessibilityRole?: AccessibilityRole;
@@ -424,10 +432,14 @@ export function ListRow({
       accessibilityRole={onPress ? accessibilityRole : undefined}
       style={({ pressed }) => ({ minHeight: control.row, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: layout.cardPadding, paddingVertical: space.md, backgroundColor: pressed ? colors.pressed : colors.card })}
     >
-      {glyph && <IconSquare glyph={glyph} />}
+      {leading ?? (glyph && <IconSquare glyph={glyph} />)}
       <View style={{ flex: 1, gap: space.xxs }}>
-        <Text style={{ ...type.body, ...font.semibold }}>{title}</Text>
-        {subtitle ? <Text style={type.meta}>{subtitle}</Text> : null}
+        <Text style={{ ...type.body, ...(strong ? font.extrabold : font.semibold) }}>{title}</Text>
+        {subtitle ? (
+          <Text numberOfLines={subtitleLines} style={type.meta}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       {accessory}
     </Pressable>
@@ -448,8 +460,8 @@ export function DetailRow({ label, value, selectable }: { label: string; value: 
 }
 
 /** 2 or 3 equal figures, each a value over a short label. Cells wrap on narrow phones. */
-/** `labelFirst`: the label reads before the number ("Groups up to" over "30"). */
-export function StatRow({ items }: { items: { value: string; label: string; labelFirst?: boolean }[] }) {
+/** Figures side by side: the number on top, its label below, so the numbers share one line. */
+export function StatRow({ items }: { items: { value: string; label: string }[] }) {
   const { type } = useType();
   if (items.length === 0) return null;
   return (
@@ -459,7 +471,7 @@ export function StatRow({ items }: { items: { value: string; label: string; labe
           key={item.label}
           accessible
           accessibilityLabel={`${item.label}: ${item.value}`}
-          style={{ flexGrow: 1, flexBasis: 96, minWidth: 0, flexDirection: item.labelFirst ? 'column-reverse' : 'column', justifyContent: item.labelFirst ? 'flex-end' : 'flex-start', backgroundColor: colors.background, borderRadius: radius.card, borderCurve: 'continuous', padding: space.md, gap: space.xxs }}
+          style={{ flexGrow: 1, flexBasis: 96, minWidth: 0, backgroundColor: colors.background, borderRadius: radius.card, borderCurve: 'continuous', padding: space.md, gap: space.xxs }}
         >
           <Text style={{ ...type.title3, fontVariant: ['tabular-nums'] }}>{item.value}</Text>
           <Text style={type.meta}>{item.label}</Text>
@@ -538,24 +550,30 @@ export function ScreenState({
   empty,
   emptyText,
   emptyGlyph,
+  emptyAction,
   onRetry,
   retryLabel,
   screen,
+  loadingCount,
 }: {
   loading?: boolean;
   error?: unknown;
   empty?: boolean;
   emptyText?: string;
   emptyGlyph?: GlyphName;
+  /** A way on from the empty state, for example back to the list. */
+  emptyAction?: { label: string; onPress: () => void };
   onRetry?: () => void;
   retryLabel?: string;
   screen?: boolean;
+  /** How many placeholder cards while loading (default 3 for a screen, 1 inline). */
+  loadingCount?: number;
 }) {
   let content: ReactNode = null;
-  if (loading) content = <Loading count={screen ? 3 : 1} />;
+  if (loading) content = <Loading count={loadingCount ?? (screen ? 3 : 1)} />;
   // Plain words instead of the technical message, like the website's error page.
   else if (error) content = <ErrorState onRetry={onRetry} retryLabel={retryLabel} />;
-  else if (empty && emptyText) content = <EmptyState glyph={emptyGlyph} text={emptyText} />;
+  else if (empty && emptyText) content = <EmptyState glyph={emptyGlyph} text={emptyText} action={emptyAction} />;
   if (!screen) return content;
   return (
     <ScrollView
@@ -589,6 +607,8 @@ export function Field({
   multiline,
   keyboardType,
   autoCapitalize,
+  autoCorrect,
+  maxLength,
   hint,
   error,
   accessibilityLabel,
@@ -600,6 +620,8 @@ export function Field({
   multiline?: boolean;
   keyboardType?: TextInputProps['keyboardType'];
   autoCapitalize?: TextInputProps['autoCapitalize'];
+  autoCorrect?: boolean;
+  maxLength?: number;
   hint?: string;
   error?: string | null;
   /** Defaults to the label. */
@@ -618,6 +640,8 @@ export function Field({
         multiline={multiline}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        maxLength={maxLength}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={hint}
         onFocus={() => setFocused(true)}
@@ -625,6 +649,84 @@ export function Field({
         style={[fieldInput, font.regular, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
       />
       {error ? <ErrorText>{error}</ErrorText> : hint ? <Text style={type.caption}>{hint}</Text> : null}
+    </View>
+  );
+}
+
+/** A search box: magnifier, the text, and a clear button once something is typed. */
+export function SearchField({
+  value,
+  onChangeText,
+  placeholder,
+  clearLabel,
+}: {
+  value: string;
+  onChangeText: (value: string) => void;
+  /** Also the screen reader label. */
+  placeholder: string;
+  clearLabel: string;
+}) {
+  const { font } = useType();
+  const [focused, setFocused] = useState(false);
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: space.sm,
+        minHeight: control.field,
+        paddingLeft: space.md,
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: focused ? brand.primary : colors.border,
+        borderRadius: radius.button,
+        borderCurve: 'continuous',
+      }}
+    >
+      <Glyph name={GLYPHS.search} size={icon.inline} color={colors.secondaryLabel} />
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.secondaryLabel}
+        returnKeyType="search"
+        accessibilityLabel={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{ flex: 1, minHeight: control.field, paddingVertical: space.sm, fontSize: textSize.body, color: colors.label, ...font.regular }}
+      />
+      {value ? <IconButton glyph={GLYPHS.close} accessibilityLabel={clearLabel} onPress={() => onChangeText('')} /> : <View style={{ width: space.sm }} />}
+    </View>
+  );
+}
+
+/** A row of chips that scrolls sideways, inset like the screen edges. Inside padded content, pass `bleed` to reach the screen edges. */
+export function ChipRow({ children, bleed }: { children: ReactNode; bleed?: boolean }) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={bleed ? { marginHorizontal: -layout.screenX } : undefined}
+      // Vertical padding keeps the chips' taller touch area inside the scroll view.
+      contentContainerStyle={{ gap: layout.inlineGap, paddingHorizontal: layout.screenX, paddingVertical: space.xs }}
+    >
+      {children}
+    </ScrollView>
+  );
+}
+
+/** Short facts side by side with a gap instead of "A · B · C"; they wrap on narrow phones. */
+export function MetaItems({ items, selectable }: { items: (string | null | undefined | false | 0)[]; selectable?: boolean }) {
+  const { type } = useType();
+  const shown = items.filter((x): x is string => !!x);
+  if (shown.length === 0) return null;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: space.xxs }}>
+      {shown.map((item, i) => (
+        <Text key={`${i}-${item}`} selectable={selectable} style={type.meta}>
+          {item}
+        </Text>
+      ))}
     </View>
   );
 }
