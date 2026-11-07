@@ -39,9 +39,9 @@ export function hasRecordedCheck(guide: GuideCheckFields, today = new Date()) {
  * The "ID and licence checked" badge: only when both the identity and the licence check are on record.
  * Callers also require an approved, non-sample guide.
  */
-export function hasIdAndLicenceCheck(guide: GuideCheckFields, today = new Date()) {
-  const ids = guideChecks(guide, today).map((c) => c.id);
-  return ids.includes('identity') && ids.includes('licence');
+export function hasIdAndLicenceCheck(guide: Pick<GuideCheckFields, 'identity_checked_at' | 'licence_checked_at'>) {
+  // Identity and licence checks do not expire, so no date is needed (pages can still be prerendered).
+  return !!guide.identity_checked_at && !!guide.licence_checked_at;
 }
 
 export type DocumentStatus = 'checked' | 'waiting' | 'missing' | 'expired';

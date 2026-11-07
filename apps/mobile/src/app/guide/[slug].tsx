@@ -79,7 +79,7 @@ export default function GuideScreen() {
   const firstAidChecked = !g.is_sample && approved && guideChecks(g).some((c) => c.id === 'firstAid');
   const certificates = g.certifications.filter((c) => !(firstAidChecked && /first[\s-]*aid|huduma ya kwanza/i.test(c)));
   const stated = [
-    { title: t.profile.certifications, items: [...certificates, ...(g.association ? [t.profile.memberOf.replace('{association}', g.association)] : [])] },
+    { title: t.profile.certifications, items: [...certificates, ...(g.association ? [t.profile.memberOf.replace('{association}', () => g.association!)] : []), ...(g.has_vehicle ? [t.profile.vehicle] : [])] },
     { title: t.profile.expertise, items: [...expertiseOf(g.expertise).map((e) => e.label[locale]), ...(g.female_guide ? [t.guides.female] : [])] },
   ].filter((group) => group.items.length > 0);
   const callPrice = g.call_price_usd != null ? formatUsd(g.call_price_usd) : null;

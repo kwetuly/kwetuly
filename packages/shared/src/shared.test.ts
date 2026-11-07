@@ -143,10 +143,10 @@ describe('recorded guide checks', () => {
     expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2024-10-01', first_aid_valid_until: '2026-10-31' }, today)).toBe(false);
   });
   it('"ID and licence checked" needs both checks', () => {
-    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01' }, today)).toBe(false);
-    expect(hasIdAndLicenceCheck({ ...none, licence_checked_at: '2026-10-01' }, today)).toBe(false);
-    expect(hasIdAndLicenceCheck({ ...none, first_aid_checked_at: '2026-10-01' }, today)).toBe(false);
-    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01', licence_checked_at: '2026-10-02' }, today)).toBe(true);
+    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01', licence_checked_at: '2026-10-02' })).toBe(true);
   });
 });
 

@@ -26,6 +26,7 @@ export type Guide = {
   summits: number | null;
   certifications: string[];
   association: string | null;
+  has_vehicle: boolean;
   plan: 'msingi' | 'pro';
   verification_status: 'pending' | 'approved' | 'rejected';
   visibility: 'public' | 'link_only';
@@ -41,7 +42,7 @@ export type Guide = {
 };
 
 const GUIDE_COLUMNS =
-  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, visibility, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
+  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, plan, verification_status, visibility, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
 
 export type GuideFilters = { specialty?: string; language?: string; expertise?: string; female?: boolean; partners?: boolean };
 

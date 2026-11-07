@@ -19,6 +19,7 @@ import { GuideCheckPills, GuideChecksSection } from '@/components/guide-checks';
 import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
+import { today } from '@/lib/today';
 import { ShareButtons } from '@/components/share-buttons';
 import { LogEvent } from '@/components/analytics';
 import { JsonLd } from '@/components/json-ld';
@@ -91,11 +92,12 @@ async function Profile({
 
   // "Stated by the guide": the guide's own certificates, association and vehicle, and their expertise. A stated
   // first-aid certificate is left out when Kwetuly's own first-aid check is current, so it shows once, as checked.
-  const firstAidChecked = !guide.is_sample && guide.verification_status === 'approved' && guideChecks(guide).some((c) => c.id === 'firstAid');
+  // The cached day (lib/today), not new Date(), so the page can still be prerendered.
+  const firstAidChecked = !guide.is_sample && guide.verification_status === 'approved' && guideChecks(guide, await today()).some((c) => c.id === 'firstAid');
   const stated = {
     certificates: [
       ...guide.certifications.filter((c) => !(firstAidChecked && /first[\s-]*aid|huduma ya kwanza/i.test(c))),
-      ...(guide.association ? [t.profile.memberOf.replace('{association}', guide.association)] : []),
+      ...(guide.association ? [t.profile.memberOf.replace('{association}', () => guide.association!)] : []),
       ...(guide.has_vehicle ? [t.profile.vehicle] : []),
     ],
     expertise: expertiseOf(guide),
