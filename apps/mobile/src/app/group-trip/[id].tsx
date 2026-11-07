@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -9,7 +10,8 @@ import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
 import { TripRequests } from '@/components/trip-requests';
 import { PayDeposit } from '@/components/pay-deposit';
-import { Badge, Button, Card, Muted, ScreenState, SectionTitle, ErrorText } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Badge, BottomBar, Button, Card, DetailRow, EmptyState, ErrorText, Field, HeaderIconButton, Muted, ScreenState, SectionTitle, SuccessCheck, contentFadeIn } from '@/components/ui';
 import { cancelGroupRequest, getGroupContact, getGroupTrip, getMyGroupRequest, requestToJoin } from '@/lib/api';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -17,9 +19,7 @@ import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, languageName, specialtyName } from '@/lib/labels';
 import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
-import { brand, colors, radius, space, textSize } from '@/theme';
-
-const input = { backgroundColor: colors.background, borderRadius: radius.button, borderCurve: 'continuous' as const, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label };
+import { brand, colors, control, font, layout, media, space, type } from '@/theme';
 
 export default function GroupTripScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,9 +43,11 @@ export default function GroupTripScreen() {
   const [contactInput, setContactInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Set after this person's own join request succeeds, so the check ticks the phone once (not on every visit).
+  const [justJoined, setJustJoined] = useState(false);
 
   const needsSetup = useNeedsSetup();
-  if (!trip.data) return <ScreenState loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
+  if (!trip.data) return <ScreenState screen loading={trip.isLoading} error={trip.error} onRetry={() => trip.refetch()} empty emptyText={t.groups.closed} />;
   const g = trip.data;
   const g10n = t.groups;
   const left = Math.max(g.max_people - g.seats_taken - (g.already_going ?? 0), 0);
@@ -65,6 +67,7 @@ export default function GroupTripScreen() {
         message: message.trim(),
       });
       track(EVENTS.groupTripJoined, { trip: id });
+      setJustJoined(true);
       await queryClient.invalidateQueries({ queryKey: ['group-request', id] });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -79,27 +82,47 @@ export default function GroupTripScreen() {
     queryClient.invalidateQueries({ queryKey: ['group-request', id] });
   }
 
-  return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
-      <Stack.Title>{g.title}</Stack.Title>
-      <Image source={photoSource(specialtyPhoto(g.specialty))} style={{ height: 220 }} contentFit="cover" />
+  const state = isOrganizer ? 'organiser' : mine.data?.status === 'accepted' ? 'accepted' : mine.data?.status === 'requested' ? 'requested' : open ? 'open' : 'closed';
+  // Only the open state has a bottom bar: Join is the screen's one filled button.
+  const showBar = state === 'open';
+  const priceOnRequest = groupPriceOnRequest(g);
+  const details = [
+    g.meeting_point ? { label: g10n.meeting, value: g.meeting_point } : null,
+    { label: g10n.minPeople, value: `${g.min_people} ${g10n.people}` },
+    g.languages.length > 0 ? { label: t.guides.languages, value: g.languages.map(languageName).join(', ') } : null,
+    g.includes ? { label: g10n.includes, value: g.includes } : null,
+  ].filter((row): row is { label: string; value: string } => !!row);
 
-      <View style={{ paddingHorizontal: space.lg, gap: space.lg }}>
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ gap: space.lg, paddingBottom: space.xxxl }}>
+      <Stack.Title>{g.title}</Stack.Title>
+      {g.status === 'approved' && !g.cancelled && (
+        <HeaderIconButton glyph={GLYPHS.share} accessibilityLabel={t.share.share} onPress={() => shareLink(`/${locale}/group-trips/${g.id}`, `${t.share.shareGroup}: ${g.title}`)} />
+      )}
+      <Image source={photoSource(specialtyPhoto(g.specialty))} style={{ height: media.detailPhoto }} contentFit="cover" />
+
+      <Animated.View entering={contentFadeIn} style={{ paddingHorizontal: layout.screenX, gap: space.lg }}>
         <Card>
-          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{specialtyName(g.specialty, locale)}</Text>
+          <Text style={{ ...type.label, color: brand.link }}>{specialtyName(g.specialty, locale)}</Text>
           {g.guides?.is_sample && <Badge label={t.extras.sampleTrip} tone="sand" />}
-          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.title}</Text>
-          <Muted>
-            {formatDateRange(g.start_date, g.end_date, locale)} · {g.region}
-          </Muted>
-          <Text style={{ fontSize: textSize.title1, fontWeight: '800', color: brand.forest }}>
-            {groupPriceOnRequest(g) ? t.extras.priceOnRequest : formatUsd(g.price_per_person_usd)}
-            {!groupPriceOnRequest(g) && <Text style={{ fontSize: textSize.subhead, color: colors.secondaryLabel }}> {g10n.perPerson}</Text>}
-          </Text>
+          <Text accessibilityRole="header" style={type.title2}>{g.title}</Text>
+          <View style={{ gap: space.xxs }}>
+            <Text style={type.meta}>{formatDateRange(g.start_date, g.end_date, locale)}</Text>
+            <Text style={type.meta}>{g.region}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: space.sm }}>
+            <Text style={{ ...type.title1, color: brand.primary, fontVariant: ['tabular-nums'] }}>{priceOnRequest ? t.extras.priceOnRequest : formatUsd(g.price_per_person_usd)}</Text>
+            {!priceOnRequest && <Text style={type.meta}>{g10n.perPerson}</Text>}
+          </View>
           <SpotsBar taken={g.seats_taken + (g.already_going ?? 0)} max={g.max_people} labels={g10n} />
           {g.guides ? (
-            <Link href={`/guide/${g.guides.slug}`} style={{ color: brand.forest, fontWeight: '700' }}>
-              {g10n.organisedBy} {g.guides.display_name}
+            <Link href={`/guide/${g.guides.slug}`} asChild>
+              <Pressable accessibilityRole="link" style={({ pressed }) => ({ minHeight: control.touch, justifyContent: 'center', alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}>
+                <Text style={type.link}>
+                  {g10n.organisedBy} {g.guides.display_name}
+                </Text>
+              </Pressable>
             </Link>
           ) : (
             g.organizer_kind === 'traveller' ? <Muted>{t.extras.byTraveller}</Muted> : g.company_name && <Muted>{g10n.organisedBy} {g.company_name}</Muted>
@@ -108,43 +131,49 @@ export default function GroupTripScreen() {
         </Card>
 
         <Card>
-          <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{g.description}</Text>
-          {g.meeting_point && <Muted>{g10n.meeting}: {g.meeting_point}</Muted>}
-          <Muted>{g10n.minPeople} {g.min_people} {g10n.people}</Muted>
-          {g.languages.length > 0 && <Muted>{g.languages.map(languageName).join(', ')}</Muted>}
-          {g.includes && <Muted>{g10n.includes}: {g.includes}</Muted>}
+          <Text selectable style={type.callout}>{g.description}</Text>
+          {details.map((row) => (
+            <View key={row.label} style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: space.md }}>
+              <DetailRow label={row.label} value={row.value} selectable />
+            </View>
+          ))}
         </Card>
 
         <Card>
-          {isOrganizer ? (
-            <Muted>{g10n.organising}</Muted>
-          ) : mine.data?.status === 'accepted' ? (
+          {state === 'organiser' ? (
+            <EmptyState glyph={GLYPHS.calendar} text={g10n.organising} />
+          ) : state === 'accepted' ? (
             <>
-              <Text style={{ fontWeight: '700', color: brand.forest }}>✓ {g10n.accepted}</Text>
-              {contact.data && <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{contact.data}</Text>}
-              <PayDeposit kind="group" id={mine.data.id} totalUsd={(mine.data.price_per_person_usd ?? g.price_per_person_usd) * mine.data.seats} percent={g.deposit_percent} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                <SuccessCheck />
+                <Text style={{ ...type.cardTitle, flex: 1 }}>{g10n.accepted}</Text>
+              </View>
+              {contact.data && <Text selectable style={type.title3}>{contact.data}</Text>}
+              <PayDeposit kind="group" id={mine.data!.id} totalUsd={(mine.data!.price_per_person_usd ?? g.price_per_person_usd) * mine.data!.seats} percent={g.deposit_percent} />
             </>
-          ) : mine.data?.status === 'requested' ? (
+          ) : state === 'requested' ? (
             <>
-              <Text style={{ fontWeight: '700', color: colors.label }}>✓ {g10n.requested}</Text>
-              <Button title={g10n.cancel} variant="outline" onPress={cancel} />
+              <View accessibilityRole={justJoined ? 'alert' : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                <SuccessCheck haptic={justJoined} />
+                <Text style={{ ...type.body, ...font.semibold, flex: 1 }}>{g10n.requested}</Text>
+              </View>
+              <Button title={g10n.cancel} variant="outline" size="md" onPress={cancel} />
             </>
-          ) : open ? (
+          ) : state === 'open' ? (
             <>
               <SectionTitle>{mine.data?.status === 'cancelled' ? g10n.askAgain : g10n.joinTitle}</SectionTitle>
               {mine.data?.status === 'declined' && <Muted>{g10n.declined}</Muted>}
               <Muted>{g10n.joinBody}</Muted>
-              <TextInput value={seats} onChangeText={setSeats} keyboardType="number-pad" placeholder={g10n.seats} placeholderTextColor={colors.secondaryLabel} style={input} accessibilityLabel={g10n.seats} />
-              <TextInput value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? t.profile.contact} placeholderTextColor={colors.secondaryLabel} style={input} accessibilityLabel={t.profile.contact} />
-              <TextInput value={message} onChangeText={setMessage} placeholder={g10n.message} placeholderTextColor={colors.secondaryLabel} multiline style={[input, { minHeight: 80 }]} />
+              <Field label={g10n.seats} value={seats} onChangeText={setSeats} keyboardType="number-pad" />
+              <Field label={t.profile.contact} value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? undefined} />
+              <Field label={g10n.message} value={message} onChangeText={setMessage} multiline />
               <ErrorText>{error}</ErrorText>
-              <Button title={userId ? g10n.joinCta : g10n.signInToJoin} onPress={join} loading={busy} />
             </>
           ) : (
-            <Muted>{g.cancelled ? g10n.cancelledTrip : g10n.closed}</Muted>
+            <EmptyState glyph={GLYPHS.calendarClosed} text={g.cancelled ? g10n.cancelledTrip : g10n.closed} />
           )}
-          {chat.data && <Button title={t.chats.openChat} variant="dark" onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
-          <Muted>{g10n.payNote}</Muted>
+          {chat.data && <Button title={t.chats.openChat} variant="outline" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
+          <Text style={type.caption}>{g10n.payNote}</Text>
         </Card>
 
         {isOrganizer && (
@@ -153,11 +182,13 @@ export default function GroupTripScreen() {
             <TripRequests tripId={g.id} cancelled={g.cancelled} />
           </>
         )}
-
-        {g.status === 'approved' && !g.cancelled && (
-          <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/group-trips/${g.id}`, `${t.share.shareGroup}: ${g.title}`)} />
-        )}
-      </View>
+      </Animated.View>
     </ScrollView>
+    {showBar && (
+      <BottomBar>
+        <Button title={userId ? g10n.joinCta : g10n.signInToJoin} onPress={join} loading={busy} />
+      </BottomBar>
+    )}
+    </KeyboardAvoidingView>
   );
 }

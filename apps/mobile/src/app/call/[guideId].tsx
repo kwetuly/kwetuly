@@ -37,7 +37,7 @@ export default function CallScreen() {
       </Card>
     );
   }
-  if (!guide.data) return <ScreenState loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} />;
+  if (!guide.data) return <ScreenState screen loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} />;
   const g = guide.data;
   const topics = CALL_TOPICS.filter((x) => g.call_topics.length === 0 || g.call_topics.includes(x.id));
 

@@ -42,7 +42,7 @@ function MerchScreen() {
   const data = shop.data;
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/merch')} />;
-  if (!data) return <ScreenState loading={shop.isLoading} error={shop.error} onRetry={() => shop.refetch()} />;
+  if (!data) return <ScreenState screen loading={shop.isLoading} error={shop.error} onRetry={() => shop.refetch()} />;
   const chosen = data.products.find((p) => p.id === product) ?? null;
 
   async function order() {

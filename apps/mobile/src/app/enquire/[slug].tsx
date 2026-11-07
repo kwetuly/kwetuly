@@ -32,7 +32,7 @@ export default function EnquireScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(`/enquire/${slug}`)} />;
-  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} />;
+  if (!tour) return <ScreenState screen loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} />;
   const title = (locale === 'sw' && tour.title_sw) || tour.title_en;
 
   async function submit() {

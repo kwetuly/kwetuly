@@ -10,3 +10,14 @@ export const space = {
   xxxl: 40,
   huge: 64,
 } as const;
+
+// Semantic names on the same scale, so every screen spaces things the same way.
+export const layout = {
+  screenX: space.lg, // screen edges
+  sectionGap: space.xxl, // between sections
+  cardPadding: space.lg, // keep at 16: PhotoHeader uses -16 margins
+  cardGap: space.md, // inside cards
+  listGap: space.md, // between cards in lists
+  inlineGap: space.sm, // chips, badges, meta items
+  titleGap: space.md, // section title to content
+} as const;

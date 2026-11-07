@@ -53,7 +53,7 @@ export default function NewGroupTripScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
-  if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState loading />;
+  if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState screen loading />;
   // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && businessWaiting) {
     return (

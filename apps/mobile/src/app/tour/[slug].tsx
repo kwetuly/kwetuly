@@ -71,7 +71,7 @@ export default function TourScreen() {
   const placeIds = [...new Set((stops.data ?? []).map((s) => s.place_id).filter(Boolean))];
   const places = placeIds.map((id) => allPlaces.data?.find((p) => p.id === id)).filter((p) => p != null);
 
-  if (!tour) return <ScreenState loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} empty emptyText={tt.empty} />;
+  if (!tour) return <ScreenState screen loading={tours.isLoading} error={tours.error} onRetry={() => tours.refetch()} empty emptyText={tt.empty} />;
   const title = tourTitle(tour, locale);
   const price = verifiedPrice(tour, new Date());
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });

@@ -14,7 +14,7 @@ export default function SectionScreen() {
   const { t, locale } = useI18n();
   // The main menu may rename a section (Experiences is "Trips" there), so look there first.
   const section = MENU.find((s) => s.slug === slug) ?? ALL_SECTIONS.find((s) => s.slug === slug);
-  if (!section) return <ScreenState empty emptyText={t.ux.notFoundTitle} />;
+  if (!section) return <ScreenState screen empty emptyText={t.ux.notFoundTitle} />;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: space.huge }}>

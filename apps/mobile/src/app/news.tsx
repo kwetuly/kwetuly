@@ -14,7 +14,7 @@ export default function NewsScreen() {
   const x = t.extras;
   const news = useQuery({ queryKey: ['travel-news'], queryFn: listTravelNews });
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-  if (!news.data) return <ScreenState loading={news.isLoading} error={news.error} onRetry={() => news.refetch()} />;
+  if (!news.data) return <ScreenState screen loading={news.isLoading} error={news.error} onRetry={() => news.refetch()} />;
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
       <Stack.Title>{x.newsTitle}</Stack.Title>

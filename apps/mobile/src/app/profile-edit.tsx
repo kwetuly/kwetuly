@@ -201,7 +201,7 @@ export default function ProfileEditScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;
-  if (!userId || mine.isLoading) return <ScreenState loading />;
+  if (!userId || mine.isLoading) return <ScreenState screen loading />;
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
 

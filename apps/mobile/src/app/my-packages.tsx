@@ -47,9 +47,9 @@ export default function MyPackagesScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/my-packages')} />;
-  if (!userId) return <SignInPrompt />;
-  if (mine.isLoading || packages.isLoading) return <ScreenState loading />;
-  if (!guideId) return <ScreenState empty emptyText={t.dashboard.statusPending} />;
+  if (!userId) return <SignInPrompt screen />;
+  if (mine.isLoading || packages.isLoading) return <ScreenState screen loading />;
+  if (!guideId) return <ScreenState screen empty emptyText={t.dashboard.statusPending} />;
 
   function open(p: GuidePackage | 'new') {
     setMessage(null);

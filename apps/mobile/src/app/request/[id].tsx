@@ -40,8 +40,8 @@ export default function RequestScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(`/request/${id}`)} />;
-  if (!userId) return <SignInPrompt />;
-  if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
+  if (!userId) return <SignInPrompt screen />;
+  if (!request.data) return <ScreenState screen loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
   const req = request.data;
   const isOwner = req.traveler_id === userId;
 

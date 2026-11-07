@@ -45,7 +45,7 @@ export default function ReviewScreen() {
       </View>
     );
   }
-  if (!status.data) return <ScreenState loading={status.isLoading} error={status.error} onRetry={() => status.refetch()} />;
+  if (!status.data) return <ScreenState screen loading={status.isLoading} error={status.error} onRetry={() => status.refetch()} />;
 
   async function submit() {
     if (rating < 1 || body.trim().length < 10) return setMessage({ tone: 'error', text: t.auth.error });

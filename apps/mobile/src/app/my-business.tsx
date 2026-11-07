@@ -39,8 +39,8 @@ export default function MyBusinessScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/my-business')} />;
-  if (!userId) return <SignInPrompt />;
-  if (mine.isLoading) return <ScreenState loading />;
+  if (!userId) return <SignInPrompt screen />;
+  if (mine.isLoading) return <ScreenState screen loading />;
   return <Editor key={mine.data?.id ?? 'new'} business={mine.data ?? null} userId={userId} defaultPhone={profile.data?.phone ?? ''} fee={fee.data ?? null} enquiries={enquiries.data ?? []} onSaved={() => queryClient.invalidateQueries({ queryKey: ['my-business'] })} t={t} locale={locale} bt={bt} />;
 }
 

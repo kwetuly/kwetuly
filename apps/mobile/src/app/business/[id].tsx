@@ -32,7 +32,7 @@ export default function BusinessScreen() {
 
   const b = business.data;
   const needsSetup = useNeedsSetup();
-  if (!b) return <ScreenState loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;
+  if (!b) return <ScreenState screen loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;
   const isShop = ORDER_TYPES.includes(b.business_type);
   const photos = [b.photo_url, ...b.photos].filter((p): p is string => !!p).slice(0, 7);
 

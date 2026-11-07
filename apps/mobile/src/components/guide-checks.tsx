@@ -1,9 +1,9 @@
 import { Text, View } from 'react-native';
 import { guideChecks, type GuideCheckFields, type GuideCheckId } from '@kwetuly/shared';
-import { Card, Muted, SectionTitle } from '@/components/ui';
-import { Glyph, type GlyphName } from '@/components/glyph';
+import { Card, IconSquare, Muted, SectionTitle } from '@/components/ui';
+import type { GlyphName } from '@/components/glyph';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { font, space, type } from '@/theme';
 
 const ICONS: Record<GuideCheckId, GlyphName> = {
   identity: { ios: 'person.text.rectangle.fill', android: 'badge' },
@@ -34,16 +34,18 @@ export function GuideChecksCard({ guide, approved }: { guide: GuideCheckFields; 
           <Muted>{c.intro}</Muted>
           {checks.map((check) => (
             <View key={check.id} style={{ flexDirection: 'row', gap: space.md, alignItems: 'flex-start' }}>
-              <View style={{ width: 36, height: 36, borderRadius: radius.button, borderCurve: 'continuous', backgroundColor: brand.leaf, alignItems: 'center', justifyContent: 'center' }}>
-                <Glyph name={ICONS[check.id]} size={20} color={brand.onDark} />
-              </View>
+              <IconSquare glyph={ICONS[check.id]} size="sm" />
               <View style={{ flex: 1, gap: space.xxs }}>
-                <Text style={{ fontWeight: '700', color: colors.label, fontSize: textSize.callout }}>{text[check.id].label}</Text>
-                <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote, lineHeight: 18 }}>{text[check.id].body}</Text>
-                <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>
+                <Text style={{ ...type.callout, ...font.bold }}>{text[check.id].label}</Text>
+                <Text style={type.meta}>{text[check.id].body}</Text>
+                <Text style={type.caption}>
                   {c.checkedOn} {date.format(new Date(check.checkedAt))}
-                  {check.validUntil ? ` · ${c.validUntil} ${date.format(new Date(check.validUntil))}` : ''}
                 </Text>
+                {check.validUntil ? (
+                  <Text style={type.caption}>
+                    {c.validUntil} {date.format(new Date(check.validUntil))}
+                  </Text>
+                ) : null}
               </View>
             </View>
           ))}

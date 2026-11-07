@@ -1,78 +1,296 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
+import { Children, Fragment, useEffect, useState, type ReactNode } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+  type AccessibilityRole,
+  type StyleProp,
+  type TextInputProps,
+  type ViewStyle,
+} from 'react-native';
+import Animated, {
+  FadeIn,
+  Keyframe,
+  ReduceMotion,
+  interpolateColor,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, radius, space, textSize, type } from '@/theme';
+import { brand, colors, control, font, icon, iconBox, layout, maxFontScale, media, motion, radius, space, textSize, type } from '@/theme';
+import { GLYPHS, Glyph, type GlyphName } from './glyph';
 
 // Small building blocks shared by every screen. Values come from '@/theme'; screens compose these
 // instead of styling text, buttons or cards themselves.
 
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+const timing = (duration: number) => ({ duration, reduceMotion: ReduceMotion.System });
+
+/** Fades content in when it arrives after loading (off with Reduce Motion). */
+export const contentFadeIn = FadeIn.duration(motion.fadeIn).reduceMotion(ReduceMotion.System);
+
+export function Card({
+  children,
+  style,
+  onPress,
+  tone = 'default',
+  accessibilityRole,
+  accessibilityLabel,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+  /** Makes the whole card tappable; it highlights while pressed. */
+  onPress?: () => void;
+  /** `plain`: no background or border, for page sections that only need the spacing. */
+  tone?: 'default' | 'plain';
+  accessibilityRole?: AccessibilityRole;
+  accessibilityLabel?: string;
+}) {
+  const base: ViewStyle = {
+    backgroundColor: tone === 'plain' ? 'transparent' : colors.card,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    padding: tone === 'plain' ? 0 : layout.cardPadding,
+    gap: layout.cardGap,
+    borderWidth: tone === 'plain' ? 0 : 1,
+    borderColor: colors.border,
+  };
+  if (!onPress) return <View style={[base, style]}>{children}</View>;
   return (
-    <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', padding: space.lg, gap: space.md, borderWidth: 1, borderColor: colors.separator }, style]}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole={accessibilityRole ?? 'button'}
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => [base, pressed && tone !== 'plain' ? { backgroundColor: colors.pressed } : null, style]}
+    >
       {children}
-    </View>
+    </Pressable>
   );
 }
 
-export function Button({ title, onPress, variant = 'primary', disabled, loading, style }: { title: string; onPress: () => void; variant?: 'primary' | 'dark' | 'outline'; disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle> }) {
-  // Button backgrounds use the darker forest green so white text passes contrast (Walter, 2026-10-31); leaf stays for icons and accents.
-  const background = variant === 'primary' ? brand.forest : variant === 'dark' ? brand.night : 'transparent';
-  const color = variant === 'outline' ? brand.forest : brand.onDark;
+type ButtonVariant = 'primary' | 'outline' | 'text' | 'danger' | 'dark';
+
+/**
+ * One filled `primary` button per screen; everything else is `outline` or `text`.
+ * `dark` is an old name and now draws as `outline` (white text on grey failed contrast).
+ */
+export function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  size = 'lg',
+  icon: leading,
+  disabled,
+  loading,
+  style,
+  accessibilityLabel,
+}: {
+  title: string;
+  onPress: () => void;
+  variant?: ButtonVariant;
+  size?: 'lg' | 'md';
+  /** A leading icon, for example share or call. */
+  icon?: GlyphName;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+}) {
+  const kind = variant === 'dark' ? 'outline' : variant;
+  const reduceMotion = useReducedMotion();
+  const press = useSharedValue(0);
+  const animated = useAnimatedStyle(() => ({
+    opacity: 1 - press.value * (1 - (kind === 'primary' ? motion.pressOpacity : 0.6)),
+    transform: [{ scale: kind === 'primary' && !reduceMotion ? 1 - press.value * (1 - motion.pressScale) : 1 }],
+  }));
+
+  const off = !!disabled;
+  const palette = {
+    primary: { bg: off ? colors.disabledFill : brand.primary, border: 'transparent', fg: off ? colors.disabledLabel : brand.onDark },
+    outline: { bg: colors.card, border: off ? colors.border : brand.primary, fg: off ? colors.disabledLabel : brand.primary },
+    text: { bg: 'transparent', border: 'transparent', fg: off ? colors.disabledLabel : brand.link },
+    danger: { bg: 'transparent', border: 'transparent', fg: off ? colors.disabledLabel : brand.danger },
+  }[kind];
+  const filledOrOutline = kind === 'primary' || kind === 'outline';
+  const minHeight = filledOrOutline ? (size === 'lg' ? control.buttonLg : control.buttonMd) : control.touch;
+
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
+      onPressIn={() => {
+        press.value = withTiming(1, timing(motion.pressIn));
+      }}
+      onPressOut={() => {
+        press.value = withTiming(0, timing(motion.pressOut));
+      }}
       accessibilityRole="button"
-      style={({ pressed }) => [{
-        backgroundColor: background,
-        borderWidth: variant === 'outline' ? 2 : 0,
-        borderColor: brand.forest,
-        borderRadius: radius.button,
-        borderCurve: 'continuous',
-        paddingVertical: space.lg,
-        paddingHorizontal: space.lg,
-        alignItems: 'center',
-        opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-      }, style]}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: !!disabled, busy: !!loading }}
+      style={[{ minHeight: control.touch }, style]}
     >
-      {loading ? <ActivityIndicator color={color} /> : <Text style={{ color, fontWeight: '700', fontSize: textSize.body }}>{title}</Text>}
+      {({ pressed }) => (
+        <Animated.View
+          style={[
+            {
+              flexGrow: 1,
+              minHeight,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: space.sm,
+              backgroundColor: kind === 'outline' && pressed ? colors.pressed : palette.bg,
+              borderWidth: kind === 'outline' ? 1 : 0,
+              borderColor: palette.border,
+              borderRadius: radius.button,
+              borderCurve: 'continuous',
+              paddingVertical: space.sm,
+              paddingHorizontal: filledOrOutline ? space.lg : space.sm,
+            },
+            animated,
+          ]}
+        >
+          {loading ? (
+            <ActivityIndicator color={palette.fg} />
+          ) : (
+            <>
+              {leading && <Glyph name={leading} size={icon.square} color={palette.fg} />}
+              <Text
+                numberOfLines={2}
+                maxFontSizeMultiplier={maxFontScale}
+                style={{ flexShrink: 1, textAlign: 'center', color: palette.fg, fontSize: textSize.body, lineHeight: 22, ...(filledOrOutline ? font.bold : font.semibold) }}
+              >
+                {title}
+              </Text>
+            </>
+          )}
+        </Animated.View>
+      )}
     </Pressable>
   );
 }
 
-export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress?: () => void }) {
+/** A 44x44 icon-only button. The label is required: it is what a screen reader says. */
+export function IconButton({
+  glyph,
+  onPress,
+  accessibilityLabel,
+  tone = 'plain',
+  disabled,
+}: {
+  glyph: GlyphName;
+  onPress: () => void;
+  accessibilityLabel: string;
+  /** `plain`: link-coloured icon; `tonal`: mint square; `primary`: forest square with a white icon (send buttons). */
+  tone?: 'plain' | 'tonal' | 'primary';
+  disabled?: boolean;
+}) {
+  const bg = { plain: 'transparent', tonal: brand.mint, primary: disabled ? colors.disabledFill : brand.primary }[tone];
+  const fg = disabled ? colors.disabledLabel : tone === 'primary' ? brand.onDark : brand.link;
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityState={{ selected: active }}
-      style={{
-        backgroundColor: active ? brand.night : colors.card,
-        borderColor: active ? brand.night : colors.separator,
-        borderWidth: 1,
-        borderRadius: radius.chip,
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => ({
+        width: control.touch,
+        height: control.touch,
+        borderRadius: radius.button,
         borderCurve: 'continuous',
-        paddingVertical: space.sm,
-        paddingHorizontal: space.md,
-      }}
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: pressed && tone === 'plain' ? colors.fill : bg,
+        opacity: pressed && tone !== 'plain' ? motion.pressOpacity : 1,
+      })}
     >
-      <Text style={{ color: active ? brand.onDark : colors.label, fontWeight: '600', fontSize: textSize.footnote }}>{label}</Text>
+      <Glyph name={glyph} size={icon.action} color={fg} />
     </Pressable>
   );
 }
 
-export function Badge({ label, tone = 'mint' }: { label: string; tone?: 'mint' | 'sand' | 'night' | 'gold' }) {
+/** An icon button on the right of the page header, for example Share. Render it anywhere in the screen. */
+export function HeaderIconButton(props: { glyph: GlyphName; onPress: () => void; accessibilityLabel: string }) {
+  return <Stack.Screen options={{ headerRight: () => <IconButton {...props} /> }} />;
+}
+
+export function Chip({ label, active, onPress }: { label: string; active?: boolean; onPress?: () => void }) {
+  const on = useSharedValue(active ? 1 : 0);
+  useEffect(() => {
+    on.value = withTiming(active ? 1 : 0, timing(motion.chip));
+  }, [active, on]);
+  const animated = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(on.value, [0, 1], [colors.card, brand.mint]),
+    borderColor: interpolateColor(on.value, [0, 1], [colors.border, brand.primary]),
+  }));
+  // Toggle chips (with `active`) tick under the finger; chips that only open a page do not.
+  const press = onPress
+    ? () => {
+        if (active !== undefined) Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }
+    : undefined;
+  return (
+    <Pressable
+      onPress={press}
+      accessibilityRole={onPress ? 'button' : 'text'}
+      accessibilityState={{ selected: !!active }}
+      hitSlop={{ top: (control.touch - control.chip) / 2, bottom: (control.touch - control.chip) / 2 }}
+    >
+      {({ pressed }) => (
+        <Animated.View
+          style={[
+            {
+              minHeight: control.chip,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space.xs,
+              borderWidth: 1,
+              borderRadius: radius.chip,
+              borderCurve: 'continuous',
+              paddingHorizontal: space.md,
+              paddingVertical: space.xs,
+              opacity: pressed ? motion.pressOpacity : 1,
+            },
+            animated,
+          ]}
+        >
+          {active && <Glyph name={GLYPHS.check} size={icon.chip} color={brand.primary} />}
+          <Text maxFontSizeMultiplier={maxFontScale} style={{ ...type.label, color: active ? brand.primary : colors.label }}>
+            {label}
+          </Text>
+        </Animated.View>
+      )}
+    </Pressable>
+  );
+}
+
+export function Badge({ label, tone = 'mint', icon: leading }: { label: string; tone?: 'mint' | 'sand' | 'neutral' | 'night' | 'gold'; icon?: GlyphName }) {
+  // `night` is an old name: it now draws as `neutral` (white text on grey failed contrast).
   const styles = {
     mint: { backgroundColor: brand.mint, color: brand.forest },
     sand: { backgroundColor: brand.sand, color: brand.leafDark },
-    night: { backgroundColor: brand.night, color: brand.onDark },
+    neutral: { backgroundColor: colors.fill, color: colors.label },
+    night: { backgroundColor: colors.fill, color: colors.label },
     gold: { backgroundColor: brand.goldSoft, color: brand.ink },
   }[tone];
   return (
-    <View style={{ backgroundColor: styles.backgroundColor, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.xs, alignSelf: 'flex-start' }}>
-      <Text style={{ color: styles.color, fontSize: textSize.caption, fontWeight: '700' }}>{label}</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, backgroundColor: styles.backgroundColor, borderRadius: radius.chip, borderCurve: 'continuous', paddingHorizontal: space.sm, paddingVertical: space.xs, alignSelf: 'flex-start' }}>
+      {leading && <Glyph name={leading} size={icon.badge} color={styles.color} />}
+      <Text maxFontSizeMultiplier={maxFontScale} style={{ color: styles.color, fontSize: textSize.caption, lineHeight: 16, ...font.bold }}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -82,8 +300,8 @@ export function Avatar({ name, uri, size = 56 }: { name: string; uri?: string | 
     return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip }} contentFit="cover" accessibilityLabel={name} />;
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: brand.forest, fontWeight: '800', fontSize: size / 2.5 }}>{name.charAt(0)}</Text>
+    <View style={{ width: size, height: size, borderRadius: radius.chip, borderCurve: 'continuous', backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: brand.forest, ...font.extrabold, fontSize: size / 2.5 }}>{name.charAt(0)}</Text>
     </View>
   );
 }
@@ -99,7 +317,26 @@ export function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {
-  return <Text style={type.title}>{children}</Text>;
+  return (
+    <Text accessibilityRole="header" style={type.section}>
+      {children}
+    </Text>
+  );
+}
+
+/** A page section: title (with an optional text button on the right), then the content 12 below. Parents space sections `layout.sectionGap` apart. */
+export function Section({ title, action, children, style }: { title: string; action?: { label: string; onPress: () => void }; children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ gap: layout.titleGap }, style]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
+        <View style={{ flexShrink: 1 }}>
+          <SectionTitle>{title}</SectionTitle>
+        </View>
+        {action && <Button title={action.label} variant="text" size="md" onPress={action.onPress} />}
+      </View>
+      {children}
+    </View>
+  );
 }
 
 export function Muted({ children, selectable }: { children: ReactNode; selectable?: boolean }) {
@@ -110,35 +347,209 @@ export function Muted({ children, selectable }: { children: ReactNode; selectabl
   );
 }
 
-/** Loading, error and empty states in one place. */
-export function ScreenState({ loading, error, empty, emptyText, onRetry, retryLabel }: { loading?: boolean; error?: unknown; empty?: boolean; emptyText?: string; onRetry?: () => void; retryLabel?: string }) {
-  const { t } = useI18n();
-  if (loading) return <ActivityIndicator style={{ padding: space.xxl }} color={brand.leaf} />;
-  if (error) {
-    // Plain words instead of the technical message, like the website's error page.
-    return (
-      <View accessibilityRole="alert" style={{ padding: space.xl, gap: space.md }}>
-        <Text style={{ color: colors.label, fontSize: textSize.headline, fontWeight: '800' }}>{t.ux.errorTitle}</Text>
-        <Text style={{ color: colors.secondaryLabel, fontSize: textSize.callout }}>{t.ux.errorBody}</Text>
-        {onRetry && <Button title={retryLabel ?? t.ux.tryAgain} variant="outline" onPress={onRetry} />}
+/** A leaf square with a white icon. */
+export function IconSquare({ glyph, size = 'sm' }: { glyph: GlyphName; size?: keyof typeof iconBox }) {
+  const box = iconBox[size];
+  return (
+    <View style={{ width: box, height: box, borderRadius: radius.button, borderCurve: 'continuous', backgroundColor: brand.leaf, alignItems: 'center', justifyContent: 'center' }}>
+      <Glyph name={glyph} size={size === 'lg' ? icon.action : icon.square} color={brand.onDark} />
+    </View>
+  );
+}
+
+/** Tappable rows split by 1px lines inside one card (Account, Hub, the concierge entry). */
+export function ListGroup({ children }: { children: ReactNode }) {
+  const rows = Children.toArray(children).filter(Boolean);
+  return (
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+      {rows.map((row, i) => (
+        <Fragment key={i}>
+          {i > 0 && <View style={{ height: 1, backgroundColor: colors.border, marginLeft: layout.cardPadding }} />}
+          {row}
+        </Fragment>
+      ))}
+    </View>
+  );
+}
+
+/** One row in a ListGroup. No chevron: the whole row is the button. */
+export function ListRow({
+  icon: glyph,
+  title,
+  subtitle,
+  onPress,
+  accessory,
+  accessibilityRole = 'button',
+}: {
+  icon?: GlyphName;
+  title: string;
+  subtitle?: string;
+  onPress?: () => void;
+  accessory?: ReactNode;
+  accessibilityRole?: AccessibilityRole;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? accessibilityRole : undefined}
+      style={({ pressed }) => ({ minHeight: control.row, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: layout.cardPadding, paddingVertical: space.md, backgroundColor: pressed ? colors.pressed : colors.card })}
+    >
+      {glyph && <IconSquare glyph={glyph} />}
+      <View style={{ flex: 1, gap: space.xxs }}>
+        <Text style={{ ...type.body, ...font.semibold }}>{title}</Text>
+        {subtitle ? <Text style={type.meta}>{subtitle}</Text> : null}
       </View>
-    );
-  }
-  if (empty && emptyText) return <Text style={{ padding: space.xl, color: colors.secondaryLabel, fontSize: textSize.callout }}>{emptyText}</Text>;
-  return null;
+      {accessory}
+    </Pressable>
+  );
+}
+
+/** A label above its value, stacked so long languages fit. */
+export function DetailRow({ label, value, selectable }: { label: string; value: ReactNode; selectable?: boolean }) {
+  return (
+    <View style={{ gap: space.xxs }}>
+      <Text style={type.meta}>{label}</Text>
+      <Text selectable={selectable} style={type.body}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+/** 2 or 3 equal figures, each a value over a short label. Cells wrap on narrow phones. */
+export function StatRow({ items }: { items: { value: string; label: string }[] }) {
+  const { width } = useWindowDimensions();
+  if (items.length === 0) return null;
+  const narrow = width < 340;
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+      {items.map((item) => (
+        <View
+          key={item.label}
+          accessible
+          accessibilityLabel={`${item.value} ${item.label}`}
+          style={{ flexGrow: 1, flexBasis: narrow ? '40%' : 0, minWidth: 0, backgroundColor: colors.background, borderRadius: radius.card, borderCurve: 'continuous', padding: space.md, gap: space.xxs }}
+        >
+          <Text style={{ ...type.title3, fontVariant: ['tabular-nums'] }}>{item.value}</Text>
+          <Text style={type.meta}>{item.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** A grey placeholder block that gently pulses while content loads (it stays still with Reduce Motion on). */
+export function Skeleton({ height, width = '100%' }: { height: number; width?: ViewStyle['width'] }) {
+  const reduceMotion = useReducedMotion();
+  const opacity = useSharedValue(1);
+  useEffect(() => {
+    if (reduceMotion) return;
+    opacity.value = withRepeat(withTiming(motion.skeletonOpacity, { duration: motion.skeleton }), -1, true);
+  }, [opacity, reduceMotion]);
+  const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  return <Animated.View style={[{ height, width, backgroundColor: colors.fill, borderRadius: radius.card, borderCurve: 'continuous' }, animated]} />;
+}
+
+/** A card-shaped placeholder: optional photo block, then two lines. */
+export function SkeletonCard({ photo }: { photo?: boolean }) {
+  return (
+    <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.border, padding: layout.cardPadding, gap: layout.cardGap }}>
+      {photo && <Skeleton height={media.cardPhoto} />}
+      <Skeleton height={textSize.headline + space.xs} width="70%" />
+      <Skeleton height={textSize.footnote + space.xs} width="45%" />
+    </View>
+  );
+}
+
+function Loading({ count = 1 }: { count?: number }) {
+  return (
+    <View accessibilityRole="progressbar" accessibilityState={{ busy: true }} style={{ gap: layout.listGap }}>
+      {Array.from({ length: count }, (_, i) => (
+        <SkeletonCard key={i} />
+      ))}
+    </View>
+  );
+}
+
+/** Nothing here yet: a leaf square, the existing text and an optional next step. */
+export function EmptyState({ glyph = GLYPHS.empty, text, action }: { glyph?: GlyphName; text: string; action?: { label: string; onPress: () => void } }) {
+  return (
+    <View style={{ alignItems: 'center', gap: space.md, paddingVertical: space.xl, paddingHorizontal: space.lg }}>
+      <IconSquare glyph={glyph} size="lg" />
+      <Text style={{ ...type.callout, color: colors.secondaryLabel, textAlign: 'center' }}>{text}</Text>
+      {action && <Button title={action.label} variant="outline" size="md" onPress={action.onPress} />}
+    </View>
+  );
+}
+
+/** Something went wrong, in plain words, with Try again. */
+export function ErrorState({ onRetry, retryLabel }: { onRetry?: () => void; retryLabel?: string }) {
+  const { t } = useI18n();
+  return (
+    <View accessibilityRole="alert" style={{ gap: space.md, paddingVertical: space.xl, paddingHorizontal: space.lg, alignItems: 'center' }}>
+      <Text style={{ ...type.cardTitle, textAlign: 'center' }}>{t.ux.errorTitle}</Text>
+      <Text style={{ ...type.callout, color: colors.secondaryLabel, textAlign: 'center' }}>{t.ux.errorBody}</Text>
+      {onRetry && <Button title={retryLabel ?? t.ux.tryAgain} variant="outline" size="md" onPress={onRetry} />}
+    </View>
+  );
+}
+
+/**
+ * Loading, error and empty states in one place.
+ * `screen`: the state is the whole screen (an early return). It then scrolls under the header like any page,
+ * so it never sits under a see-through iOS header.
+ */
+export function ScreenState({
+  loading,
+  error,
+  empty,
+  emptyText,
+  emptyGlyph,
+  onRetry,
+  retryLabel,
+  screen,
+}: {
+  loading?: boolean;
+  error?: unknown;
+  empty?: boolean;
+  emptyText?: string;
+  emptyGlyph?: GlyphName;
+  onRetry?: () => void;
+  retryLabel?: string;
+  screen?: boolean;
+}) {
+  let content: ReactNode = null;
+  if (loading) content = <Loading count={screen ? 3 : 1} />;
+  // Plain words instead of the technical message, like the website's error page.
+  else if (error) content = <ErrorState onRetry={onRetry} retryLabel={retryLabel} />;
+  else if (empty && emptyText) content = <EmptyState glyph={emptyGlyph} text={emptyText} />;
+  if (!screen) return content;
+  return (
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ flexGrow: 1, padding: layout.screenX, justifyContent: loading ? 'flex-start' : 'center' }}
+    >
+      {content}
+    </ScrollView>
+  );
 }
 
 const fieldInput = {
-  backgroundColor: colors.background,
+  backgroundColor: colors.card,
+  borderWidth: 1,
   borderRadius: radius.button,
   borderCurve: 'continuous' as const,
+  minHeight: control.field,
   paddingHorizontal: space.lg,
   paddingVertical: space.md,
   fontSize: textSize.body,
+  ...font.regular,
   color: colors.label,
 };
 
-/** Labelled text input used by every form. */
+/** Labelled text input used by every form. The border turns green while typing and red with an error. */
 export function Field({
   label,
   value,
@@ -148,6 +559,8 @@ export function Field({
   keyboardType,
   autoCapitalize,
   hint,
+  error,
+  accessibilityLabel,
 }: {
   label: string;
   value: string;
@@ -157,7 +570,11 @@ export function Field({
   keyboardType?: TextInputProps['keyboardType'];
   autoCapitalize?: TextInputProps['autoCapitalize'];
   hint?: string;
+  error?: string | null;
+  /** Defaults to the label. */
+  accessibilityLabel?: string;
 }) {
+  const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: space.sm }}>
       <Text style={type.label}>{label}</Text>
@@ -169,10 +586,13 @@ export function Field({
         multiline={multiline}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
-        accessibilityLabel={label}
-        style={[fieldInput, multiline ? { minHeight: 100, textAlignVertical: 'top' } : null]}
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityHint={hint}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={[fieldInput, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
       />
-      {hint ? <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{hint}</Text> : null}
+      {error ? <ErrorText>{error}</ErrorText> : hint ? <Text style={type.caption}>{hint}</Text> : null}
     </View>
   );
 }
@@ -198,7 +618,7 @@ export function ChipSelect<T extends string>({
   return (
     <View style={{ gap: space.sm }}>
       <Text style={type.label}>{label}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
         {options.map((o) => (
           <Chip key={o.value} label={o.label} active={selected.includes(o.value)} onPress={() => toggle(o.value)} />
         ))}
@@ -209,17 +629,43 @@ export function ChipSelect<T extends string>({
 
 /** An error message; renders nothing when there is none. */
 export function ErrorText({ children }: { children?: string | null }) {
-  return children ? <Text selectable style={{ color: brand.danger }}>{children}</Text> : null;
+  return children ? (
+    <Text selectable accessibilityRole="alert" style={{ ...type.callout, color: brand.danger }}>
+      {children}
+    </Text>
+  ) : null;
+}
+
+const successIn = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.8 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }] },
+})
+  .duration(motion.success)
+  .reduceMotion(ReduceMotion.System);
+
+/** A leaf square with a white check that pops in once. `haptic`: also tick the phone, right after the person's own action. */
+export function SuccessCheck({ haptic }: { haptic?: boolean }) {
+  useEffect(() => {
+    if (haptic) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  }, [haptic]);
+  return (
+    <Animated.View entering={successIn}>
+      <IconSquare glyph={GLYPHS.check} />
+    </Animated.View>
+  );
 }
 
 /** Success or error line under a form. */
 export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text: string } | null }) {
   if (!message) return null;
+  if (message.tone === 'error') return <ErrorText>{message.text}</ErrorText>;
   return (
-    <Text selectable style={{ color: message.tone === 'ok' ? brand.forest : brand.danger, fontWeight: '600' }}>
-      {message.tone === 'ok' ? '✓ ' : ''}
-      {message.text}
-    </Text>
+    <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+      <SuccessCheck key={message.text} haptic />
+      <Text selectable style={{ flex: 1, ...type.callout, ...font.semibold, color: brand.primary }}>
+        {message.text}
+      </Text>
+    </View>
   );
 }
 
@@ -227,7 +673,7 @@ export function FormMessage({ message }: { message: { tone: 'ok' | 'error'; text
 export function BottomBar({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ paddingHorizontal: space.lg, paddingTop: space.md, paddingBottom: Math.max(insets.bottom, 12), gap: space.sm, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.separator }}>
+    <View style={{ paddingHorizontal: layout.screenX, paddingTop: space.md, paddingBottom: Math.max(insets.bottom, space.md), gap: space.sm, backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border }}>
       {children}
     </View>
   );

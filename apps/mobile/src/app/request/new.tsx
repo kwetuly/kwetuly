@@ -44,7 +44,7 @@ export default function NewRequestScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/request/new')} />;
-  if (!userId) return <SignInPrompt />;
+  if (!userId) return <SignInPrompt screen />;
 
   async function submit() {
     const start = f.start.trim() || null;
