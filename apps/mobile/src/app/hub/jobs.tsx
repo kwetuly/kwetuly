@@ -19,7 +19,7 @@ export default function JobsScreen() {
       data={jobs.data ?? []}
       keyExtractor={(j) => j.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
-      refreshControl={<RefreshControl refreshing={jobs.isRefetching} onRefresh={() => jobs.refetch()} tintColor={brand.leaf} />}
+      refreshControl={<RefreshControl refreshing={jobs.isRefetching} onRefresh={() => { jobs.refetch(); }} tintColor={brand.leaf} />}
       ListHeaderComponent={<Stack.Title>{HUB_MENU.find((i) => i.slug === 'jobs')?.label[locale]}</Stack.Title>}
       ListEmptyComponent={<ScreenState loading={jobs.isLoading} error={jobs.error} onRetry={() => jobs.refetch()} empty emptyText={t.hub.noJobs} />}
       renderItem={({ item: j }) => (

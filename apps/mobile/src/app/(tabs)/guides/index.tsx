@@ -47,7 +47,7 @@ export default function GuidesScreen() {
       )}
       ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
       contentContainerStyle={{ paddingBottom: space.xxl }}
-      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => guides.refetch()} tintColor={brand.leaf} />}
+      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => { guides.refetch(); }} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.md, paddingVertical: space.md }}>
           <Stack.Title large>{t.guides.title}</Stack.Title>

@@ -59,7 +59,7 @@ export default function TripsScreen() {
       )}
       ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
       contentContainerStyle={{ paddingBottom: space.xxl }}
-      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => active.refetch()} tintColor={brand.leaf} />}
+      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => { active.refetch(); }} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.md, paddingVertical: space.lg }}>
           <Stack.Title large>{t.app.tabTrips}</Stack.Title>
@@ -138,7 +138,7 @@ export default function TripsScreen() {
               {tt.operatorsTitle}
             </Text>
           </View>
-        ) : null
+        ) : undefined
       }
     />
   );

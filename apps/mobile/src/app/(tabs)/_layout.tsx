@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/native-tabs';
 import { useSession } from '@/lib/auth';
 import { introSeen } from '@/lib/intro';
 import { useI18n } from '@/lib/i18n';

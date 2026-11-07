@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, Text, View, useWindowDimensions, type ScrollViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,7 +20,7 @@ export default function IntroScreen() {
   const i = t.intro;
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const scroller = useRef<ScrollView>(null);
+  const scroller = useRef<ScrollViewInstance>(null);
   const [page, setPage] = useState(0);
 
   // Each slide: a big icon (green square, white icon) and a row of small feature icons (gold).
