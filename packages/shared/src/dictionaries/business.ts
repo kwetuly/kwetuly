@@ -17,7 +17,7 @@ const ownerEn = {
   photoField: 'Main photo',
   morePhotosField: 'More photos',
   licenceField: 'Business licence (photo or PDF, only Kwetuly sees it)',
-  filePicked: 'File picked. It is sent when you save.',
+  filePicked: 'File chosen. It will be sent when you save.',
   fileOnFile: 'Already sent to Kwetuly',
   save: 'Save listing',
   saved: 'Saved.',

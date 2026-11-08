@@ -574,7 +574,7 @@ export const sw: Dictionary = {
     companyName: 'Jina la kampuni',
     submit: 'Tuma ikaguliwe',
     sent: 'Asante! Safari yako ya kundi itaonekana mara Kwetuly itakapoidhinisha.',
-    whoCan: 'Safari za makundi zinaanzishwa na waongozaji walioidhinishwa wa Kwetuly na akaunti za biashara.',
+    whoCan: 'Safari za makundi zinaweza kuanzishwa na waongozaji walioidhinishwa wa Kwetuly na akaunti za biashara.',
     businessSignUp: 'Fungua akaunti ya biashara',
     organiserContactLabel: 'Mawasiliano ya mwandaaji',
   },

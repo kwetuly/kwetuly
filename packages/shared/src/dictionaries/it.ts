@@ -411,7 +411,7 @@ export const it: Dictionary = {
     notOpen: 'Questo viaggio non accetta ancora richieste.',
     requestsTitle: 'Richieste di partecipazione',
     noRequests: 'Ancora nessuna richiesta.',
-    statusPending: 'In attesa di revisione da Kwetuly',
+    statusPending: 'In attesa della revisione di Kwetuly',
     statusRejected: 'Non approvato. Contatta Kwetuly.',
     cancelTrip: 'Annulla il viaggio',
     organising: 'Viaggi che organizzo',

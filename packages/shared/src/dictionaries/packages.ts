@@ -40,7 +40,7 @@ const guideSw: GuideTexts = {
   add: 'Ongeza kifurushi',
   editPackage: 'Hariri kifurushi',
   remove: 'Futa',
-  removeConfirm: 'Ufute “{title}”? Hatua hii haiwezi kutenduliwa.',
+  removeConfirm: 'Je, unataka kufuta “{title}”? Hatua hii haiwezi kutenduliwa.',
   removeError: 'Kifurushi hakikuweza kufutwa. Angalia mtandao wako kisha ujaribu tena.',
   submit: 'Hifadhi na tuma kwa ukaguzi',
   saveDraft: 'Hifadhi kama rasimu',
@@ -131,7 +131,7 @@ export const packages_fr: PackagesText = {
   ask: 'Poser une question sur cette formule',
   about: 'Au sujet de la formule : {title}',
   catalogTitle: 'Formules proposées par des guides locaux',
-  catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides approuvés par Kwetuly. Kwetuly relit chaque offre avant sa mise en ligne.',
+  catalogBody: 'Visites culturelles, excursions d’une journée et voyages privés avec un guide, proposés par des guides approuvés par Kwetuly. Kwetuly examine chaque formule avant sa mise en ligne.',
   all: 'Toutes',
   catalogEmpty: 'Pas encore de formule ici. Revenez bientôt.',
 };
@@ -223,7 +223,7 @@ export const packages_zh: PackagesText = {
   ask: '咨询此套餐',
   about: '关于套餐：{title}',
   catalogTitle: '当地向导的套餐',
-  catalogBody: '文化探访、一日游和一对一行程，由经 Kwetuly 批准的向导提供。每个行程发布前都经 Kwetuly 审阅。',
+  catalogBody: '文化探访、一日游和一对一行程，由通过 Kwetuly 审核的向导提供。每个套餐发布前都经 Kwetuly 审阅。',
   all: '全部',
   catalogEmpty: '这里还没有套餐，请稍后再来看看。',
 };

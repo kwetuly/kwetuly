@@ -31,9 +31,9 @@ export const TRIP_CATEGORIES = [
 ] as const;
 
 export const TRIP_OPERATORS = {
-  partner: L('Operated by a Kwetuly partner', 'Inaendeshwa na mshirika wa Kwetuly', 'Organisé par un partenaire de Kwetuly', 'Gestito da un partner di Kwetuly', 'Durchgeführt von einem Kwetuly-Partner', 'Realizowane przez partnera Kwetuly', '由 Kwetuly 合作伙伴运营'),
-  kwetuly: L('Operated by Kwetuly', 'Inaendeshwa na Kwetuly', 'Organisé par Kwetuly', 'Gestito da Kwetuly', 'Durchgeführt von Kwetuly', 'Realizowane przez Kwetuly', '由 Kwetuly 运营'),
-  guide: L('Led by a Kwetuly-approved guide', 'Inaongozwa na mwongozaji aliyeidhinishwa na Kwetuly', 'Mené par un guide approuvé par Kwetuly', 'Guidato da una guida approvata da Kwetuly', 'Geführt von einem von Kwetuly freigegebenen Guide', 'Prowadzone przez przewodnika zatwierdzonego przez Kwetuly', '由经 Kwetuly 批准的导游带领'),
+  partner: L('Operated by a Kwetuly partner', 'Inaendeshwa na mshirika wa Kwetuly', 'Organisé par un partenaire de Kwetuly', 'Gestito da un partner di Kwetuly', 'Durchgeführt von einem Kwetuly-Partner', 'Organizuje partner Kwetuly', '由 Kwetuly 合作伙伴运营'),
+  kwetuly: L('Operated by Kwetuly', 'Inaendeshwa na Kwetuly', 'Organisé par Kwetuly', 'Gestito da Kwetuly', 'Durchgeführt von Kwetuly', 'Organizuje Kwetuly', '由 Kwetuly 运营'),
+  guide: L('Led by a Kwetuly-approved guide', 'Inaongozwa na mwongozaji aliyeidhinishwa na Kwetuly', 'Mené par un guide approuvé par Kwetuly', 'Guidato da una guida approvata da Kwetuly', 'Mit einem von Kwetuly freigegebenen Guide', 'Prowadzi przewodnik zatwierdzony przez Kwetuly', '由通过 Kwetuly 审核的导游带领'),
 } as const;
 
 export const MONTHS: Record<Locale, readonly string[]> = {

@@ -268,7 +268,7 @@ export const extras_pl: ExtrasText = {
 };
 
 export const extras_zh: ExtrasText = {
-  whoCan: '任何拥有 Kwetuly 账户的人都可以发起拼团：经 Kwetuly 批准的导游、企业和旅行者。旅行者的账户需要有电话号码。',
+  whoCan: '任何拥有 Kwetuly 账户的人都可以发起拼团：通过 Kwetuly 审核的导游、企业和旅行者。旅行者的账户需要有电话号码。',
   completeTitle: '补齐你的团',
   completeBody: '已经有几个人要去？填写人数，其他旅行者就可以申请剩余名额。每个拼团上线前都会经过 Kwetuly 审核。',
   alreadyGoing: '已确定要去的人数（包括你）',
