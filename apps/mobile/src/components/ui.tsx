@@ -1,9 +1,11 @@
 import { Children, Fragment, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   Text,
   TextInput,
   View,
@@ -618,6 +620,11 @@ export function Field({
   hint,
   error,
   accessibilityLabel,
+  autoComplete,
+  textContentType,
+  secureTextEntry,
+  autoFocus,
+  code,
 }: {
   label: string;
   value: string;
@@ -632,6 +639,12 @@ export function Field({
   error?: string | null;
   /** Defaults to the label. */
   accessibilityLabel?: string;
+  autoComplete?: TextInputProps['autoComplete'];
+  textContentType?: TextInputProps['textContentType'];
+  secureTextEntry?: boolean;
+  autoFocus?: boolean;
+  /** A short code (sign-in code): large, spaced and centred. */
+  code?: boolean;
 }) {
   const { type, font } = useType();
   const [focused, setFocused] = useState(false);
@@ -648,14 +661,49 @@ export function Field({
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
         maxLength={maxLength}
+        autoComplete={autoComplete}
+        textContentType={textContentType}
+        secureTextEntry={secureTextEntry}
+        autoFocus={autoFocus}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={hint}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        style={[fieldInput, font.regular, noWebOutline, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null]}
+        style={[fieldInput, font.regular, noWebOutline, { borderColor: error ? brand.danger : focused ? brand.primary : colors.border }, multiline ? { minHeight: control.fieldMultiline, textAlignVertical: 'top' } : null, code ? { fontSize: textSize.title2, letterSpacing: space.sm, textAlign: 'center' } : null]}
       />
       {error ? <ErrorText>{error}</ErrorText> : hint ? <Text style={type.caption}>{hint}</Text> : null}
     </View>
+  );
+}
+
+/** A yes/no setting: the label, then a switch. The whole row is at least 44pt high. */
+export function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
+  const { type } = useType();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md, minHeight: control.touch }}>
+      <Text style={{ ...type.body, flex: 1 }}>{label}</Text>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: brand.primary }} accessibilityLabel={label} />
+    </View>
+  );
+}
+
+/**
+ * A form page: scrolls under the header, keeps fields above the keyboard (iOS pads, Android shrinks), and
+ * can pin the main action in a bottom bar (`bar`) where the thumb reaches it.
+ */
+export function FormScreen({ children, bar, centred }: { children: ReactNode; bar?: ReactNode; centred?: boolean }) {
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ flexGrow: 1, padding: layout.screenX, gap: space.lg, paddingBottom: layout.sectionGap, justifyContent: centred ? 'center' : 'flex-start' }}
+      >
+        {children}
+      </ScrollView>
+      {bar ? <BottomBar>{bar}</BottomBar> : null}
+    </KeyboardAvoidingView>
   );
 }
 

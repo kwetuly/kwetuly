@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
-import { Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
+import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { createGroupTrip, getMyGuide } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { colors, space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -57,17 +55,21 @@ export default function NewGroupTripScreen() {
   // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && businessWaiting) {
     return (
-      <Card style={{ margin: space.lg }}>
-        <Muted>{t.business.waitApproval}</Muted>
-      </Card>
+      <FormScreen centred>
+        <Card>
+          <Muted>{t.business.waitApproval}</Muted>
+        </Card>
+      </FormScreen>
     );
   }
   if (asTraveller && !profile.data?.phone) {
     return (
-      <Card style={{ margin: space.lg }}>
-        <Muted>{t.extras.phoneNeeded}</Muted>
-        <Button title={t.extras.addPhone} onPress={() => router.replace('/profile-edit')} />
-      </Card>
+      <FormScreen centred>
+        <Card>
+          <Muted>{t.extras.phoneNeeded}</Muted>
+          <Button title={t.extras.addPhone} onPress={() => router.replace('/profile-edit')} />
+        </Card>
+      </FormScreen>
     );
   }
 
@@ -126,7 +128,14 @@ export default function NewGroupTripScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+    <FormScreen
+      bar={
+        <>
+          <FormMessage message={message} />
+          <Button title={g.submit} onPress={submit} loading={busy} />
+        </>
+      }
+    >
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
       <Card>
         <Muted>{complete ? t.extras.completeBody : g.newBody}</Muted>
@@ -147,9 +156,7 @@ export default function NewGroupTripScreen() {
         <Field label={g.includesField} value={f.includes} onChangeText={set('includes')} multiline />
         {!asTraveller && <Field label={t.offers.deposit} value={f.deposit} onChangeText={set('deposit')} keyboardType="number-pad" hint={t.offers.depositHint} />}
         <Field label={g.organiserContact} value={f.contact} onChangeText={set('contact')} keyboardType="phone-pad" />
-        <FormMessage message={message} />
-        <Button title={g.submit} onPress={submit} loading={busy} />
       </Card>
-    </ScrollView>
+    </FormScreen>
   );
 }

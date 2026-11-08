@@ -1,16 +1,16 @@
 import { useState } from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { Redirect, Stack, router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { EVENTS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Button, Card, ChipSelect, Field, FormMessage, Muted } from '@/components/ui';
+import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, Toggle } from '@/components/ui';
 import { createRequest, today } from '@/lib/api-requests';
 import { track } from '@/lib/analytics';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, space } from '@/theme';
+import { space } from '@/theme';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -87,15 +87,15 @@ export default function NewRequestScreen() {
     }
   }
 
-  const toggle = (label: string, value: boolean, onChange: (v: boolean) => void) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md }}>
-      <Text style={{ flex: 1, color: colors.label, fontWeight: '600' }}>{label}</Text>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: brand.forest }} />
-    </View>
-  );
-
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
+    <FormScreen
+      bar={
+        <>
+          <FormMessage message={message} />
+          <Button title={r.submit} onPress={submit} loading={busy} />
+        </>
+      }
+    >
       <Stack.Title>{r.newTitle}</Stack.Title>
       <Muted>{r.newBody}</Muted>
       <Card>
@@ -110,15 +110,13 @@ export default function NewRequestScreen() {
           <View style={{ flex: 1 }}><Field label={r.startDate} value={f.start} onChangeText={set('start')} placeholder="2027-02-10" /></View>
           <View style={{ flex: 1 }}><Field label={r.endDate} value={f.end} onChangeText={set('end')} placeholder="2027-02-16" /></View>
         </View>
-        {toggle(r.flexible, f.flexible, set('flexible'))}
+        <Toggle label={r.flexible} value={f.flexible} onChange={set('flexible')} />
         <Field label={r.budget} value={f.budget} onChangeText={set('budget')} keyboardType="number-pad" />
         <ChipSelect label={r.regions} options={REGIONS.map((x) => ({ value: x, label: x }))} selected={f.regions} onChange={set('regions')} />
         <ChipSelect label={r.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
         <ChipSelect label={r.expertise} options={GUIDE_EXPERTISE.map((e) => ({ value: e.id, label: e.label[locale] }))} selected={f.expertise} onChange={set('expertise')} />
-        {toggle(r.femaleGuide, f.female, set('female'))}
-        <FormMessage message={message} />
-        <Button title={r.submit} onPress={submit} loading={busy} />
+        <Toggle label={r.femaleGuide} value={f.female} onChange={set('female')} />
       </Card>
-    </ScrollView>
+    </FormScreen>
   );
 }

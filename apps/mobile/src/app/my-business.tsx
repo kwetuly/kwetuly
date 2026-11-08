@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Redirect, Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, linkTexts, normaliseWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
-import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Avatar, Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, MetaItems, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
@@ -13,7 +14,8 @@ import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { BusinessSalesCard } from '@/components/referral';
-import { brand, colors, space } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, media, space } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
 
@@ -65,6 +67,7 @@ function Editor({
   locale: ReturnType<typeof useI18n>['locale'];
   bt: ReturnType<typeof useI18n>['t']['business'];
 }) {
+  const { type, font } = useType();
   const [f, setF] = useState({
     name: business?.business_name ?? '',
     type: [business?.business_type ?? 'hotel'] as string[],
@@ -131,19 +134,26 @@ function Editor({
 
   const status = business?.verification_status;
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+    <FormScreen
+      bar={
+        <>
+          <FormMessage message={message} />
+          <Button title={bt.save} onPress={save} loading={busy} />
+        </>
+      }
+    >
       <Stack.Title>{bt.dashboardTitle}</Stack.Title>
       {status && (
         <Card>
           <Badge label={status === 'approved' ? bt.statusApproved : status === 'rejected' ? bt.statusRejected : bt.statusPending} tone={status === 'approved' ? 'mint' : 'sand'} />
-          {status === 'approved' && <Button title={bt.viewListing} variant="outline" onPress={() => router.push({ pathname: '/business/[id]', params: { id: business!.id } })} />}
+          {status === 'approved' && <Button title={bt.viewListing} variant="outline" size="md" onPress={() => router.push({ pathname: '/business/[id]', params: { id: business!.id } })} />}
         </Card>
       )}
 
       <Card>
-        <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-          <Avatar name={f.name || '?'} uri={photo?.uri ?? business?.photo_url} size={72} />
-          <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{bt.photoField}</Text>
+        <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })}>
+          <Avatar name={f.name || '?'} uri={photo?.uri ?? business?.photo_url} size={media.thumb} />
+          <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{bt.photoField}</Text>
         </Pressable>
         <Field label={bt.nameField} value={f.name} onChangeText={set('name')} />
         <ChipSelect label={bt.typeField} options={(business?.business_type === 'merch' ? BUSINESS_TYPES : OWNER_BUSINESS_TYPES).map((b) => ({ value: b.id, label: b[locale] }))} selected={f.type} onChange={set('type')} multiple={false} />
@@ -158,25 +168,37 @@ function Editor({
         />
         <Field label={bt.storyField} value={f.story} onChangeText={set('story')} multiline />
         <Field label={bt.websiteField} value={f.website} onChangeText={set('website')} autoCapitalize="none" keyboardType="url" />
-        <Button title={`${bt.morePhotosField} (${business?.photos.length ?? 0}/6)${extra ? ' ✓' : ''}`} variant="outline" onPress={async () => setExtra((await pickPhoto()) ?? extra)} />
-        <Button title={`${bt.licenceField}${licence || business?.provider_private?.licence_document_path ? ' ✓' : ''}`} variant="outline" onPress={async () => setLicence((await pickPhoto()) ?? licence)} />
-        <FormMessage message={message} />
-        <Button title={bt.save} onPress={save} loading={busy} />
+        {/* A check icon (instead of a "✓" character) once a file is picked or already on file. */}
+        <Button
+          title={`${bt.morePhotosField} (${business?.photos.length ?? 0}/6)`}
+          icon={extra ? GLYPHS.check : GLYPHS.attach}
+          variant="outline"
+          size="md"
+          onPress={async () => setExtra((await pickPhoto()) ?? extra)}
+        />
+        <Button
+          title={bt.licenceField}
+          icon={licence || business?.provider_private?.licence_document_path ? GLYPHS.check : GLYPHS.attach}
+          variant="outline"
+          size="md"
+          onPress={async () => setLicence((await pickPhoto()) ?? licence)}
+        />
       </Card>
 
       {business && (
         <Card style={{ backgroundColor: brand.sand }}>
           <SectionTitle>{bt.badgeTitle}</SectionTitle>
           <Muted>{bt.badgeBody}</Muted>
-          <Text style={{ fontWeight: '700', color: colors.label }}>{fee != null ? bt.badgeFee.replace('{price}', formatUsd(fee)) : bt.badgeFeeAsk}</Text>
+          <Text style={{ ...type.body, ...font.bold }}>{fee != null ? bt.badgeFee.replace('{price}', formatUsd(fee)) : bt.badgeFeeAsk}</Text>
           {hasValidBadge(business, today) ? (
-            <Text style={{ color: brand.forest, fontWeight: '700' }}>{bt.badgeActive.replace('{date}', date.format(new Date(business.badge_valid_until!)))}</Text>
+            <Text style={{ ...type.body, ...font.bold, color: brand.forest }}>{bt.badgeActive.replace('{date}', date.format(new Date(business.badge_valid_until!)))}</Text>
           ) : business.badge_requested_at ? (
-            <Text style={{ color: colors.label, fontWeight: '700' }}>{bt.badgeRequested}</Text>
+            <Text style={{ ...type.body, ...font.bold }}>{bt.badgeRequested}</Text>
           ) : (
             <>
-              {business.badge_valid_until && <Text style={{ color: brand.danger }}>{bt.badgeExpired.replace('{date}', date.format(new Date(business.badge_valid_until)))}</Text>}
-              <Button title={bt.badgeRequest} onPress={askForBadge} />
+              {business.badge_valid_until && <Text style={{ ...type.callout, color: brand.danger }}>{bt.badgeExpired.replace('{date}', date.format(new Date(business.badge_valid_until)))}</Text>}
+              {/* Outline: Save in the bottom bar is this screen's one filled button. */}
+              <Button title={bt.badgeRequest} variant="outline" size="md" onPress={askForBadge} />
             </>
           )}
         </Card>
@@ -187,16 +209,16 @@ function Editor({
       {business && (
         <Card>
           <SectionTitle>{bt.enquiriesTitle}</SectionTitle>
-          {enquiries.length === 0 && <Muted>{bt.noEnquiries}</Muted>}
-          {enquiries.map((e) => (
-            <Text key={e.id} selectable style={{ color: colors.label, paddingVertical: space.xs }}>
-              <Text style={{ fontWeight: '700' }}>{e.traveler_name}</Text> · {e.traveler_contact}
-              {'\n'}
-              {e.message}
-            </Text>
+          {enquiries.length === 0 && <EmptyState glyph={GLYPHS.chat} text={bt.noEnquiries} />}
+          {enquiries.map((e, i) => (
+            <View key={e.id} style={{ gap: space.xxs, paddingTop: i ? space.md : 0, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
+              <Text selectable style={{ ...type.body, ...font.bold }}>{e.traveler_name}</Text>
+              <MetaItems selectable items={[e.traveler_contact]} />
+              <Text selectable style={type.callout}>{e.message}</Text>
+            </View>
           ))}
         </Card>
       )}
-    </ScrollView>
+    </FormScreen>
   );
 }

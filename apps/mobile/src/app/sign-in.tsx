@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { EVENTS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
-import { Button, Card, Chip, Muted } from '@/components/ui';
+import { Button, Card, Chip, Field, FormMessage, FormScreen, Muted } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { useI18n } from '@/lib/i18n';
 import { getInviteOnly } from '@/lib/api-more';
@@ -10,23 +10,15 @@ import { track } from '@/lib/analytics';
 import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { enabledProviders, PROVIDER_NAMES, signInWithProvider, type SocialProvider } from '@/lib/social';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { layout } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
-
-const input = {
-  backgroundColor: colors.card,
-  borderRadius: radius.button,
-  borderCurve: 'continuous' as const,
-  paddingHorizontal: space.lg,
-  paddingVertical: space.md,
-  fontSize: textSize.body,
-  color: colors.label,
-};
 
 // Sign in, or create an account (with account type and phone number, like the website).
 export default function SignInScreen() {
   const { t, locale } = useI18n();
+  const { type } = useType();
   const params = useLocalSearchParams<{ mode?: string }>();
   const [mode, setMode] = useState<'signIn' | 'join'>(params.mode === 'join' ? 'join' : 'signIn');
   const [role, setRole] = useState<(typeof ROLES)[number]>('traveler');
@@ -74,28 +66,26 @@ export default function SignInScreen() {
 
   if (factorId) {
     return (
-      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+      <FormScreen>
         <Card>
-          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{t.ux.verifyTitle}</Text>
+          <Text accessibilityRole="header" style={type.title2}>{t.ux.verifyTitle}</Text>
           <Muted>{t.ux.verifyBody}</Muted>
-          {message && <Text selectable style={{ color: brand.danger, fontWeight: '600' }}>{message.text}</Text>}
-          <TextInput
+          <Field
+            label={t.ux.code}
             value={code}
             onChangeText={setCode}
-            placeholder={t.ux.code}
-            placeholderTextColor={colors.secondaryLabel}
             keyboardType="number-pad"
             autoComplete="one-time-code"
             textContentType="oneTimeCode"
             maxLength={7}
             autoFocus
-            accessibilityLabel={t.ux.code}
-            style={[input, { fontSize: 24, letterSpacing: 8, textAlign: 'center' }]}
+            code
+            error={message?.tone === 'error' ? message.text : null}
           />
           <Button title={t.auth.signIn} onPress={verifyCode} loading={busy} />
-          <Button title={t.ux.cancel} variant="outline" onPress={cancelCode} />
+          <Button title={t.ux.cancel} variant="text" size="md" onPress={cancelCode} />
         </Card>
-      </ScrollView>
+      </FormScreen>
     );
   }
 
@@ -176,79 +166,66 @@ export default function SignInScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
-        <View style={{ flexDirection: 'row', gap: space.sm }}>
-          <Chip label={t.auth.signIn} active={mode === 'signIn'} onPress={() => setMode('signIn')} />
-          <Chip label={t.nav.signUp} active={mode === 'join'} onPress={() => setMode('join')} />
-        </View>
+    <FormScreen>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
+        <Chip label={t.auth.signIn} active={mode === 'signIn'} onPress={() => setMode('signIn')} />
+        <Chip label={t.nav.signUp} active={mode === 'join'} onPress={() => setMode('join')} />
+      </View>
 
-        {message && (
-          <Text selectable style={{ color: message.tone === 'error' ? brand.danger : brand.forest, fontWeight: '600' }}>
-            {message.text}
-          </Text>
-        )}
-
-        {providers.length > 0 && (
-          <Card>
-            {providers.map((p) => (
-              <Button key={p} title={`${t.auth.continueWith} ${PROVIDER_NAMES[p]}`} variant="outline" onPress={() => social(p)} />
-            ))}
-            <Text style={{ textAlign: 'center', color: colors.secondaryLabel, fontSize: textSize.caption, fontWeight: '700' }}>{t.auth.orEmail}</Text>
-          </Card>
-        )}
-
+      {providers.length > 0 && (
         <Card>
-          {mode === 'join' && (
-            <>
-              <Muted>{t.auth.welcomeRole}</Muted>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                {ROLES.map((r) => (
-                  <Chip key={r} label={t.join[r].title} active={role === r} onPress={() => setRole(r)} />
-                ))}
-              </View>
-              <Muted>{t.join[role].body}</Muted>
-              <TextInput value={fullName} onChangeText={setFullName} placeholder={t.auth.fullName} placeholderTextColor={colors.secondaryLabel} autoComplete="name" textContentType="name" style={input} />
-              <PhoneField
-                label={t.auth.phone}
-                number={phone.number}
-                country={phone.country}
-                onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
-                onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
-              />
-              {inviteOnly && (
-                <>
-                  <TextInput
-                    value={inviteCode}
-                    onChangeText={setInviteCode}
-                    placeholder={t.auth.inviteCode}
-                    placeholderTextColor={colors.secondaryLabel}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoComplete="off"
-                    maxLength={200}
-                    accessibilityLabel={t.auth.inviteCode}
-                    style={input}
-                  />
-                  <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{t.auth.inviteHint}</Text>
-                </>
-              )}
-            </>
-          )}
-          <TextInput value={email} onChangeText={setEmail} placeholder={t.auth.email} placeholderTextColor={colors.secondaryLabel} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" style={input} />
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t.auth.password}
-            placeholderTextColor={colors.secondaryLabel}
-            secureTextEntry
-            autoComplete={mode === 'join' ? 'new-password' : 'current-password'}
-            textContentType={mode === 'join' ? 'newPassword' : 'password'}
-            style={input}
-          />
-          <Button title={mode === 'join' ? t.auth.createAccount : t.auth.signIn} onPress={submit} loading={busy} />
+          {providers.map((p) => (
+            <Button key={p} title={`${t.auth.continueWith} ${PROVIDER_NAMES[p]}`} variant="outline" size="md" onPress={() => social(p)} />
+          ))}
+          <Text style={{ ...type.caption, textAlign: 'center' }}>{t.auth.orEmail}</Text>
         </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      )}
+
+      <Card>
+        {mode === 'join' && (
+          <>
+            <Muted>{t.auth.welcomeRole}</Muted>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
+              {ROLES.map((r) => (
+                <Chip key={r} label={t.join[r].title} active={role === r} onPress={() => setRole(r)} />
+              ))}
+            </View>
+            <Muted>{t.join[role].body}</Muted>
+            <Field label={t.auth.fullName} value={fullName} onChangeText={setFullName} autoComplete="name" textContentType="name" />
+            <PhoneField
+              label={t.auth.phone}
+              number={phone.number}
+              country={phone.country}
+              onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
+              onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
+            />
+            {inviteOnly && (
+              <Field
+                label={t.auth.inviteCode}
+                value={inviteCode}
+                onChangeText={setInviteCode}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                maxLength={200}
+                hint={t.auth.inviteHint}
+              />
+            )}
+          </>
+        )}
+        <Field label={t.auth.email} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
+        <Field
+          label={t.auth.password}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoComplete={mode === 'join' ? 'new-password' : 'current-password'}
+          textContentType={mode === 'join' ? 'newPassword' : 'password'}
+        />
+        {/* Errors and "check your email" sit right above the button that caused them. */}
+        <FormMessage message={message} />
+        <Button title={mode === 'join' ? t.auth.createAccount : t.auth.signIn} onPress={submit} loading={busy} />
+      </Card>
+    </FormScreen>
   );
 }
