@@ -660,7 +660,7 @@ export const zh: Dictionary = {
     idDocument: '身份证件',
     licenceDocument: '向导执照',
     firstAidDocument: '急救证书',
-    statusChecked: '已由 Kwetuly 核实',
+    statusChecked: '已由 Kwetuly 检查',
     statusWaiting: '已上传，等待审核',
     statusMissing: '未上传',
     statusExpired: '已过期，请上传新的',

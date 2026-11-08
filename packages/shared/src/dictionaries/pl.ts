@@ -668,7 +668,7 @@ export const pl: Dictionary = {
     statusChecked: 'Sprawdzone przez Kwetuly',
     statusWaiting: 'Przesłane, czeka na sprawdzenie',
     statusMissing: 'Nie przesłano',
-    statusExpired: 'Wygasł, prześlij nowy',
+    statusExpired: 'Dokument wygasł, prześlij nowy',
     documentsTitle: 'Twoje dokumenty',
     documentsNote: 'Dokumenty są prywatne. Podróżni widzą tylko, co sprawdziło Kwetuly.',
     licenceUpload: 'Licencja przewodnika lub karta rejestracyjna',
