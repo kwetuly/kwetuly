@@ -17,7 +17,8 @@
 --      on inserts, on status changes, when the organiser changes and when organizer_kind changes (M1:
 --      a guide trip turns into a traveller trip when the guide row is deleted). The profile row is
 --      read FOR SHARE (L1), so an approval and a phone change cannot both slip through at once.
---      In the organizer_kind case the trip is moved back to 'pending' instead of raising an error,
+--      An approved but cancelled trip that is un-cancelled is checked again too (M-1).
+--      In the organizer_kind and un-cancel cases the trip is moved back to 'pending' instead of raising an error,
 --      so deleting a guide or an account (foreign key "set null" on guide_id) is never blocked.
 --      The gate runs after group_trips_guard and group_trips_guard_name (BEFORE triggers fire in
 --      name order), so it sees the final status and organizer_kind.
@@ -79,7 +80,32 @@
 --       or (p_guide_id is null and p_company is null and exists (
 --             select 1 from public.profiles p where p.id = (select auth.uid()) and p.phone_verified_at is not null));
 --   $$;
---   -- public.guard_profile_role(): re-create the version from 20261016001800_onboarded_gate_followup.sql.
+--   -- public.guard_profile_role() as in 20261016001800_onboarded_gate_followup.sql (before the column goes):
+--   create or replace function public.guard_profile_role()
+--   returns trigger
+--   language plpgsql
+--   set search_path = ''
+--   as $$
+--   begin
+--     if not private.is_trusted() then
+--       if new.role is distinct from old.role then
+--         raise exception 'Only admins can change roles';
+--       end if;
+--       new.onboarded_at := old.onboarded_at;
+--       -- A confirmed number stays confirmed only while it is unchanged.
+--       if new.phone is distinct from old.phone then
+--         new.phone_verified_at := null;
+--       else
+--         new.phone_verified_at := old.phone_verified_at;
+--       end if;
+--     elsif new.phone is distinct from old.phone
+--           and new.phone_verified_at is not distinct from old.phone_verified_at then
+--       -- Trusted callers too: a new number is not confirmed unless this same update confirms it.
+--       new.phone_verified_at := null;
+--     end if;
+--     return new;
+--   end;
+--   $$;
 --   alter table public.profiles drop column phone_called_at;
 --   (Then deploy the website and app from before this change: they read phone_called_at.)
 
@@ -162,8 +188,11 @@ begin
   if tg_op = 'UPDATE'
      and old.status = 'approved'
      and old.organizer_id = new.organizer_id
-     and old.organizer_kind = new.organizer_kind then
-    -- Already public under the same organiser and kind; phone changes are handled by D.
+     and old.organizer_kind = new.organizer_kind
+     and not (old.cancelled and not new.cancelled) then
+    -- Already public under the same organiser and kind, and not being un-cancelled; phone changes
+    -- are handled by D. An approved but cancelled trip (F skips cancelled trips) is checked again
+    -- when it is un-cancelled.
     return new;
   end if;
 
@@ -176,8 +205,9 @@ begin
   end if;
 
   if tg_op = 'UPDATE' and old.status = 'approved' and old.organizer_id = new.organizer_id then
-    -- M1: the trip became a traveller trip (its guide row was deleted). Take it off the public list
-    -- rather than refuse, so deleting a guide or an account is never blocked.
+    -- M1: the trip became a traveller trip (its guide row was deleted), or (M-1) an approved but
+    -- cancelled trip is being un-cancelled. Take it off the public list rather than refuse, so
+    -- deleting a guide or an account is never blocked; it waits for Kwetuly's call and approval.
     new.status := 'pending';
     return new;
   end if;
@@ -236,6 +266,7 @@ create table private.group_trip_submissions (
   created_at timestamptz not null default now()
 );
 create index group_trip_submissions_organizer_idx on private.group_trip_submissions (organizer_id, created_at desc);
+create index group_trip_submissions_created_idx on private.group_trip_submissions (created_at);
 alter table private.group_trip_submissions enable row level security;
 revoke all on private.group_trip_submissions from public, anon, authenticated;
 
@@ -265,8 +296,10 @@ begin
     return true;
   end if;
   if p_insert then
+    -- Housekeeping for everyone (L-b): rows older than 2 days are never counted again. Uses
+    -- group_trip_submissions_created_idx; few rows expire between two submissions.
     delete from private.group_trip_submissions s
-     where s.organizer_id = v_uid and s.created_at < now() - interval '2 days';
+     where s.created_at < now() - interval '2 days';
     if (select count(*) from private.group_trip_submissions s
         where s.organizer_id = v_uid and s.created_at > now() - interval '24 hours') >= 5 then
       return true;
