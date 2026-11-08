@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from './supabase';
 
-export type Profile = { role: 'traveler' | 'guide' | 'provider' | 'investor' | 'admin'; full_name: string | null; phone: string | null; onboarded_at: string | null };
+export type Profile = { role: 'traveler' | 'guide' | 'provider' | 'investor' | 'admin'; full_name: string | null; phone: string | null; phone_verified_at: string | null; onboarded_at: string | null };
 
 type Auth = { session: Session | null; ready: boolean };
 
@@ -50,7 +50,7 @@ export function useProfile() {
     queryKey: ['profile', userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('role, full_name, phone, onboarded_at').eq('id', userId!).single<Profile>();
+      const { data, error } = await supabase.from('profiles').select('role, full_name, phone, phone_verified_at, onboarded_at').eq('id', userId!).single<Profile>();
       if (error) throw error;
       return data;
     },

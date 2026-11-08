@@ -665,7 +665,7 @@ export const pl: Dictionary = {
     idDocument: 'Dokument tożsamości',
     licenceDocument: 'Licencja przewodnika',
     firstAidDocument: 'Certyfikat pierwszej pomocy',
-    statusChecked: 'Sprawdzone przez Rafrikę',
+    statusChecked: 'Sprawdzone przez Kwetuly',
     statusWaiting: 'Przesłane, czeka na sprawdzenie',
     statusMissing: 'Nie przesłano',
     statusExpired: 'Wygasł, prześlij nowy',

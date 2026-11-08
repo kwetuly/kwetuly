@@ -119,8 +119,14 @@ export default function MyPackagesScreen() {
   }
 
   // Deleting cannot be undone, so ask first, and say so when it fails.
+  // Alert.alert with buttons does nothing on react-native-web, so the web build asks with the browser's own dialog.
   function confirmRemove(p: GuidePackage) {
-    Alert.alert(pt.removeConfirm.replace('{title}', p.title), undefined, [
+    const question = pt.removeConfirm.replace('{title}', p.title);
+    if (process.env.EXPO_OS === 'web') {
+      if (window.confirm(question)) void remove(p.id);
+      return;
+    }
+    Alert.alert(question, undefined, [
       { text: t.ux.cancel, style: 'cancel' },
       { text: pt.remove, style: 'destructive', onPress: () => remove(p.id) },
     ]);

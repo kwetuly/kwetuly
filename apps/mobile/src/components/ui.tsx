@@ -184,7 +184,7 @@ export function Button({
                   {title}
                 </Text>
                 {detail ? (
-                  <Text numberOfLines={1} maxFontSizeMultiplier={maxFontScale} style={{ textAlign: 'center', color: palette.fg, fontSize: textSize.subhead, lineHeight: 20, ...font.semibold }}>
+                  <Text numberOfLines={2} maxFontSizeMultiplier={maxFontScale} style={{ textAlign: 'center', color: palette.fg, fontSize: textSize.subhead, lineHeight: 20, ...font.semibold }}>
                     {detail}
                   </Text>
                 ) : null}

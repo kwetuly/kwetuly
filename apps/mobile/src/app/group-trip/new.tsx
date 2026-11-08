@@ -25,7 +25,9 @@ export default function NewGroupTripScreen() {
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
   const asBusiness = approvedBusiness || profile.data?.role === 'admin';
-  // Travellers organise as themselves once their account has a phone; Kwetuly calls it before approving.
+  // Travellers organise as themselves once Kwetuly has confirmed their account phone: the database
+  // (private.can_organize_group) refuses the trip until profiles.phone_verified_at is set, and a phone
+  // change clears it. So the form only opens after that, instead of failing at the end.
   const asTraveller = !asGuide && !asBusiness;
 
   const [f, setF] = useState({
@@ -49,6 +51,7 @@ export default function NewGroupTripScreen() {
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   // Travellers without a phone add it right here (no guide sign-up wizard), then carry on with the form.
   const [phone, setPhone] = useState(() => initialPhone(null));
@@ -63,6 +66,19 @@ export default function NewGroupTripScreen() {
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState screen loading />;
+  // Without the profile we cannot tell whether the phone is confirmed, so offer a retry instead of guessing.
+  if (profile.isError || mine.isError) {
+    return (
+      <ScreenState
+        screen
+        error={profile.error ?? mine.error}
+        onRetry={() => {
+          void profile.refetch();
+          void mine.refetch();
+        }}
+      />
+    );
+  }
   // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && businessWaiting) {
     return (
@@ -75,26 +91,19 @@ export default function NewGroupTripScreen() {
   }
   if (asTraveller && !profile.data?.phone) {
     const savePhone = async () => {
-      setMessage(null);
+      setPhoneError(null);
       setBusy(true);
       try {
         await saveAccountPhone(userId, phone.number, phone.country);
         await queryClient.invalidateQueries({ queryKey: ['profile', userId] });
       } catch (e) {
-        setMessage({ tone: 'error', text: (e as Error).message === 'phone' ? t.phone.invalidGeneric : t.auth.error });
+        setPhoneError((e as Error).message === 'phone' ? t.phone.invalidGeneric : t.auth.error);
       } finally {
         setBusy(false);
       }
     };
     return (
-      <FormScreen
-        bar={
-          <>
-            <FormMessage message={message} />
-            <Button title={t.extras.saveDetails} onPress={savePhone} loading={busy} />
-          </>
-        }
-      >
+      <FormScreen bar={<Button title={t.extras.saveDetails} onPress={savePhone} loading={busy} />}>
         <Stack.Title>{t.extras.addPhone}</Stack.Title>
         <Card>
           <Muted>{t.extras.phoneNeeded}</Muted>
@@ -102,9 +111,27 @@ export default function NewGroupTripScreen() {
             label={t.auth.phone}
             number={phone.number}
             country={phone.country}
-            onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
-            onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
+            onChangeNumber={(number) => {
+              setPhoneError(null);
+              setPhone((p) => ({ ...p, number }));
+            }}
+            onChangeCountry={(country) => {
+              setPhoneError(null);
+              setPhone((p) => ({ ...p, country }));
+            }}
+            error={phoneError}
           />
+        </Card>
+      </FormScreen>
+    );
+  }
+  // A phone is saved but Kwetuly has not confirmed it yet: say so now rather than after the whole form.
+  if (asTraveller && !profile.data?.phone_verified_at) {
+    return (
+      <FormScreen centred>
+        <Stack.Title>{g.newTitle}</Stack.Title>
+        <Card>
+          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', profile.data?.phone ?? '')}</Muted>
         </Card>
       </FormScreen>
     );
