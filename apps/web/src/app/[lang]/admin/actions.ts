@@ -185,8 +185,10 @@ export async function reviewGroupTrip(formData: FormData) {
   redirect(backTo(formData, locale, '#groups', { done: approve ? 'approved' : 'rejected' }));
 }
 
-// After calling a traveller organiser, mark their phone number as confirmed. Only the number the
-// admin saw (and called) is confirmed: if the organiser changed it meanwhile, nothing is updated.
+// After calling a traveller organiser, mark their phone number as confirmed by Kwetuly's call
+// (phone_called_at, which traveller group trips need; an SMS code alone sets only phone_verified_at).
+// Only the number the admin saw (and called) is confirmed: if the organiser changed it meanwhile,
+// nothing is updated.
 export async function confirmPhone(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
@@ -196,9 +198,10 @@ export async function confirmPhone(formData: FormData) {
   const shown = String(formData.get('phone') ?? '').trim();
   if (!userId || !shown || shown.length > 32) redirect(backTo(formData, locale, '#groups', { error: 'phone_changed' }));
   const supabase = await createClient();
+  const calledAt = new Date().toISOString();
   const { data, error } = await supabase
     .from('profiles')
-    .update({ phone_verified_at: new Date().toISOString() })
+    .update({ phone_verified_at: calledAt, phone_called_at: calledAt })
     .eq('id', userId)
     .eq('phone', shown)
     .select('id');
@@ -419,7 +422,7 @@ export async function approveBatch(formData: FormData) {
     if (item.updatedAt !== pick.updatedAt) return 'changed';
     if (item.sample) return 'sample';
     if (item.readiness.state !== 'ready') {
-      return item.kind === 'group' && item.row.organizer_kind === 'traveller' && !item.row.organiser?.phone_verified_at ? 'phone' : 'notready';
+      return item.kind === 'group' && item.row.organizer_kind === 'traveller' && !item.row.organiser?.phone_called_at ? 'phone' : 'notready';
     }
 
     let result: { data: { id: string }[] | null; error: unknown };

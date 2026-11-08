@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { createGroupTrip, getMyGuide, saveAccountPhone } from '@/lib/api-more';
@@ -25,8 +25,12 @@ export default function NewGroupTripScreen() {
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
   const asBusiness = approvedBusiness || profile.data?.role === 'admin';
-  // Travellers organise as themselves once their account has a phone; Kwetuly calls it before approving.
+  // Travellers organise as themselves once their account has a full international phone number. The
+  // trip stays pending and private; Kwetuly calls that number, and the database
+  // (private.check_group_approval) refuses to approve it until an admin has pressed "Phone confirmed"
+  // (profiles.phone_called_at). An SMS code alone does not count.
   const asTraveller = !asGuide && !asBusiness;
+  const callFirst = asTraveller && !profile.data?.phone_called_at;
 
   const [f, setF] = useState({
     company: '',
@@ -49,6 +53,7 @@ export default function NewGroupTripScreen() {
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   // Travellers without a phone add it right here (no guide sign-up wizard), then carry on with the form.
   const [phone, setPhone] = useState(() => initialPhone(null));
@@ -63,6 +68,19 @@ export default function NewGroupTripScreen() {
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState screen loading />;
+  // Without the profile we cannot tell whether a phone is saved, so offer a retry instead of guessing.
+  if (profile.isError || mine.isError) {
+    return (
+      <ScreenState
+        screen
+        error={profile.error ?? mine.error}
+        onRetry={() => {
+          void profile.refetch();
+          void mine.refetch();
+        }}
+      />
+    );
+  }
   // Business accounts organise only once Kwetuly has approved their listing.
   if (!asGuide && businessWaiting) {
     return (
@@ -73,28 +91,22 @@ export default function NewGroupTripScreen() {
       </FormScreen>
     );
   }
-  if (asTraveller && !profile.data?.phone) {
+  // No phone yet, or an old one that is not a full international number: add or re-enter it here.
+  if (asTraveller && !isOrganiserPhone(profile.data?.phone)) {
     const savePhone = async () => {
-      setMessage(null);
+      setPhoneError(null);
       setBusy(true);
       try {
         await saveAccountPhone(userId, phone.number, phone.country);
         await queryClient.invalidateQueries({ queryKey: ['profile', userId] });
       } catch (e) {
-        setMessage({ tone: 'error', text: (e as Error).message === 'phone' ? t.phone.invalidGeneric : t.auth.error });
+        setPhoneError((e as Error).message === 'phone' ? t.phone.invalidGeneric : t.auth.error);
       } finally {
         setBusy(false);
       }
     };
     return (
-      <FormScreen
-        bar={
-          <>
-            <FormMessage message={message} />
-            <Button title={t.extras.saveDetails} onPress={savePhone} loading={busy} />
-          </>
-        }
-      >
+      <FormScreen bar={<Button title={t.extras.saveDetails} onPress={savePhone} loading={busy} />}>
         <Stack.Title>{t.extras.addPhone}</Stack.Title>
         <Card>
           <Muted>{t.extras.phoneNeeded}</Muted>
@@ -102,14 +114,20 @@ export default function NewGroupTripScreen() {
             label={t.auth.phone}
             number={phone.number}
             country={phone.country}
-            onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
-            onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
+            onChangeNumber={(number) => {
+              setPhoneError(null);
+              setPhone((p) => ({ ...p, number }));
+            }}
+            onChangeCountry={(country) => {
+              setPhoneError(null);
+              setPhone((p) => ({ ...p, country }));
+            }}
+            error={phoneError}
           />
         </Card>
       </FormScreen>
     );
   }
-
   async function submit() {
     const min = parseInt(f.min, 10) || 1;
     const max = parseInt(f.max, 10);
@@ -158,7 +176,8 @@ export default function NewGroupTripScreen() {
       );
       router.replace({ pathname: '/group-trip/[id]', params: { id } });
     } catch (e) {
-      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
+      const err = e as Error;
+      setMessage({ tone: 'error', text: isGroupTripLimitError(err) ? t.extras.groupLimit : isDisplayNameReservedError(err) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }
@@ -174,9 +193,13 @@ export default function NewGroupTripScreen() {
       }
     >
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
+      {callFirst && (
+        <Card>
+          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', profile.data?.phone ?? '')}</Muted>
+        </Card>
+      )}
       <Card>
         <Muted>{complete ? t.extras.completeBody : g.newBody}</Muted>
-        {asTraveller && <Muted>{t.extras.travellerCheck}</Muted>}
         {asBusiness && !asGuide && <Field label={g.companyName} value={f.company} onChangeText={set('company')} />}
         <Field label={g.tripTitle} value={f.title} onChangeText={set('title')} />
         <ChipSelect label={g.tripType} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialty} onChange={set('specialty')} multiple={false} />

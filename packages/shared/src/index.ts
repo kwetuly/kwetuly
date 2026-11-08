@@ -16,5 +16,6 @@ export * from './packages';
 export * from './businesses';
 export * from './invest';
 export * from './display-name';
+export * from './group-trip-rules';
 export * from './links';
 export * from './catalogue';

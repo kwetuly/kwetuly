@@ -34,8 +34,11 @@ export function PhoneField({
   country,
   onChangeNumber,
   onChangeCountry,
+  error,
 }: {
   label: string;
+  /** A message from the screen (for example a failed save). Shown here instead of the field's own check, so it appears once. */
+  error?: string | null;
   number: string;
   country: string;
   onChangeNumber: (value: string) => void;
@@ -52,6 +55,7 @@ export function PhoneField({
   const current = countries.find((c) => c.code === country) ?? countries[0];
   const example = phoneExample(current.code);
   const looksWrong = checked && number.trim() !== '' && normalizePhone(number, current.code) === null;
+  const shownError = error || (looksWrong ? p.invalid.replace('{country}', current.name) : null);
 
   return (
     <View style={{ gap: space.sm }}>
@@ -99,7 +103,7 @@ export function PhoneField({
             borderRadius: radius.button,
             borderCurve: 'continuous',
             borderWidth: 1,
-            borderColor: looksWrong ? brand.danger : 'transparent',
+            borderColor: shownError ? brand.danger : 'transparent',
             paddingHorizontal: space.lg,
             paddingVertical: space.md,
             fontSize: textSize.body,
@@ -107,11 +111,11 @@ export function PhoneField({
           }}
         />
       </View>
-      {looksWrong && (
+      {shownError ? (
         <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: brand.danger, fontSize: textSize.footnote, fontWeight: '600' }}>
-          {p.invalid.replace('{country}', current.name)}
+          {shownError}
         </Text>
-      )}
+      ) : null}
       <Text style={type.caption}>
         {current.name} {current.dial}. {example ? p.example.replace('{example}', example) : ''}
       </Text>

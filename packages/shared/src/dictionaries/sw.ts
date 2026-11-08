@@ -832,7 +832,7 @@ export const sw: Dictionary = {
     idDocument: 'Kitambulisho',
     licenceDocument: 'Leseni ya uongozaji',
     firstAidDocument: 'Cheti cha huduma ya kwanza',
-    statusChecked: 'Imehakikiwa na Kwetuly',
+    statusChecked: 'Imekaguliwa na Kwetuly',
     statusWaiting: 'Imepakiwa, inasubiri ukaguzi',
     statusMissing: 'Haijapakiwa',
     statusExpired: 'Imeisha muda, tafadhali pakia mpya',

@@ -38,6 +38,8 @@ export default function SecurityScreen() {
 
   // Cancel starts over: no half-typed code and no error left from the last try.
   function cancelSetup() {
+    // Remove the half-finished factor too; if this fails, start() clears it next time.
+    if (setup) supabase.auth.mfa.unenroll({ factorId: setup.factorId }).catch(() => {});
     setSetup(null);
     setCode('');
     setMessage(null);

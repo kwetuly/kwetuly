@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus } from 'lucide-react';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isOrganiserPhone } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { redirect } from 'next/navigation';
@@ -87,7 +87,8 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       </div>
     );
   }
-  if (asTraveller && !user.phone) {
+  // No phone yet, or an old one that is not a full international number: add or re-enter it first.
+  if (asTraveller && !isOrganiserPhone(user.phone)) {
     return (
       <div className="card space-y-4">
         <p className="text-lg">{t.extras.phoneNeeded}</p>
@@ -99,10 +100,11 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
   const today = new Date().toISOString().slice(0, 10);
   return (
     <form action={createGroupTrip} className="card grid gap-4 sm:grid-cols-2">
-      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{params.error === 'name' ? t.auth.nameReserved : t.auth.error}</p>}
+      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{params.error === 'name' ? t.auth.nameReserved : params.error === 'limit' ? t.extras.groupLimit : t.auth.error}</p>}
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="complete" value={complete ? '1' : ''} />
-      {asTraveller && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.travellerCheck}</p>}
+      {/* Travellers may submit before Kwetuly has called; the trip stays private until the call and approval. */}
+      {asTraveller && !user.phoneCalled && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.travellerCheck}</p>}
       {asBusiness && !asGuide && (
         <label className="block sm:col-span-2">
           <span className="label">{g.companyName}</span>

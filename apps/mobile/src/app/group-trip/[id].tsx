@@ -120,6 +120,23 @@ export default function GroupTripScreen() {
       <Image source={photoSource(photo)} style={{ backgroundColor: colors.fill, height: media.detailPhoto }} contentFit="cover" accessibilityLabel={photo.alt} />
 
       <Animated.View entering={contentFadeIn} style={{ paddingHorizontal: layout.screenX, gap: space.lg }}>
+        {/* Shown first, so an organiser who has just submitted sees where the trip stands. A traveller's trip
+            waits for Kwetuly's call to the account phone before it can be approved and go live. */}
+        {/* A live traveller trip is hidden again if the organiser changes their phone, until Kwetuly calls. */}
+        {isOrganizer && g.organizer_kind === 'traveller' && g.status === 'approved' && !g.cancelled && (
+          <Card>
+            <Muted>{t.extras.phoneChangeNote}</Muted>
+          </Card>
+        )}
+        {isOrganizer && g.status === 'pending' && !g.cancelled && (
+          <Card>
+            <Muted>
+              {g.organizer_kind === 'traveller' && !profile.data?.phone_called_at && profile.data?.phone
+                ? t.extras.groupWaitingCall.replace('{phone}', profile.data.phone)
+                : g10n.statusPending}
+            </Muted>
+          </Card>
+        )}
         <Card>
           <Text style={{ ...type.label, color: brand.link }}>{specialtyName(g.specialty, locale)}</Text>
           {g.guides?.is_sample && <Badge label={t.extras.sampleTrip} tone="sand" />}
@@ -194,7 +211,6 @@ export default function GroupTripScreen() {
 
         {isOrganizer && (
           <>
-            {g.status === 'pending' && <Muted>{g10n.statusPending}</Muted>}
             <TripRequests tripId={g.id} cancelled={g.cancelled} />
           </>
         )}
