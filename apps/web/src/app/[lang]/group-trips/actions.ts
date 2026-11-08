@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone, isReservedDisplayName } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone, isReservedDisplayName, tanzaniaToday } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -63,7 +63,7 @@ export async function createGroupTrip(_previous: FormResult, formData: FormData)
     trip.start_date &&
     trip.end_date &&
     trip.end_date >= trip.start_date &&
-    trip.start_date >= new Date().toISOString().slice(0, 10);
+    trip.start_date >= tanzaniaToday(); // "today" is Tanzania's date (EAT), not UTC
   if (!datesOk) return { error: 'dates' };
   const peopleOk =
     Number.isFinite(trip.max_people) &&

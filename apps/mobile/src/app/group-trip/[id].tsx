@@ -130,8 +130,9 @@ export default function GroupTripScreen() {
           </Card>
         )}
         {isOrganizer && g.status === 'rejected' && (
-          <Card>
-            <Muted>{g10n.statusRejected}</Muted>
+          // Red like the website's note: this trip will not go live.
+          <Card tone="danger">
+            <Text style={{ ...type.callout, ...font.semibold, color: brand.danger }}>{g10n.statusRejected}</Text>
           </Card>
         )}
         {isOrganizer && g.status === 'pending' && !g.cancelled && (
@@ -179,41 +180,43 @@ export default function GroupTripScreen() {
           ))}
         </Card>
 
-        <Card>
-          {state === 'organiser' ? (
-            <EmptyState glyph={GLYPHS.calendar} text={g10n.organising} />
-          ) : state === 'accepted' ? (
-            <>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                <SuccessCheck />
-                <Text style={{ ...type.cardTitle, flex: 1 }}>{g10n.accepted}</Text>
-              </View>
-              {contact.data && <Text selectable style={type.title3}>{contact.data}</Text>}
-              <PayDeposit kind="group" id={mine.data!.id} totalUsd={(mine.data!.price_per_person_usd ?? g.price_per_person_usd) * mine.data!.seats} percent={g.deposit_percent} />
-            </>
-          ) : state === 'requested' ? (
-            <>
-              <View accessibilityRole={justJoined ? 'alert' : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-                <SuccessCheck haptic={justJoined} />
-                <Text style={{ ...type.body, ...font.semibold, flex: 1 }}>{g10n.requested}</Text>
-              </View>
-              <Button title={g10n.cancel} variant="outline" size="md" onPress={cancel} />
-            </>
-          ) : state === 'open' ? (
-            <>
-              <SectionTitle>{mine.data?.status === 'cancelled' ? g10n.askAgain : g10n.joinTitle}</SectionTitle>
-              {mine.data?.status === 'declined' && <Muted>{g10n.declined}</Muted>}
-              <Muted>{g10n.joinBody}</Muted>
-              <Field label={g10n.seats} value={seats} onChangeText={setSeats} keyboardType="number-pad" />
-              <Field label={t.profile.contact} value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? undefined} />
-              <Field label={g10n.message} value={message} onChangeText={setMessage} multiline />
-            </>
-          ) : (
-            <EmptyState glyph={GLYPHS.calendarClosed} text={g.cancelled ? g10n.cancelledTrip : g10n.closed} />
-          )}
-          {chat.data && <Button title={t.chats.openChat} variant="outline" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
-          <Text style={type.caption}>{g10n.payNote}</Text>
-        </Card>
+        {/* The organiser has nothing to do here except open the trip chat; requests to answer follow below. */}
+        {(state !== 'organiser' || chat.data) && (
+          <Card>
+            {state === 'organiser' ? null : state === 'accepted' ? (
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                  <SuccessCheck />
+                  <Text style={{ ...type.cardTitle, flex: 1 }}>{g10n.accepted}</Text>
+                </View>
+                {contact.data && <Text selectable style={type.title3}>{contact.data}</Text>}
+                <PayDeposit kind="group" id={mine.data!.id} totalUsd={(mine.data!.price_per_person_usd ?? g.price_per_person_usd) * mine.data!.seats} percent={g.deposit_percent} />
+              </>
+            ) : state === 'requested' ? (
+              <>
+                <View accessibilityRole={justJoined ? 'alert' : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                  <SuccessCheck haptic={justJoined} />
+                  <Text style={{ ...type.body, ...font.semibold, flex: 1 }}>{g10n.requested}</Text>
+                </View>
+                <Button title={g10n.cancel} variant="outline" size="md" onPress={cancel} />
+              </>
+            ) : state === 'open' ? (
+              <>
+                <SectionTitle>{mine.data?.status === 'cancelled' ? g10n.askAgain : g10n.joinTitle}</SectionTitle>
+                {mine.data?.status === 'declined' && <Muted>{g10n.declined}</Muted>}
+                <Muted>{g10n.joinBody}</Muted>
+                <Field label={g10n.seats} value={seats} onChangeText={setSeats} keyboardType="number-pad" />
+                <Field label={t.profile.contact} value={contactInput} onChangeText={setContactInput} placeholder={profile.data?.phone ?? undefined} />
+                <Field label={g10n.message} value={message} onChangeText={setMessage} multiline />
+              </>
+            ) : (
+              <EmptyState glyph={GLYPHS.calendarClosed} text={g.cancelled ? g10n.cancelledTrip : g10n.closed} />
+            )}
+            {chat.data && <Button title={t.chats.openChat} variant="outline" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/chat/${chat.data!.id}`)} />}
+            {/* How travellers pay the organiser: not for the organiser themselves. */}
+            {state !== 'organiser' && <Text style={type.caption}>{g10n.payNote}</Text>}
+          </Card>
+        )}
 
         {/* A rejected trip never opens: no requests to answer and nothing to cancel. */}
         {isOrganizer && g.status !== 'rejected' && <TripRequests tripId={g.id} cancelled={g.cancelled} />}

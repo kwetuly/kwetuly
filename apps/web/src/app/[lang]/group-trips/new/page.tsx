@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus } from 'lucide-react';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isOrganiserPhone } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isOrganiserPhone, tanzaniaToday } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { redirect } from 'next/navigation';
@@ -99,10 +99,11 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
     );
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Tanzania's date, the same as the server check, so a trip can start "today" in Tanzania.
+  const today = tanzaniaToday();
   return (
     // Refusals come back into the form, which keeps everything typed (KeepForm).
-    <KeepForm action={createGroupTrip} messages={{ name: t.auth.nameReserved, limit: t.extras.groupLimit, dates: t.extras.groupDates, people: t.extras.groupPeople }} fallback={t.auth.error} className="card grid gap-4 sm:grid-cols-2">
+    <KeepForm action={createGroupTrip} messages={{ name: t.auth.nameReserved, limit: t.extras.groupLimit, dates: t.extras.groupDates, people: complete ? t.extras.groupPeopleComplete : t.extras.groupPeople }} fallback={t.auth.error} className="card grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="complete" value={complete ? '1' : ''} />
       {/* Travellers may submit before Kwetuly has called; the trip stays private until the call and approval. */}

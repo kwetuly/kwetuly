@@ -21,10 +21,20 @@ export default function MyGroupTripsScreen() {
   const { approvedBusiness } = useCanOffer();
   const canOrganise = guide.data?.guide?.verification_status === 'approved' || approvedBusiness || profile.data?.role === 'admin';
 
-  const state = (trip: OrganisedTrip) => (trip.cancelled ? g.cancelledTrip : trip.status === 'pending' ? g.statusPending : trip.status === 'rejected' ? g.statusRejected : null);
+  type Note = { label: string; tone: 'sand' | 'danger' } | null;
+  // Cancelled and not approved read as warnings (red, like the website); waiting stays sand.
+  const state = (trip: OrganisedTrip): Note =>
+    trip.cancelled
+      ? { label: g.cancelledTrip, tone: 'danger' }
+      : trip.status === 'pending'
+        ? { label: g.statusPending, tone: 'sand' }
+        : trip.status === 'rejected'
+          ? { label: g.statusRejected, tone: 'danger' }
+          : null;
   const requestLabel: Record<string, string> = { requested: g.stateRequested, accepted: g.stateAccepted, declined: g.stateDeclined };
+  const requestNote = (status: string): Note => (requestLabel[status] ? { label: requestLabel[status], tone: 'sand' } : null);
 
-  const row = (trip: OrganisedTrip, note: string | null) => (
+  const row = (trip: OrganisedTrip, note: Note) => (
     <Link key={trip.id} href={{ pathname: '/group-trip/[id]', params: { id: trip.id } }} asChild>
       <Pressable>
         <Card>
@@ -32,7 +42,7 @@ export default function MyGroupTripsScreen() {
           <Muted>
             {formatDateRange(trip.start_date, trip.end_date, locale)} · {trip.seats_taken + (trip.already_going ?? 0)}/{trip.max_people}
           </Muted>
-          {note && <Badge label={note} tone="sand" />}
+          {note && <Badge label={note.label} tone={note.tone} />}
         </Card>
       </Pressable>
     </Link>
@@ -65,7 +75,7 @@ export default function MyGroupTripsScreen() {
       <View style={{ gap: space.md }}>
         <SectionTitle>{g.joined}</SectionTitle>
         {joined.data?.length === 0 && <Muted>{g.noneJoined}</Muted>}
-        {(joined.data ?? []).map((j) => row(j.group_trips!, state(j.group_trips!) ?? requestLabel[j.status] ?? null))}
+        {(joined.data ?? []).map((j) => row(j.group_trips!, state(j.group_trips!) ?? requestNote(j.status)))}
       </View>
       {canOrganise && <Button title={g.start} onPress={() => router.push('/group-trip/new')} />}
     </ScrollView>

@@ -158,7 +158,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
               {tripChat && (
                 <Link href={`/${locale}/chats/${tripChat.id}`} className="btn w-full">{t.chats.openChat}</Link>
               )}
-              <p className="text-xs text-white/70">{g.payNote}</p>
+              {/* How travellers pay the organiser: not for the organiser themselves. */}
+              {!isOrganizer && <p className="text-xs text-white/70">{g.payNote}</p>}
             </div>
           </div>
         </aside>
