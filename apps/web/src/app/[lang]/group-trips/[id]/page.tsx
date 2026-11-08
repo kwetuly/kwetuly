@@ -17,13 +17,14 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { EVENTS, approxTzs, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, approxTzs, formatPhone, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import { LogEvent } from '@/components/analytics';
 import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
 import { depositState } from '@/lib/requests';
 import { cancelGroupTrip, cancelMyRequest, requestToJoin, respondToRequest } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
+import { ConfirmSubmitButton } from '@/components/confirm-submit-button';
 
 type Search = Record<string, string | string[] | undefined>;
 
@@ -67,6 +68,9 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
   // "Spots left" means nothing once a trip is cancelled or has started; a full trip still shows "Full".
   // Organisers keep the bar on a trip that is waiting for review.
   const showSpots = !trip.cancelled && !isPast(trip) && (isOrganizer || trip.status === 'approved');
+  // The organiser of a traveller trip learns it is waiting for Kwetuly's call to their account phone.
+  // That note replaces the "goes live once approved" note, so only one message shows.
+  const waitingCall = !trip.cancelled && trip.status === 'pending' && isOrganizer && trip.organizer_kind === 'traveller' && !!user?.phone && !user.phoneCalled;
   return (
     <>
       {status.sent && <LogEvent event={EVENTS.groupTripJoined} props={{ trip: trip.id, locale }} />}
@@ -90,14 +94,11 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1fr_380px]">
         <div className="space-y-8">
-          {status.created && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
+          {status.created && !waitingCall && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
           {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
           {!trip.cancelled && trip.status === 'pending' && (
             <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">
-              {/* The organiser of a traveller trip learns it is waiting for Kwetuly's call to their account phone. */}
-              {isOrganizer && trip.organizer_kind === 'traveller' && user?.phone && !user.phoneCalled
-                ? t.extras.groupWaitingCall.replace('{phone}', user.phone)
-                : g.statusPending}
+              {waitingCall ? t.extras.groupWaitingCall.replace('{phone}', formatPhone(user?.phone)) : g.statusPending}
             </p>
           )}
           {isOrganizer && trip.organizer_kind === 'traveller' && trip.status === 'approved' && !trip.cancelled && (
@@ -343,7 +344,7 @@ function OrganizerTools({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; l
       <a href="#requests" className="btn w-full">{t.groups.requestsTitle}</a>
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="group_trip_id" value={trip.id} />
-      <button className="w-full text-sm font-semibold text-white/70 underline hover:text-white">{t.groups.cancelTrip}</button>
+      <ConfirmSubmitButton confirmText={t.extras.cancelTripConfirm} className="w-full text-sm font-semibold text-white/70 underline hover:text-white">{t.groups.cancelTrip}</ConfirmSubmitButton>
     </form>
   );
 }

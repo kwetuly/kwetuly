@@ -382,7 +382,7 @@ export const fr: Dictionary = {
     subtitle: 'Rejoignez un petit groupe mené par un guide tanzanien ou une agence approuvés. Partagez le voyage, faites des rencontres et divisez les frais.',
     start: 'Créer un voyage de groupe',
     mine: 'Mes voyages de groupe',
-    none: 'Aucun voyage de groupe ouvert pour le moment. Guides et agences ajoutent régulièrement de nouveaux départs : revenez bientôt.',
+    none: 'Aucun voyage de groupe ouvert pour le moment. Guides, agences et voyageurs en publient régulièrement : revenez bientôt, ou lancez votre propre groupe.',
     spotsLeft: 'places restantes',
     full: 'Complet',
     perPerson: 'par personne',

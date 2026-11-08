@@ -274,7 +274,10 @@ export function Chip({
     <Pressable
       onPress={press}
       accessibilityRole={accessibilityRole ?? (onPress ? 'button' : 'text')}
-      accessibilityState={{ selected: !!active }}
+      // Toggle chips say whether they are chosen: accessibilityState on iOS and Android, and
+      // aria-pressed on the web build (react-native-web ignores accessibilityState).
+      accessibilityState={active !== undefined ? { selected: active } : undefined}
+      {...(Platform.OS === 'web' && active !== undefined ? { 'aria-pressed': active } : null)}
       hitSlop={{ top: (control.touch - control.chip) / 2, bottom: (control.touch - control.chip) / 2 }}
     >
       {({ pressed }) => (

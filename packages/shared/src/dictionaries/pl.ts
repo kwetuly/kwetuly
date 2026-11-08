@@ -382,7 +382,7 @@ export const pl: Dictionary = {
     subtitle: 'Dołącz do małej grupy prowadzonej przez zatwierdzonego tanzańskiego przewodnika lub biuro. Dziel się podróżą, poznawaj ludzi i dziel koszty.',
     start: 'Zorganizuj wyprawę grupową',
     mine: 'Moje wyprawy grupowe',
-    none: 'Obecnie nie ma otwartych wypraw grupowych. Przewodnicy i biura regularnie dodają nowe terminy – zajrzyj wkrótce.',
+    none: 'Obecnie nie ma otwartych wypraw grupowych. Przewodnicy, biura i podróżnicy regularnie dodają nowe – zajrzyj wkrótce albo załóż własną grupę.',
     spotsLeft: 'wolnych miejsc',
     full: 'Brak miejsc',
     perPerson: 'za osobę',

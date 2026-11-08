@@ -161,6 +161,14 @@ export function splitPhone(saved: string | null | undefined, fallback: string = 
   return { country: phoneCountryOrDefault(fallback), national: value };
 }
 
+// A saved number written for people to read: +255712345678 becomes +255 712 345 678. Anything that
+// is not a valid international number is returned as it was saved.
+export function formatPhone(saved: string | null | undefined): string {
+  const value = (saved ?? '').trim();
+  const parsed = value.startsWith('+') ? parsePhoneNumberFromString(value) : undefined;
+  return parsed?.isValid() ? parsed.formatInternational() : value;
+}
+
 // What to save for a phone field, given what was saved before. A number the person did not change
 // is kept exactly as stored, even one the current check would refuse or an old "+2550…" form, so
 // nobody is stuck on a form and a confirmed number keeps its confirmation. Otherwise the new

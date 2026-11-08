@@ -382,7 +382,7 @@ export const de: Dictionary = {
     subtitle: 'Reisen Sie in einer kleinen Gruppe mit einem freigegebenen tansanischen Guide oder Veranstalter. Teilen Sie die Reise, lernen Sie Leute kennen und teilen Sie die Kosten.',
     start: 'Gruppenreise starten',
     mine: 'Meine Gruppenreisen',
-    none: 'Derzeit sind keine Gruppenreisen offen. Guides und Veranstalter stellen regelmäßig neue Termine ein – schauen Sie bald wieder vorbei.',
+    none: 'Derzeit sind keine Gruppenreisen offen. Guides, Veranstalter und Reisende stellen regelmäßig neue ein – schauen Sie bald wieder vorbei oder starten Sie Ihre eigene Gruppe.',
     spotsLeft: 'Plätze frei',
     full: 'Ausgebucht',
     perPerson: 'pro Person',

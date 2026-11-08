@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EVENTS, specialtyPhoto, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, specialtyPhoto, formatPhone, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
@@ -132,7 +132,7 @@ export default function GroupTripScreen() {
           <Card>
             <Muted>
               {g.organizer_kind === 'traveller' && !profile.data?.phone_called_at && profile.data?.phone
-                ? t.extras.groupWaitingCall.replace('{phone}', profile.data.phone)
+                ? t.extras.groupWaitingCall.replace('{phone}', formatPhone(profile.data.phone))
                 : g10n.statusPending}
             </Muted>
           </Card>

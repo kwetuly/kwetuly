@@ -22,5 +22,12 @@ export const control = {
 /** Photo heights. */
 export const media = { thumb: 72, chart: 140, chatMedia: 240, composerMax: 120, cardPhoto: 160, detailPhoto: 220, hero: 260, map: 300 } as const;
 
+/**
+ * Web build only: expo-router draws the tab bar as a floating pill fixed at the top of the page
+ * (24 from the top, 40 high). Tab headers start below it, with a small gap, so it never covers
+ * the title. Phones keep their native tab bar and are not affected.
+ */
+export const webTabBarClearance = 72;
+
 /** Largest text scaling for buttons, chips and badges, so long labels wrap instead of being cut off. Body text is not capped. */
 export const maxFontScale = 1.4;

@@ -15,10 +15,11 @@ export function devicePhoneCountry(): string {
 
 /**
  * Starting values for a phone field: a saved international number (+255…) is split into its
- * country and the local way of writing it; otherwise the device region is the first guess.
+ * country and the local way of writing it; otherwise `fallbackCountry`, or the device region, is the
+ * first guess.
  */
-export function initialPhone(saved: string | null | undefined): { country: string; number: string } {
-  const { country, national } = splitPhone(saved, devicePhoneCountry());
+export function initialPhone(saved: string | null | undefined, fallbackCountry?: string): { country: string; number: string } {
+  const { country, national } = splitPhone(saved, fallbackCountry ?? devicePhoneCountry());
   return { country, number: national };
 }
 
