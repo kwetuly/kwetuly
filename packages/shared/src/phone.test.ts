@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatPhone,
   normalizePhone,
   phoneCountries,
   phoneCountryOrDefault,
@@ -140,5 +141,17 @@ describe('resolvePhone', () => {
     expect(resolvePhone('0712 345 678', 'TZ', null)).toBe('+255712345678');
     expect(resolvePhone('12345', 'US', '+255712345678')).toBeNull();
     expect(resolvePhone('  ', 'TZ', '+255712345678')).toBeNull();
+  });
+});
+
+describe('formatPhone', () => {
+  it('writes saved numbers in groups for reading', () => {
+    expect(formatPhone('+255712345678')).toBe('+255 712 345 678');
+    expect(formatPhone('+447400123456')).toBe('+44 7400 123456');
+  });
+  it('returns anything else as saved', () => {
+    expect(formatPhone('0712 345 678')).toBe('0712 345 678');
+    expect(formatPhone('+2551')).toBe('+2551');
+    expect(formatPhone(null)).toBe('');
   });
 });

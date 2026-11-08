@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus } from 'lucide-react';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isOrganiserPhone } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isOrganiserPhone } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { redirect } from 'next/navigation';
@@ -10,6 +10,7 @@ import { businessApproval, getCurrentUser, welcomePath } from '@/lib/auth';
 import { PhotoHero } from '@/components/photo-hero';
 import { createGroupTrip } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
+import { KeepForm } from '@/components/keep-form';
 import { NameInput } from '@/components/name-input';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -99,12 +100,12 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
 
   const today = new Date().toISOString().slice(0, 10);
   return (
-    <form action={createGroupTrip} className="card grid gap-4 sm:grid-cols-2">
-      {params.error && <p className="rounded-[5px] bg-red-50 p-3 text-red-800 sm:col-span-2">{params.error === 'name' ? t.auth.nameReserved : params.error === 'limit' ? t.extras.groupLimit : t.auth.error}</p>}
+    // Refusals come back into the form, which keeps everything typed (KeepForm).
+    <KeepForm action={createGroupTrip} messages={{ name: t.auth.nameReserved, limit: t.extras.groupLimit }} fallback={t.auth.error} className="card grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="complete" value={complete ? '1' : ''} />
       {/* Travellers may submit before Kwetuly has called; the trip stays private until the call and approval. */}
-      {asTraveller && !user.phoneCalled && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.travellerCheck}</p>}
+      {asTraveller && !user.phoneCalled && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.phoneConfirmWait.replace('{phone}', () => formatPhone(user.phone))}</p>}
       {asBusiness && !asGuide && (
         <label className="block sm:col-span-2">
           <span className="label">{g.companyName}</span>
@@ -188,9 +189,10 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       </label>
       <label className="block sm:col-span-2">
         <span className="label">{g.organiserContact}</span>
-        <input name="contact" className="field" required minLength={3} maxLength={160} />
+        {/* Travellers start from their account phone; the form keeps whatever they type instead. */}
+        <input name="contact" className="field" required minLength={3} maxLength={160} defaultValue={asTraveller ? formatPhone(user.phone) : undefined} />
       </label>
       <SubmitButton className="btn sm:col-span-2">{g.submit}</SubmitButton>
-    </form>
+    </KeepForm>
   );
 }

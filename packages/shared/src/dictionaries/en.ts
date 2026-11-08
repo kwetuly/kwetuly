@@ -520,7 +520,7 @@ export const en = {
     subtitle: 'Join a small group led by an approved Tanzanian guide or tour company. Share the trip, meet new people and split the cost.',
     start: 'Start a group trip',
     mine: 'My group trips',
-    none: 'No group trips are open right now. Guides and companies add new departures regularly, so check back soon.',
+    none: 'No group trips are open right now. Guides, companies and travellers post new ones regularly, so check back soon, or start your own group.',
     spotsLeft: 'spots left',
     full: 'Full',
     perPerson: 'per person',

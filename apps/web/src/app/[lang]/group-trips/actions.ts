@@ -6,6 +6,7 @@ import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import type { FormResult } from '@/components/keep-form';
 
 const localeOf = (formData: FormData): Locale => {
   const value = String(formData.get('locale') ?? '');
@@ -20,9 +21,9 @@ const date = (formData: FormData, key: string) => {
 
 // Verified guides post as themselves; business accounts post under their company name.
 // The database re-checks who may organise and keeps every new trip pending until approved.
-export async function createGroupTrip(formData: FormData) {
+// A refusal comes back as { error } so the form (KeepForm) keeps everything typed; success redirects.
+export async function createGroupTrip(_previous: FormResult, formData: FormData): Promise<FormResult> {
   const locale = localeOf(formData);
-  const back = `/${locale}/group-trips/new${formData.get('complete') === '1' ? '?complete=1&' : '?'}`;
   const user = await getCurrentUser();
   if (!user) redirect(`/${locale}/login`);
   if (!user.onboarded) redirect(welcomePath(locale, `/${locale}/group-trips/new${formData.get('complete') === '1' ? '?complete=1' : ''}`));
@@ -30,7 +31,7 @@ export async function createGroupTrip(formData: FormData) {
   const asGuide = user.guide?.status === 'approved';
   const business = await businessApproval(user);
   // Business accounts organise only once Kwetuly has approved their listing.
-  if (!asGuide && business === 'waiting') redirect(`${back}error=1`);
+  if (!asGuide && business === 'waiting') return { error: 'generic' };
   const asBusiness = business === 'approved' || user.role === 'admin';
   // Travellers organise as themselves: no guide and no company. Completing a group means some
   // people are already going; they count against the spots.
@@ -72,16 +73,16 @@ export async function createGroupTrip(formData: FormData) {
     contact.length >= 3 &&
     trip.already_going < trip.max_people &&
     (trip.guide_id || trip.company_name || (!asBusiness && isOrganiserPhone(user.phone)));
-  if (!valid) redirect(`${back}error=1`);
+  if (!valid) return { error: 'generic' };
   // Names that look like Kwetuly are kept for its own team (the database refuses them too; admins may).
-  if (user.role !== 'admin' && isReservedDisplayName(trip.company_name)) redirect(`${back}error=name`);
+  if (user.role !== 'admin' && isReservedDisplayName(trip.company_name)) return { error: 'name' };
 
   const supabase = await createClient();
   const { data, error } = await supabase.from('group_trips').insert(trip).select('id').single();
-  if (isDisplayNameReservedError(error)) redirect(`${back}error=name`);
+  if (isDisplayNameReservedError(error)) return { error: 'name' };
   // Travellers: at most 3 open group trips and 5 new ones in 24 hours (enforced by the database).
-  if (isGroupTripLimitError(error)) redirect(`${back}error=limit`);
-  if (error || !data) redirect(`${back}error=1`);
+  if (isGroupTripLimitError(error)) return { error: 'limit' };
+  if (error || !data) return { error: 'generic' };
   await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
 
   redirect(`/${locale}/group-trips/${data.id}?created=1`);

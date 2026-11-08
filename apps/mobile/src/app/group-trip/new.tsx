@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone } from '@kwetuly/shared';
+import { DEFAULT_PHONE_COUNTRY, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { createGroupTrip, getMyGuide, saveAccountPhone } from '@/lib/api-more';
@@ -56,13 +56,14 @@ export default function NewGroupTripScreen() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   // Travellers without a phone add it right here (no guide sign-up wizard), then carry on with the form.
-  const [phone, setPhone] = useState(() => initialPhone(null));
+  // Tanzania first, the same as the website, rather than the device or browser region.
+  const [phone, setPhone] = useState(() => initialPhone(null, DEFAULT_PHONE_COUNTRY));
   // Start the contact field from the account phone once it is known; never overwrite what was typed.
   const [prefilledFrom, setPrefilledFrom] = useState<string | null>(null);
   const accountPhone = profile.data?.phone ?? null;
   if (accountPhone && accountPhone !== prefilledFrom) {
     setPrefilledFrom(accountPhone);
-    setF((current) => (current.contact.trim() ? current : { ...current, contact: accountPhone }));
+    setF((current) => (current.contact.trim() ? current : { ...current, contact: formatPhone(accountPhone) }));
   }
 
   const needsSetup = useNeedsSetup();
@@ -195,7 +196,7 @@ export default function NewGroupTripScreen() {
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
       {callFirst && (
         <Card>
-          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', profile.data?.phone ?? '')}</Muted>
+          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', formatPhone(profile.data?.phone))}</Muted>
         </Card>
       )}
       <Card>
