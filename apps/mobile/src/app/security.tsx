@@ -36,6 +36,13 @@ export default function SecurityScreen() {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['mfa-factors'] });
 
+  // Cancel starts over: no half-typed code and no error left from the last try.
+  function cancelSetup() {
+    setSetup(null);
+    setCode('');
+    setMessage(null);
+  }
+
   async function start() {
     setBusy(true);
     setMessage(null);
@@ -110,7 +117,7 @@ export default function SecurityScreen() {
               </Text>
               <Field label={t.ux.code} value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={7} code />
               <Button title={t.ux.confirmCode} onPress={confirm} loading={busy} />
-              <Button title={t.ux.cancel} variant="text" size="md" onPress={() => setSetup(null)} />
+              <Button title={t.ux.cancel} variant="text" size="md" onPress={cancelSetup} />
             </>
           ) : (
             <Button title={t.ux.turnOn} onPress={start} loading={busy} />

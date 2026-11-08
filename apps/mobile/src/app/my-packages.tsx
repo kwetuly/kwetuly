@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { Redirect, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -118,8 +118,21 @@ export default function MyPackagesScreen() {
     }
   }
 
+  // Deleting cannot be undone, so ask first, and say so when it fails.
+  function confirmRemove(p: GuidePackage) {
+    Alert.alert(pt.removeConfirm.replace('{title}', p.title), undefined, [
+      { text: t.ux.cancel, style: 'cancel' },
+      { text: pt.remove, style: 'destructive', onPress: () => remove(p.id) },
+    ]);
+  }
+
   async function remove(id: string) {
-    await deletePackage(id).catch(() => undefined);
+    setMessage(null);
+    try {
+      await deletePackage(id);
+    } catch {
+      setMessage({ tone: 'error', text: pt.removeError });
+    }
     await queryClient.invalidateQueries({ queryKey: ['my-packages'] });
   }
 
@@ -157,7 +170,7 @@ export default function MyPackagesScreen() {
             )}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'center' }}>
               <Button title={t.dashboard.edit} variant="outline" size="md" onPress={() => open(p)} style={{ flexGrow: 1 }} />
-              <Button title={pt.remove} variant="danger" size="md" onPress={() => remove(p.id)} />
+              <Button title={pt.remove} variant="danger" size="md" onPress={() => confirmRemove(p)} />
             </View>
           </Card>
         ))}

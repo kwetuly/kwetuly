@@ -31,9 +31,9 @@ export const TRIP_CATEGORIES = [
 ] as const;
 
 export const TRIP_OPERATORS = {
-  partner: L('Operated by a licensed partner', 'Inaendeshwa na mshirika mwenye leseni', 'Organisé par un partenaire agréé', 'Gestito da un partner autorizzato', 'Durchgeführt von einem lizenzierten Partner', 'Realizowane przez licencjonowanego partnera', '由持证合作伙伴运营'),
+  partner: L('Operated by a Kwetuly partner', 'Inaendeshwa na mshirika wa Kwetuly', 'Organisé par un partenaire de Kwetuly', 'Gestito da un partner di Kwetuly', 'Durchgeführt von einem Kwetuly-Partner', 'Realizowane przez partnera Kwetuly', '由 Kwetuly 合作伙伴运营'),
   kwetuly: L('Operated by Kwetuly', 'Inaendeshwa na Kwetuly', 'Organisé par Kwetuly', 'Gestito da Kwetuly', 'Durchgeführt von Kwetuly', 'Realizowane przez Kwetuly', '由 Kwetuly 运营'),
-  guide: L('Led by a verified Kwetuly guide', 'Inaongozwa na mwongozaji wa Kwetuly', 'Mené par un guide Kwetuly vérifié', 'Guidato da una guida Kwetuly verificata', 'Geführt von einem geprüften Kwetuly-Guide', 'Prowadzone przez sprawdzonego przewodnika Kwetuly', '由 Kwetuly 认证导游带领'),
+  guide: L('Led by a Kwetuly-approved guide', 'Inaongozwa na mwongozaji aliyeidhinishwa na Kwetuly', 'Mené par un guide approuvé par Kwetuly', 'Guidato da una guida approvata da Kwetuly', 'Geführt von einem von Kwetuly freigegebenen Guide', 'Prowadzone przez przewodnika zatwierdzonego przez Kwetuly', '由经 Kwetuly 批准的导游带领'),
 } as const;
 
 export const MONTHS: Record<Locale, readonly string[]> = {

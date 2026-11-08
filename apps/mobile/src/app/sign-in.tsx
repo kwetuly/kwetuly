@@ -62,6 +62,7 @@ export default function SignInScreen() {
     await supabase.auth.signOut();
     setFactorId(null);
     setCode('');
+    setMessage(null);
   }
 
   if (factorId) {
@@ -80,6 +81,10 @@ export default function SignInScreen() {
             maxLength={7}
             autoFocus
             code
+            returnKeyType="go"
+            onSubmitEditing={() => {
+              if (!busy) verifyCode();
+            }}
             error={message?.tone === 'error' ? message.text : null}
           />
           <Button title={t.auth.signIn} onPress={verifyCode} loading={busy} />
@@ -221,6 +226,10 @@ export default function SignInScreen() {
           secureTextEntry
           autoComplete={mode === 'join' ? 'new-password' : 'current-password'}
           textContentType={mode === 'join' ? 'newPassword' : 'password'}
+          returnKeyType="go"
+          onSubmitEditing={() => {
+            if (!busy) submit();
+          }}
         />
         {/* Errors and "check your email" sit right above the button that caused them. */}
         <FormMessage message={message} />

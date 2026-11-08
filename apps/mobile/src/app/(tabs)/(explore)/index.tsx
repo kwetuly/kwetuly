@@ -1,4 +1,4 @@
-import { Platform, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, ScrollView, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Link, Stack, router } from 'expo-router';
 import { Image } from 'expo-image';
@@ -6,23 +6,20 @@ import { useQuery } from '@tanstack/react-query';
 import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@kwetuly/shared';
 import { GroupTripCard } from '@/components/cards';
 import { GLYPHS } from '@/components/glyph';
-import { Badge, Button, Card, Chip, ChipRow, EmptyState, ErrorState, IconSquare, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
+import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
 import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
-import { brand, colors, control, layout, media, radius, scrim, space, textSize } from '@/theme';
+import { brand, colors, layout, media, radius, scrim, space } from '@/theme';
 import { useType } from '@/lib/use-type';
 
 export default function ExploreScreen() {
   const { type, font } = useType();
   const { t, locale } = useI18n();
-  const { width } = useWindowDimensions();
   const groups = useQuery({ queryKey: ['group-trips'], queryFn: listGroupTrips });
   const hero = PHOTOS.saddleHikers;
-  // Two equal columns; an odd last tile keeps its width instead of stretching.
-  const tileWidth = (width - layout.screenX * 2 - space.md) / 2;
   const trips = groups.data ?? [];
 
   return (
@@ -97,27 +94,21 @@ export default function ExploreScreen() {
         )}
       </Section>
 
-      {/* Everything on Kwetuly: the same sections as the website menu, as icon tiles. */}
+      {/* Everything on Kwetuly: the same sections as the website menu. One full-width row each, so the
+          whole description shows in every language (two columns cut German and English off at 320–375 wide). */}
       <Section title={t.explore.title} style={{ paddingHorizontal: layout.screenX }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.md }}>
+        <ListGroup>
           {MENU.map((section) => (
-            <Link
+            <ListRow
               key={section.slug}
-              href={section.items.length === 1 ? appHref(section, section.items[0]) : { pathname: '/section/[slug]', params: { slug: section.slug } }}
-              asChild
-            >
-              <Card accessibilityRole="link" style={{ width: tileWidth, minHeight: control.tile, gap: space.sm }}>
-                <IconSquare glyph={menuIcon(section.icon)} size="md" />
-                <Text numberOfLines={2} style={{ ...type.cardTitle, fontSize: textSize.body }}>
-                  {section.label[locale]}
-                </Text>
-                <Text numberOfLines={2} style={type.caption}>
-                  {section.tagline[locale]}
-                </Text>
-              </Card>
-            </Link>
+              icon={menuIcon(section.icon)}
+              title={section.label[locale]}
+              subtitle={section.tagline[locale]}
+              accessibilityRole="link"
+              onPress={() => router.push(section.items.length === 1 ? appHref(section, section.items[0]) : { pathname: '/section/[slug]', params: { slug: section.slug } })}
+            />
           ))}
-        </View>
+        </ListGroup>
       </Section>
 
       {/* Why Kwetuly */}

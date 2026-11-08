@@ -1,4 +1,4 @@
-import { Children, Fragment, useEffect, useState, type ReactNode } from 'react';
+import { Children, Fragment, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -29,6 +29,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
+import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { useI18n } from '@/lib/i18n';
@@ -326,11 +327,13 @@ export function Badge({ label, tone = 'mint', icon: leading }: { label: string; 
 
 export function Avatar({ name, uri, size = 56 }: { name: string; uri?: string | null; size?: number }) {
   const { font } = useType();
-  if (uri) {
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: colors.fill }} contentFit="cover" accessibilityLabel={name} />;
+  // A photo that fails to load (deleted, offline, bad link) falls back to the initial letter.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
+  if (uri && uri !== failedUri) {
+    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: radius.chip, backgroundColor: colors.fill }} contentFit="cover" accessibilityLabel={name} onError={() => setFailedUri(uri)} />;
   }
   return (
-    <View style={{ width: size, height: size, borderRadius: radius.chip, borderCurve: 'continuous', backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
+    <View accessible accessibilityRole="image" accessibilityLabel={name} style={{ width: size, height: size, borderRadius: radius.chip, borderCurve: 'continuous', backgroundColor: brand.mint, alignItems: 'center', justifyContent: 'center' }}>
       <Text style={{ color: brand.forest, ...font.extrabold, fontSize: size / 2.5 }}>{name.charAt(0)}</Text>
     </View>
   );
@@ -625,6 +628,8 @@ export function Field({
   secureTextEntry,
   autoFocus,
   code,
+  returnKeyType,
+  onSubmitEditing,
 }: {
   label: string;
   value: string;
@@ -645,6 +650,9 @@ export function Field({
   autoFocus?: boolean;
   /** A short code (sign-in code): large, spaced and centred. */
   code?: boolean;
+  /** The keyboard's Enter key, e.g. "go" on the last field of a form that `onSubmitEditing` submits. */
+  returnKeyType?: TextInputProps['returnKeyType'];
+  onSubmitEditing?: () => void;
 }) {
   const { type, font } = useType();
   const [focused, setFocused] = useState(false);
@@ -665,6 +673,8 @@ export function Field({
         textContentType={textContentType}
         secureTextEntry={secureTextEntry}
         autoFocus={autoFocus}
+        returnKeyType={returnKeyType}
+        onSubmitEditing={onSubmitEditing ? () => onSubmitEditing() : undefined}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={hint}
         onFocus={() => setFocused(true)}
@@ -688,12 +698,17 @@ export function Toggle({ label, value, onChange }: { label: string; value: boole
 }
 
 /**
- * A form page: scrolls under the header, keeps fields above the keyboard (iOS pads, Android shrinks), and
- * can pin the main action in a bottom bar (`bar`) where the thumb reaches it.
+ * A form page: scrolls under the header, keeps fields and the bottom bar (`bar`, the main action where the
+ * thumb reaches it) above the keyboard.
+ *
+ * Both platforms pad: Expo apps are edge-to-edge on Android, so the window no longer resizes for the keyboard
+ * (app.json leaves softwareKeyboardLayoutMode at its default; never set it to "pan", which would move the view
+ * twice). The offset is the header height (status bar included), because this view starts below the header.
  */
 export function FormScreen({ children, bar, centred }: { children: ReactNode; bar?: ReactNode; centred?: boolean }) {
+  const headerHeight = useContext(HeaderHeightContext) ?? 0;
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView behavior="padding" keyboardVerticalOffset={headerHeight} style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"

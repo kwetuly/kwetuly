@@ -7,6 +7,8 @@ const guideEn = {
   add: 'Add a package',
   editPackage: 'Edit package',
   remove: 'Delete',
+  removeConfirm: 'Delete “{title}”? This cannot be undone.',
+  removeError: 'The package could not be deleted. Check your connection and try again.',
   submit: 'Save and send for review',
   saveDraft: 'Save as draft',
   kindField: 'Type of package',
@@ -38,6 +40,8 @@ const guideSw: GuideTexts = {
   add: 'Ongeza kifurushi',
   editPackage: 'Hariri kifurushi',
   remove: 'Futa',
+  removeConfirm: 'Ufute “{title}”? Hatua hii haiwezi kutenduliwa.',
+  removeError: 'Kifurushi hakikuweza kufutwa. Angalia mtandao wako kisha ujaribu tena.',
   submit: 'Hifadhi na tuma kwa ukaguzi',
   saveDraft: 'Hifadhi kama rasimu',
   kindField: 'Aina ya kifurushi',
@@ -79,7 +83,7 @@ export const packages_en = {
   ask: 'Ask about this package',
   about: 'About the package: {title}',
   catalogTitle: 'Packages by local guides',
-  catalogBody: 'Cultural visits, day trips and one-on-one trips, offered by verified guides and checked by Kwetuly.',
+  catalogBody: 'Cultural visits, day trips and one-on-one trips, offered by Kwetuly-approved guides. Kwetuly reviews each package before it goes live.',
   all: 'All',
   catalogEmpty: 'No packages here yet. Check back soon.',
 };
@@ -104,7 +108,7 @@ export const packages_sw: PackagesText = {
   ask: 'Uliza kuhusu kifurushi hiki',
   about: 'Kuhusu kifurushi: {title}',
   catalogTitle: 'Vifurushi vya waongozaji wa ndani',
-  catalogBody: 'Ziara za kitamaduni, safari za siku moja na safari za mtu mmoja, zinazotolewa na waongozaji waliothibitishwa na kukaguliwa na Kwetuly.',
+  catalogBody: 'Ziara za kitamaduni, safari za siku moja na safari za mtu mmoja, zinazotolewa na waongozaji walioidhinishwa na Kwetuly. Kwetuly hukagua kila kifurushi kabla hakijachapishwa.',
   all: 'Zote',
   catalogEmpty: 'Bado hakuna vifurushi hapa. Rudi baadaye.',
 };
@@ -127,7 +131,7 @@ export const packages_fr: PackagesText = {
   ask: 'Poser une question sur cette formule',
   about: 'Au sujet de la formule : {title}',
   catalogTitle: 'Formules proposées par des guides locaux',
-  catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides vérifiés et contrôlés par Kwetuly.',
+  catalogBody: 'Visites culturelles, excursions d’une journée et voyages en tête-à-tête, proposés par des guides approuvés par Kwetuly. Kwetuly relit chaque offre avant sa mise en ligne.',
   all: 'Toutes',
   catalogEmpty: 'Pas encore de formule ici. Revenez bientôt.',
 };
@@ -150,7 +154,7 @@ export const packages_it: PackagesText = {
   ask: 'Chiedi di questo pacchetto',
   about: 'Riguardo al pacchetto: {title}',
   catalogTitle: 'Pacchetti di guide locali',
-  catalogBody: 'Visite culturali, gite di un giorno e viaggi individuali, offerti da guide verificate e controllati da Kwetuly.',
+  catalogBody: 'Visite culturali, gite di un giorno e viaggi individuali, offerti da guide approvate da Kwetuly. Kwetuly esamina ogni pacchetto prima della pubblicazione.',
   all: 'Tutti',
   catalogEmpty: 'Ancora nessun pacchetto qui. Torna presto.',
 };
@@ -173,7 +177,7 @@ export const packages_de: PackagesText = {
   ask: 'Zu diesem Angebot fragen',
   about: 'Zum Angebot: {title}',
   catalogTitle: 'Angebote lokaler Guides',
-  catalogBody: 'Kulturbesuche, Tagesausflüge und Reisen zu zweit mit dem Guide, angeboten von geprüften Guides und von Kwetuly kontrolliert.',
+  catalogBody: 'Kulturbesuche, Tagesausflüge und Reisen zu zweit mit dem Guide, angeboten von Guides, die Kwetuly freigegeben hat. Kwetuly sieht jedes Angebot vor der Veröffentlichung durch.',
   all: 'Alle',
   catalogEmpty: 'Hier gibt es noch keine Angebote. Schauen Sie bald wieder vorbei.',
 };
@@ -196,7 +200,7 @@ export const packages_pl: PackagesText = {
   ask: 'Zapytaj o ten pakiet',
   about: 'W sprawie pakietu: {title}',
   catalogTitle: 'Pakiety lokalnych przewodników',
-  catalogBody: 'Wizyty kulturalne, wycieczki jednodniowe i wyprawy jeden na jeden, oferowane przez sprawdzonych przewodników i sprawdzone przez Kwetuly.',
+  catalogBody: 'Wizyty kulturalne, wycieczki jednodniowe i wyprawy jeden na jeden, oferowane przez przewodników zatwierdzonych przez Kwetuly. Kwetuly przegląda każdą ofertę przed publikacją.',
   all: 'Wszystkie',
   catalogEmpty: 'Nie ma tu jeszcze pakietów. Zajrzyj wkrótce.',
 };
@@ -219,7 +223,7 @@ export const packages_zh: PackagesText = {
   ask: '咨询此套餐',
   about: '关于套餐：{title}',
   catalogTitle: '当地向导的套餐',
-  catalogBody: '文化探访、一日游和一对一行程，由经过核实的向导提供，并经 Kwetuly 审核。',
+  catalogBody: '文化探访、一日游和一对一行程，由经 Kwetuly 批准的向导提供。每个行程发布前都经 Kwetuly 审阅。',
   all: '全部',
   catalogEmpty: '这里还没有套餐，请稍后再来看看。',
 };

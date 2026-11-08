@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
-import { createGroupTrip, getMyGuide } from '@/lib/api-more';
+import { PhoneField, initialPhone } from '@/components/phone-field';
+import { createGroupTrip, getMyGuide, saveAccountPhone } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -11,7 +12,7 @@ import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
-// Verified guides post as themselves; business accounts post under their company name.
+// Approved guides post as themselves; business accounts post under their company name.
 // Every group trip waits for Kwetuly's approval before travellers see it.
 export default function NewGroupTripScreen() {
   const { t, locale } = useI18n();
@@ -48,6 +49,16 @@ export default function NewGroupTripScreen() {
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const queryClient = useQueryClient();
+  // Travellers without a phone add it right here (no guide sign-up wizard), then carry on with the form.
+  const [phone, setPhone] = useState(() => initialPhone(null));
+  // Start the contact field from the account phone once it is known; never overwrite what was typed.
+  const [prefilledFrom, setPrefilledFrom] = useState<string | null>(null);
+  const accountPhone = profile.data?.phone ?? null;
+  if (accountPhone && accountPhone !== prefilledFrom) {
+    setPrefilledFrom(accountPhone);
+    setF((current) => (current.contact.trim() ? current : { ...current, contact: accountPhone }));
+  }
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
@@ -63,11 +74,37 @@ export default function NewGroupTripScreen() {
     );
   }
   if (asTraveller && !profile.data?.phone) {
+    const savePhone = async () => {
+      setMessage(null);
+      setBusy(true);
+      try {
+        await saveAccountPhone(userId, phone.number, phone.country);
+        await queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+      } catch (e) {
+        setMessage({ tone: 'error', text: (e as Error).message === 'phone' ? t.phone.invalidGeneric : t.auth.error });
+      } finally {
+        setBusy(false);
+      }
+    };
     return (
-      <FormScreen centred>
+      <FormScreen
+        bar={
+          <>
+            <FormMessage message={message} />
+            <Button title={t.extras.saveDetails} onPress={savePhone} loading={busy} />
+          </>
+        }
+      >
+        <Stack.Title>{t.extras.addPhone}</Stack.Title>
         <Card>
           <Muted>{t.extras.phoneNeeded}</Muted>
-          <Button title={t.extras.addPhone} onPress={() => router.replace('/profile-edit')} />
+          <PhoneField
+            label={t.auth.phone}
+            number={phone.number}
+            country={phone.country}
+            onChangeNumber={(number) => setPhone((p) => ({ ...p, number }))}
+            onChangeCountry={(country) => setPhone((p) => ({ ...p, country }))}
+          />
         </Card>
       </FormScreen>
     );

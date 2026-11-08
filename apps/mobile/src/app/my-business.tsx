@@ -151,7 +151,11 @@ function Editor({
       )}
 
       <Card>
-        <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })}>
+        <Pressable
+          onPress={async () => setPhoto((await pickPhoto()) ?? photo)}
+          accessibilityRole="button"
+          accessibilityLabel={photo ? `${bt.photoField}. ${bt.filePicked}` : bt.photoField}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })}>
           <Avatar name={f.name || '?'} uri={photo?.uri ?? business?.photo_url} size={media.thumb} />
           <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{bt.photoField}</Text>
         </Pressable>
@@ -168,9 +172,11 @@ function Editor({
         />
         <Field label={bt.storyField} value={f.story} onChangeText={set('story')} multiline />
         <Field label={bt.websiteField} value={f.website} onChangeText={set('website')} autoCapitalize="none" keyboardType="url" />
-        {/* A check icon (instead of a "✓" character) once a file is picked or already on file. */}
+        {/* A check icon once a file is picked or already on file, with a line that says so (read out by screen readers). */}
         <Button
           title={`${bt.morePhotosField} (${business?.photos.length ?? 0}/6)`}
+          detail={extra ? bt.filePicked : undefined}
+          accessibilityLabel={extra ? `${bt.morePhotosField} (${business?.photos.length ?? 0}/6). ${bt.filePicked}` : undefined}
           icon={extra ? GLYPHS.check : GLYPHS.attach}
           variant="outline"
           size="md"
@@ -178,6 +184,8 @@ function Editor({
         />
         <Button
           title={bt.licenceField}
+          detail={licence ? bt.filePicked : business?.provider_private?.licence_document_path ? bt.fileOnFile : undefined}
+          accessibilityLabel={licence ? `${bt.licenceField}. ${bt.filePicked}` : business?.provider_private?.licence_document_path ? `${bt.licenceField}. ${bt.fileOnFile}` : undefined}
           icon={licence || business?.provider_private?.licence_document_path ? GLYPHS.check : GLYPHS.attach}
           variant="outline"
           size="md"
