@@ -25,10 +25,11 @@ export default function NewGroupTripScreen() {
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
   const asBusiness = approvedBusiness || profile.data?.role === 'admin';
-  // Travellers organise as themselves once Kwetuly has confirmed their account phone: the database
-  // (private.can_organize_group) refuses the trip until profiles.phone_verified_at is set, and a phone
-  // change clears it. So the form only opens after that, instead of failing at the end.
+  // Travellers organise as themselves once their account has a phone number. The trip stays pending
+  // and private; Kwetuly calls that number, and the database (private.check_group_approval) refuses
+  // to approve it until an admin has pressed "Phone confirmed" (profiles.phone_verified_at).
   const asTraveller = !asGuide && !asBusiness;
+  const callFirst = asTraveller && !profile.data?.phone_verified_at;
 
   const [f, setF] = useState({
     company: '',
@@ -66,7 +67,7 @@ export default function NewGroupTripScreen() {
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState screen loading />;
-  // Without the profile we cannot tell whether the phone is confirmed, so offer a retry instead of guessing.
+  // Without the profile we cannot tell whether a phone is saved, so offer a retry instead of guessing.
   if (profile.isError || mine.isError) {
     return (
       <ScreenState
@@ -125,18 +126,6 @@ export default function NewGroupTripScreen() {
       </FormScreen>
     );
   }
-  // A phone is saved but Kwetuly has not confirmed it yet: say so now rather than after the whole form.
-  if (asTraveller && !profile.data?.phone_verified_at) {
-    return (
-      <FormScreen centred>
-        <Stack.Title>{g.newTitle}</Stack.Title>
-        <Card>
-          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', profile.data?.phone ?? '')}</Muted>
-        </Card>
-      </FormScreen>
-    );
-  }
-
   async function submit() {
     const min = parseInt(f.min, 10) || 1;
     const max = parseInt(f.max, 10);
@@ -201,9 +190,13 @@ export default function NewGroupTripScreen() {
       }
     >
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
+      {callFirst && (
+        <Card>
+          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', profile.data?.phone ?? '')}</Muted>
+        </Card>
+      )}
       <Card>
         <Muted>{complete ? t.extras.completeBody : g.newBody}</Muted>
-        {asTraveller && <Muted>{t.extras.travellerCheck}</Muted>}
         {asBusiness && !asGuide && <Field label={g.companyName} value={f.company} onChangeText={set('company')} />}
         <Field label={g.tripTitle} value={f.title} onChangeText={set('title')} />
         <ChipSelect label={g.tripType} options={GUIDE_SPECIALTIES.map((s) => ({ value: s.id, label: s[locale] }))} selected={f.specialty} onChange={set('specialty')} multiple={false} />

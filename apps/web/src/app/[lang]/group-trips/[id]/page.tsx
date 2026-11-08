@@ -92,7 +92,14 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
         <div className="space-y-8">
           {status.created && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
           {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
-          {!trip.cancelled && trip.status === 'pending' && <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">{g.statusPending}</p>}
+          {!trip.cancelled && trip.status === 'pending' && (
+            <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">
+              {/* The organiser of a traveller trip learns it is waiting for Kwetuly's call to their account phone. */}
+              {isOrganizer && trip.organizer_kind === 'traveller' && user?.phone && !user.phoneConfirmed
+                ? t.extras.groupWaitingCall.replace('{phone}', user.phone)
+                : g.statusPending}
+            </p>
+          )}
           {trip.status === 'rejected' && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
           {trip.guides?.is_sample && (
             <div className="rounded-[5px] border border-gold bg-sand p-4 text-charcoal">
