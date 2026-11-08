@@ -23,7 +23,7 @@ export default function CallsScreen() {
       data={guides.data ?? []}
       keyExtractor={(g) => g.id}
       contentContainerStyle={{ padding: space.lg, gap: space.md }}
-      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => guides.refetch()} tintColor={brand.leaf} />}
+      refreshControl={<RefreshControl refreshing={guides.isRefetching} onRefresh={() => { guides.refetch(); }} tintColor={brand.leaf} />}
       ListHeaderComponent={
         <View style={{ gap: space.md }}>
           <Stack.Title>{t.calls.book}</Stack.Title>

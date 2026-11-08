@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/native-tabs';
 import { useSession } from '@/lib/auth';
 import { introSeen } from '@/lib/intro';
 import { useI18n } from '@/lib/i18n';
@@ -12,7 +12,8 @@ export default function TabsLayout() {
   // First launch, not signed in: show the welcome slides once.
   if (ready && !session && !introSeen()) return <Redirect href="/intro" />;
   return (
-    <NativeTabs tintColor={brand.leaf} backgroundColor={colors.card} indicatorColor={brand.mint} minimizeBehavior="onScrollDown">
+    // leafDark tint: small tab labels need 4.5:1 on white. The bar stays visible while scrolling (Walter, 2026-11).
+    <NativeTabs tintColor={brand.leafDark} backgroundColor={colors.card} indicatorColor={brand.mint}>
       <NativeTabs.Trigger name="(explore)">
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
         <NativeTabs.Trigger.Label>{t.app.tabExplore}</NativeTabs.Trigger.Label>

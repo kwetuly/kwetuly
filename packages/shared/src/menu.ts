@@ -48,13 +48,13 @@ const SECTIONS: MenuSection[] = [
     icon: 'compass',
     label: L('Guides', 'Waongozaji', 'Guides', 'Guide', 'Guides', 'Przewodnicy', '导游'),
     tagline: L(
-      'Verified local guides, booked direct',
-      'Waongozaji waliothibitishwa, moja kwa moja',
-      'Des guides locaux vérifiés, réservés en direct',
-      'Guide locali verificate, prenotate direttamente',
-      'Geprüfte lokale Guides, direkt gebucht',
-      'Sprawdzeni lokalni przewodnicy, rezerwowani bezpośrednio',
-      '经过认证的本地导游，直接预订',
+      'Approved local guides, booked direct',
+      'Waongozaji walioidhinishwa, moja kwa moja',
+      'Des guides locaux approuvés, réservés en direct',
+      'Guide locali approvate, prenotate direttamente',
+      'Freigegebene lokale Guides, direkt gebucht',
+      'Zatwierdzeni lokalni przewodnicy, rezerwowani bezpośrednio',
+      '已通过审核的本地导游，直接预订',
     ),
     items: [
       {
@@ -85,7 +85,7 @@ const SECTIONS: MenuSection[] = [
       {
         slug: 'trip-requests', icon: 'gavel', href: '/requests/new', status: 'live',
         label: L('Post a trip request', 'Weka ombi la safari', 'Publier une demande de voyage', 'Pubblica una richiesta di viaggio', 'Reiseanfrage stellen', 'Dodaj zapytanie o wyprawę', '发布行程需求'),
-        blurb: L('Describe your trip, verified guides send offers', 'Eleza safari yako, waongozaji wanakutumia ofa', 'Décrivez votre voyage, les guides vous font des offres', 'Descrivi il viaggio, le guide ti fanno offerte', 'Reise beschreiben, Guides schicken Angebote', 'Opisz wyprawę, przewodnicy przyślą oferty', '描述行程，认证导游为你报价'),
+        blurb: L('Describe your trip, approved guides send offers', 'Eleza safari yako, waongozaji walioidhinishwa watakutumia ofa', 'Décrivez votre voyage, les guides vous font des offres', 'Descrivi il viaggio, le guide ti fanno offerte', 'Reise beschreiben, Guides schicken Angebote', 'Opisz wyprawę, przewodnicy przyślą oferty', '描述行程，已通过审核的导游为你报价'),
       },
     ],
   },
@@ -267,13 +267,13 @@ const SECTIONS: MenuSection[] = [
     icon: 'car',
     label: L('Transport', 'Usafiri', 'Transport', 'Trasporti', 'Transport', 'Transport', '交通'),
     tagline: L(
-      'Verified drivers across Tanzania and beyond',
-      'Madereva waliothibitishwa Tanzania na nje',
-      'Des chauffeurs vérifiés en Tanzanie et au-delà',
-      'Autisti verificati in Tanzania e oltre',
-      'Geprüfte Fahrer in Tansania und darüber hinaus',
-      'Sprawdzeni kierowcy w Tanzanii i poza nią',
-      '坦桑尼亚及周边的认证司机',
+      'Drivers and car hire across Tanzania and beyond',
+      'Madereva na magari ya kukodi Tanzania na nje',
+      'Chauffeurs et location de voitures en Tanzanie et au-delà',
+      'Autisti e auto a noleggio in Tanzania e oltre',
+      'Fahrer und Mietwagen in Tansania und darüber hinaus',
+      'Kierowcy i wynajem aut w Tanzanii i poza nią',
+      '坦桑尼亚及周边的司机与租车服务',
     ),
     items: [
       {
@@ -432,24 +432,24 @@ const PARTNERS: MenuSection = {
   icon: 'handshake',
   label: L('For business', 'Kwa biashara', 'Professionnels', 'Per aziende', 'Für Unternehmen', 'Dla firm', '企业合作'),
   tagline: L(
-    'Travel agents and tour companies: work with our verified guides',
-    'Mawakala wa safari na kampuni za utalii: fanyeni kazi na waongozaji wetu waliothibitishwa',
-    'Agences de voyages et tour-opérateurs : travaillez avec nos guides vérifiés',
-    'Agenzie di viaggio e tour operator: lavorate con le nostre guide verificate',
-    'Reisebüros und Veranstalter: arbeiten Sie mit unseren geprüften Guides',
-    'Biura podróży i touroperatorzy: współpracujcie z naszymi sprawdzonymi przewodnikami',
-    '旅行社与地接公司：与我们的认证导游合作',
+    'Travel agents and tour companies: work with our approved guides',
+    'Mawakala wa safari na kampuni za utalii: fanyeni kazi na waongozaji wetu walioidhinishwa',
+    'Agences de voyages et tour-opérateurs : travaillez avec nos guides approuvés',
+    'Agenzie di viaggio e tour operator: lavorate con le nostre guide approvate',
+    'Reisebüros und Veranstalter: arbeiten Sie mit unseren freigegebenen Guides',
+    'Biura podróży i touroperatorzy: współpracujcie z naszymi zatwierdzonymi przewodnikami',
+    '旅行社与地接公司：与我们已通过审核的导游合作',
   ),
   items: [
     {
       slug: 'travel-agents', icon: 'plane', href: '/partners/agents', status: 'live',
       label: L('For travel agents', 'Kwa mawakala wa safari', 'Pour les agences de voyages', 'Per le agenzie di viaggio', 'Für Reisebüros', 'Dla biur podróży', '旅行社合作'),
-      blurb: L('Book verified guides for your clients, in their language', 'Pata waongozaji waliothibitishwa kwa wateja wako, kwa lugha yao', 'Réservez des guides vérifiés pour vos clients, dans leur langue', 'Prenota guide verificate per i tuoi clienti, nella loro lingua', 'Buchen Sie geprüfte Guides für Ihre Kunden, in deren Sprache', 'Rezerwuj sprawdzonych przewodników dla klientów, w ich języku', '为你的客户预订说其母语的认证导游'),
+      blurb: L('Book approved guides for your clients, in their language', 'Pata waongozaji walioidhinishwa kwa wateja wako, kwa lugha yao', 'Réservez des guides approuvés pour vos clients, dans leur langue', 'Prenota guide approvate per i tuoi clienti, nella loro lingua', 'Buchen Sie freigegebene Guides für Ihre Kunden, in deren Sprache', 'Rezerwuj zatwierdzonych przewodników dla klientów, w ich języku', '为你的客户预订说其母语、已通过审核的导游'),
     },
     {
       slug: 'handover', icon: 'arrow-right-left', href: '/jobs/post?kind=handover', status: 'live',
       label: L('Hand over extra clients', 'Kabidhi wateja wa ziada', 'Confier des clients en surplus', 'Affida i clienti in eccesso', 'Überzählige Kunden weitergeben', 'Przekaż nadmiarowych klientów', '转交超额客户'),
-      blurb: L('Fully booked? Verified guides take the trip for you', 'Mmejaa? Waongozaji waliothibitishwa wanachukua safari', 'Complet ? Des guides vérifiés prennent le voyage en charge', 'Al completo? Le guide verificate prendono il viaggio', 'Ausgebucht? Geprüfte Guides übernehmen die Reise', 'Brak miejsc? Sprawdzeni przewodnicy przejmą wyprawę', '满员了？认证导游帮你接团'),
+      blurb: L('Fully booked? Approved guides take the trip for you', 'Mmejaa? Waongozaji walioidhinishwa wanachukua safari', 'Complet ? Des guides approuvés prennent le voyage en charge', 'Al completo? Le guide approvate prendono il viaggio', 'Ausgebucht? Freigegebene Guides übernehmen die Reise', 'Brak miejsc? Zatwierdzeni przewodnicy przejmą wyprawę', '满员了？已通过审核的导游帮你接团'),
     },
     {
       slug: 'partner-guides', icon: 'badge-check', href: '/guides?partners=1', status: 'live',
@@ -571,7 +571,7 @@ export const MENU: MenuSection[] = [
   PARTNERS,
 ];
 
-// The Guide Hub menu is only shown to verified guides (and admins).
+// The Guide Hub menu is only shown to approved guides (and admins).
 // Guides work in Kiswahili or English, so other languages reuse the English wording.
 const hub = (en: string, sw: string) => L(en, sw, en, en, en, en, en);
 

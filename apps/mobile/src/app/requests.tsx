@@ -27,7 +27,7 @@ export default function RequestsScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/requests')} />;
-  if (!userId) return <SignInPrompt />;
+  if (!userId) return <SignInPrompt screen />;
 
   const row = (req: TripRequest, showName?: boolean) => (
     <Link key={req.id} href={{ pathname: '/request/[id]', params: { id: req.id } }} asChild>

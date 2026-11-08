@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Linking, ScrollView, Text, TextInput } from 'react-native';
+import { Linking, Platform, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Button, Card, FormMessage, Muted, ScreenState } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Button, Card, Field, FormMessage, FormScreen, IconSquare, Muted, ScreenState } from '@/components/ui';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
+import { useType } from '@/lib/use-type';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
 type Setup = { factorId: string; secret: string; uri: string };
@@ -14,6 +16,7 @@ type Setup = { factorId: string; secret: string; uri: string };
 // Two-step sign-in (authenticator app codes, Supabase TOTP), the same as /security on the website.
 export default function SecurityScreen() {
   const { t } = useI18n();
+  const { type, font } = useType();
   const { session } = useSession();
   const queryClient = useQueryClient();
   const factors = useQuery({
@@ -32,6 +35,13 @@ export default function SecurityScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['mfa-factors'] });
+
+  // Cancel starts over: no half-typed code and no error left from the last try.
+  function cancelSetup() {
+    setSetup(null);
+    setCode('');
+    setMessage(null);
+  }
 
   async function start() {
     setBusy(true);
@@ -76,7 +86,7 @@ export default function SecurityScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <FormScreen>
       <Stack.Screen options={{ title: t.ux.securityTitle }} />
       {!session ? (
         <SignInPrompt />
@@ -84,43 +94,36 @@ export default function SecurityScreen() {
         <ScreenState loading={factors.isLoading} error={factors.error} onRetry={() => factors.refetch()} />
       ) : (
         <Card>
-          <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{t.ux.twoStepTitle}</Text>
+          <Text accessibilityRole="header" style={type.cardTitle}>{t.ux.twoStepTitle}</Text>
           <Muted>{t.ux.twoStepBody}</Muted>
-          <Text style={{ padding: space.md, borderRadius: radius.button, backgroundColor: enabled ? brand.mint : colors.background, color: enabled ? brand.forest : colors.label, fontWeight: '700' }}>
-            {enabled ? `✓ ${t.ux.twoStepOn}` : t.ux.twoStepOff}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.button, borderCurve: 'continuous', backgroundColor: enabled ? brand.mint : colors.background }}>
+            {enabled && <IconSquare glyph={GLYPHS.lock} />}
+            <Text style={{ ...type.body, ...font.bold, flex: 1, color: enabled ? brand.forest : colors.label }}>{enabled ? t.ux.twoStepOn : t.ux.twoStepOff}</Text>
+          </View>
           <FormMessage message={message} />
 
           {enabled ? (
-            <Button title={t.ux.turnOff} variant="outline" onPress={turnOff} loading={busy} />
+            <Button title={t.ux.turnOff} variant="outline" size="md" onPress={turnOff} loading={busy} />
           ) : setup ? (
             <>
               <Muted>{t.ux.phoneSetup}</Muted>
-              <Button title={t.ux.openAuthApp} variant="outline" onPress={() => Linking.openURL(setup.uri).catch(() => undefined)} />
-              <Text style={{ fontWeight: '700', color: colors.label }}>{t.ux.setupKey}</Text>
-              <Text selectable style={{ fontFamily: 'monospace', fontSize: textSize.footnote, color: colors.label, padding: space.md, borderRadius: radius.button, backgroundColor: colors.background }}>
+              <Button title={t.ux.openAuthApp} variant="outline" size="md" onPress={() => Linking.openURL(setup.uri).catch(() => undefined)} />
+              <Text style={type.label}>{t.ux.setupKey}</Text>
+              <Text
+                selectable
+                style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: textSize.footnote, color: colors.label, padding: space.md, borderRadius: radius.button, borderCurve: 'continuous', backgroundColor: colors.background, overflow: 'hidden' }}
+              >
                 {setup.secret}
               </Text>
-              <TextInput
-                value={code}
-                onChangeText={setCode}
-                placeholder={t.ux.code}
-                placeholderTextColor={colors.secondaryLabel}
-                keyboardType="number-pad"
-                autoComplete="one-time-code"
-                textContentType="oneTimeCode"
-                maxLength={7}
-                accessibilityLabel={t.ux.code}
-                style={{ backgroundColor: colors.background, borderRadius: radius.button, borderCurve: 'continuous', padding: space.md, fontSize: 24, letterSpacing: 8, textAlign: 'center', color: colors.label }}
-              />
+              <Field label={t.ux.code} value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={7} code />
               <Button title={t.ux.confirmCode} onPress={confirm} loading={busy} />
-              <Button title={t.ux.cancel} variant="outline" onPress={() => setSetup(null)} />
+              <Button title={t.ux.cancel} variant="text" size="md" onPress={cancelSetup} />
             </>
           ) : (
             <Button title={t.ux.turnOn} onPress={start} loading={busy} />
           )}
         </Card>
       )}
-    </ScrollView>
+    </FormScreen>
   );
 }

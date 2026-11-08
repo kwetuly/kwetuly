@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { Avatar, Badge, BottomBar, Button, Card, Muted, ScreenState, SectionTitle, Stars } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Avatar, Badge, BottomBar, Button, Card, HeaderIconButton, ScreenState, Section, SectionTitle, SkeletonCard, StatRow, Stars, contentFadeIn } from '@/components/ui';
 import { getGuide, listReviews, openConversation } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -14,18 +16,21 @@ import { GuidePackages } from '@/components/guide-packages';
 import { PhotoCredits } from '@/components/sample-offer';
 import { getGuidePackages } from '@/lib/packages';
 
-import { EVENTS, formatUsd, hasRecordedCheck } from '@kwetuly/shared';
+import { EVENTS, formatUsd, guideChecks, hasIdAndLicenceCheck } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
-import { brand, colors, space, textSize } from '@/theme';
+import { brand, colors, layout, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
 
+// Plain grey chips: green with a tick is kept for what Kwetuly itself checked.
 function Facts({ title, items }: { title: string; items: string[] }) {
+  const { type } = useType();
   if (items.length === 0) return null;
   return (
     <View style={{ gap: space.sm }}>
-      <Text style={{ fontWeight: '700', color: colors.secondaryLabel, fontSize: textSize.footnote }}>{title}</Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+      <Text style={type.label}>{title}</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
         {items.map((item) => (
-          <Badge key={item} label={item} />
+          <Badge key={item} label={item} tone="neutral" />
         ))}
       </View>
     </View>
@@ -33,6 +38,7 @@ function Facts({ title, items }: { title: string; items: string[] }) {
 }
 
 export default function GuideScreen() {
+  const { type, font } = useType();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();
   const { session } = useSession();
@@ -48,7 +54,7 @@ export default function GuideScreen() {
 
   const needsSetup = useNeedsSetup();
   if (!guide.data) {
-    return <ScreenState loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} empty emptyText={t.guides.empty} />;
+    return <ScreenState screen loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} empty emptyText={t.guides.empty} />;
   }
   const g = guide.data;
   const isMe = session?.user.id === g.owner_id;
@@ -68,53 +74,81 @@ export default function GuideScreen() {
 
   const dateFormat = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
 
+  const approved = g.verification_status === 'approved';
+  // A stated first-aid certificate is left out here when Kwetuly's own first-aid check is current: it shows once, in the checks card.
+  const firstAidChecked = !g.is_sample && approved && guideChecks(g).some((c) => c.id === 'firstAid');
+  const certificates = g.certifications.filter((c) => !(firstAidChecked && /first[\s-]*aid|huduma ya kwanza/i.test(c)));
+  const stated = [
+    { title: t.profile.certifications, items: [...certificates, ...(g.association ? [t.profile.memberOf.replace('{association}', () => g.association!)] : []), ...(g.has_vehicle ? [t.profile.vehicle] : [])] },
+    { title: t.profile.expertise, items: [...expertiseOf(g.expertise).map((e) => e.label[locale]), ...(g.female_guide ? [t.guides.female] : [])] },
+  ].filter((group) => group.items.length > 0);
+  const callPrice = g.call_price_usd != null ? formatUsd(g.call_price_usd) : null;
+  const stats = [
+    g.years_experience != null ? { value: String(g.years_experience), label: t.guides.years } : null,
+    g.summits ? { value: String(g.summits), label: t.guides.summits } : null,
+    // "Maximum group size" under the number reads right in every language ("Groups up to" needs the number after it).
+    g.max_group_size ? { value: String(g.max_group_size), label: t.groups.maxPeople } : null,
+  ].filter((x): x is { value: string; label: string } => !!x);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, paddingBottom: layout.sectionGap }}>
       <Stack.Title>{g.display_name}</Stack.Title>
+      <HeaderIconButton glyph={GLYPHS.share} accessibilityLabel={t.share.share} onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
 
+      <Animated.View entering={contentFadeIn} style={{ gap: space.lg }}>
       <Card>
         <View style={{ flexDirection: 'row', gap: space.lg, alignItems: 'center' }}>
           <Avatar name={g.display_name} uri={g.photo_url} size={88} />
           <View style={{ flex: 1, gap: space.xs }}>
-            <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
-            {g.headline && <Muted>{g.headline}</Muted>}
+            <Text accessibilityRole="header" style={type.title2}>{g.display_name}</Text>
+            {g.headline && <Text style={{ ...type.callout, color: colors.secondaryLabel }}>{g.headline}</Text>}
             {g.rating_count > 0 && g.rating_avg != null && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
                 <Stars value={g.rating_avg} />
-                <Text style={{ fontWeight: '700', color: colors.label }}>{Number(g.rating_avg).toFixed(1)}</Text>
-                <Text style={{ color: colors.secondaryLabel }}>({g.rating_count})</Text>
+                <Text style={{ ...font.bold, fontSize: textSize.callout, color: colors.label, fontVariant: ['tabular-nums'] }}>{Number(g.rating_avg).toFixed(1)}</Text>
+                <Text style={type.meta}>({g.rating_count})</Text>
               </View>
             )}
           </View>
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
+          {/* "ID and licence checked" only with both current checks; one check alone shows as its own pill. */}
           {g.is_sample ? (
             <Badge label={t.extras.sampleGuide} tone="sand" />
-          ) : hasRecordedCheck(g) ? (
-            <Badge label={`✓ ${t.guides.verified}`} />
-          ) : g.verification_status === 'approved' ? (
+          ) : approved && hasIdAndLicenceCheck(g) ? (
+            <Badge label={t.guides.idLicenceChecked} icon={GLYPHS.check} />
+          ) : approved ? (
             <Badge label={t.extras.approvedGuide} tone="sand" />
           ) : null}
-          {checkLabels.map((label) => <Badge key={label} label={`✓ ${label}`} />)}
-          {g.female_guide && <Badge label={t.guides.female} tone="sand" />}
-          {g.open_to_partners && <Badge label={t.guides.partners} tone="night" />}
-          {g.plan === 'pro' && <Badge label={t.guides.pro} tone="gold" />}
+          {!g.is_sample && approved && checkLabels.map((label) => <Badge key={label} label={label} icon={GLYPHS.check} />)}
+          {g.open_to_partners && <Badge label={t.guides.partners} tone="neutral" />}
         </View>
-        <Muted>
-          {[g.years_experience != null && `${g.years_experience} ${t.guides.years}`, g.summits ? `${g.summits} ${t.guides.summits}` : null, `${t.guides.groupUpTo} ${g.max_group_size}`]
-            .filter(Boolean)
-            .join(' · ')}
-        </Muted>
-        {(g.years_experience != null || !!g.summits) && <Muted>{t.extras.ownFigures}</Muted>}
-        {!isMe && g.call_enabled && (
-          <Button title={`${t.calls.book}${g.call_price_usd != null ? ` · ${formatUsd(g.call_price_usd)}` : ''}`} variant="dark" onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })} />
+        <StatRow items={stats} />
+        {(g.years_experience != null || !!g.summits) && <Text style={type.caption}>{t.extras.ownFigures}</Text>}
+        {!isMe && (
+          <View style={{ gap: space.sm }}>
+            {g.call_enabled && (
+              <Button
+                title={t.calls.book}
+                detail={callPrice ?? undefined}
+                accessibilityLabel={callPrice ? `${t.calls.book}, ${callPrice}` : t.calls.book}
+                variant="outline"
+                size="md"
+                onPress={() => router.push({ pathname: '/call/[guideId]', params: { guideId: g.id, slug: g.slug } })}
+              />
+            )}
+            <Button
+              title={t.profile.contactTitle}
+              variant="outline"
+              size="md"
+              onPress={() => {
+                track(EVENTS.enquiryStarted, { kind: 'guide', guide: g.slug, locale });
+                router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name, sample: g.is_sample ? '1' : '' } });
+              }}
+            />
+          </View>
         )}
-        {!isMe && <Button title={t.profile.contactTitle} variant="outline" onPress={() => {
-          track(EVENTS.enquiryStarted, { kind: 'guide', guide: g.slug, locale });
-          router.push({ pathname: '/contact/[guideId]', params: { guideId: g.id, name: g.display_name, sample: g.is_sample ? '1' : '' } });
-        }} />}
-        <Button title={t.share.share} variant="outline" onPress={() => shareLink(`/${locale}/guides/${g.slug}`, `${t.share.shareGuide}: ${g.display_name}`)} />
       </Card>
 
       <GuideChecksCard guide={g} approved={g.verification_status === 'approved' && !g.is_sample} />
@@ -122,40 +156,60 @@ export default function GuideScreen() {
       {g.bio && (
         <Card>
           <SectionTitle>{t.profile.about}</SectionTitle>
-          <Text selectable style={{ color: colors.label, fontSize: textSize.callout, lineHeight: 22 }}>{g.bio}</Text>
+          <Text selectable style={type.callout}>{g.bio}</Text>
         </Card>
       )}
 
       <GuidePackages packages={packages.data ?? []} guideId={g.id} guideName={g.display_name} guideSlug={g.slug} sample={g.is_sample} />
       {g.is_sample && <PhotoCredits urls={[g.photo_url, ...(packages.data ?? []).map((p) => p.photo_url)]} />}
 
-      <Card>
+      <Card style={{ gap: space.lg }}>
         <Facts title={t.profile.specialties} items={g.specialties.map((s) => specialtyName(s, locale))} />
         <Facts title={t.guides.languages} items={g.languages.map(languageName)} />
-        <Facts title={t.profile.expertise} items={expertiseOf(g.expertise).map((e) => e.label[locale])} />
         <Facts title={t.profile.regions} items={[g.base_region, ...g.regions.filter((r) => r !== g.base_region)]} />
-        <Facts title={t.profile.certifications} items={[...g.certifications, ...(g.association ? [g.association] : [])]} />
       </Card>
 
-      <View style={{ gap: space.md }}>
-        <SectionTitle>{t.reviews.title}</SectionTitle>
-        <ScreenState loading={reviews.isLoading} error={reviews.error} onRetry={() => reviews.refetch()} empty={reviews.data?.length === 0} emptyText={t.reviews.none} />
+      {/* What the guide wrote about themselves, kept apart from "What Kwetuly checked" above. */}
+      {stated.length > 0 && (
+        <Card style={{ gap: space.lg }}>
+          <View style={{ gap: space.xs }}>
+            <SectionTitle>{t.profile.statedTitle}</SectionTitle>
+            <Text style={type.caption}>{t.profile.statedNote}</Text>
+          </View>
+          {stated.map((group) => (
+            <Facts key={group.title} title={group.title} items={group.items} />
+          ))}
+        </Card>
+      )}
+
+      <Section title={t.reviews.title} style={{ marginTop: space.lg }}>
+        {reviews.isLoading ? (
+          <View accessibilityRole="progressbar" accessibilityState={{ busy: true }} style={{ gap: layout.listGap }}>
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
+        ) : (
+          <ScreenState error={reviews.error} onRetry={() => reviews.refetch()} empty={reviews.data?.length === 0} emptyText={t.reviews.none} emptyGlyph={GLYPHS.chat} />
+        )}
         {(reviews.data ?? []).map((r) => (
           <Card key={r.id}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <Stars value={r.rating} />
-              <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{dateFormat.format(new Date(r.created_at))}</Text>
+              <Text style={type.caption}>{dateFormat.format(new Date(r.created_at))}</Text>
             </View>
-            <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{r.body}</Text>
-            <Text style={{ fontWeight: '700', color: colors.label }}>— {r.author_name}</Text>
+            <Text selectable style={type.callout}>{r.body}</Text>
+            <Text style={type.label}>{r.author_name}</Text>
           </Card>
         ))}
         {session && !isMe ? (
-          <Button title={t.reviews.write} variant="outline" onPress={() => router.push({ pathname: '/review/[guideId]', params: { guideId: g.id, name: g.display_name } })} />
+          <View style={{ alignItems: 'flex-start' }}>
+            <Button title={t.reviews.write} variant="text" size="md" onPress={() => router.push({ pathname: '/review/[guideId]', params: { guideId: g.id, name: g.display_name } })} />
+          </View>
         ) : (
-          <Text style={{ color: brand.forest, fontSize: textSize.footnote }}>{t.reviews.onlyAfter}</Text>
+          <Text style={{ ...type.meta, color: brand.forest }}>{t.reviews.onlyAfter}</Text>
         )}
-      </View>
+      </Section>
+      </Animated.View>
     </ScrollView>
     {!isMe && (
       <BottomBar>

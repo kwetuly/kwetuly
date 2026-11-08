@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import { Redirect, Stack } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
-import { Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, MetaItems, Muted, ScreenState } from '@/components/ui';
 import { getMyGuide } from '@/lib/api-more';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { deletePackage, listMyPackages, savePackage } from '@/lib/packages';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, media, radius, space } from '@/theme';
 
-const STATUS_TONE: Record<PackageStatus, 'night' | 'sand' | 'mint' | 'gold'> = { draft: 'night', pending: 'sand', approved: 'mint', rejected: 'gold' };
+const STATUS_TONE: Record<PackageStatus, 'neutral' | 'sand' | 'mint' | 'gold'> = { draft: 'neutral', pending: 'sand', approved: 'mint', rejected: 'gold' };
 
 const EMPTY = { kind: ['cultural'] as string[], title: '', summary: '', details: '', hours: '', days: '', price: '', per: ['person'] as string[], maxGroup: '', includes: '', meeting: '' };
 
@@ -31,6 +33,7 @@ async function pickPhoto() {
 export default function MyPackagesScreen() {
   const { t, locale } = useI18n();
   const pt = t.packages;
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session?.user.id;
   const queryClient = useQueryClient();
@@ -47,9 +50,9 @@ export default function MyPackagesScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/my-packages')} />;
-  if (!userId) return <SignInPrompt />;
-  if (mine.isLoading || packages.isLoading) return <ScreenState loading />;
-  if (!guideId) return <ScreenState empty emptyText={t.dashboard.statusPending} />;
+  if (!userId) return <SignInPrompt screen />;
+  if (mine.isLoading || packages.isLoading) return <ScreenState screen loading />;
+  if (!guideId) return <ScreenState screen empty emptyText={t.dashboard.statusPending} />;
 
   function open(p: GuidePackage | 'new') {
     setMessage(null);
@@ -115,45 +118,66 @@ export default function MyPackagesScreen() {
     }
   }
 
+  // Deleting cannot be undone, so ask first, and say so when it fails.
+  function confirmRemove(p: GuidePackage) {
+    Alert.alert(pt.removeConfirm.replace('{title}', p.title), undefined, [
+      { text: t.ux.cancel, style: 'cancel' },
+      { text: pt.remove, style: 'destructive', onPress: () => remove(p.id) },
+    ]);
+  }
+
   async function remove(id: string) {
-    await deletePackage(id).catch(() => undefined);
+    setMessage(null);
+    try {
+      await deletePackage(id);
+    } catch {
+      setMessage({ tone: 'error', text: pt.removeError });
+    }
     await queryClient.invalidateQueries({ queryKey: ['my-packages'] });
   }
 
   const list = packages.data ?? [];
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+    <FormScreen
+      bar={
+        editing ? (
+          <>
+            <FormMessage message={message} />
+            <Button title={pt.submit} onPress={() => save(false)} loading={busy} />
+          </>
+        ) : (
+          <Button title={pt.add} onPress={() => open('new')} />
+        )
+      }
+    >
       <Stack.Title>{pt.manageTitle}</Stack.Title>
       <Muted>{pt.manageIntro}</Muted>
       {!editing && <FormMessage message={message} />}
 
-      {!editing && list.length === 0 && <Muted>{pt.none}</Muted>}
+      {!editing && list.length === 0 && <EmptyState glyph={GLYPHS.list} text={pt.none} />}
       {!editing &&
         list.map((p) => (
           <Card key={p.id}>
-            <Text style={{ fontWeight: '800', color: colors.label, fontSize: textSize.body }}>{p.title}</Text>
+            <Text style={type.cardTitle}>{p.title}</Text>
             <Badge label={pt.status[p.status]} tone={STATUS_TONE[p.status]} />
-            <Muted>{[PACKAGE_KINDS.find((k) => k.id === p.kind)?.[locale], packageDuration(p, pt), packagePrice(p, pt)].filter(Boolean).join(' · ')}</Muted>
+            <MetaItems items={[PACKAGE_KINDS.find((k) => k.id === p.kind)?.[locale], packageDuration(p, pt), packagePrice(p, pt)]} />
             {p.status === 'rejected' && p.review_note && (
-              <Text style={{ color: colors.label }}>
-                <Text style={{ fontWeight: '700' }}>{pt.reviewNote}: </Text>
+              <Text style={type.callout}>
+                <Text style={font.bold}>{pt.reviewNote}: </Text>
                 {p.review_note}
               </Text>
             )}
-            <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
-              <Button title={t.dashboard.edit} variant="outline" onPress={() => open(p)} style={{ flex: 1 }} />
-              <Text accessibilityRole="button" onPress={() => remove(p.id)} style={{ color: brand.danger, fontWeight: '700', padding: space.sm }}>
-                {pt.remove}
-              </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, alignItems: 'center' }}>
+              <Button title={t.dashboard.edit} variant="outline" size="md" onPress={() => open(p)} style={{ flexGrow: 1 }} />
+              <Button title={pt.remove} variant="danger" size="md" onPress={() => confirmRemove(p)} />
             </View>
           </Card>
         ))}
-      {!editing && <Button title={pt.add} onPress={() => open('new')} />}
 
       {editing && (
         <Card>
-          <Text style={{ fontWeight: '800', color: colors.label, fontSize: textSize.headline }}>{editing === 'new' ? pt.add : pt.editPackage}</Text>
+          <Text accessibilityRole="header" style={type.title3}>{editing === 'new' ? pt.add : pt.editPackage}</Text>
           {editing !== 'new' && editing.status === 'approved' && <Muted>{pt.changeNote}</Muted>}
           <ChipSelect label={pt.kindField} options={PACKAGE_KINDS.map((k) => ({ value: k.id, label: k[locale] }))} selected={f.kind} onChange={set('kind')} multiple={false} />
           <Field label={pt.titleField} value={f.title} onChangeText={set('title')} />
@@ -175,20 +199,17 @@ export default function MyPackagesScreen() {
           <Field label={pt.maxGroupField} value={f.maxGroup} onChangeText={set('maxGroup')} keyboardType="number-pad" />
           <Field label={pt.includesField} value={f.includes} onChangeText={set('includes')} multiline />
           <Field label={pt.meetingField} value={f.meeting} onChangeText={set('meeting')} />
-          <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <Pressable onPress={async () => setPhoto((await pickPhoto()) ?? photo)} accessibilityRole="button" style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })}>
             {(photo?.uri ?? (editing !== 'new' ? editing.photo_url : null)) ? (
-              <Image source={{ uri: photo?.uri ?? (editing !== 'new' ? editing.photo_url! : '') }} style={{ width: 96, height: 72, borderRadius: radius.button }} contentFit="cover" />
+              <Image source={{ uri: photo?.uri ?? (editing !== 'new' ? editing.photo_url! : '') }} style={{ backgroundColor: colors.fill, width: media.thumb, height: media.thumb, borderRadius: radius.media }} contentFit="cover" />
             ) : null}
-            <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{pt.photoField}</Text>
+            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{pt.photoField}</Text>
           </Pressable>
-          <FormMessage message={message} />
-          <Button title={pt.submit} onPress={() => save(false)} loading={busy} />
-          <Button title={pt.saveDraft} variant="outline" onPress={() => save(true)} disabled={busy} />
-          <Text accessibilityRole="button" onPress={() => setEditing(null)} style={{ color: brand.forest, fontWeight: '700', textAlign: 'center', paddingVertical: space.sm }}>
-            {t.ux.cancel}
-          </Text>
+          {/* Send for review is the filled button in the bottom bar; draft and cancel stay here. */}
+          <Button title={pt.saveDraft} variant="outline" size="md" onPress={() => save(true)} disabled={busy} />
+          <Button title={t.ux.cancel} variant="text" size="md" onPress={() => setEditing(null)} />
         </Card>
       )}
-    </ScrollView>
+    </FormScreen>
   );
 }

@@ -180,3 +180,151 @@ Working hours: Monday to Saturday, 08:00 to 18:00 East Africa Time. "Day" means 
 | Enquiries with no guide | Draft reply the same day |
 
 Cover when the admin is away: today Walter is the only admin, so nothing gets approved while he is away. Walter decides whether to name a second admin or to accept a paused queue. If the queue is paused, customer-care tells people the expected wait.
+
+---
+
+# Guide document checks (added 2026-11-08)
+
+Prepared by operations-manager for step 1c of `docs/team/plan-guide-checks-2026-11.md`. This is a proposal on paper. It describes the admin work once the checks table, the approval gate and the expiry queue from that plan are built. Nothing changes on live, and no guide is told anything, until Walter decides (plan section 9).
+
+When the gate goes live, it replaces parts of sections 1, 3.1 and 6 above:
+- Queue 1 (guides to approve) needs a current guide licence and a current first aid or WFR certificate, plus a current driving licence for guides who drive guests, plus ID if Walter keeps it (decision 1). First aid is no longer optional, so the line "First aid is optional and does not block ready" in 3.1 stops applying.
+- Queue 2 (documents to re-check) becomes "Renewals waiting for check". If Walter agrees to decision 4, a new upload no longer clears the current check.
+- A new queue is added: "Expiring in 30 days / expired" (section 8).
+
+## 7. Checklist per document
+
+### 7.1 What a check means, and what it does not
+
+A check is a record that a named Kwetuly admin looked at a document uploaded through Kwetuly, on a given date, and wrote down the valid-until date printed on it. It is nothing more.
+
+What Kwetuly does not do. The checklist, the admin screens and every text must keep to this:
+- Kwetuly does not confirm any document with a government register, an association or the issuer. Never write or say "confirmed with the register", "verified", "certified by Kwetuly" or "recommended".
+- Kwetuly does not judge a guide's skill, fitness, experience, route knowledge or first aid ability.
+- Kwetuly does not check vehicles, vehicle insurance or permits for a vehicle.
+- Kwetuly does not decide whether a licence category or driving licence class allows a certain trip. That waits for legal (plan section 7).
+
+Words to use: "seen on {date}", "checked on {date}", "valid until {date}". Certificates Kwetuly has not seen stay under "Stated by the guide".
+
+### 7.2 Steps for every document (one check card, one document)
+
+1. Open the document only through the short-lived link on the check card. Do not download it to a personal device, take screenshots, or forward it.
+2. Accept only documents uploaded through Kwetuly. A photo sent by WhatsApp, email or chat is never checked. Ask the guide to upload it in the dashboard or app instead.
+3. Check that the type is right. The file must be the document named on the card, for example a first aid certificate on the first aid card, not a course invitation.
+4. Check that it is readable. The whole document is visible (all four corners), the name, number, issuer and dates can be read, and nothing is covered.
+5. Check the name. The name must match the guide's profile and, if the ID check is kept, the ID. If the photo on a licence or driving licence is clear, compare it with the ID photo.
+6. Look for signs of editing: different fonts in the name or dates, blurred patches over text, or dates that do not line up. If in doubt, do not tick (see 7.4).
+7. Enter the valid-until date exactly as printed (see 7.5). It must be today or later for the check to count towards the gate.
+8. Tick and save. The date seen and the admin's account are recorded automatically.
+9. If something is wrong, do not tick. Leave the document waiting and use the "what to ask the guide" reasons in 7.4.
+
+Every document is checked one guide at a time and one document at a time. "Approve all ready" only takes guides who already pass the gate. It never ticks a document.
+
+### 7.3 Per document
+
+| Document | Needed for | What the admin looks for | Reject (do not tick) if | Valid-until |
+|---|---|---|---|---|
+| ID (if Walter keeps decision 1) | Every guide | An official photo ID. The name and photo can be read, and the name matches the profile | Unreadable or cropped; the photo cannot be seen; the name does not match; it is not a photo ID; signs of editing | Enter it if one is printed. Whether an expired ID can be accepted is a question for Walter (see questions) |
+| Guide licence | Every guide (gate) | The name matches the ID. The licence or registration number matches the number the guide typed on the profile. The issuer can be read. The valid-until date is printed. If a category or level is printed, write it in the private note as printed, without judging it | Expired; the number does not match the profile; the name does not match; the valid-until date cannot be read; it is a receipt or an application form instead of the licence; signs of editing | Required. If no expiry date is printed on the card, do not tick. Bring it to Walter (see questions) |
+| First aid certificate | Every guide, unless a current WFR is checked (gate) | The name matches. The course provider, the course date and the valid-until date can be read | Expired; no provider named; only a letter saying the course was booked or attended, with no certificate; the name does not match | Required. If only a course date is printed, see the questions. Never work out an expiry date that the certificate does not state |
+| WFR (Wilderness First Responder) | Alternative to first aid (gate) | As for first aid. The title on the certificate says Wilderness First Responder (or the provider's own name for that course, as printed) | As for first aid. A shorter wilderness first aid course is recorded as first aid or as "other", not as WFR | Required. Same rule as first aid |
+| Driving licence | Only guides who switched on "I drive guests" (gate) | The name and photo match the ID. The number and valid-until date can be read. Write the class or classes printed in the private note, as printed | Expired; the name does not match; it is not a full driving licence as printed on the card (for example, the card says it is a learner or temporary permit); signs of editing. Do not reject because of the class until legal has said which class is needed | Required |
+| Other certificate | Optional, never counts towards the gate | A title is entered (for example "Mountain rescue course"), the name matches, and the issuer and date can be read | No title; unreadable; the name does not match | Enter it if printed, otherwise leave it empty. The traveller line then says "{certificate} seen {date}" with no valid-until |
+
+A current WFR covers the first aid requirement. A guide with an expired first aid certificate and a current WFR stays live, and the other way round.
+
+### 7.4 When something is wrong: do not tick, ask
+
+Do not reject the guide because of a document problem. Today a rejected guide cannot send their profile again (section 4). Leave the document waiting and ask the guide to upload it again. The admin sends that note, using drafts from guide-success. Agents do not contact guides.
+
+Reasons to give the guide, in plain words (guide-success writes the English and Kiswahili text):
+- "The photo is not clear. Please upload a sharp photo showing the whole document."
+- "We could not read the valid-until date."
+- "The name on the document is different from the name on your profile."
+- "This document has expired. Please upload the current one."
+- "The licence number on the card is different from the number on your profile."
+- "This is not the document we asked for."
+
+Bring the case to Walter instead of asking the guide when:
+- the document looks edited or belongs to someone else (do not accuse the guide in any message);
+- the name difference is small (a missing middle name, a different spelling or order) and the admin is not sure;
+- the licence has no printed expiry date, or the certificate states no validity.
+
+### 7.5 How to record the dates
+
+- Date seen: filled in automatically with the day the admin ticks. It is never typed by hand and never backdated. If a document was looked at earlier but not ticked, it is ticked on the day it is looked at again.
+- Valid-until: copied exactly from the document. Never guessed, never worked out from a course date, never extended. If only a month and year are printed, see the questions for Walter.
+- If the valid-until date is less than 30 days away, the document can still be ticked. The 30-day reminder then starts at once (section 8).
+- Private note: only what helps the next admin, for example "category as printed: ..." or "name order differs, Walter OK on {date}". Never copy ID numbers, licence numbers, dates of birth or addresses into the note, a spreadsheet, the board or a chat.
+- Renewals: a renewed document is checked with the same steps. Once ticked, it replaces the old check, which is kept as "superseded" and is never shown to travellers.
+
+## 8. Expiry queue: "Expiring in 30 days / expired"
+
+### 8.1 What it shows
+
+One line per check, for real approved guides only (samples are left out):
+- the guide's display name and the kind of check (licence, first aid, WFR, driving licence, ID, other);
+- the valid-until date and the days left, or "expired {n} days ago";
+- whether the check is required for the gate;
+- whether a renewal upload is waiting for check;
+- whether the guide has a confirmed trip or an accepted offer in the next 14 days (proposal; needs the booking data the system already has).
+
+Order: (1) required checks that have expired, (2) required checks expiring within 7 days where the guide has a trip, (3) renewals waiting for check, (4) everything else by days left. A red marker shows on lines 1 and 2.
+
+A guide who switches on "I drive guests" without a current driving licence check also appears here, as "driving licence missing".
+
+### 8.2 Reminders
+
+- 30 days before any valid-until date, the guide and the admin get a text-only notice through the notification outbox (plan section 3). The guide's text says which document, the date and how to upload the new one.
+- Proposal: a second reminder 7 days before, for required checks only (Walter decides).
+- No reminder is sent for samples.
+
+### 8.3 What happens on expiry
+
+Required check (licence; first aid when there is no current WFR, or WFR when there is no current first aid; driving licence when the guide drives guests; ID if it is required and has an expiry):
+- If Walter agrees to decision 3, the profile is hidden from lists automatically on the expiry day, and its page shows "not available". The guide sees why on the dashboard. The admin does not need to press anything.
+- The same day, the admin checks the queue and confirms the profile has dropped off the lists.
+- If the guide has a confirmed trip in the coming days, the admin brings it to Walter the same day. Walter decides whether the guide renews before the trip, the trip moves to another guide, or customer-care tells the traveller. Nobody tells the traveller that the trip is safe or unsafe.
+- When the renewal is checked, the profile comes back by itself. Nothing else needs approving again.
+
+Other certificates (not required):
+- Nothing is hidden. The line is removed from the traveller's checks card, or shown as expired (designer and frontend choose; never shown as current).
+
+What is never done on expiry: rejecting the guide, deleting the guide's documents, or contacting the guide's travellers without Walter.
+
+### 8.4 Additions to the daily and weekly checklist (section 5)
+
+Morning, after step 5:
+- 5a. Expiry queue: deal with red lines first. Expired required checks: confirm the profile is hidden and bring any coming trips to Walter. Then check waiting renewals, one document at a time.
+
+Weekly (Monday):
+- Read the whole expiry queue for the next 30 days. Give guide-success a list of display names (no documents, no numbers) for guides who have not uploaded a renewal and expire within 14 days, so a reminder note can be drafted for Walter to send.
+- Count, for the scorecard (data-analyst): guides hidden because of an expired check, renewals checked, average days from upload to check. Counts only.
+
+## 9. Service levels for guide checks (proposal)
+
+Same working hours as section 6 (Monday to Saturday, 08:00 to 18:00 East Africa Time). The clock starts when the guide uploads the document.
+
+| Item | Target |
+|---|---|
+| First check of a new guide (all required documents uploaded) | 2 days, as in section 6 |
+| Renewal waiting for check | 2 days |
+| Renewal where the current check expires within 7 days | Same day, so the guide is not hidden while waiting for Kwetuly |
+| Required check expired, or "driving licence missing" for a guide who drives guests | Noticed and confirmed the same day (safety) |
+| Required check expired or expiring, with a trip in the next 14 days | Brought to Walter the same day |
+| Document problem: note to the guide saying what to upload again | Same day as the check |
+| Guide's question about a document that was not ticked | 1 day (guide-success drafts, the admin sends) |
+| 30-day and 7-day reminders | Automatic. The admin reads the expiry queue daily for red lines and weekly in full |
+
+Cover when the admin is away: the automatic hiding on expiry works without an admin, but renewals do not get checked. A guide who uploads a renewal in good time could still be hidden because nobody checked it. Until a second admin exists, the 30-day reminder should ask guides to upload at least 7 days before expiry. Walter decides whether that is enough, or whether a named second admin checks documents while he is away.
+
+## 10. Open questions for Walter (guide checks)
+
+1. ID types: which photo IDs are accepted (for example the national ID card, passport, voter card), and is an expired ID accepted if the guide licence is current?
+2. A guide licence with no printed expiry date: hold the guide back, or record a rule Walter sets (legal to advise)? Nothing is ticked until Walter decides.
+3. First aid or WFR certificates that show only a course date: is the guide asked for a provider letter stating the validity, or does Walter set a fixed period? Kwetuly must not invent one.
+4. Only a month and year printed: record the last day of that month (proposed), or the first?
+5. Online-only first aid courses: accepted as first aid, recorded as "other", or not accepted?
+6. A second reminder 7 days before expiry for required checks: yes or no?
+7. A second admin for document checks when Walter is away, or accept that renewals wait?
+8. Small name differences between documents: may the admin tick with a private note, or does every case go to Walter?

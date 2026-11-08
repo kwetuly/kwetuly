@@ -1,5 +1,5 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Link, Stack, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { ALL_SECTIONS, MENU } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { Muted, ScreenState } from '@/components/ui';
@@ -14,7 +14,8 @@ export default function SectionScreen() {
   const { t, locale } = useI18n();
   // The main menu may rename a section (Experiences is "Trips" there), so look there first.
   const section = MENU.find((s) => s.slug === slug) ?? ALL_SECTIONS.find((s) => s.slug === slug);
-  if (!section) return <ScreenState empty emptyText={t.ux.notFoundTitle} />;
+  // An old or mistyped link: say so and offer the way back to Explore.
+  if (!section) return <ScreenState screen empty emptyText={t.ux.notFoundTitle} emptyAction={{ label: t.app.tabExplore, onPress: () => router.navigate('/') }} />;
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.md, paddingBottom: space.huge }}>

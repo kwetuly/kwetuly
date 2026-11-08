@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BadgeCheck, Handshake, Languages, MapPin, Venus } from 'lucide-react';
-import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, hasRecordedCheck } from '@kwetuly/shared';
+import { GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, hasIdAndLicenceCheck } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Guide } from '@/lib/guides';
@@ -42,7 +42,7 @@ export function GuideAvatar({ guide, size }: { guide: Guide; size: number }) {
   );
 }
 
-// Badges for who the guide is: verified, Pro, female guide, works with agencies.
+// Badges for who the guide is: what Kwetuly checked, female guide, works with agencies.
 const pill = 'inline-flex items-center gap-1 rounded-[5px] px-3 py-1 text-xs font-bold';
 
 /** The sand "Sample guide" / "Sample trip" / "Sample package" badge for test data. */
@@ -50,26 +50,27 @@ export function SampleBadge({ label }: { label: string }) {
   return <span className={`${pill} border border-gold bg-sand text-charcoal`}>{label}</span>;
 }
 
-// "Verified guide" only once Kwetuly has recorded at least one document check. On the profile page
-// (`showApproved`), an approved guide without checks gets a neutral label that links to the explanation.
+// "ID and licence checked" only when Kwetuly has both current checks on record. On the profile page
+// (`showApproved`), an approved guide without both gets a neutral label that links to the checks; "Female guide"
+// is then shown in the "Stated by the guide" block instead, because the guide states it.
+// Green with a tick is kept for Kwetuly's own checks; what the guide states is grey.
 export function GuideBadges({ guide, t, showApproved }: { guide: Guide; t: Dictionary; showApproved?: boolean }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {guide.is_sample ? (
         <SampleBadge label={t.extras.sampleGuide} />
-      ) : guide.verification_status !== 'approved' ? null : hasRecordedCheck(guide) ? (
-        <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.verified}</span>
+      ) : guide.verification_status !== 'approved' ? null : hasIdAndLicenceCheck(guide) ? (
+        <span className={`${pill} bg-mint text-forest`}><BadgeCheck className="size-3.5" aria-hidden /> {t.guides.idLicenceChecked}</span>
       ) : (
         showApproved && (
           <a href="#checks" className={`${pill} border border-line bg-white text-charcoal hover:underline`}>{t.extras.approvedGuide}</a>
         )
       )}
-      {guide.plan === 'pro' && <span className={`${pill} bg-gold/30 text-charcoal`}>{t.guides.pro}</span>}
-      {guide.female_guide && (
-        <span className={`${pill} bg-sand text-leaf-dark`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
+      {guide.female_guide && !showApproved && (
+        <span className={`${pill} bg-surface text-charcoal`}><Venus className="size-3.5" aria-hidden /> {t.guides.female}</span>
       )}
       {guide.open_to_partners && (
-        <span className={`${pill} bg-night text-white`}><Handshake className="size-3.5" aria-hidden /> {t.guides.partners}</span>
+        <span className={`${pill} border border-line bg-white text-charcoal`}><Handshake className="size-3.5" aria-hidden /> {t.guides.partners}</span>
       )}
     </div>
   );

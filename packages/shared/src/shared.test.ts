@@ -3,7 +3,7 @@ import { safeProps } from './analytics';
 import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
 import { isDisplayNameReservedError, isReservedDisplayName } from './display-name';
-import { hasRecordedCheck } from './guide-checks';
+import { hasIdAndLicenceCheck, hasRecordedCheck } from './guide-checks';
 import { PACKAGE_KINDS } from './packages';
 import { filterTours, formatPrice, guideSpecialtiesForTour, readTourFilters, tourMatchesTheme, verifiedPrice, type Tour } from './tours';
 import { TRIP_CATEGORIES } from './trips';
@@ -130,12 +130,23 @@ describe('referral commission', () => {
   });
 });
 
-describe('verified guide', () => {
-  const none = { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null };
-  it('needs at least one recorded check', () => {
-    expect(hasRecordedCheck(none)).toBe(false);
-    expect(hasRecordedCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(true);
-    expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(true);
+describe('recorded guide checks', () => {
+  const none = { identity_checked_at: null, licence_checked_at: null, first_aid_checked_at: null, first_aid_valid_until: null };
+  const today = new Date('2026-11-08T12:00:00Z');
+  it('needs at least one current check', () => {
+    expect(hasRecordedCheck(none, today)).toBe(false);
+    expect(hasRecordedCheck({ ...none, licence_checked_at: '2026-10-01' }, today)).toBe(true);
+    expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2026-10-01' }, today)).toBe(true);
+    expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2026-10-01', first_aid_valid_until: '2027-10-01' }, today)).toBe(true);
+  });
+  it('does not count an expired first-aid check', () => {
+    expect(hasRecordedCheck({ ...none, first_aid_checked_at: '2024-10-01', first_aid_valid_until: '2026-10-31' }, today)).toBe(false);
+  });
+  it('"ID and licence checked" needs both checks', () => {
+    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(false);
+    expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01', licence_checked_at: '2026-10-02' })).toBe(true);
   });
 });
 

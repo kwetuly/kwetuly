@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS, EVENTS, SOCIAL_NAMES, SOCIAL_PLATFORMS, USER_LINK_REL, formatUsd, limitTexts, normaliseSocial } from '@kwetuly/shared';
+import { CALL_TOPICS, EVENTS, SOCIAL_NAMES, SOCIAL_PLATFORMS, USER_LINK_REL, formatUsd, guideChecks, limitTexts, normaliseSocial } from '@kwetuly/shared';
 import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
@@ -19,6 +19,7 @@ import { GuideCheckPills, GuideChecksSection } from '@/components/guide-checks';
 import { Icon } from '@/components/icon';
 import { RatingSummary, Stars } from '@/components/stars';
 import { createClient } from '@/lib/supabase/server';
+import { today } from '@/lib/today';
 import { ShareButtons } from '@/components/share-buttons';
 import { LogEvent } from '@/components/analytics';
 import { JsonLd } from '@/components/json-ld';
@@ -89,6 +90,18 @@ async function Profile({
     `${t.guides.groupUpTo} ${guide.max_group_size}`,
   ].filter((fact): fact is string => !!fact);
 
+  // "Stated by the guide": the guide's own certificates, association and vehicle, and their expertise. A stated
+  // first-aid certificate is left out when Kwetuly's own first-aid check is current, so it shows once, as checked.
+  // The cached day (lib/today), not new Date(), so the page can still be prerendered.
+  const firstAidChecked = !guide.is_sample && guide.verification_status === 'approved' && guideChecks(guide, await today()).some((c) => c.id === 'firstAid');
+  const stated = {
+    certificates: [
+      ...guide.certifications.filter((c) => !(firstAidChecked && /first[\s-]*aid|huduma ya kwanza/i.test(c))),
+      ...(guide.association ? [t.profile.memberOf.replace('{association}', () => guide.association!)] : []),
+      ...(guide.has_vehicle ? [t.profile.vehicle] : []),
+    ],
+    expertise: expertiseOf(guide),
+  };
   return (
     <>
     <TrackView item={{ href: `/${locale}/guides/${guide.slug}`, title: guide.display_name, subtitle: guide.headline ?? guide.base_region, image: guide.photo_url }} />
@@ -137,9 +150,12 @@ async function Profile({
             <div className="mt-3">
               <GuideBadges guide={guide} t={t} showApproved />
             </div>
-            <div className="mt-2">
-              <GuideCheckPills guide={guide} t={t} />
-            </div>
+            {/* Check pills only for approved, non-sample guides (sample data never shows checks). */}
+            {!guide.is_sample && guide.verification_status === 'approved' && (
+              <div className="mt-2">
+                <GuideCheckPills guide={guide} t={t} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -152,17 +168,36 @@ async function Profile({
           <Facts title={t.profile.specialties} items={guide.specialties.map((s) => specialtyName(s, locale))} />
           <Facts title={t.guides.languages} items={guide.languages.map(languageName)} />
           <Facts title={t.profile.regions} items={[guide.base_region, ...guide.regions.filter((r) => r !== guide.base_region)]} />
-          <Facts
-            title={t.profile.certifications}
-            items={[
-              ...guide.certifications,
-              ...(guide.association ? [`${t.profile.association}: ${guide.association}`] : []),
-              ...(guide.has_vehicle ? [t.profile.vehicle] : []),
-            ]}
-          />
         </section>
 
+        {/* Facts first: what Kwetuly checked, then what the guide states about themselves. */}
         <GuideChecksSection guide={guide} t={t} locale={locale} approved={guide.verification_status === 'approved' && !guide.is_sample} />
+
+        {(stated.certificates.length > 0 || stated.expertise.length > 0 || guide.female_guide) && (
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">{t.profile.statedTitle}</h2>
+            <p className="mt-1 text-sm text-muted">{t.profile.statedNote}</p>
+            <div className="mt-4 grid gap-6 sm:grid-cols-2">
+              <Facts title={t.profile.certifications} items={stated.certificates} />
+              {(stated.expertise.length > 0 || guide.female_guide) && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted">{t.profile.expertise}</h3>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {stated.expertise.map((e) => (
+                      <li key={e.id}>
+                        <Link href={`/${locale}/guides?expertise=${e.id}`} className="inline-flex items-center gap-1.5 rounded-[5px] bg-surface px-3 py-1 text-sm hover:underline">
+                          <Icon name={e.icon} className="size-4 shrink-0 text-muted" />
+                          {e.label[locale]}
+                        </Link>
+                      </li>
+                    ))}
+                    {guide.female_guide && <li className="rounded-[5px] bg-surface px-3 py-1 text-sm">{t.guides.female}</li>}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {guide.bio && (
           <section className="mt-8">
@@ -188,21 +223,6 @@ async function Profile({
           </Link>
         )}
 
-        {guide.expertise.length > 0 && (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold">{t.profile.expertise}</h2>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {expertiseOf(guide).map((e) => (
-                <li key={e.id}>
-                  <Link href={`/${locale}/guides?expertise=${e.id}`} className="flex items-center gap-3 rounded-[5px] border border-line bg-white p-3 hover:border-leaf">
-                    <Icon name={e.icon} className="size-5 shrink-0 text-leaf-dark" />
-                    <span className="text-sm font-semibold">{e.label[locale]}</span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         {/* The guide's own profiles, with the name so travellers see where the link goes. Links that
             are not a valid profile address (from before the checks) are left out. */}
@@ -278,7 +298,7 @@ async function Profile({
   );
 }
 
-// Other verified guides who do the same kind of trip, so the profile never ends in a dead end.
+// Other approved guides who do the same kind of trip, so the profile never ends in a dead end.
 async function SimilarGuides({ guide, t, locale }: { guide: Guide; t: Dictionary; locale: Locale }) {
   const specialty = guide.specialties[0];
   const others = (await listGuides(specialty ? { specialty } : {})).filter((g) => g.id !== guide.id).slice(0, 3);

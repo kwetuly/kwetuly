@@ -138,8 +138,10 @@ async function Catalogue({ searchParams, t, locale }: { searchParams: Promise<Pa
 
       {tours.length === 0 ? (
         <div className="mt-6">
-          <p className="text-lg text-muted">{filters.saved && saved.size === 0 ? tt.noSaved : tt.empty}</p>
+          {/* "Finalising" only when there are no tours at all; with a search or filters on, say nothing matches. */}
+          <p className="text-lg text-muted">{filters.saved && saved.size === 0 ? tt.noSaved : hasFilters && all.length > 0 ? tt.noMatch : tt.empty}</p>
           <div className="mt-5 flex flex-wrap gap-3">
+            {hasFilters && all.length > 0 && <Link href={`/${locale}/tours`} className="btn-outline">{tt.clear}</Link>}
             <Link href={`/${locale}/guides`} className="btn">{t.nav.guides}</Link>
             <Link href={`/${locale}/calls`} className="btn-outline">{t.traveler.findCall}</Link>
           </div>

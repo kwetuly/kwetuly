@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Redirect, Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { approxTzs, formatUsd, hasRecordedCheck, isDisplayNameReservedError, type Dictionary, type Locale } from '@kwetuly/shared';
+import { approxTzs, formatUsd, hasIdAndLicenceCheck, isDisplayNameReservedError, type Dictionary, type Locale } from '@kwetuly/shared';
 import { BookingTicket } from '@/components/booking-ticket';
 import { PayDeposit } from '@/components/pay-deposit';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Badge, Button, Card, Field, FormMessage, Muted, ScreenState, SectionTitle, Stars, ErrorText } from '@/components/ui';
+import { GLYPHS, Glyph } from '@/components/glyph';
+import { Badge, Button, Card, EmptyState, ErrorText, Field, FormMessage, MetaItems, Muted, ScreenState, SectionTitle, Stars, SuccessCheck } from '@/components/ui';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import {
   answerOffer,
@@ -28,11 +29,13 @@ import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { expertiseOf, formatDateRange, languageName, specialtyName } from '@/lib/labels';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, icon, layout, radius, space } from '@/theme';
 
 export default function RequestScreen() {
   const { id, posted } = useLocalSearchParams<{ id: string; posted?: string }>();
   const { t } = useI18n();
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session?.user.id;
   const request = useQuery({ queryKey: ['request', id], queryFn: () => getRequest(id), enabled: !!userId });
@@ -40,8 +43,8 @@ export default function RequestScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(`/request/${id}`)} />;
-  if (!userId) return <SignInPrompt />;
-  if (!request.data) return <ScreenState loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
+  if (!userId) return <SignInPrompt screen />;
+  if (!request.data) return <ScreenState screen loading={request.isLoading} error={request.error} onRetry={() => request.refetch()} empty emptyText={t.requests.error} />;
   const req = request.data;
   const isOwner = req.traveler_id === userId;
 
@@ -50,11 +53,16 @@ export default function RequestScreen() {
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       style={{ backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.xxxl }}
+      contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}
       refreshControl={<RefreshControl refreshing={request.isRefetching} onRefresh={() => { request.refetch(); offers.refetch(); }} tintColor={brand.leaf} />}
     >
       <Stack.Title>{req.title}</Stack.Title>
-      {posted && <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {t.requests.posted}</Text>}
+      {posted && (
+        <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <SuccessCheck />
+          <Text style={{ ...type.body, ...font.bold, color: brand.forest, flex: 1 }}>{t.requests.posted}</Text>
+        </View>
+      )}
       <Summary req={req} isOwner={isOwner} />
       {isOwner ? <TravellerOffers req={req} offers={offers.data ?? []} /> : <MyOffer req={req} />}
     </ScrollView>
@@ -64,27 +72,24 @@ export default function RequestScreen() {
 function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
   const { t, locale } = useI18n();
   const r = t.requests;
+  const { type } = useType();
   const queryClient = useQueryClient();
   return (
     <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.sm }}>
-        <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{specialtyName(req.specialty, locale)}</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: space.sm }}>
+        <Text style={{ ...type.label, color: brand.link, flexShrink: 1 }}>{specialtyName(req.specialty, locale)}</Text>
         <Badge label={r.status[req.status]} tone={req.status === 'open' ? 'mint' : 'sand'} />
       </View>
-      <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label }}>{req.title}</Text>
+      <Text accessibilityRole="header" style={type.title2}>{req.title}</Text>
       {!isOwner && <Muted>{t.offers.from} {req.traveler_name}</Muted>}
       <Muted>
         {req.start_date ? formatDateRange(req.start_date, req.end_date ?? req.start_date, locale) : r.datesFlexible}
         {req.start_date && req.flexible_dates ? ` (${r.datesFlexible})` : ''}
       </Muted>
-      <Muted>
-        {req.adults} {r.adults}
-        {req.children ? ` · ${req.children} ${r.children}` : ''}
-        {req.regions.length ? ` · ${req.regions.join(', ')}` : ''}
-      </Muted>
+      <MetaItems items={[`${req.adults} ${r.adults}`, req.children ? `${req.children} ${r.children}` : null, req.regions.length ? req.regions.join(', ') : null]} />
       {req.budget_per_person_usd ? <Muted>{r.budgetLabel}: ${req.budget_per_person_usd.toLocaleString(locale)} {r.perPerson}</Muted> : null}
       {req.languages.length > 0 && <Muted>{req.languages.map(languageName).join(', ')}</Muted>}
-      <Text selectable style={{ color: colors.label, lineHeight: 22 }}>{req.details}</Text>
+      <Text selectable style={type.callout}>{req.details}</Text>
       {(req.female_guide || req.expertise.length > 0) && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {req.female_guide && <Badge label={r.femaleGuide} tone="sand" />}
@@ -95,6 +100,7 @@ function Summary({ req, isOwner }: { req: TripRequest; isOwner: boolean }) {
         <Button
           title={req.status === 'open' ? r.close : r.reopen}
           variant="outline"
+          size="md"
           onPress={async () => {
             await setRequestOpen(req.id, req.status !== 'open');
             queryClient.invalidateQueries({ queryKey: ['request', req.id] });
@@ -118,43 +124,54 @@ function datesOf(req: TripRequest, t: Dictionary, locale: Locale) {
 function OfferRow({ offer }: { offer: TripOffer }) {
   const { t } = useI18n();
   const r = t.requests;
+  const { type, font } = useType();
   const rate = useRate();
   const [open, setOpen] = useState(false);
   const expired = !!offer.valid_until && offer.valid_until < today();
   const tzs = approxTzs(offer.price_total_usd, rate);
-  const meta = [offer.deposit_percent > 0 ? `${r.deposit} ${offer.deposit_percent}%` : null, offer.valid_until ? (expired ? r.expired : `${r.validUntil} ${offer.valid_until}`) : null].filter(Boolean).join(' · ');
+  const depositMeta = offer.deposit_percent > 0 ? `${r.deposit} ${offer.deposit_percent}%` : null;
+  const validMeta = offer.valid_until ? (expired ? r.expired : `${r.validUntil} ${offer.valid_until}`) : null;
 
   return (
     <>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
         <View style={{ flex: 1, gap: space.xs }}>
           {offer.guides ? (
-            <Link href={`/guide/${offer.guides.slug}`} style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.guides.display_name}</Link>
+            <Link href={`/guide/${offer.guides.slug}`} style={{ ...type.cardTitle, color: brand.link, textDecorationLine: 'underline' }}>{offer.guides.display_name}</Link>
           ) : (
-            <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: colors.label }}>{offer.company_name}</Text>
+            <Text style={type.cardTitle}>{offer.company_name}</Text>
           )}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space.sm }}>
-            {offer.guides && hasRecordedCheck(offer.guides) && <Badge label={`✓ ${t.guides.verified}`} />}
+            {offer.guides && !offer.guides.is_sample && offer.guides.verification_status === 'approved' && hasIdAndLicenceCheck(offer.guides) && <Badge label={t.guides.idLicenceChecked} icon={GLYPHS.check} />}
             {offer.guides?.rating_count ? <Stars value={offer.guides.rating_avg ?? 0} /> : null}
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
-          <Text style={{ fontSize: textSize.title2, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}>{formatUsd(offer.price_total_usd)}</Text>
-          {tzs && <Text style={{ fontSize: textSize.caption, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>{tzs}</Text>}
+          <Text style={{ ...type.price, color: colors.label }}>{formatUsd(offer.price_total_usd)}</Text>
+          {tzs && <Text style={{ ...type.caption, fontVariant: ['tabular-nums'] }}>{tzs}</Text>}
         </View>
       </View>
       {offer.includes && (
-        <Text style={{ color: colors.label }}>
-          <Text style={{ fontWeight: '700' }}>{r.includes}: </Text>
+        <Text style={type.callout}>
+          <Text style={font.bold}>{r.includes}: </Text>
           {offer.includes}
         </Text>
       )}
-      {meta ? <Text style={{ color: expired ? brand.danger : colors.secondaryLabel, fontSize: textSize.footnote }}>{meta}</Text> : null}
-      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: radius.chip, padding: space.md, gap: space.sm }}>
-        <Text style={{ fontWeight: '700', color: colors.label }}>{open ? '▾' : '▸'} {r.showItinerary}</Text>
+      {depositMeta || validMeta ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md }}>
+          {depositMeta ? <Text style={type.meta}>{depositMeta}</Text> : null}
+          {validMeta ? <Text style={{ ...type.meta, color: expired ? brand.danger : colors.secondaryLabel }}>{validMeta}</Text> : null}
+        </View>
+      ) : null}
+      <Pressable onPress={() => setOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: open }} style={{ backgroundColor: colors.background, borderRadius: radius.chip, borderCurve: 'continuous', padding: space.md, gap: space.sm, minHeight: control.touch }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          {/* Plus when closed, minus when open: an open or closed cue without arrows. */}
+          <Glyph name={open ? GLYPHS.minus : GLYPHS.plus} size={icon.inline} color={brand.link} />
+          <Text style={{ ...type.callout, ...font.bold, color: brand.link, flex: 1 }}>{r.showItinerary}</Text>
+        </View>
         {open && (
           <>
-            <Text selectable style={{ color: colors.label, lineHeight: 21 }}>{offer.itinerary}</Text>
+            <Text selectable style={type.callout}>{offer.itinerary}</Text>
             {offer.excludes && <Muted>{r.excludes}: {offer.excludes}</Muted>}
           </>
         )}
@@ -165,18 +182,25 @@ function OfferRow({ offer }: { offer: TripOffer }) {
 
 function Contacts({ offer, traveller }: { offer: TripOffer; traveller: string }) {
   const { t } = useI18n();
+  const { type, font } = useType();
   const contacts = useQuery({ queryKey: ['offer-contacts', offer.id], queryFn: () => offerContacts(offer.id) });
   const c = contacts.data;
   return (
     <View style={{ gap: space.sm }}>
-      <Text style={{ fontWeight: '800', color: colors.label }}>{t.requests.contactTitle}</Text>
+      <Text style={type.cardTitle}>{t.requests.contactTitle}</Text>
       {c && (
         <>
-          <Text selectable style={{ color: colors.label }}>{offerName(offer)}: {[c.offerer_phone, c.offerer_email].filter(Boolean).join(' · ')}</Text>
-          <Text selectable style={{ color: colors.label }}>{traveller}: {[c.traveler_phone, c.traveler_email].filter(Boolean).join(' · ')}</Text>
+          <View style={{ gap: space.xxs }}>
+            <Text style={{ ...type.callout, ...font.bold }}>{offerName(offer)}</Text>
+            <MetaItems selectable items={[c.offerer_phone, c.offerer_email]} />
+          </View>
+          <View style={{ gap: space.xxs }}>
+            <Text style={{ ...type.callout, ...font.bold }}>{traveller}</Text>
+            <MetaItems selectable items={[c.traveler_phone, c.traveler_email]} />
+          </View>
         </>
       )}
-      {offer.chat_id && <Button title={t.requests.openChat} onPress={() => router.push(`/chat/${offer.chat_id}`)} />}
+      {offer.chat_id && <Button title={t.requests.openChat} variant="outline" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/chat/${offer.chat_id}`)} />}
     </View>
   );
 }
@@ -241,16 +265,20 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
         </AcceptedTicket>
       )}
       <SectionTitle>{r.offersTitle} ({offers.length})</SectionTitle>
-      {offers.length === 0 && <Muted>{r.noOffers}</Muted>}
+      {offers.length === 0 && <EmptyState glyph={GLYPHS.list} text={r.noOffers} />}
       <ErrorText>{error}</ErrorText>
       {(accepted ? [...others, accepted] : others).map((offer) => (
-        <Card key={offer.id} style={offer.status === 'declined' ? { opacity: 0.6 } : undefined}>
+        // Declined offers sit on the page colour instead of fading, so their text stays readable.
+        <Card key={offer.id} style={offer.status === 'declined' ? { backgroundColor: colors.background } : undefined}>
           <OfferRow offer={offer} />
           {offer.status !== 'sent' && <Muted>{r.offerStatus[offer.status]}</Muted>}
           {offer.status === 'sent' && req.status === 'open' && (!offer.valid_until || offer.valid_until >= today()) && (
             <>
-              <Button title={r.accept} onPress={() => answer(offer, true)} loading={busy === offer.id + 'true'} />
-              <Button title={r.decline} variant="outline" onPress={() => answer(offer, false)} loading={busy === offer.id + 'false'} />
+              {/* Several offers can be open at once, so these are not filled buttons. */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+                <Button title={r.accept} variant="outline" size="md" style={{ flexGrow: 1 }} onPress={() => answer(offer, true)} loading={busy === offer.id + 'true'} />
+                <Button title={r.decline} variant="text" size="md" style={{ flexGrow: 1 }} onPress={() => answer(offer, false)} loading={busy === offer.id + 'false'} />
+              </View>
               <Muted>{r.acceptNote}</Muted>
             </>
           )}
@@ -263,6 +291,7 @@ function TravellerOffers({ req, offers }: { req: TripRequest; offers: TripOffer[
 function MyOffer({ req }: { req: TripRequest }) {
   const { t } = useI18n();
   const o = t.offers;
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session!.user.id;
   const queryClient = useQueryClient();
@@ -345,7 +374,7 @@ function MyOffer({ req }: { req: TripRequest }) {
     <View style={{ gap: space.md }}>
       <SectionTitle>{offer ? o.yourOffer : o.makeOffer}</SectionTitle>
       <Muted>{o.competing}: {req.offers_count}</Muted>
-      {banner ? <Text style={{ fontWeight: '700', color: colors.label }}>{banner}</Text> : null}
+      {banner ? <Text style={{ ...type.body, ...font.bold }}>{banner}</Text> : null}
 
       {offer?.status === 'accepted' && <AcceptedTicket req={req} offer={offer} forGuide />}
       {offer?.status === 'declined' && (
@@ -369,6 +398,7 @@ function MyOffer({ req }: { req: TripRequest }) {
             <Button
               title={o.withdraw}
               variant="outline"
+              size="md"
               onPress={async () => {
                 await withdrawOffer(offer.id);
                 await refresh();

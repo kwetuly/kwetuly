@@ -34,7 +34,7 @@ export default function ComingSoonScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
-  if (!found) return <ScreenState empty emptyText={e.comingTitle} />;
+  if (!found) return <ScreenState screen empty emptyText={e.comingTitle} />;
 
   async function submit() {
     if (!name.trim() || !contact.trim()) return setMessage({ tone: 'error', text: t.auth.error });

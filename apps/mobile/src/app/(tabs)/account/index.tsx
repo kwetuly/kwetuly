@@ -7,7 +7,8 @@ import { useQuery } from '@tanstack/react-query';
 import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@kwetuly/shared';
 import { ConnectedSignIns } from '@/components/connected-sign-ins';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { Badge, Button, Card, Chip, Muted, SectionTitle } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Badge, Button, Card, Chip, IconSquare, ListGroup, ListRow, MetaItems, Muted, Section } from '@/components/ui';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import { getMyGuide, listMyCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
@@ -15,10 +16,12 @@ import { useI18n } from '@/lib/i18n';
 import { welcomeHref } from '@/lib/onboarding';
 import { registerForPush, signOut, type PushState } from '@/lib/push';
 import { SITE_URL } from '@/lib/supabase';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, space } from '@/theme';
 
 export default function AccountScreen() {
   const { t, locale, setLocale } = useI18n();
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
@@ -36,137 +39,147 @@ export default function AccountScreen() {
     if (userId) registerForPush(false).then(setPush);
   }, [userId]);
 
+  // The one filled button: finish setup, when the account is not set up yet. Everything else is a row.
+  const needsFinish = !!profile.data && !profile.data.onboarded_at;
+  const approvedGuide = myGuide?.verification_status === 'approved';
+
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.xl, paddingBottom: space.xxxl }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: layout.sectionGap, paddingBottom: space.xxxl }}>
       <Stack.Title large>{t.app.tabAccount}</Stack.Title>
 
       {session ? (
         <>
           <Card>
             <Muted>{t.app.signedInAs}</Muted>
-            <Text selectable style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>
+            <Text selectable style={type.title3}>
               {profile.data?.full_name ?? session.user.email}
             </Text>
-            <Text selectable style={{ color: colors.secondaryLabel }}>{session.user.email}</Text>
-            {profile.data?.phone && <Text selectable style={{ color: colors.secondaryLabel }}>{profile.data.phone}</Text>}
-            {profile.data && !profile.data.onboarded_at && <Button title={t.auth.finishSetup} onPress={() => router.push('/welcome')} />}
+            <MetaItems selectable items={[session.user.email, profile.data?.phone]} />
+            {needsFinish && <Button title={t.auth.finishSetup} onPress={() => router.push('/welcome')} />}
           </Card>
 
           {/* Guides */}
           {(myGuide || role === 'guide') && (
-            <Card>
-              <SectionTitle>{t.nav.hub}</SectionTitle>
+            <Section title={t.nav.hub}>
               {myGuide && (
                 <Badge
                   label={myGuide.verification_status === 'approved' ? t.dashboard.statusApproved : myGuide.verification_status === 'rejected' ? t.dashboard.statusRejected : t.dashboard.statusPending}
                   tone={myGuide.verification_status === 'approved' ? 'mint' : 'sand'}
                 />
               )}
-              {myGuide?.verification_status === 'approved' && <Button title={t.nav.hub} onPress={() => router.push('/hub' as Href)} />}
-              <Button title={t.dashboard.title} variant="outline" onPress={() => router.push('/profile-edit')} />
-              {myGuide?.verification_status === 'approved' && (
-                <Button title={t.dashboard.viewProfile} variant="outline" onPress={() => router.push({ pathname: '/guide/[slug]', params: { slug: myGuide.slug } })} />
-              )}
-            </Card>
+              <ListGroup>
+                {approvedGuide && <ListRow icon={GLYPHS.hub} title={t.nav.hub} onPress={() => router.push('/hub' as Href)} />}
+                <ListRow icon={GLYPHS.profile} title={t.dashboard.title} onPress={() => router.push('/profile-edit')} />
+                {approvedGuide && myGuide && (
+                  <ListRow icon={GLYPHS.view} title={t.dashboard.viewProfile} onPress={() => router.push({ pathname: '/guide/[slug]', params: { slug: myGuide.slug } })} />
+                )}
+              </ListGroup>
+            </Section>
           )}
 
           {/* Businesses */}
           {isBusiness && (
-            <Card>
-              <SectionTitle>{t.join.provider.title}</SectionTitle>
-              <Button title={t.business.dashboardTitle} onPress={() => router.push('/my-business')} />
-              <Button title={t.jobs.postNew} variant="outline" onPress={() => router.push('/jobs-post')} />
-              <Button title={t.jobs.handoverTab} variant="dark" onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
-              <Button title={t.groups.start} variant="outline" onPress={() => router.push('/group-trip/new')} />
-              <Button title={t.partners.applyTitle} variant="outline" onPress={() => router.push('/partners')} />
-            </Card>
+            <Section title={t.join.provider.title}>
+              <ListGroup>
+                <ListRow icon={GLYPHS.store} title={t.business.dashboardTitle} onPress={() => router.push('/my-business')} />
+                <ListRow icon={GLYPHS.briefcase} title={t.jobs.postNew} onPress={() => router.push('/jobs-post')} />
+                <ListRow icon={GLYPHS.people} title={t.jobs.handoverTab} onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
+                <ListRow icon={GLYPHS.calendarAdd} title={t.groups.start} onPress={() => router.push('/group-trip/new')} />
+                <ListRow icon={GLYPHS.handshake} title={t.partners.applyTitle} onPress={() => router.push('/partners')} />
+              </ListGroup>
+            </Section>
           )}
 
           {/* Trip requests: travellers post them; guides and companies answer with offers. */}
-          <Card>
-            <SectionTitle>{t.requests.title}</SectionTitle>
-            <Button title={t.requests.post} onPress={() => router.push('/request/new')} />
-            <Button title={canOffer ? `${t.requests.mine} · ${t.offers.boardTitle}` : t.requests.mine} variant="outline" onPress={() => router.push('/requests')} />
-          </Card>
+          <Section title={t.requests.title}>
+            <ListGroup>
+              <ListRow icon={GLYPHS.write} title={t.requests.post} onPress={() => router.push('/request/new')} />
+              <ListRow icon={GLYPHS.list} title={t.requests.mine} subtitle={canOffer ? t.offers.boardTitle : undefined} onPress={() => router.push('/requests')} />
+            </ListGroup>
+          </Section>
 
           {/* Phone alerts */}
           {push !== 'unavailable' && push !== null && (
-            <Card>
-              <SectionTitle>{t.alerts.notifications}</SectionTitle>
-              {push === 'on' ? (
-                <Text style={{ color: brand.forest, fontWeight: '700' }}>✓ {t.alerts.notificationsOn}</Text>
-              ) : (
-                <>
-                  <Muted>{push === 'denied' ? t.alerts.denied : t.alerts.enableBody}</Muted>
-                  {push === 'off' && <Button title={t.alerts.enable} onPress={() => registerForPush(true).then(setPush)} />}
-                </>
-              )}
-            </Card>
+            <Section title={t.alerts.notifications}>
+              <Card>
+                {push === 'on' ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+                    <IconSquare glyph={GLYPHS.check} />
+                    <Text style={{ ...type.body, ...font.semibold, color: brand.forest, flex: 1 }}>{t.alerts.notificationsOn}</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Muted>{push === 'denied' ? t.alerts.denied : t.alerts.enableBody}</Muted>
+                    {push === 'off' && <Button title={t.alerts.enable} variant="outline" size="md" icon={GLYPHS.bell} onPress={() => registerForPush(true).then(setPush)} />}
+                  </>
+                )}
+              </Card>
+            </Section>
           )}
 
           {/* Everyone: trips and prep calls */}
-          <Card>
-            <SectionTitle>{t.traveler.title}</SectionTitle>
-            <Button title={t.groups.mine} variant="outline" onPress={() => router.push('/my-group-trips')} />
-            <Text style={{ fontWeight: '700', color: colors.label }}>{t.traveler.calls}</Text>
-            {calls.data?.length === 0 && <Muted>{t.traveler.noCalls}</Muted>}
-            {(calls.data ?? []).map((c) => (
-              <View key={c.id} style={{ gap: space.xxs, paddingVertical: space.xs }}>
-                <Text style={{ fontWeight: '700', color: colors.label }}>
-                  {CALL_TOPICS.find((x) => x.id === c.topic)?.[locale] ?? c.topic} · {c.guides?.display_name}
-                </Text>
-                <Muted>
-                  {t.hub.status[c.status as keyof typeof t.hub.status] ?? c.status}
-                  {c.scheduled_at ? ` · ${new Date(c.scheduled_at).toLocaleString(locale)}` : ''}
-                </Muted>
-                {c.status === 'accepted' && c.meeting_link && (
-                  <Text style={{ color: brand.leafDark, fontWeight: '700' }} onPress={() => openExternal(c.meeting_link, { inApp: true })}>
-                    {t.traveler.joinCall}
-                  </Text>
-                )}
-              </View>
-            ))}
-            <Button title={t.traveler.findCall} variant="outline" onPress={() => router.push('/calls')} />
-            {!myGuide && role !== 'guide' && (
-              <Text
-                accessibilityRole="link"
-                style={{ color: brand.forest, fontWeight: '700' }}
-                // Unfinished accounts cannot save a guide profile or upload a photo yet: finish the welcome step as a guide first.
-                onPress={() => router.push(profile.data && !profile.data.onboarded_at ? welcomeHref('/profile-edit', 'guide') : '/profile-edit')}
-              >
-                {t.traveler.becomeGuide}
-              </Text>
-            )}
-          </Card>
+          <Section title={t.traveler.title}>
+            <ListGroup>
+              <ListRow icon={GLYPHS.calendar} title={t.groups.mine} onPress={() => router.push('/my-group-trips')} />
+              <ListRow icon={GLYPHS.video} title={t.traveler.findCall} onPress={() => router.push('/calls')} />
+              {!myGuide && role !== 'guide' && (
+                <ListRow
+                  icon={GLYPHS.hiking}
+                  title={t.traveler.becomeGuide}
+                  accessibilityRole="link"
+                  // Unfinished accounts cannot save a guide profile or upload a photo yet: finish the welcome step as a guide first.
+                  onPress={() => router.push(profile.data && !profile.data.onboarded_at ? welcomeHref('/profile-edit', 'guide') : '/profile-edit')}
+                />
+              )}
+            </ListGroup>
+            <Card>
+              <Text accessibilityRole="header" style={type.label}>{t.traveler.calls}</Text>
+              {calls.data?.length === 0 && <Muted>{t.traveler.noCalls}</Muted>}
+              {(calls.data ?? []).map((c, i) => (
+                <View key={c.id} style={{ gap: space.xxs, paddingTop: i ? space.md : 0, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
+                  <Text style={{ ...type.body, ...font.bold }}>{CALL_TOPICS.find((x) => x.id === c.topic)?.[locale] ?? c.topic}</Text>
+                  <MetaItems
+                    items={[c.guides?.display_name, t.hub.status[c.status as keyof typeof t.hub.status] ?? c.status, c.scheduled_at ? new Date(c.scheduled_at).toLocaleString(locale) : null]}
+                  />
+                  {c.status === 'accepted' && c.meeting_link && (
+                    <View style={{ alignItems: 'flex-start' }}>
+                      <Button title={t.traveler.joinCall} variant="text" size="md" icon={GLYPHS.video} onPress={() => openExternal(c.meeting_link, { inApp: true })} />
+                    </View>
+                  )}
+                </View>
+              ))}
+            </Card>
+          </Section>
 
           <ConnectedSignIns />
 
-          <Button title={t.ux.securityLink} variant="outline" onPress={() => router.push('/security')} />
-          <Button title={t.nav.signOut} variant="dark" onPress={signOut} />
-          <Text accessibilityRole="link" onPress={() => router.push('/delete-account')} style={{ color: brand.danger, fontWeight: '700', textAlign: 'center', paddingVertical: space.md }}>
-            {t.ux.deleteTitle}
-          </Text>
+          <ListGroup>
+            <ListRow icon={GLYPHS.lock} title={t.ux.securityLink} onPress={() => router.push('/security')} />
+            <ListRow icon={GLYPHS.power} title={t.nav.signOut} onPress={signOut} />
+          </ListGroup>
+          <View style={{ alignItems: 'center', marginTop: -space.lg }}>
+            <Button title={t.ux.deleteTitle} variant="danger" size="md" onPress={() => router.push('/delete-account')} />
+          </View>
         </>
       ) : (
-        <View style={{ marginHorizontal: -16 }}>
+        <View style={{ marginHorizontal: -layout.screenX }}>
           <SignInPrompt />
         </View>
       )}
 
-      <View style={{ gap: space.md }}>
-        <SectionTitle>{t.app.language}</SectionTitle>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+      <Section title={t.app.language}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
           {LOCALES.map((l) => (
             <Chip key={l} label={LOCALE_NAMES[l]} active={l === locale} onPress={() => setLocale(l)} />
           ))}
         </View>
-      </View>
+      </Section>
 
-      <View style={{ gap: space.md }}>
-        <Button title={t.moments.title} variant="outline" onPress={() => router.push('/moments')} />
-        <Button title={t.partners.title} variant="outline" onPress={() => router.push('/partners')} />
-        <Button title={t.app.website} variant="outline" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}`)} />
-      </View>
+      <ListGroup>
+        <ListRow icon={GLYPHS.photos} title={t.moments.title} onPress={() => router.push('/moments')} />
+        <ListRow icon={GLYPHS.handshake} title={t.partners.title} onPress={() => router.push('/partners')} />
+        <ListRow icon={GLYPHS.globe} title={t.app.website} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}`)} />
+      </ListGroup>
     </ScrollView>
   );
 }

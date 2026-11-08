@@ -70,7 +70,7 @@ export default function PartnersScreen() {
       <Card>
         <SectionTitle>{p.overflowTitle}</SectionTitle>
         <Muted>{p.overflowBody}</Muted>
-        <Button title={p.overflowCta} variant="dark" onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
+        <Button title={p.overflowCta} variant="outline" onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
       </Card>
       <Card>
         <SectionTitle>{p.applyTitle}</SectionTitle>

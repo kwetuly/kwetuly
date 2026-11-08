@@ -2,7 +2,7 @@
 // Traveller-facing, so every language has its own wording.
 
 export const extras_en = {
-  whoCan: 'Anyone with a Kwetuly account can start a group: verified guides, businesses and travellers. Travellers need a phone number on their account.',
+  whoCan: 'Anyone with a Kwetuly account can start a group: Kwetuly-approved guides, businesses and travellers. Travellers need a phone number on their account.',
   completeTitle: 'Complete your group',
   completeBody: 'Already have some people going? Say how many, and other travellers can ask to fill the free spots. Kwetuly reviews every group before it goes live.',
   alreadyGoing: 'People already going, including you',
@@ -48,7 +48,7 @@ export const extras_en = {
 export type ExtrasText = typeof extras_en;
 
 export const extras_sw: ExtrasText = {
-  whoCan: 'Yeyote mwenye akaunti ya Kwetuly anaweza kuanzisha kundi: waongozaji waliothibitishwa, biashara na wasafiri. Wasafiri wanahitaji namba ya simu kwenye akaunti.',
+  whoCan: 'Yeyote mwenye akaunti ya Kwetuly anaweza kuanzisha kundi: waongozaji walioidhinishwa na Kwetuly, biashara na wasafiri. Wasafiri wanahitaji namba ya simu kwenye akaunti.',
   completeTitle: 'Kamilisha kundi lako',
   completeBody: 'Una watu tayari wanaokwenda? Sema ni wangapi, na wasafiri wengine wataomba kujaza nafasi zilizobaki. Kwetuly hukagua kila kundi kabla halijaonekana.',
   alreadyGoing: 'Watu tayari wanaokwenda, ukiwemo wewe',
@@ -92,7 +92,7 @@ export const extras_sw: ExtrasText = {
 };
 
 export const extras_fr: ExtrasText = {
-  whoCan: 'Toute personne ayant un compte Kwetuly peut lancer un groupe : guides vérifiés, entreprises et voyageurs. Les voyageurs doivent avoir un numéro de téléphone sur leur compte.',
+  whoCan: 'Toute personne ayant un compte Kwetuly peut lancer un groupe : guides approuvés par Kwetuly, entreprises et voyageurs. Les voyageurs doivent avoir un numéro de téléphone sur leur compte.',
   completeTitle: 'Complétez votre groupe',
   completeBody: 'Vous êtes déjà quelques-uns ? Indiquez combien, et d’autres voyageurs pourront demander les places libres. Kwetuly vérifie chaque groupe avant sa mise en ligne.',
   alreadyGoing: 'Personnes déjà inscrites, vous compris',
@@ -136,7 +136,7 @@ export const extras_fr: ExtrasText = {
 };
 
 export const extras_it: ExtrasText = {
-  whoCan: 'Chiunque abbia un account Kwetuly può avviare un gruppo: guide verificate, aziende e viaggiatori. I viaggiatori devono avere un numero di telefono nell’account.',
+  whoCan: 'Chiunque abbia un account Kwetuly può avviare un gruppo: guide approvate da Kwetuly, aziende e viaggiatori. I viaggiatori devono avere un numero di telefono nell’account.',
   completeTitle: 'Completa il tuo gruppo',
   completeBody: 'Siete già in alcuni? Indica quanti, e altri viaggiatori potranno chiedere i posti liberi. Kwetuly controlla ogni gruppo prima di pubblicarlo.',
   alreadyGoing: 'Persone che partono già, te compreso',
@@ -180,7 +180,7 @@ export const extras_it: ExtrasText = {
 };
 
 export const extras_de: ExtrasText = {
-  whoCan: 'Jeder mit einem Kwetuly-Konto kann eine Gruppe starten: geprüfte Guides, Unternehmen und Reisende. Reisende brauchen eine Telefonnummer im Konto.',
+  whoCan: 'Jeder mit einem Kwetuly-Konto kann eine Gruppe starten: von Kwetuly freigegebene Guides, Unternehmen und Reisende. Reisende brauchen eine Telefonnummer im Konto.',
   completeTitle: 'Gruppe vervollständigen',
   completeBody: 'Sind schon ein paar Leute dabei? Geben Sie an, wie viele, und andere Reisende können die freien Plätze anfragen. Kwetuly prüft jede Gruppe, bevor sie online geht.',
   alreadyGoing: 'Bereits dabei, Sie eingeschlossen',
@@ -224,7 +224,7 @@ export const extras_de: ExtrasText = {
 };
 
 export const extras_pl: ExtrasText = {
-  whoCan: 'Grupę może założyć każdy z kontem Kwetuly: zweryfikowani przewodnicy, firmy i podróżnicy. Podróżnicy muszą mieć numer telefonu na koncie.',
+  whoCan: 'Grupę może założyć każdy z kontem Kwetuly: przewodnicy zatwierdzeni przez Kwetuly, firmy i podróżnicy. Podróżnicy muszą mieć numer telefonu na koncie.',
   completeTitle: 'Uzupełnij swoją grupę',
   completeBody: 'Jest was już kilkoro? Podaj ile osób, a inni podróżnicy mogą poprosić o wolne miejsca. Kwetuly sprawdza każdą grupę przed publikacją.',
   alreadyGoing: 'Osoby, które już jadą, łącznie z Tobą',
@@ -268,7 +268,7 @@ export const extras_pl: ExtrasText = {
 };
 
 export const extras_zh: ExtrasText = {
-  whoCan: '任何拥有 Kwetuly 账户的人都可以发起拼团：认证导游、企业和旅行者。旅行者的账户需要有电话号码。',
+  whoCan: '任何拥有 Kwetuly 账户的人都可以发起拼团：通过 Kwetuly 审核的导游、企业和旅行者。旅行者的账户需要有电话号码。',
   completeTitle: '补齐你的团',
   completeBody: '已经有几个人要去？填写人数，其他旅行者就可以申请剩余名额。每个拼团上线前都会经过 Kwetuly 审核。',
   alreadyGoing: '已确定要去的人数（包括你）',

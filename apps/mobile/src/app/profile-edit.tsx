@@ -1,32 +1,24 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, type DocumentStatus } from '@kwetuly/shared';
-import { Glyph } from '@/components/glyph';
+import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
-import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState, SectionTitle, Toggle } from '@/components/ui';
 import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { GuideReferralCard } from '@/components/referral';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, icon, layout, media, radius, space } from '@/theme';
 
 type Upload = { uri: string; mimeType: string };
 
 const STEP_COUNT = 5;
-
-function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-      <Switch value={value} onValueChange={onChange} trackColor={{ true: brand.leaf }} />
-      <Text style={{ flex: 1, color: colors.label }}>{label}</Text>
-    </View>
-  );
-}
 
 // Profile photos are cropped square; ID card photos are kept as taken. Both are shrunk to at most
 // 1600px (phone photos are often 8–12 MB, too slow on mobile data and over the storage limit) and
@@ -48,29 +40,30 @@ type Translations = ReturnType<typeof useI18n>['t'];
 // Profile strength: how complete the profile is and what is still missing (same rules as the website).
 function ProfileStrength({ input, t }: { input: Parameters<typeof profileCompletion>[0]; t: Translations }) {
   const c = t.checks;
+  const { type, font } = useType();
   const { items, percent } = profileCompletion(input);
   const allDone = items.every((i) => i.done || i.optional);
   return (
     <Card>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', gap: space.sm }}>
         <SectionTitle>{c.strength}</SectionTitle>
-        <Text style={{ fontWeight: '800', color: brand.leafDark, fontVariant: ['tabular-nums'] }}>
+        <Text style={{ ...type.body, ...font.extrabold, color: brand.leafDark, fontVariant: ['tabular-nums'] }}>
           {percent}% {c.complete}
         </Text>
       </View>
-      <View style={{ height: 8, borderRadius: radius.bar, backgroundColor: colors.fill, overflow: 'hidden' }} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }}>
+      <View style={{ height: control.bar, borderRadius: radius.bar, backgroundColor: colors.fill, overflow: 'hidden' }} accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percent }}>
         <View style={{ width: `${percent}%`, height: '100%', backgroundColor: brand.leaf }} />
       </View>
-      <Text style={{ fontWeight: '700', color: allDone ? brand.leafDark : colors.secondaryLabel, fontSize: textSize.footnote }}>{allDone ? c.allDone : c.missing}</Text>
+      <Text style={{ ...type.meta, ...font.bold, color: allDone ? brand.leafDark : colors.secondaryLabel }}>{allDone ? c.allDone : c.missing}</Text>
       <View style={{ gap: space.xs }}>
         {items.map((item) => (
           <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <Glyph
               name={item.done ? { ios: 'checkmark.circle.fill', android: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked' }}
-              size={18}
+              size={icon.square}
               color={item.done ? brand.leafDark : colors.secondaryLabel}
             />
-            <Text style={{ color: item.done ? colors.secondaryLabel : colors.label, fontWeight: item.done ? '400' : '700' }}>
+            <Text style={{ ...type.callout, ...(item.done ? font.regular : font.bold), color: item.done ? colors.secondaryLabel : colors.label, flex: 1 }}>
               {c[item.id]}
               {item.optional ? ` (${c.optional})` : ''}
             </Text>
@@ -84,17 +77,19 @@ function ProfileStrength({ input, t }: { input: Parameters<typeof profileComplet
 // One private document: its review status and a button to pick a new photo of it.
 function DocumentRow({ label, status, picked, onPick, t }: { label: string; status: DocumentStatus; picked: boolean; onPick: () => void; t: Translations }) {
   const c = t.checks;
-  const badge: Record<DocumentStatus, { text: string; tone: 'mint' | 'sand' | 'night' | 'gold' }> = {
+  const { type } = useType();
+  const badge: Record<DocumentStatus, { text: string; tone: 'mint' | 'sand' | 'neutral' | 'gold' }> = {
     checked: { text: c.statusChecked, tone: 'mint' },
     waiting: { text: c.statusWaiting, tone: 'sand' },
-    missing: { text: c.statusMissing, tone: 'night' },
+    missing: { text: c.statusMissing, tone: 'neutral' },
     expired: { text: c.statusExpired, tone: 'gold' },
   };
   return (
     <View style={{ gap: space.sm }}>
-      <Text style={{ fontWeight: '700', color: colors.label }}>{label}</Text>
+      <Text style={type.label}>{label}</Text>
       <Badge label={picked ? c.statusWaiting : badge[status].text} tone={picked ? 'sand' : badge[status].tone} />
-      <Button title={`${label}${picked ? ' ✓' : ''}`} variant="outline" onPress={onPick} />
+      {/* A check icon once a new photo is picked (instead of a "✓" character). */}
+      <Button title={label} icon={picked ? GLYPHS.check : GLYPHS.attach} variant="outline" size="md" onPress={onPick} />
     </View>
   );
 }
@@ -103,6 +98,7 @@ function DocumentRow({ label, status, picked, onPick, t }: { label: string; stat
 export default function ProfileEditScreen() {
   const { t, locale } = useI18n();
   const d = t.dashboard;
+  const { type, font } = useType();
   const { session } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
@@ -201,7 +197,7 @@ export default function ProfileEditScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;
-  if (!userId || mine.isLoading) return <ScreenState loading />;
+  if (!userId || mine.isLoading) return <ScreenState screen loading />;
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
 
@@ -311,7 +307,7 @@ export default function ProfileEditScreen() {
 
   if (current == null) {
     return (
-      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.huge }}>
         <Stack.Title>{d.title}</Stack.Title>
         {status && (
           <Card>
@@ -321,19 +317,24 @@ export default function ProfileEditScreen() {
         <FormMessage message={message} />
         <Card>
           {d.steps.map((title, i) => (
-            <Pressable key={title} onPress={() => setStep(i)} accessibilityRole="button" style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingVertical: space.sm }}>
+            <Pressable
+              key={title}
+              onPress={() => setStep(i)}
+              accessibilityRole="button"
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.row, paddingVertical: space.sm, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border, opacity: pressed ? 0.7 : 1 })}
+            >
               <Glyph
                 name={stepDone[i] ? { ios: 'checkmark.circle.fill', android: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked' }}
-                size={22}
+                size={icon.action}
                 color={stepDone[i] ? brand.leafDark : colors.secondaryLabel}
               />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontWeight: '700', color: colors.label }}>
+              <View style={{ flex: 1, gap: space.xxs }}>
+                <Text style={{ ...type.body, ...font.bold }}>
                   {i + 1}. {title}
                 </Text>
-                <Text style={{ color: colors.secondaryLabel, fontSize: textSize.footnote }}>{i === STEP_COUNT - 1 ? d.optionalStep : stepDone[i] ? d.stepDone : d.stepTodo}</Text>
+                <Text style={type.meta}>{i === STEP_COUNT - 1 ? d.optionalStep : stepDone[i] ? d.stepDone : d.stepTodo}</Text>
               </View>
-              <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.edit}</Text>
+              <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{d.edit}</Text>
             </Pressable>
           ))}
         </Card>
@@ -351,13 +352,20 @@ export default function ProfileEditScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg, paddingBottom: space.huge }}>
+    <FormScreen
+      bar={
+        <>
+          <FormMessage message={message} />
+          <Button title={current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish} onPress={() => saveStep(current)} loading={busy} />
+        </>
+      }
+    >
       <Stack.Title>{d.steps[current]}</Stack.Title>
       <View style={{ gap: space.sm }}>
-        <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.stepOf.replace('{n}', String(current + 1)).replace('{total}', String(STEP_COUNT))}</Text>
+        <Text style={{ ...type.label, color: brand.leafDark }}>{d.stepOf.replace('{n}', String(current + 1)).replace('{total}', String(STEP_COUNT))}</Text>
         <View style={{ flexDirection: 'row', gap: space.xs }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {d.steps.map((title, i) => (
-            <View key={title} style={{ flex: 1, height: 6, borderRadius: radius.bar, backgroundColor: i <= current ? brand.leaf : colors.fill }} />
+            <View key={title} style={{ flex: 1, height: space.xs + space.xxs, borderRadius: radius.bar, backgroundColor: i <= current ? brand.leaf : colors.fill }} />
           ))}
         </View>
         {!guide && <Muted>{d.stepsIntro}</Muted>}
@@ -365,9 +373,9 @@ export default function ProfileEditScreen() {
 
       {current === 0 && (
         <Card>
-          <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }} accessibilityRole="button">
-            <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={72} />
-            <Text style={{ color: brand.leafDark, fontWeight: '700' }}>{d.photo}</Text>
+          <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })} accessibilityRole="button">
+            <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={media.thumb} />
+            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{d.photo}</Text>
           </Pressable>
           <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
           <ChipSelect label={d.baseRegion} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.base_region} onChange={set('base_region')} multiple={false} />
@@ -426,7 +434,7 @@ export default function ProfileEditScreen() {
       {current === 3 && (
         <Card>
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
-          <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} />
+          <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} hint={d.certificationsHint} />
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
           <Toggle label={d.hasVehicle} value={f.has_vehicle} onChange={set('has_vehicle')} />
           <Toggle label={d.openToPartners} value={f.open_to_partners} onChange={set('open_to_partners')} />
@@ -455,14 +463,12 @@ export default function ProfileEditScreen() {
         </Card>
       )}
 
-      <FormMessage message={message} />
-      <Button title={current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish} onPress={() => saveStep(current)} loading={busy} />
-      {guide && current > 0 && <Button title={d.back} variant="outline" onPress={() => setStep(current - 1)} />}
-      {guide && (
-        <Text accessibilityRole="button" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} style={{ color: brand.forest, fontWeight: '700', textAlign: 'center', paddingVertical: space.sm }}>
-          {d.skip}
-        </Text>
-      )}
-    </ScrollView>
+      {guide ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: space.sm }}>
+          {guide && current > 0 && <Button title={d.back} variant="outline" size="md" onPress={() => setStep(current - 1)} />}
+          {guide && <Button title={d.skip} variant="text" size="md" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} />}
+        </View>
+      ) : null}
+    </FormScreen>
   );
 }

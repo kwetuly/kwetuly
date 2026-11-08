@@ -100,7 +100,6 @@ export async function getTourGuides(tourId: string, categories: string[]): Promi
     .overlaps('specialties', specialties)
     .order('is_sample', { ascending: true })
     .order('rating_count', { ascending: false })
-    .order('plan', { ascending: false })
     .limit(4);
   return { assigned: false, guides: (data ?? []) as Guide[] };
 }

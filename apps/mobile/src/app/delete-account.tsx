@@ -1,18 +1,20 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Text } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { Button, Card, Field, FormMessage, Muted } from '@/components/ui';
+import { Button, Card, Field, FormMessage, FormScreen, Muted } from '@/components/ui';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { signOut } from '@/lib/push';
 import { supabase } from '@/lib/supabase';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand } from '@/theme';
 
 // Permanently deletes the signed-in account after the person types their email address.
 // Uploaded files go first; the database then removes everything else (payments are kept
 // for the accounts, without the person's name).
 export default function DeleteAccountScreen() {
   const { t } = useI18n();
+  const { type } = useType();
   const { session } = useSession();
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -43,15 +45,16 @@ export default function DeleteAccountScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <FormScreen>
       <Stack.Screen options={{ title: t.ux.deleteTitle }} />
       <Card>
-        <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: brand.danger }}>{t.ux.deleteTitle}</Text>
+        <Text accessibilityRole="header" style={{ ...type.cardTitle, color: brand.danger }}>{t.ux.deleteTitle}</Text>
         <Muted>{t.ux.deleteBody}</Muted>
         <Field label={t.ux.deleteConfirm} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
         <FormMessage message={message} />
-        <Button title={t.ux.deleteButton} variant="dark" onPress={remove} loading={busy} disabled={!session} />
+        {/* A red text button: deleting is never the screen's highlighted action. */}
+        <Button title={t.ux.deleteButton} variant="danger" size="md" onPress={remove} loading={busy} disabled={!session} />
       </Card>
-    </ScrollView>
+    </FormScreen>
   );
 }

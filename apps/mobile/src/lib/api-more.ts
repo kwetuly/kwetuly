@@ -132,6 +132,18 @@ export async function registerInterest(input: { section: string; item: string; k
 // ---------------------------------------------------------------------------
 // While Kwetuly is invite-only, the database refuses to finish an account without a valid invite
 // code (error 'invite'). Accounts that already used a code at sign-up are not asked again.
+/**
+ * Saves the account's phone number (the same rule as the website's "Your details"): the number as typed
+ * plus the country picked next to it, stored as one international number. Throws 'phone' when it is not valid.
+ */
+export async function saveAccountPhone(userId: string, phone: string, phoneCountry: string) {
+  const normalized = normalizePhone(phone, phoneCountry);
+  if (!normalized) throw new Error('phone');
+  const { error } = await supabase.from('profiles').update({ phone: normalized }).eq('id', userId);
+  check(error);
+  return normalized;
+}
+
 export async function completeOnboarding(role: string, phone: string, fullName: string, inviteCode = '', phoneCountry?: string) {
   // The number as typed plus the country picked next to it, saved as one international number.
   const normalized = normalizePhone(phone, phoneCountry);

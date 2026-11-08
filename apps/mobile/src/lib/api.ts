@@ -26,6 +26,7 @@ export type Guide = {
   summits: number | null;
   certifications: string[];
   association: string | null;
+  has_vehicle: boolean;
   plan: 'msingi' | 'pro';
   verification_status: 'pending' | 'approved' | 'rejected';
   visibility: 'public' | 'link_only';
@@ -41,7 +42,7 @@ export type Guide = {
 };
 
 const GUIDE_COLUMNS =
-  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, plan, verification_status, visibility, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
+  'id, owner_id, slug, display_name, photo_url, headline, bio, base_region, regions, specialties, expertise, female_guide, open_to_partners, rating_avg, rating_count, languages, max_group_size, years_experience, summits, certifications, association, has_vehicle, plan, verification_status, visibility, call_enabled, call_price_usd, call_minutes, call_topics, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, is_sample';
 
 export type GuideFilters = { specialty?: string; language?: string; expertise?: string; female?: boolean; partners?: boolean };
 
@@ -56,7 +57,6 @@ export async function listGuides(filters: GuideFilters): Promise<Guide[]> {
     .select(GUIDE_COLUMNS)
     .eq('verification_status', 'approved')
     .eq('visibility', 'public')
-    .order('plan', { ascending: false })
     .order('created_at', { ascending: true })
     .limit(60);
   if (filters.specialty) query = query.contains('specialties', [filters.specialty]);
@@ -411,7 +411,7 @@ export async function markChatRead(chatId: string, userId: string) {
 
 /** Approved, public guides who offer 1-on-1 prep calls, optionally for one topic. */
 export async function listCallGuides(topic?: string): Promise<Guide[]> {
-  let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('plan', { ascending: false }).limit(60);
+  let query = supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'approved').eq('visibility', 'public').eq('call_enabled', true).order('created_at', { ascending: true }).limit(60);
   if (topic) query = query.contains('call_topics', [topic]);
   return must(await query) as unknown as Guide[];
 }

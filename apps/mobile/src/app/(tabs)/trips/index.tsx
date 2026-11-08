@@ -1,29 +1,24 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import { FlatList, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ACCOMMODATION_LEVELS, TOUR_DURATIONS, TOUR_GROUP_TYPES, TOUR_THEMES, TOUR_TYPES, TRAVEL_STYLES, filterTours, readTourFilters, type TourFilters } from '@kwetuly/shared';
 import { GroupTripCard, TourCard } from '@/components/cards';
-import { Button, Chip, ScreenState } from '@/components/ui';
+import { GLYPHS } from '@/components/glyph';
+import { Button, Chip, ChipRow, ScreenState, SearchField } from '@/components/ui';
 import { listGroupTrips, listSavedTourIds, listTours, type GroupTrip, type Tour } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, control, layout, space } from '@/theme';
 
 type Item = { kind: 'group'; trip: GroupTrip } | { kind: 'tour'; tour: Tour };
-
-function ChipRow({ children }: { children: ReactNode }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm, paddingHorizontal: space.lg }}>
-      {children}
-    </ScrollView>
-  );
-}
 
 // Group trips with open spots, and the tour catalogue with search and filters.
 export default function TripsScreen() {
   const { t, locale } = useI18n();
   const tt = t.tours;
+  const { type, font } = useType();
   const params = useLocalSearchParams<Record<string, string>>();
   const { session } = useSession();
   const [view, setView] = useState<'groups' | 'tours'>(params.view === 'tours' ? 'tours' : 'groups');
@@ -42,6 +37,10 @@ export default function TripsScreen() {
     const list = filterTours(tours.data ?? [], filters);
     return savedOnly ? list.filter((tour) => saved.data?.includes(tour.id)) : list;
   }, [tours.data, filters, savedOnly, saved.data]);
+  const clearAll = () => {
+    setFilters({});
+    setSavedOnly(false);
+  };
   const filtered = savedOnly || Object.values(filters).some((v) => v !== undefined && v !== '');
 
   const items: Item[] =
@@ -55,30 +54,22 @@ export default function TripsScreen() {
       data={items}
       keyExtractor={(item) => (item.kind === 'group' ? item.trip.id : item.tour.id)}
       renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: space.lg }}>{item.kind === 'group' ? <GroupTripCard trip={item.trip} /> : <TourCard tour={item.tour} />}</View>
+        <View style={{ paddingHorizontal: layout.screenX }}>{item.kind === 'group' ? <GroupTripCard trip={item.trip} /> : <TourCard tour={item.tour} />}</View>
       )}
-      ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
-      contentContainerStyle={{ paddingBottom: space.xxl }}
-      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => active.refetch()} tintColor={brand.leaf} />}
+      ItemSeparatorComponent={() => <View style={{ height: layout.listGap }} />}
+      contentContainerStyle={{ paddingBottom: space.xxxl }}
+      refreshControl={<RefreshControl refreshing={active.isRefetching} onRefresh={() => { active.refetch(); }} tintColor={brand.leaf} />}
       ListHeaderComponent={
-        <View style={{ gap: space.md, paddingVertical: space.lg }}>
+        <View style={{ gap: space.md, paddingTop: space.md, paddingBottom: space.lg }}>
           <Stack.Title large>{t.app.tabTrips}</Stack.Title>
-          <View style={{ flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap, paddingHorizontal: layout.screenX }}>
             <Chip label={t.app.groupTrips} active={view === 'groups'} onPress={() => setView('groups')} />
             <Chip label={t.app.tours} active={view === 'tours'} onPress={() => setView('tours')} />
           </View>
           {view === 'tours' && (
             <>
-              <View style={{ paddingHorizontal: space.lg }}>
-                <TextInput
-                  value={filters.q ?? ''}
-                  onChangeText={(q) => setFilters((current) => ({ ...current, q: q || undefined }))}
-                  placeholder={tt.search}
-                  placeholderTextColor={colors.secondaryLabel}
-                  returnKeyType="search"
-                  accessibilityLabel={tt.search}
-                  style={{ backgroundColor: colors.card, borderColor: colors.separator, borderWidth: 1, borderRadius: radius.chip, paddingHorizontal: space.md, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
-                />
+              <View style={{ paddingHorizontal: layout.screenX }}>
+                <SearchField label={tt.searchButton} value={filters.q ?? ''} onChangeText={(q) => setFilters((current) => ({ ...current, q: q || undefined }))} placeholder={tt.search} clearLabel={tt.clear} />
               </View>
               <ChipRow>
                 {TOUR_THEMES.map((theme) => (
@@ -104,41 +95,44 @@ export default function TripsScreen() {
                 ))}
                 {session && <Chip label={tt.savedTours} active={savedOnly} onPress={() => setSavedOnly((v) => !v)} />}
               </ChipRow>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: space.lg }}>
-                <Text style={{ color: colors.secondaryLabel, fontWeight: '600' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md, paddingLeft: layout.screenX, paddingRight: space.sm, minHeight: control.touch }}>
+                <Text style={{ ...type.meta, ...font.semibold, fontVariant: ['tabular-nums'] }}>
                   {shownTours.length} {shownTours.length === 1 ? tt.tourOne : tt.tourMany}
                 </Text>
-                {filtered && (
-                  <Text accessibilityRole="button" onPress={() => { setFilters({}); setSavedOnly(false); }} style={{ color: brand.leafDark, fontWeight: '700' }}>
-                    {tt.clear}
-                  </Text>
-                )}
+                {/* Hidden when nothing matches: the empty state then offers Clear itself. */}
+                {filtered && shownTours.length > 0 && <Button title={tt.clear} variant="text" size="md" icon={GLYPHS.close} onPress={clearAll} />}
               </View>
             </>
           )}
         </View>
       }
       ListEmptyComponent={
-        <ScreenState
-          loading={active.isLoading}
-          error={active.error}
-          empty
-          emptyText={view === 'groups' ? t.groups.none : savedOnly && !saved.data?.length ? tt.noSaved : tt.empty}
-          onRetry={() => active.refetch()}
-          retryLabel={t.app.retry}
-        />
+        <View style={{ paddingHorizontal: layout.screenX }}>
+          <ScreenState
+            loading={active.isLoading}
+            loadingCount={3}
+            error={active.error}
+            empty
+            // "Finalising" only when there are no tours at all; with a search or filters on, say nothing matches.
+            emptyText={view === 'groups' ? t.groups.none : savedOnly && !saved.data?.length ? tt.noSaved : filtered && (tours.data?.length ?? 0) > 0 ? tt.noMatch : tt.empty}
+            emptyGlyph={view === 'groups' ? GLYPHS.calendar : GLYPHS.search}
+            emptyAction={view === 'tours' && filtered ? { label: tt.clear, onPress: clearAll } : undefined}
+            onRetry={() => active.refetch()}
+            retryLabel={t.app.retry}
+          />
+        </View>
       }
       ListFooterComponent={
         view === 'tours' ? (
-          <View style={{ padding: space.lg, gap: space.sm }}>
-            <Text style={{ fontWeight: '800', fontSize: textSize.headline, color: colors.label }}>{tt.groupDepartures}</Text>
-            <Text style={{ color: colors.secondaryLabel }}>{tt.groupDeparturesBody}</Text>
-            <Button title={tt.seeGroupTrips} variant="outline" onPress={() => setView('groups')} />
-            <Text accessibilityRole="link" onPress={() => router.push('/operators')} style={{ color: brand.leafDark, fontWeight: '700', marginTop: space.sm }}>
-              {tt.operatorsTitle}
-            </Text>
+          <View style={{ paddingHorizontal: layout.screenX, paddingTop: layout.sectionGap, gap: space.sm }}>
+            <Text accessibilityRole="header" style={type.cardTitle}>{tt.groupDepartures}</Text>
+            <Text style={type.muted}>{tt.groupDeparturesBody}</Text>
+            <Button title={tt.seeGroupTrips} variant="outline" size="md" onPress={() => setView('groups')} />
+            <View style={{ alignItems: 'flex-start' }}>
+              <Button title={tt.operatorsTitle} variant="text" size="md" onPress={() => router.push('/operators')} />
+            </View>
           </View>
-        ) : null
+        ) : undefined
       }
     />
   );

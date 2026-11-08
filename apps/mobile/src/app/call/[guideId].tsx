@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { CALL_TOPICS, formatUsd } from '@kwetuly/shared';
@@ -9,13 +9,15 @@ import { requestCall } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { pathWithParams, useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { brand, colors, space, textSize } from '@/theme';
+import { useType } from '@/lib/use-type';
+import { brand, colors, layout, space } from '@/theme';
 
 // Request a paid 1-on-1 prep call with a guide; the guide confirms a time and sends a video link.
 export default function CallScreen() {
   const { guideId, slug } = useLocalSearchParams<{ guideId: string; slug: string }>();
   const { t, locale } = useI18n();
   const c = t.calls;
+  const { type, font } = useType();
   const { session } = useSession();
   const profile = useProfile();
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
@@ -31,13 +33,15 @@ export default function CallScreen() {
   if (needsSetup) return <Redirect href={welcomeHref(pathWithParams(`/call/${guideId}`, { slug }))} />;
   if (!session) {
     return (
-      <Card style={{ margin: space.lg }}>
-        <Muted>{c.signInFirst}</Muted>
-        <Button title={t.auth.signIn} onPress={() => router.replace('/sign-in')} />
-      </Card>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: layout.screenX }}>
+        <Card>
+          <Muted>{c.signInFirst}</Muted>
+          <Button title={t.auth.signIn} onPress={() => router.replace('/sign-in')} />
+        </Card>
+      </ScrollView>
     );
   }
-  if (!guide.data) return <ScreenState loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} />;
+  if (!guide.data) return <ScreenState screen loading={guide.isLoading} error={guide.error} onRetry={() => guide.refetch()} />;
   const g = guide.data;
   const topics = CALL_TOPICS.filter((x) => g.call_topics.length === 0 || g.call_topics.includes(x.id));
 
@@ -57,13 +61,16 @@ export default function CallScreen() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: space.lg, paddingBottom: space.xxxl }}>
       <Stack.Title>{c.book}</Stack.Title>
       <Card>
-        <Text style={{ fontSize: textSize.title3, fontWeight: '800', color: colors.label }}>{g.display_name}</Text>
-        <Text style={{ fontSize: textSize.headline, fontWeight: '800', color: brand.forest }}>
-          {g.call_price_usd != null ? formatUsd(g.call_price_usd) : c.priceTbc} · {g.call_minutes} {c.minutes}
-        </Text>
+        <Text accessibilityRole="header" style={type.title3}>{g.display_name}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: space.md }}>
+          <Text style={{ ...type.price, color: brand.forest }}>{g.call_price_usd != null ? formatUsd(g.call_price_usd) : c.priceTbc}</Text>
+          <Text style={{ ...type.callout, ...font.semibold }}>
+            {g.call_minutes} {c.minutes}
+          </Text>
+        </View>
         {c.how.map((step, i) => (
           <Muted key={step}>
             {i + 1}. {step}

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { SIGN_INS_TEXT } from '@kwetuly/shared';
 import type { UserIdentity } from '@supabase/supabase-js';
 import { Badge, Button, Card, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { enabledProviders, linkProvider, PROVIDER_NAMES, SOCIAL_PROVIDERS, unlinkProvider, type ProviderResult, type SocialProvider } from '@/lib/social';
 import { supabase } from '@/lib/supabase';
+import { useType } from '@/lib/use-type';
 import { brand, colors, space, textSize } from '@/theme';
 
 /** Sign-ins people may connect themselves (Apple comes later). */
@@ -39,7 +41,8 @@ function isSocial(value: string): value is SocialProvider {
 // "Connected sign-ins" in the Account tab: the ways into this account, connect Google or Facebook,
 // and remove one while another way in remains. Same rules as the website's security page.
 export function ConnectedSignIns() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const { font } = useType();
   const u = t.ux;
   const { session } = useSession();
   const userId = session?.user.id;
@@ -68,6 +71,8 @@ export function ConnectedSignIns() {
   const list = identities.data ?? [];
   const connected = new Set(list.map((i) => i.provider));
   const canConnect = LINKABLE.filter((p) => (providers.data ?? []).includes(p) && !connected.has(p));
+  // Only talk about connecting another sign-in when there is a button to do it: no dead ends.
+  const connectable = LINKING_ON && !locked ? canConnect : [];
   const name = (provider: string) =>
     provider === 'email' ? u.signInEmail
     : provider === 'phone' ? u.signInPhone
@@ -111,12 +116,12 @@ export function ConnectedSignIns() {
   return (
     <Card>
       <SectionTitle>{u.signInsTitle}</SectionTitle>
-      <Muted>{u.signInsBody}</Muted>
+      <Muted>{connectable.length > 0 ? u.signInsBody : SIGN_INS_TEXT[locale].bodyNoLinking}</Muted>
       {identities.isLoading ? (
         <ScreenState loading />
       ) : identities.error ? (
         <>
-          <Text accessibilityRole="alert" style={{ color: brand.danger, fontWeight: '600' }}>{u.signInLoadError}</Text>
+          <Text accessibilityRole="alert" style={{ color: brand.danger, ...font.semibold }}>{u.signInLoadError}</Text>
           <Button title={u.tryAgain} variant="outline" onPress={() => identities.refetch()} />
         </>
       ) : (
@@ -128,7 +133,7 @@ export function ConnectedSignIns() {
             return (
               <View key={identity.identity_id} style={{ gap: space.sm, paddingVertical: space.xs }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' }}>
-                  <Text style={{ flex: 1, fontWeight: '700', fontSize: textSize.body, color: colors.label }}>{label}</Text>
+                  <Text style={{ flex: 1, ...font.bold, fontSize: textSize.body, color: colors.label }}>{label}</Text>
                   <Badge label={u.signInConnected} tone="mint" />
                 </View>
                 {email && <Muted selectable>{email}</Muted>}
@@ -138,18 +143,11 @@ export function ConnectedSignIns() {
               </View>
             );
           })}
-          {list.length === 1 && <Muted>{u.signInOnlyOne}</Muted>}
-          {locked ? (
-            <Muted>{ADMIN_NOTE}</Muted>
-          ) : !LINKING_ON ? (
-            <Muted>{u.signInLinkingOff}</Muted>
-          ) : providers.isLoading ? null : canConnect.length > 0 ? (
-            canConnect.map((p) => (
-              <Button key={p} title={u.signInConnect.replace('{provider}', PROVIDER_NAMES[p])} variant="outline" loading={busy === p} disabled={!!busy} onPress={() => connect(p)} />
-            ))
-          ) : (
-            <Muted>{u.signInNoMore}</Muted>
-          )}
+          {list.length === 1 && connectable.length > 0 && <Muted>{u.signInOnlyOne}</Muted>}
+          {locked && <Muted>{ADMIN_NOTE}</Muted>}
+          {connectable.map((p) => (
+            <Button key={p} title={u.signInConnect.replace('{provider}', PROVIDER_NAMES[p])} variant="outline" loading={busy === p} disabled={!!busy} onPress={() => connect(p)} />
+          ))}
         </>
       )}
     </Card>

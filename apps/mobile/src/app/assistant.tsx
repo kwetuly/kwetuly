@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { fetch } from 'expo/fetch';
 import { useI18n } from '@/lib/i18n';
 import { SITE_URL } from '@/lib/supabase';
-import { brand, colors, radius, space, textSize } from '@/theme';
+import { Bubble, Composer, chatListStyle } from '@/components/chat-ui';
+import { useType } from '@/lib/use-type';
+import { colors, space } from '@/theme';
 
 type Message = { role: 'user' | 'assistant'; content: string };
 
@@ -12,6 +14,7 @@ type Message = { role: 'user' | 'assistant'; content: string };
 export default function AssistantScreen() {
   const { t } = useI18n();
   const c = t.concierge;
+  const { type } = useType();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,47 +65,22 @@ export default function AssistantScreen() {
         data={messages}
         keyExtractor={(_, i) => String(i)}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-        contentContainerStyle={{ padding: space.lg, gap: space.md }}
+        contentContainerStyle={chatListStyle}
         ListHeaderComponent={
           <View style={{ gap: space.sm, marginBottom: space.sm }}>
-            <Text style={{ backgroundColor: colors.card, color: colors.label, padding: space.md, borderRadius: radius.bubble, overflow: 'hidden' }}>{c.intro}</Text>
-            <Text style={{ color: colors.secondaryLabel, fontSize: textSize.caption }}>{c.disclaimer}</Text>
+            <Bubble mine={false}>{c.intro}</Bubble>
+            <Text style={type.caption}>{c.disclaimer}</Text>
           </View>
         }
         renderItem={({ item }) => (
-          <Text
-            selectable
-            style={{
-              alignSelf: item.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '85%',
-              backgroundColor: item.role === 'user' ? brand.night : colors.card,
-              color: item.role === 'user' ? brand.onDark : colors.label,
-              paddingHorizontal: space.lg,
-              paddingVertical: space.md,
-              borderRadius: radius.bubble,
-              overflow: 'hidden',
-              fontSize: textSize.callout,
-              lineHeight: 21,
-            }}
-          >
-            {item.content || '…'}
-          </Text>
+          <View style={{ alignItems: item.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <Bubble mine={item.role === 'user'} selectable>
+              {item.content || '…'}
+            </Bubble>
+          </View>
         )}
       />
-      <View style={{ flexDirection: 'row', gap: space.sm, padding: space.md, borderTopWidth: 0.5, borderColor: colors.separator, backgroundColor: colors.card }}>
-        <TextInput
-          value={input}
-          onChangeText={setInput}
-          placeholder={c.placeholder}
-          placeholderTextColor={colors.secondaryLabel}
-          multiline
-          maxLength={2000}
-          style={{ flex: 1, maxHeight: 120, backgroundColor: colors.background, borderRadius: radius.button, paddingHorizontal: space.lg, paddingVertical: space.md, fontSize: textSize.body, color: colors.label }}
-        />
-        <Pressable onPress={send} disabled={busy || !input.trim()} accessibilityRole="button" accessibilityLabel={c.send} style={{ backgroundColor: brand.leaf, borderRadius: radius.button, paddingHorizontal: space.lg, justifyContent: 'center', opacity: busy || !input.trim() ? 0.5 : 1 }}>
-          <Text style={{ color: brand.onDark, fontWeight: '800' }}>{c.send}</Text>
-        </Pressable>
-      </View>
+      <Composer value={input} onChangeText={setInput} placeholder={c.placeholder} maxLength={2000} onSend={send} sendLabel={c.send} canSend={!busy && !!input.trim()} />
     </KeyboardAvoidingView>
   );
 }

@@ -253,7 +253,8 @@ async function GuideEditor({
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
               <Field label={`${d.certifications} (First Aid, WFR…)`}>
-                <input className="field" name="certifications" maxLength={300} defaultValue={guide?.certifications.join(', ') ?? ''} />
+                <input className="field" name="certifications" maxLength={300} defaultValue={guide?.certifications.join(', ') ?? ''} aria-describedby="certifications-hint" />
+                <span id="certifications-hint" className="mt-1 block text-xs text-muted">{d.certificationsHint}</span>
               </Field>
               <Field label={d.association}>
                 <input className="field" name="association" maxLength={80} defaultValue={guide?.association ?? ''} placeholder="TTGA" />
