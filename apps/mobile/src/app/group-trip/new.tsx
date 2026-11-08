@@ -9,6 +9,7 @@ import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
+import { phoneSentence } from '@/lib/phone-text';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -196,7 +197,7 @@ export default function NewGroupTripScreen() {
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
       {callFirst && (
         <Card>
-          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', formatPhone(profile.data?.phone))}</Muted>
+          <Muted>{phoneSentence(t.extras.phoneConfirmWait, profile.data?.phone)}</Muted>
         </Card>
       )}
       <Card>

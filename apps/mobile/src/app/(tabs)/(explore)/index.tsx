@@ -77,14 +77,15 @@ export default function ExploreScreen() {
       </Section>
 
       {/* Group trips: loading, error, empty or up to 3 trips. */}
-      {/* "See all" sits in the header only when there are trips; the empty state has its own. */}
+      {/* "See all" sits in the header only when there are trips; the empty state offers to start one,
+          matching its "or start your own group" text. */}
       <Section title={t.groups.title} action={trips.length > 0 ? { label: t.explore.more, onPress: () => router.push('/trips') } : undefined} style={{ paddingHorizontal: layout.screenX }}>
         {groups.isLoading ? (
           <SkeletonCard photo />
         ) : groups.error ? (
           <ErrorState onRetry={() => groups.refetch()} />
         ) : trips.length === 0 ? (
-          <EmptyState glyph={GLYPHS.calendar} text={t.groups.none} action={{ label: t.explore.more, onPress: () => router.push('/trips') }} />
+          <EmptyState glyph={GLYPHS.calendar} text={t.groups.none} action={{ label: t.groups.start, onPress: () => router.push('/group-trip/new') }} />
         ) : (
           <Animated.View entering={contentFadeIn} style={{ gap: layout.listGap }}>
             {trips.slice(0, 3).map((trip) => (

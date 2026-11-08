@@ -53,8 +53,9 @@ export function KeepForm({
           very early submit never puts the fields in the address bar as a GET; once loaded, onSubmit
           takes over. */}
       <form action={dispatch} onSubmit={onSubmit} className={className} aria-busy={pending || undefined}>
+        {/* The message takes focus when it appears; a light green outline shows where focus is. */}
         {result && (
-          <p ref={banner} tabIndex={-1} role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800 outline-none sm:col-span-full">
+          <p ref={banner} tabIndex={-1} role="alert" className="rounded-[5px] bg-red-50 p-4 text-red-800 outline-none focus:outline-2 focus:outline-solid focus:outline-offset-2 focus:outline-leaf/50 sm:col-span-full">
             {messages[result.error] ?? fallback}
           </p>
         )}

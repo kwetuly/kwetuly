@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { EVENTS, specialtyPhoto, formatPhone, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, specialtyPhoto, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
 import { photoSource } from '@/lib/photos';
 import { track } from '@/lib/analytics';
 import { SpotsBar } from '@/components/cards';
@@ -17,6 +17,7 @@ import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
 import { formatDateRange, languageName, specialtyName } from '@/lib/labels';
+import { phoneSentence } from '@/lib/phone-text';
 import { shareLink } from '@/lib/share';
 import { supabase } from '@/lib/supabase';
 import { brand, colors, control, layout, media, space } from '@/theme';
@@ -128,11 +129,16 @@ export default function GroupTripScreen() {
             <Muted>{t.extras.phoneChangeNote}</Muted>
           </Card>
         )}
+        {isOrganizer && g.status === 'rejected' && (
+          <Card>
+            <Muted>{g10n.statusRejected}</Muted>
+          </Card>
+        )}
         {isOrganizer && g.status === 'pending' && !g.cancelled && (
           <Card>
             <Muted>
               {g.organizer_kind === 'traveller' && !profile.data?.phone_called_at && profile.data?.phone
-                ? t.extras.groupWaitingCall.replace('{phone}', formatPhone(profile.data.phone))
+                ? phoneSentence(t.extras.groupWaitingCall, profile.data.phone)
                 : g10n.statusPending}
             </Muted>
           </Card>
@@ -209,11 +215,8 @@ export default function GroupTripScreen() {
           <Text style={type.caption}>{g10n.payNote}</Text>
         </Card>
 
-        {isOrganizer && (
-          <>
-            <TripRequests tripId={g.id} cancelled={g.cancelled} />
-          </>
-        )}
+        {/* A rejected trip never opens: no requests to answer and nothing to cancel. */}
+        {isOrganizer && g.status !== 'rejected' && <TripRequests tripId={g.id} cancelled={g.cancelled} />}
       </Animated.View>
     </ScrollView>
     {showBar && (

@@ -57,7 +57,11 @@ async function List({ searchParams, t, locale }: { searchParams: Promise<Record<
       {trips.length === 0 ? (
         <div className="mt-10">
           <p className="text-lg text-muted">{t.groups.none}</p>
-          <Link href={`/${locale}/guides`} className="btn-outline mt-5">{t.nav.guides}</Link>
+          {/* The text ends "or start your own group", so the action starts one; guides stay one tap away. */}
+          <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3">
+            <Link href={`/${locale}/group-trips/new`} className="btn-outline">{t.groups.start}</Link>
+            <Link href={`/${locale}/guides`} className="font-semibold text-leaf-dark underline-offset-4 hover:underline">{t.nav.guides}</Link>
+          </div>
         </div>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

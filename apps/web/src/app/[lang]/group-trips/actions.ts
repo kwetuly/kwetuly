@@ -58,20 +58,27 @@ export async function createGroupTrip(_previous: FormResult, formData: FormData)
     deposit_percent: !asGuide && !asBusiness ? 0 : Math.min(Math.max(Number.isFinite(int(formData, 'deposit')) ? int(formData, 'deposit') : 30, 0), 100),
   };
   const contact = field(formData, 'contact', 160);
+  // Dates and people numbers get their own message, so the organiser knows what to fix.
+  const datesOk =
+    trip.start_date &&
+    trip.end_date &&
+    trip.end_date >= trip.start_date &&
+    trip.start_date >= new Date().toISOString().slice(0, 10);
+  if (!datesOk) return { error: 'dates' };
+  const peopleOk =
+    Number.isFinite(trip.max_people) &&
+    trip.max_people >= 2 &&
+    trip.min_people >= 1 &&
+    trip.min_people <= trip.max_people &&
+    trip.already_going < trip.max_people;
+  if (!peopleOk) return { error: 'people' };
   const valid =
     trip.title.length >= 5 &&
     trip.description.length >= 20 &&
     GUIDE_SPECIALTIES.some((s) => s.id === specialty) &&
     (REGIONS as readonly string[]).includes(region) &&
-    trip.start_date &&
-    trip.end_date &&
-    trip.end_date >= trip.start_date &&
-    trip.start_date >= new Date().toISOString().slice(0, 10) &&
     trip.price_per_person_usd >= 0 &&
-    trip.max_people >= 2 &&
-    trip.min_people <= trip.max_people &&
     contact.length >= 3 &&
-    trip.already_going < trip.max_people &&
     (trip.guide_id || trip.company_name || (!asBusiness && isOrganiserPhone(user.phone)));
   if (!valid) return { error: 'generic' };
   // Names that look like Kwetuly are kept for its own team (the database refuses them too; admins may).
@@ -83,7 +90,12 @@ export async function createGroupTrip(_previous: FormResult, formData: FormData)
   // Travellers: at most 3 open group trips and 5 new ones in 24 hours (enforced by the database).
   if (isGroupTripLimitError(error)) return { error: 'limit' };
   if (error || !data) return { error: 'generic' };
-  await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
+  // The organiser's contact lives in its own table that only the organiser and Kwetuly can read.
+  // If saving it fails, the trip row already exists but stays pending, so it is not public without
+  // Kwetuly's approval. Nothing is deleted here; the form shows the general error instead of the
+  // "sent" page so the organiser knows something went wrong.
+  const { error: contactError } = await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
+  if (contactError) return { error: 'generic' };
 
   redirect(`/${locale}/group-trips/${data.id}?created=1`);
 }
