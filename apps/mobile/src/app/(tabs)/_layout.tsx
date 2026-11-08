@@ -1,5 +1,6 @@
 import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
+import '@/components/web-tab-bar'; // Web build only: lets the five tabs fit on narrow screens.
 import { useSession } from '@/lib/auth';
 import { introSeen } from '@/lib/intro';
 import { useI18n } from '@/lib/i18n';

@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { DEFAULT_PHONE_COUNTRY, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone } from '@kwetuly/shared';
+import { DEFAULT_PHONE_COUNTRY, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, formatPhone, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone, tanzaniaToday } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
+import { SignInPrompt } from '@/components/sign-in-prompt';
 import { createGroupTrip, getMyGuide, saveAccountPhone } from '@/lib/api-more';
 import { useCanOffer } from '@/hooks/use-can-offer';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
+import { phoneSentence } from '@/lib/phone-text';
 
 const isDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
 
@@ -18,7 +20,7 @@ export default function NewGroupTripScreen() {
   const { t, locale } = useI18n();
   const g = t.groups;
   const complete = useLocalSearchParams<{ complete?: string }>().complete === '1';
-  const { session } = useSession();
+  const { session, ready } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
@@ -68,6 +70,8 @@ export default function NewGroupTripScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref(complete ? '/group-trip/new?complete=1' : '/group-trip/new')} />;
+  // Signed out: offer sign-in; after signing in, the sign-in screen goes back to this form.
+  if (ready && !userId) return <SignInPrompt screen />;
   if (!userId || mine.isLoading || profile.isLoading || accessLoading) return <ScreenState screen loading />;
   // Without the profile we cannot tell whether a phone is saved, so offer a retry instead of guessing.
   if (profile.isError || mine.isError) {
@@ -134,7 +138,7 @@ export default function NewGroupTripScreen() {
     const max = parseInt(f.max, 10);
     const price = parseInt(f.price, 10);
     const going = complete ? parseInt(f.going, 10) || 0 : 0;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = tanzaniaToday(); // Tanzania's date, the same rule as the website
     const valid =
       f.title.trim().length >= 5 &&
       f.description.trim().length >= 20 &&
@@ -196,7 +200,7 @@ export default function NewGroupTripScreen() {
       <Stack.Title>{complete ? t.extras.completeTitle : g.newTitle}</Stack.Title>
       {callFirst && (
         <Card>
-          <Muted>{t.extras.phoneConfirmWait.replace('{phone}', formatPhone(profile.data?.phone))}</Muted>
+          <Muted>{phoneSentence(t.extras.phoneConfirmWait, profile.data?.phone)}</Muted>
         </Card>
       )}
       <Card>

@@ -57,19 +57,20 @@ export function Card({
   style?: StyleProp<ViewStyle>;
   /** Makes the whole card tappable; it highlights while pressed. */
   onPress?: () => void;
-  /** `plain`: no background or border, for page sections that only need the spacing. */
-  tone?: 'default' | 'plain';
+  /** `plain`: no background or border, for page sections that only need the spacing. `danger`: a red
+   * note (not approved, cancelled), like the website's red notes; put `brand.danger` text inside. */
+  tone?: 'default' | 'plain' | 'danger';
   accessibilityRole?: AccessibilityRole;
   accessibilityLabel?: string;
 }) {
   const base: ViewStyle = {
-    backgroundColor: tone === 'plain' ? 'transparent' : colors.card,
+    backgroundColor: tone === 'plain' ? 'transparent' : tone === 'danger' ? brand.dangerSoft : colors.card,
     borderRadius: radius.card,
     borderCurve: 'continuous',
     padding: tone === 'plain' ? 0 : layout.cardPadding,
     gap: layout.cardGap,
     borderWidth: tone === 'plain' ? 0 : 1,
-    borderColor: colors.border,
+    borderColor: tone === 'danger' ? brand.dangerSoft : colors.border,
   };
   if (!onPress) return <View style={[base, style]}>{children}</View>;
   return (
@@ -308,7 +309,7 @@ export function Chip({
   );
 }
 
-export function Badge({ label, tone = 'mint', icon: leading }: { label: string; tone?: 'mint' | 'sand' | 'neutral' | 'night' | 'gold'; icon?: GlyphName }) {
+export function Badge({ label, tone = 'mint', icon: leading }: { label: string; tone?: 'mint' | 'sand' | 'neutral' | 'night' | 'gold' | 'danger'; icon?: GlyphName }) {
   const { font } = useType();
   // `night` is an old name: it now draws as `neutral` (white text on grey failed contrast).
   const styles = {
@@ -317,6 +318,8 @@ export function Badge({ label, tone = 'mint', icon: leading }: { label: string; 
     neutral: { backgroundColor: colors.fill, color: colors.label },
     night: { backgroundColor: colors.fill, color: colors.label },
     gold: { backgroundColor: brand.goldSoft, color: brand.ink },
+    // Not approved or cancelled: the website's red note colours.
+    danger: { backgroundColor: brand.dangerSoft, color: brand.danger },
   }[tone];
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, backgroundColor: styles.backgroundColor, borderRadius: radius.chip, borderCurve: 'continuous', paddingHorizontal: space.sm, paddingVertical: space.xs, alignSelf: 'flex-start' }}>

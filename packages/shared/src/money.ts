@@ -7,11 +7,13 @@ export function formatUsd(amount: number): string {
 }
 
 /**
- * Sample group trips have no real price (the column cannot be empty, so it holds 0). Show
- * "Price on request" for them instead of "$0".
+ * A group trip with no price (0 or missing) shows "Price on request" instead of "$0", the same for
+ * travellers, the organiser and sample trips (whose column cannot be empty, so it holds 0).
+ * Traveller organisers may enter 0 because their groups share costs directly.
  */
-export function groupPriceOnRequest(trip: { price_per_person_usd: number; guides?: { is_sample?: boolean | null } | null }): boolean {
-  return Number(trip.price_per_person_usd) === 0 && trip.guides?.is_sample === true;
+export function groupPriceOnRequest(trip: { price_per_person_usd: number | null | undefined; guides?: { is_sample?: boolean | null } | null }): boolean {
+  const price = Number(trip.price_per_person_usd);
+  return !Number.isFinite(price) || price <= 0;
 }
 
 /** "≈ TSh 10,920,000" (rounded to the nearest 1,000), or null when no rate is set. */

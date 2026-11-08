@@ -116,7 +116,14 @@ export default function TripsScreen() {
             // "Finalising" only when there are no tours at all; with a search or filters on, say nothing matches.
             emptyText={view === 'groups' ? t.groups.none : savedOnly && !saved.data?.length ? tt.noSaved : filtered && (tours.data?.length ?? 0) > 0 ? tt.noMatch : tt.empty}
             emptyGlyph={view === 'groups' ? GLYPHS.calendar : GLYPHS.search}
-            emptyAction={view === 'tours' && filtered ? { label: tt.clear, onPress: clearAll } : undefined}
+            // No group trips: the text says "or start your own group", so offer exactly that.
+            emptyAction={
+              view === 'groups'
+                ? { label: t.groups.start, onPress: () => router.push('/group-trip/new') }
+                : filtered
+                  ? { label: tt.clear, onPress: clearAll }
+                  : undefined
+            }
             onRetry={() => active.refetch()}
             retryLabel={t.app.retry}
           />

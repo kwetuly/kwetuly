@@ -17,3 +17,12 @@ export const GROUP_TRIP_LIMIT = 'group_trip_limit';
 export function isGroupTripLimitError(error: { message?: string } | null | undefined): boolean {
   return Boolean(error?.message?.includes(GROUP_TRIP_LIMIT));
 }
+
+/**
+ * Today's date in Tanzania (Africa/Dar_es_Salaam, East Africa Time) as "YYYY-MM-DD", for the
+ * "a trip cannot start in the past" rule. EAT is UTC+3 all year (no summer time), so a fixed offset is
+ * exact and works the same on the server, in browsers and in the app (no Intl time zone data needed).
+ */
+export function tanzaniaToday(now: Date = new Date()): string {
+  return new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}

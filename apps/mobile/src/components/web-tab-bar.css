@@ -1,0 +1,29 @@
+/*
+ * Web build only (imported from web-tab-bar.web.ts). Targets the tab list expo-router renders
+ * for NativeTabs on the web (role="tablist", aria-label="Main"); its own class names are hashed.
+ * Wider screens keep expo-router's look. Below 640px the bar spans the screen with a 12px gap on
+ * each side, the five tabs share the width, labels and padding scale down with the screen, and a
+ * label that still does not fit (long translations at 320px) ends in "..." instead of scrolling.
+ */
+@media (max-width: 640px) {
+  [role='tablist'][aria-label='Main'] {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    overflow-x: hidden;
+    justify-content: space-between;
+    --expo-router-tabs-font-size: clamp(11.5px, 3.4vw, 15px);
+  }
+
+  [role='tablist'][aria-label='Main'] > [role='tab'] {
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Small side padding; spare width is shared out by flex-grow, so tabs still breathe. */
+    padding: 0 clamp(3px, 1.25vw, 12px);
+  }
+
+  [role='tablist'][aria-label='Main'] > [role='tab'] > span:first-child {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

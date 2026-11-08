@@ -26,7 +26,8 @@ export const brand = {
   gold: '#ffb627', // highlights only, never a button fill
   sand: '#fff8ee',
   goldSoft: '#ffe7b0', // gold badge background
-  danger: '#b42318', // error text
+  danger: '#b42318', // error text, and text on dangerSoft (6.0:1)
+  dangerSoft: '#fef2f2', // website red-50: background of a "not approved" or "cancelled" note or chip
   onDark: '#ffffff', // text on forest, shade or a photo
   // Role names from the 2026-11 restyle (aliases).
   primary: '#187a16', // = forest: every filled action (white text 5.5:1)

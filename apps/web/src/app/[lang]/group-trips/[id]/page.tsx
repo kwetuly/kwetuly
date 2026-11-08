@@ -17,7 +17,8 @@ import { RatingSummary } from '@/components/stars';
 import { SpotsBar, formatDates } from '@/components/group-trip-card';
 import { ShareButtons } from '@/components/share-buttons';
 import { PayDeposit } from '@/components/pay-deposit';
-import { EVENTS, approxTzs, formatPhone, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { EVENTS, approxTzs, formatUsd, groupPriceOnRequest } from '@kwetuly/shared';
+import { PhoneText } from '@/components/phone-text';
 import { LogEvent } from '@/components/analytics';
 import { StickyCta } from '@/components/sticky-cta';
 import { paymentsConfig } from '@/lib/payments';
@@ -94,11 +95,12 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
 
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 lg:grid-cols-[1fr_380px]">
         <div className="space-y-8">
-          {status.created && !waitingCall && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
+          {/* No "sent" note on a rejected trip: its red note below says what happened. */}
+          {status.created && !waitingCall && trip.status !== 'rejected' && <p className="rounded-[5px] bg-mint p-4 font-semibold text-forest">✓ {g.sent}</p>}
           {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
           {!trip.cancelled && trip.status === 'pending' && (
             <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">
-              {waitingCall ? t.extras.groupWaitingCall.replace('{phone}', () => formatPhone(user?.phone)) : g.statusPending}
+              {waitingCall ? <PhoneText text={t.extras.groupWaitingCall} phone={user?.phone} /> : g.statusPending}
             </p>
           )}
           {isOrganizer && trip.organizer_kind === 'traveller' && trip.status === 'approved' && !trip.cancelled && (
@@ -130,7 +132,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
             <ShareButtons path={`/${locale}/group-trips/${trip.id}`} title={trip.title} text={`${t.share.shareGroup}: ${trip.title}`} labels={t.share} />
           )}
 
-          {isOrganizer && <Requests trip={trip} status={status} t={t} locale={locale} />}
+          {isOrganizer && trip.status !== 'rejected' && <Requests trip={trip} status={status} t={t} locale={locale} />}
         </div>
 
         <aside id="join" className="h-fit scroll-mt-28 lg:sticky lg:top-28">
@@ -156,7 +158,8 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
               {tripChat && (
                 <Link href={`/${locale}/chats/${tripChat.id}`} className="btn w-full">{t.chats.openChat}</Link>
               )}
-              <p className="text-xs text-white/70">{g.payNote}</p>
+              {/* How travellers pay the organiser: not for the organiser themselves. */}
+              {!isOrganizer && <p className="text-xs text-white/70">{g.payNote}</p>}
             </div>
           </div>
         </aside>
@@ -338,6 +341,8 @@ async function JoinBox({ trip, user, status, t, locale }: { trip: GroupTrip; use
 }
 
 function OrganizerTools({ trip, t, locale }: { trip: GroupTrip; t: Dictionary; locale: Locale }) {
+  // A rejected trip never opens: nothing to cancel and no requests to answer.
+  if (trip.status === 'rejected') return null;
   if (trip.cancelled) return <p className="font-semibold">{t.groups.cancelledTrip}</p>;
   return (
     <form action={cancelGroupTrip} className="space-y-3">
