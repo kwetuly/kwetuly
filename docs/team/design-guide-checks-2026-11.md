@@ -61,6 +61,46 @@ RLS: insert/update/delete only `private.is_admin()` (and the service role). Sele
 
 `id, guide_id, check_id, action ('checked','withdrawn','renewed','sample_set','sample_cleared'), actor uuid, note text, created_at`. Written by an AFTER trigger on `guide_document_checks` (actor = `auth.uid()`) and on `guides.is_sample` changes. RLS: admin select only; no client writes. This is where "who checked" lives, so the checks table carries no `checked_by` column that could leak.
 
+### 1c-bis. The ID check is a NIDA check (Walter, 2026-11-08)
+
+- The `identity` kind means **NIDA** (Tanzania National ID): either the NIDA card image (uploaded to `guide_documents` as kind `identity`) or the NIDA number typed by the guide (section 1f).
+- `guide_document_checks` gets `method text` for kind `identity` only: `nida_card` or `nida_number` (check constraint: required when kind = `identity`, null otherwise). The admin records "NIDA seen" with the date; there is no expiry for this kind (`valid_until` null).
+- The public sees at most kind and date ("NIDA seen {date}", only if Walter keeps ID on the card, Q5). The number, the method, the image and the checker are never public: `method` is not in the anon/authenticated column grant.
+- Honesty limit: with `nida_number` only, the admin has seen a number, not a face or card, and Kwetuly has no access to the NIDA register. The check must say exactly that internally ("NIDA number given, not confirmed with NIDA"). Whether a number alone is enough to go live is question Q7.
+
+### 1f. NIDA number and TIN (private identifiers)
+
+Stored in a **new table**, not in `guide_private`, so they get their own, stricter rules than phone numbers and admin notes:
+
+`public.guide_identifiers`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| guide_id | uuid pk, fk guides on delete cascade | |
+| nida_number | text | digits only after stripping spaces and dashes; 20 digits (NIDA NIN, printed as `YYYYMMDD-XXXXX-XXXXX-XX`). Format to be confirmed against a real card or NIDA guidance before the check constraint is final |
+| tin | text | digits only after stripping spaces and dashes; see format note below |
+| tin_added_at | timestamptz | set by trigger |
+| tin_checked_at | timestamptz | admin-only (guard trigger), "TIN seen" against the TRA certificate if Walter wants that check |
+| updated_at | timestamptz | |
+
+TIN format: I could not confirm the format from an official TRA source. A third-party guide (TaxDo) says 9 digits for businesses and 10 for individuals, and TINs are commonly printed as `123-456-789`. Until backend-engineer or legal confirms it with TRA guidance or a real certificate, validation is **digits only, 9 to 10 digits after removing spaces and dashes**, in shared code and as a database check constraint. No checksum (none is published that I could find). TRA's own TIN verification service exists (taxpayerportal.tra.go.tz), but using it is a manual admin step and nothing is stated to travellers.
+
+Access rules:
+- **Owner: write, and read back masked only.** The guide can insert and update their own row. `select` on `nida_number` and `tin` is revoked from `anon` and `authenticated` with column privileges. The guide sees only the last 3 digits through `public.my_guide_identifiers()` (security definer, returns `{nida_last3, tin_last3, tin_added_at}` for `auth.uid()` only). A typo is fixed by entering the number again.
+- **Admin: masked by default.** Admin pages show `•••••••789` (last 3 digits) via `public.admin_guide_identifiers_masked(p_guide)` (security definer, `private.is_admin()` check inside). Full value only through one server action for payouts or a TRA check, using the service-role client on the server. Each full read writes a row to `guide_check_log` (`action = 'identifier_viewed'`, actor, which field, never the value).
+- **Never** in: public views or embeds, `guides` columns, `guide_check_log` values, `admin_notes`, `notification_outbox` payloads, the `notify` Edge Function, analytics events, error reporting, or server logs. The server actions must not put the value in redirect URLs or error messages. The admin checklist (operations-manager) says not to copy it into notes or WhatsApp.
+- Account deletion: the row goes with the guide (`on delete cascade`). Retention after deletion, and whether tax law makes Kwetuly keep the TIN for a period after payouts, is a question for the legal memo (1d); nothing is kept beyond what the advocate confirms.
+
+Encryption at rest:
+- Supabase already encrypts the database disk and backups (AES-256). That protects against disk theft, not against someone with database access.
+- Recommended for now: no column encryption, but the strict column grants, masked functions and audit above. Reason: the only reader of the full TIN is the payout step, which does not exist yet.
+- Before payouts go live (payments-engineer): encrypt `tin` and `nida_number` in the application with a key held only in the server environment (`.env.local` locally, the hosting secret store in production), store ciphertext plus the last 3 digits in clear for display. pgsodium is being phased out by Supabase and Vault is meant for a few secrets, not per-row data, so I do not recommend either for this.
+- Guides enter the numbers through a server action (web) or an Edge Function (app), not a direct table write, so the app never holds a service key and the encryption step can be added later without changing clients.
+
+Going live or payouts: **recommended, the TIN is required before the first payout, not to go live** (question Q8). The approval gate in 2c does not look at the TIN. The payout step (payments-engineer) refuses a payout to a guide without a TIN. The dashboard shows "Add your TIN before your first payout" as an optional item in profile completion until then.
+
+Businesses: providers do not collect a TIN today. Question Q9 for Walter. If yes, the same table pattern (`provider_identifiers`) and the same rules apply; a registered company's TIN is less sensitive than a person's, but I would treat both the same.
+
 ### 1d. `guides.drives_guests boolean not null default false`
 
 Set by the guide ("I drive guests"), separate from `has_vehicle`. Not admin-guarded. Turning it on without a current driving licence check pauses the profile (section 3). Turning it **off** while approved notifies admins (`guide_drives_changed`, same pattern as `link_changed`), because a guide-driver could switch it off to get back online.
@@ -111,7 +151,7 @@ It does not fire for a guide who is already approved: those are handled by the r
 
 ### 2d. Identity **[W1-1]**
 
-Recommended: keep it required (it ties the licence to the person). It is one boolean in `guide_live_until`; I suggest a constant in the function, not a settings table. If Walter drops it, only that function and the shared mirror change.
+Walter keeps it: the ID check is a NIDA card image or NIDA number (section 1c-bis). It is one boolean in `guide_live_until`; I suggest a constant in the function, not a settings table. If Walter drops it, only that function and the shared mirror change.
 
 ### 2e. Admin side
 
@@ -170,7 +210,8 @@ Replace the column-based types with:
 - `currentChecks(checks, today)`: not ended, not expired; display order identity, licence, first aid, WFR, driving licence, others by title.
 - `liveReadiness({ checks, drivesGuests, isSample }, today)`: `{ ready, liveUntil, missing: GuideDocumentKind[] }`. Must give the same answer as `private.guide_live_until`; the tests list the cases side by side with the SQL test cases below.
 - `documentStatus(latestUpload, currentCheck, today)` with the six states in section 4.
-- `profileCompletion`: licence required; first aid **or** WFR required; driving licence required when `drives_guests`; identity required **[W1-1]**; others optional.
+- `profileCompletion`: licence required; first aid **or** WFR required; driving licence required when `drives_guests`; identity required as a NIDA card image or NIDA number (Q7); TIN shown as "needed before your first payout" (Q8); others optional.
+- `normaliseTin(value)` / `isValidTin(value)` (digits after stripping spaces and dashes, 9-10 digits until the format is confirmed), `normaliseNida` / `isValidNida` (20 digits), `maskLast3(value)`. The same rules are in the database check constraints.
 - Badge: `hasLicenceAndFirstAidCheck(checks, today)` (licence plus first aid or WFR, current) replaces `hasIdAndLicenceCheck`. Callers still require approved and not sample. Dictionary key `guides.idLicenceChecked` gives way to `guides.licenceFirstAidChecked` ("Licence and first aid checked"; "ID, licence and first aid checked" only if Walter wants the ID named). Keep the old export one release as a deprecated alias to avoid breaking the screens the other engineer is editing.
 - Remove `GuideCheckFields`, `guideChecks`, `hasRecordedCheck` once the screens are moved.
 
@@ -178,7 +219,7 @@ Replace the column-based types with:
 
 | # | File | Contents | Destructive? |
 | --- | --- | --- | --- |
-| 1 | `2026111000000_guide_document_tables.sql` | enum `guide_document_kind`; `guide_documents`, `guide_document_checks`, `guide_check_log` with constraints, indexes, RLS, column grants, guard and insert triggers; `guides.drives_guests`; `private.tz_today()` | No |
+| 1 | `2026111000000_guide_document_tables.sql` | enum `guide_document_kind`; `guide_documents`, `guide_document_checks` (with `method` for NIDA), `guide_check_log`, `guide_identifiers` with column grants and the two masked functions with constraints, indexes, RLS, column grants, guard and insert triggers; `guides.drives_guests`; `private.tz_today()` | No |
 | 2 | `2026111000100_guide_live_until.sql` | `guides.live_until`; `private.guide_live_until()`; triggers `guides_y_live_until` and the AFTER trigger on checks; `private.guide_is_live()`; `guides_z_live_gate`; `guide_drives_changed` and `is_sample` log/notice triggers | No (but approving starts to need checks) |
 | 3 | `2026111000200_guide_checks_backfill.sql` | copies documents and checks per section 6 (choice A or B); read-back counts as `raise notice` | No (copies only) |
 | 4 | `2026111000300_guide_live_read_rules.sql` | replaces "Read guides", packages read, conversation and call creation policies, `lead_target_ok`, `can_offer`, group-trip check, referral function, `on_trip_request_created`, `on_guide_changed` with `guide_is_live` | **Yes, for visibility**: approved guides without current checks disappear at once. Apply only together with the code release (W3) |
@@ -193,7 +234,8 @@ Files marked * are being edited by another engineer on this branch right now (di
 
 Website (`apps/web/src`):
 - `app/[lang]/dashboard/page.tsx` and `dashboard/actions.ts`: upload cards for licence, first aid, WFR (alternative), driving licence (shown when "I drive guests" is on), "Add another certificate" with title; status per section 4; "I drive guests" toggle; a "Your profile is paused until we check {document}" banner.
-- `app/[lang]/admin/actions.ts`: `reviewGuide` writes check rows (one card per document, valid-until required for dated kinds), withdraw a check, approve uses `liveReadiness` and the database error; approve-all filter.
+- Dashboard also: NIDA number field (optional when a NIDA card image is uploaded) and TIN field, both shown back as last 3 digits only; a new server action saves them (never echoed in URLs or errors).
+- `app/[lang]/admin/actions.ts`: `reviewGuide` writes check rows (NIDA check records card or number) (one card per document, valid-until required for dated kinds), withdraw a check, approve uses `liveReadiness` and the database error; approve-all filter.
 - `app/[lang]/admin/review/page.tsx`, `admin/all/page.tsx`: one check card per document (open file, valid-until, tick, title for others).
 - `app/[lang]/admin/page.tsx`: waiting counter; new queue "Expiring in 30 days / expired / paused".
 - `lib/admin-queue.ts`: `guideReadiness`, `packageReadiness` ("Guide live, licence checked"), new `GuideRow` fields.
@@ -204,7 +246,7 @@ Website (`apps/web/src`):
 - Not touched: `admin/operators/*`, `operators/[slug]` (operator `licence_checked_at` is a different table).
 
 App (`apps/mobile/src`):
-- `app/profile-edit.tsx`*: same upload cards, toggle, statuses and paused banner as the web dashboard.
+- `app/profile-edit.tsx`*: same upload cards, toggle, statuses and paused banner as the web dashboard, plus the NIDA number and TIN fields (masked read-back), saved through an Edge Function.
 - `lib/api-more.ts`: insert `guide_documents` rows, stop clearing checks; load documents and current checks for the owner.
 - `lib/api.ts`, `lib/api-requests.ts`: new columns and embed.
 - `components/guide-checks.tsx`, `app/guide/[slug].tsx`*, `components/cards.tsx`*, `app/tour/[slug].tsx`*, `app/request/[id].tsx`*: badge and checks card.
@@ -236,6 +278,16 @@ Database (run on a Supabase branch or local stack, as admin, guide and anon sess
 16. Existing conversation with a paused guide still works; a new one is refused.
 17. Advisors: no new security warnings (no definer view, every new function has `search_path = ''`, execute revoked where it should be).
 
+NIDA and TIN (database and screens):
+30. Guide saves a TIN with dashes and spaces: stored as digits; letters, fewer than 9 or more than 10 digits refused, on web, app and in the database.
+31. Guide session `select tin, nida_number from guide_identifiers`: refused (column privilege); `my_guide_identifiers()` returns only the last 3 digits of their own row; another guide's id gives nothing.
+32. Anon and other guides cannot read any row or call the admin function; admin function refuses non-admins.
+33. Admin page shows `•••••••789`; the full-value action writes an `identifier_viewed` log row without the value.
+34. Search the outbox payloads, the log table, `admin_notes`, analytics events and the server logs after a test run: no TIN or NIDA number appears.
+35. NIDA check with `method` missing, or `method` on a non-identity kind: refused. Anon cannot read `method`.
+36. Approval with a NIDA check but no TIN: allowed (if Q8 goes as recommended); payout without a TIN: refused (payments step).
+37. Account deletion removes the identifiers row.
+
 Shared (`npm test --workspace packages/shared`):
 18. `liveReadiness` for each case 2-6 and 13 gives the same result as the SQL.
 19. `todayInTanzania` at 21:30 UTC returns the next day.
@@ -254,7 +306,11 @@ Screens (qa-tester, web and app, 7 languages for traveller texts, en and sw for 
 
 ## 12. Open questions for Walter
 
-- Q1 **[W1-1]** Keep the ID check as required? (Recommended yes; badge text can still leave it out.)
+- Q1 **[W1-1]** Answered 2026-11-08: ID required, as a NIDA card image or NIDA number.
+- Q7 Is a NIDA number alone (no card image) enough to go live? Kwetuly cannot confirm it with NIDA, so the admin has only seen digits. Recommended: card image required; the number is extra.
+- Q8 TIN required to go live, or only before the first payout? Recommended: before the first payout.
+- Q9 Should businesses and companies give a TIN too? Recommended: yes, before their first payout or commission invoice, same rules.
+- Q10 Should the admin also check the TIN against the TRA certificate or TRA's TIN check ("TIN seen"), or only collect it?
 - Q2 **[W1-2]** Existing licence checks have no expiry date on record. Pause those guides until the admin re-enters the card's date (recommended), or a grace period?
 - Q3 A paused guide: may travellers with an existing conversation or confirmed trip keep talking to them? (Recommended yes; only new contact is blocked.)
 - Q4 A guide licence or certificate with no printed expiry date: what should the admin enter? Proposal: check date plus 12 months, so it is looked at again yearly. Needs to be true on the traveller card, so the line would read "seen {date}, check again {date}" for these.
