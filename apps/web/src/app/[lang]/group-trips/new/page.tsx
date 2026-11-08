@@ -105,7 +105,7 @@ async function Form({ searchParams, t, locale }: { searchParams: Promise<Record<
       <input type="hidden" name="locale" value={locale} />
       <input type="hidden" name="complete" value={complete ? '1' : ''} />
       {/* Travellers may submit before Kwetuly has called; the trip stays private until the call and approval. */}
-      {asTraveller && !user.phoneCalled && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.phoneConfirmWait.replace('{phone}', formatPhone(user.phone))}</p>}
+      {asTraveller && !user.phoneCalled && <p className="rounded-[5px] bg-sand p-3 text-sm sm:col-span-2">{t.extras.phoneConfirmWait.replace('{phone}', () => formatPhone(user.phone))}</p>}
       {asBusiness && !asGuide && (
         <label className="block sm:col-span-2">
           <span className="label">{g.companyName}</span>

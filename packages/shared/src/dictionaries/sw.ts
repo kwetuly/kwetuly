@@ -522,7 +522,7 @@ export const sw: Dictionary = {
     subtitle: 'Jiunge na kundi dogo linaloongozwa na mwongozaji aliyeidhinishwa au kampuni ya utalii iliyoidhinishwa. Shiriki safari, pata marafiki wapya na gawana gharama.',
     start: 'Anzisha safari ya kundi',
     mine: 'Safari zangu za makundi',
-    none: 'Hakuna safari za makundi zilizo wazi sasa hivi. Waongozaji, kampuni na wasafiri huweka safari mpya mara kwa mara. Rudi hivi karibuni, au anzisha kundi lako mwenyewe.',
+    none: 'Hakuna safari za makundi zilizo wazi sasa hivi. Waongozaji, kampuni za utalii na wasafiri huweka safari mpya mara kwa mara. Rudi hivi karibuni, au anzisha kundi lako mwenyewe.',
     spotsLeft: 'nafasi zimebaki',
     full: 'Imejaa',
     perPerson: 'kwa mtu',

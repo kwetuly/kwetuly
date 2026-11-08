@@ -98,7 +98,7 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           {trip.cancelled && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.cancelledTrip}</p>}
           {!trip.cancelled && trip.status === 'pending' && (
             <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">
-              {waitingCall ? t.extras.groupWaitingCall.replace('{phone}', formatPhone(user?.phone)) : g.statusPending}
+              {waitingCall ? t.extras.groupWaitingCall.replace('{phone}', () => formatPhone(user?.phone)) : g.statusPending}
             </p>
           )}
           {isOrganizer && trip.organizer_kind === 'traveller' && trip.status === 'approved' && !trip.cancelled && (
