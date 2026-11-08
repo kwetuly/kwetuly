@@ -428,7 +428,7 @@ function ReviewCard({
 
         <ReadinessBox item={item} missingId={missingId} />
 
-        {item.kind === 'group' && item.row.organizer_kind === 'traveller' && !item.row.organiser?.phone_verified_at && (
+        {item.kind === 'group' && item.row.organizer_kind === 'traveller' && !item.row.organiser?.phone_called_at && (
           <form action={confirmPhone}>
             <input type="hidden" name="locale" value={locale} />
             <input type="hidden" name="back" value={`${back}#item-${item.id}`} />

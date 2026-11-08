@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isReservedDisplayName } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone, isReservedDisplayName } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireOnboarded, welcomePath } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -71,7 +71,7 @@ export async function createGroupTrip(formData: FormData) {
     trip.min_people <= trip.max_people &&
     contact.length >= 3 &&
     trip.already_going < trip.max_people &&
-    (trip.guide_id || trip.company_name || (!asBusiness && user.phone));
+    (trip.guide_id || trip.company_name || (!asBusiness && isOrganiserPhone(user.phone)));
   if (!valid) redirect(`${back}error=1`);
   // Names that look like Kwetuly are kept for its own team (the database refuses them too; admins may).
   if (user.role !== 'admin' && isReservedDisplayName(trip.company_name)) redirect(`${back}error=name`);
@@ -79,6 +79,8 @@ export async function createGroupTrip(formData: FormData) {
   const supabase = await createClient();
   const { data, error } = await supabase.from('group_trips').insert(trip).select('id').single();
   if (isDisplayNameReservedError(error)) redirect(`${back}error=name`);
+  // Travellers: at most 3 open group trips and 5 new ones in 24 hours (enforced by the database).
+  if (isGroupTripLimitError(error)) redirect(`${back}error=limit`);
   if (error || !data) redirect(`${back}error=1`);
   await supabase.from('group_trip_private').insert({ group_trip_id: data.id, contact });
 

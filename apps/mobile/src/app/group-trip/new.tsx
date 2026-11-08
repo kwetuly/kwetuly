@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
+import { GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError, isGroupTripLimitError, isOrganiserPhone } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { createGroupTrip, getMyGuide, saveAccountPhone } from '@/lib/api-more';
@@ -25,11 +25,12 @@ export default function NewGroupTripScreen() {
   const asGuide = mine.data?.guide?.verification_status === 'approved';
   const { approvedBusiness, businessWaiting, loading: accessLoading } = useCanOffer();
   const asBusiness = approvedBusiness || profile.data?.role === 'admin';
-  // Travellers organise as themselves once their account has a phone number. The trip stays pending
-  // and private; Kwetuly calls that number, and the database (private.check_group_approval) refuses
-  // to approve it until an admin has pressed "Phone confirmed" (profiles.phone_verified_at).
+  // Travellers organise as themselves once their account has a full international phone number. The
+  // trip stays pending and private; Kwetuly calls that number, and the database
+  // (private.check_group_approval) refuses to approve it until an admin has pressed "Phone confirmed"
+  // (profiles.phone_called_at). An SMS code alone does not count.
   const asTraveller = !asGuide && !asBusiness;
-  const callFirst = asTraveller && !profile.data?.phone_verified_at;
+  const callFirst = asTraveller && !profile.data?.phone_called_at;
 
   const [f, setF] = useState({
     company: '',
@@ -90,7 +91,8 @@ export default function NewGroupTripScreen() {
       </FormScreen>
     );
   }
-  if (asTraveller && !profile.data?.phone) {
+  // No phone yet, or an old one that is not a full international number: add or re-enter it here.
+  if (asTraveller && !isOrganiserPhone(profile.data?.phone)) {
     const savePhone = async () => {
       setPhoneError(null);
       setBusy(true);
@@ -174,7 +176,8 @@ export default function NewGroupTripScreen() {
       );
       router.replace({ pathname: '/group-trip/[id]', params: { id } });
     } catch (e) {
-      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
+      const err = e as Error;
+      setMessage({ tone: 'error', text: isGroupTripLimitError(err) ? t.extras.groupLimit : isDisplayNameReservedError(err) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }

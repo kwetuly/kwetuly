@@ -3,6 +3,7 @@ import { safeProps } from './analytics';
 import { commissionSplit, hasValidBadge } from './businesses';
 import { DICTIONARIES, UX_TEXT } from './dictionaries';
 import { isDisplayNameReservedError, isReservedDisplayName } from './display-name';
+import { isGroupTripLimitError, isOrganiserPhone } from './group-trip-rules';
 import { hasIdAndLicenceCheck, hasRecordedCheck } from './guide-checks';
 import { PACKAGE_KINDS } from './packages';
 import { filterTours, formatPrice, guideSpecialtiesForTour, readTourFilters, tourMatchesTheme, verifiedPrice, type Tour } from './tours';
@@ -174,5 +175,22 @@ describe('reserved display names', () => {
     expect(isDisplayNameReservedError({ message: 'display_name_reserved' })).toBe(true);
     expect(isDisplayNameReservedError({ message: 'other' })).toBe(false);
     expect(isDisplayNameReservedError(null)).toBe(false);
+  });
+});
+
+describe('traveller group trip rules', () => {
+  it('needs a full international number, as the database does', () => {
+    expect(isOrganiserPhone('+255712345678')).toBe(true);
+    expect(isOrganiserPhone('+4915112345678')).toBe(true);
+    expect(isOrganiserPhone('0712345678')).toBe(false);
+    expect(isOrganiserPhone('+255 712 345 678')).toBe(false);
+    expect(isOrganiserPhone('+0712345678')).toBe(false);
+    expect(isOrganiserPhone('+1234567')).toBe(false);
+    expect(isOrganiserPhone(null)).toBe(false);
+  });
+  it('recognises the limit error', () => {
+    expect(isGroupTripLimitError({ message: 'group_trip_limit' })).toBe(true);
+    expect(isGroupTripLimitError({ message: 'other' })).toBe(false);
+    expect(isGroupTripLimitError(null)).toBe(false);
   });
 });

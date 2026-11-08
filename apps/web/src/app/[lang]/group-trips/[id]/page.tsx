@@ -95,10 +95,13 @@ async function TripView({ params, searchParams, t, locale }: { params: Promise<{
           {!trip.cancelled && trip.status === 'pending' && (
             <p className="rounded-[5px] bg-sand p-4 font-semibold text-leaf-dark">
               {/* The organiser of a traveller trip learns it is waiting for Kwetuly's call to their account phone. */}
-              {isOrganizer && trip.organizer_kind === 'traveller' && user?.phone && !user.phoneConfirmed
+              {isOrganizer && trip.organizer_kind === 'traveller' && user?.phone && !user.phoneCalled
                 ? t.extras.groupWaitingCall.replace('{phone}', user.phone)
                 : g.statusPending}
             </p>
+          )}
+          {isOrganizer && trip.organizer_kind === 'traveller' && trip.status === 'approved' && !trip.cancelled && (
+            <p className="rounded-[5px] bg-sand p-4 text-sm">{t.extras.phoneChangeNote}</p>
           )}
           {trip.status === 'rejected' && <p className="rounded-[5px] bg-red-50 p-4 font-semibold text-red-800">{g.statusRejected}</p>}
           {trip.guides?.is_sample && (

@@ -141,7 +141,7 @@ async function HomeContent({ locale }: { locale: Locale }) {
       return { line: first ? `oldest ${waitedFor(first, now)}` : null, flag: list.length ? `${ready(list)} ready` : null };
     }),
     queueTile('group', 'Group trips', UsersRound, (list) => {
-      const calls = list.filter((i) => i.kind === 'group' && i.row.organizer_kind === 'traveller' && !i.row.organiser?.phone_verified_at).length;
+      const calls = list.filter((i) => i.kind === 'group' && i.row.organizer_kind === 'traveller' && !i.row.organiser?.phone_called_at).length;
       const first = oldest(list.map((i) => i.since));
       return { line: first ? `oldest ${waitedFor(first, now)}` : null, flag: calls ? `${calls} ${calls === 1 ? 'needs' : 'need'} a phone call` : null };
     }),

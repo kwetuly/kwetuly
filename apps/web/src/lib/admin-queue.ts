@@ -119,7 +119,7 @@ export type GroupRow = {
   updated_at: string;
   guides: { display_name: string; slug: string; verification_status: string; is_sample: boolean } | null;
   group_trip_private: { contact: string } | null;
-  organiser?: { full_name: string | null; phone: string | null; phone_verified_at: string | null } | null;
+  organiser?: { full_name: string | null; phone: string | null; phone_called_at: string | null } | null;
 };
 const GROUP_SELECT =
   'id, organizer_id, organizer_kind, already_going, title, description, company_name, region, start_date, end_date, price_per_person_usd, min_people, max_people, includes, status, created_at, updated_at, guides(display_name, slug, verification_status, is_sample), group_trip_private(contact)';
@@ -216,7 +216,7 @@ export function groupReadiness(g: GroupRow, today: string): Readiness {
   const single: string[] = [];
   if (g.guides?.is_sample) single.push('Sample (test data): approve one by one, or delete it before launch.');
   if (g.organizer_kind === 'traveller') {
-    if (g.organiser?.phone_verified_at) passed.push('Organiser’s phone confirmed');
+    if (g.organiser?.phone_called_at) passed.push('Organiser’s phone confirmed');
     else blocked.push('Phone not confirmed yet. Call the organiser, then press "Phone confirmed".');
   } else if (g.organizer_kind === 'guide') {
     if (g.guides?.verification_status === 'approved') passed.push('Guide organiser approved');
@@ -257,9 +257,9 @@ async function withOrganisers(supabase: Supabase, groups: GroupRow[]) {
   if (!ids.length) return groups;
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, phone, phone_verified_at')
+    .select('id, full_name, phone, phone_called_at')
     .in('id', ids)
-    .returns<{ id: string; full_name: string | null; phone: string | null; phone_verified_at: string | null }[]>();
+    .returns<{ id: string; full_name: string | null; phone: string | null; phone_called_at: string | null }[]>();
   const byId = new Map((data ?? []).map((p) => [p.id, p]));
   return groups.map((g) => ({ ...g, organiser: byId.get(g.organizer_id) ?? null }));
 }

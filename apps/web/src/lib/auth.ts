@@ -11,8 +11,8 @@ export type CurrentUser = {
   role: Role;
   fullName: string | null;
   phone: string | null;
-  /** True once Kwetuly has confirmed the phone above (an admin call or an SMS code). */
-  phoneConfirmed: boolean;
+  /** True once Kwetuly has called the phone above and an admin pressed "Phone confirmed" (an SMS code alone does not count). */
+  phoneCalled: boolean;
   /** False until a social sign-up has picked an account type and added a phone number. */
   onboarded: boolean;
   guide: { id: string; slug: string; status: 'pending' | 'approved' | 'rejected' } | null;
@@ -30,7 +30,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (!user) return null;
 
   const [{ data: profile }, { data: guide }] = await Promise.all([
-    supabase.from('profiles').select('role, full_name, phone, phone_verified_at, onboarded_at').eq('id', user.id).single(),
+    supabase.from('profiles').select('role, full_name, phone, phone_called_at, onboarded_at').eq('id', user.id).single(),
     supabase.from('guides').select('id, slug, verification_status').eq('owner_id', user.id).maybeSingle(),
   ]);
 
@@ -43,7 +43,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     role,
     fullName: profile?.full_name ?? null,
     phone: profile?.phone ?? null,
-    phoneConfirmed: Boolean(profile?.phone && profile.phone_verified_at),
+    phoneCalled: Boolean(profile?.phone && profile.phone_called_at),
     onboarded: Boolean(profile?.onboarded_at),
     guide: guideInfo,
     canUseHub: role === 'admin' || guideInfo?.status === 'approved',

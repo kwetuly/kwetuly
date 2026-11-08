@@ -122,10 +122,16 @@ export default function GroupTripScreen() {
       <Animated.View entering={contentFadeIn} style={{ paddingHorizontal: layout.screenX, gap: space.lg }}>
         {/* Shown first, so an organiser who has just submitted sees where the trip stands. A traveller's trip
             waits for Kwetuly's call to the account phone before it can be approved and go live. */}
+        {/* A live traveller trip is hidden again if the organiser changes their phone, until Kwetuly calls. */}
+        {isOrganizer && g.organizer_kind === 'traveller' && g.status === 'approved' && !g.cancelled && (
+          <Card>
+            <Muted>{t.extras.phoneChangeNote}</Muted>
+          </Card>
+        )}
         {isOrganizer && g.status === 'pending' && !g.cancelled && (
           <Card>
             <Muted>
-              {g.organizer_kind === 'traveller' && !profile.data?.phone_verified_at && profile.data?.phone
+              {g.organizer_kind === 'traveller' && !profile.data?.phone_called_at && profile.data?.phone
                 ? t.extras.groupWaitingCall.replace('{phone}', profile.data.phone)
                 : g10n.statusPending}
             </Muted>

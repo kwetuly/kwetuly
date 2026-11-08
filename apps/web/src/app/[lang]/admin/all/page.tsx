@@ -167,8 +167,8 @@ async function PendingGroupTrips({ t, locale, searchParams }: { t: Dictionary; l
   // Travellers' groups need a confirmed phone before approval: call the number, then confirm it here.
   const ids = trips.filter((g) => g.organizer_kind === 'traveller').map((g) => g.organizer_id);
   const { data: people } = ids.length
-    ? await supabase.from('profiles').select('id, full_name, phone, phone_verified_at').in('id', ids)
-    : { data: [] as { id: string; full_name: string | null; phone: string | null; phone_verified_at: string | null }[] };
+    ? await supabase.from('profiles').select('id, full_name, phone, phone_called_at').in('id', ids)
+    : { data: [] as { id: string; full_name: string | null; phone: string | null; phone_called_at: string | null }[] };
   const person = new Map((people ?? []).map((p) => [p.id, p]));
   const { error: errorParam } = await searchParams;
   const notice =
@@ -196,9 +196,9 @@ async function PendingGroupTrips({ t, locale, searchParams }: { t: Dictionary; l
               {g.already_going > 0 && <p>Completing a group: {g.already_going} already going</p>}
               {g.group_trip_private && <p>Contact given: {g.group_trip_private.contact}</p>}
               {g.organizer_kind === 'traveller' && (
-                <p className={person.get(g.organizer_id)?.phone_verified_at ? 'font-semibold text-forest' : 'font-semibold text-red-800'}>
+                <p className={person.get(g.organizer_id)?.phone_called_at ? 'font-semibold text-forest' : 'font-semibold text-red-800'}>
                   Phone {person.get(g.organizer_id)?.phone ?? '(none given)'}:{' '}
-                  {person.get(g.organizer_id)?.phone_verified_at ? 'confirmed' : 'not confirmed yet. Call this number, then press "Phone confirmed".'}
+                  {person.get(g.organizer_id)?.phone_called_at ? 'confirmed' : 'not confirmed yet. Call this number, then press "Phone confirmed".'}
                 </p>
               )}
               <p>${g.price_per_person_usd} per person · {g.min_people}–{g.max_people} people</p>
@@ -212,7 +212,7 @@ async function PendingGroupTrips({ t, locale, searchParams }: { t: Dictionary; l
               <button name="decision" value="approve" className="btn px-4 py-2 text-sm">{t.admin.approve}</button>
               <button name="decision" value="reject" className="btn-outline px-4 py-2 text-sm">{t.admin.reject}</button>
             </form>
-            {g.organizer_kind === 'traveller' && !person.get(g.organizer_id)?.phone_verified_at && (
+            {g.organizer_kind === 'traveller' && !person.get(g.organizer_id)?.phone_called_at && (
               <form action={confirmPhone} className="sm:col-span-2">
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="user_id" value={g.organizer_id} />
