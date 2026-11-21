@@ -216,7 +216,7 @@ export const it: Dictionary = {
   explore: {
     more: 'Vedi tutto',
     title: 'Tutto per il tuo viaggio in Tanzania',
-    subtitle: 'Un unico posto, gestito da chi conosce meglio il paese.',
+    subtitle: 'Un unico posto, gestito da gente del luogo.',
     comingTitle: 'Presto su Kwetuly',
     comingBody:
       'Stiamo selezionando partner locali affidabili proprio ora. Dicci di cosa hai bisogno e ti avviseremo appena sarà disponibile.',

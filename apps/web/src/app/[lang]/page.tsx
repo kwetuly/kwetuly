@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Fragment } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { MENU } from '@kwetuly/shared';
@@ -12,6 +13,7 @@ import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
 import { pageMeta } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site';
 import { JsonLd } from '@/components/json-ld';
+import { cjkPhrases } from '@/lib/cjk-phrases';
 
 // Home cards stay even: long sections show their first links and a "See all" link.
 const HOME_CARD_LINKS = 5;
@@ -51,8 +53,18 @@ export default async function HomePage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-shade/60 via-transparent to-transparent" />
         <div className="mx-auto flex min-h-[min(78svh,760px)] max-w-7xl flex-col justify-end px-4 pb-14 pt-24 sm:pb-20">
           <p lang="sw" className="text-lg font-semibold text-gold">{t.home.eyebrow}</p>
-          <h1 className="mt-3 max-w-3xl text-balance text-[2.75rem] font-extrabold leading-[1.02] tracking-tight sm:text-7xl">
-            {t.home.title}
+          {/* Chinese has no spaces: wrap only between phrases, never inside a word such as 坦桑尼亚人. */}
+          <h1
+            className={`mt-3 max-w-3xl text-balance text-[2.75rem] font-extrabold leading-[1.02] tracking-tight sm:text-7xl ${locale === 'zh' ? '[word-break:keep-all] [overflow-wrap:anywhere]' : ''}`}
+          >
+            {locale === 'zh'
+              ? cjkPhrases(t.home.title, locale).map((phrase, index) => (
+                  <Fragment key={index}>
+                    {index > 0 && <wbr />}
+                    {phrase}
+                  </Fragment>
+                ))
+              : t.home.title}
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/85">{t.home.subtitle}</p>
           <div className="mt-8 max-w-3xl text-charcoal">

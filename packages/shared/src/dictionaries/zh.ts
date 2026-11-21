@@ -212,7 +212,7 @@ export const zh: Dictionary = {
   explore: {
     more: '查看全部',
     title: '坦桑尼亚旅行所需的一切',
-    subtitle: '一站式平台，由最了解这个国家的人运营。',
+    subtitle: '一站式平台，由当地人运营。',
     comingTitle: '即将登陆 Kwetuly',
     comingBody: '我们正在招募值得信赖的本地合作伙伴。告诉我们您的需求，上线后我们会第一时间通知您。',
     listTitle: '您经营这类业务吗？',
@@ -232,7 +232,7 @@ export const zh: Dictionary = {
   home: {
     eyebrow: 'Karibu Tanzania · 欢迎来到坦桑尼亚',
     title: '与坦桑尼亚人一起旅行。',
-    subtitle: '先认识一位当地导游：看看 Kwetuly 核查了什么，有问题尽管问，然后再决定。背夫、厨师和房东也欢迎您。',
+    subtitle: '先认识一位当地导游：看看 Kwetuly 核查了什么，有问题尽管问，然后再决定。背夫、厨师和民宿主人也欢迎您。',
     search: '认识您的向导',
     specialtyLabel: '您想体验什么？',
     languageLabel: '语言',

@@ -216,7 +216,7 @@ export const pl: Dictionary = {
   explore: {
     more: 'Zobacz wszystko',
     title: 'Wszystko do Twojej podróży po Tanzanii',
-    subtitle: 'W jednym miejscu, prowadzone przez ludzi, którzy najlepiej znają ten kraj.',
+    subtitle: 'Wszystko w jednym miejscu, prowadzonym przez miejscowych.',
     comingTitle: 'Wkrótce na Kwetuly',
     comingBody:
       'Właśnie pozyskujemy zaufanych lokalnych partnerów. Napisz, czego potrzebujesz, a damy znać, gdy tylko ruszymy.',

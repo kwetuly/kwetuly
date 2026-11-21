@@ -280,7 +280,7 @@ export const en = {
   explore: {
     more: 'See all',
     title: 'Everything for your Tanzania trip',
-    subtitle: 'One place, run by the people who know the country best.',
+    subtitle: 'One place, run by local people.',
     comingTitle: 'Opening soon on Kwetuly',
     comingBody:
       'We are signing up trusted local partners for this right now. Tell us what you need and we will let you know as soon as it opens.',

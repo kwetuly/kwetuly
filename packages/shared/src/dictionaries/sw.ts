@@ -282,7 +282,7 @@ export const sw: Dictionary = {
   explore: {
     more: 'Ona zote',
     title: 'Kila kitu kwa safari yako Tanzania',
-    subtitle: 'Mahali pamoja, kunaendeshwa na wanaoijua nchi zaidi.',
+    subtitle: 'Mahali pamoja, panapoendeshwa na watu wa hapa.',
     comingTitle: 'Inafunguliwa hivi karibuni Kwetuly',
     comingBody:
       'Tunasajili washirika wa ndani wanaoaminika sasa hivi. Tuambie unachohitaji na tutakujulisha mara itakapofunguliwa.',

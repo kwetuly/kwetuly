@@ -216,7 +216,7 @@ export const de: Dictionary = {
   explore: {
     more: 'Alle ansehen',
     title: 'Alles für Ihre Tansania-Reise',
-    subtitle: 'Alles an einem Ort, betrieben von denen, die das Land am besten kennen.',
+    subtitle: 'Alles an einem Ort, betrieben von Menschen vor Ort.',
     comingTitle: 'Bald auf Kwetuly',
     comingBody:
       'Wir gewinnen gerade vertrauenswürdige lokale Partner. Sagen Sie uns, was Sie brauchen, und wir melden uns, sobald es losgeht.',

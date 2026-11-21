@@ -57,7 +57,7 @@ export default function IntroScreen() {
       features: [
         { ios: 'camera.fill', android: 'photo_camera' },
         { ios: 'video.fill', android: 'videocam' },
-        { ios: 'creditcard.fill', android: 'payments' },
+        { ios: 'person.2.fill', android: 'group' },
         { ios: 'bell.fill', android: 'notifications_active' },
       ],
     },
@@ -78,6 +78,9 @@ export default function IntroScreen() {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        // onMomentumScrollEnd does not fire on web, so onScroll keeps `page` in step there too.
+        scrollEventThrottle={32}
+        onScroll={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
         onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}
       >
         {slides.map((slide, index) => (
@@ -179,7 +182,11 @@ export default function IntroScreen() {
           </Pressable>
         ) : (
           <Pressable
-            onPress={() => scroller.current?.scrollTo({ x: (page + 1) * width, animated: true })}
+            onPress={() => {
+              const next = Math.min(page + 1, slides.length - 1);
+              setPage(next);
+              scroller.current?.scrollTo({ x: next * width, animated: true });
+            }}
             accessibilityRole="button"
             style={{ backgroundColor: brand.leaf, borderRadius: radius.button, borderCurve: 'continuous', paddingVertical: space.lg, alignItems: 'center' }}
           >
