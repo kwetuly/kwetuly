@@ -359,3 +359,28 @@ New ideas from the blueprint:
 **56. Academic partners (MWEKA, SUA, IFM).**
 - We recommend: partnerships writes a brief later, and you make contact after registration.
 - Why: partners will expect a registered company.
+
+## Walter's answers (2026-11-21)
+
+Walter's words: "we have to make card and mobile payment work… forget about selcom for now… reviews within 30 days… yes to all other recommendations".
+
+- **1-5 (cards with Selcom): changed.** Selcom is parked for now, and commit 26a75bd stays unmerged. Choose one of PesaPal, Flutterwave or AzamPay: one that asks no advance payment or setup fee, is the best for East African mobile money, and is trusted by international travellers. Both cards and mobile money must work.
+- **6 (who pays for crew checks): changed.** Porters, guides and chefs register free. To become *verified* they pay monthly or yearly, and verification unlocks the features meant for them. This replaces "crew never pay" (2026-10-30 board decision 4 and the crew reports).
+- **7 (price): changed.** Walter sets every price himself in the admin dashboard. Prices are ranked by account type: a porter never pays what a shop owner pays. Every service is a source of income.
+- **8 (no check needed): changed.** Registering is free, but features follow the account status: unverified, verified, and the account type.
+- **New rule:** each account type sees only what concerns it. A porter doesn't see traveller screens, and a traveller doesn't see crew screens.
+- **9 (documents): changed.**
+  - NIDA for Tanzanian citizens.
+  - Passport number for international users. Walter wrote "maybe passport numbers for international clients". To confirm: is this for non-Tanzanian providers only, or also travellers?
+  - The licence and certificates each role needs (for example a guide licence, a driving licence, a first-aid certificate).
+- **13 (review window): 30 days.**
+- **All other recommendations: yes**, as written above, except where an answer here changes them.
+
+Still open:
+- the passport question in 9;
+- Walter's Kiswahili check of the opening-page lines and of explore.subtitle ("watu wa hapa").
+
+Before charging anyone:
+- the company must be registered (Walter, 2026-11-08);
+- the chosen processor's live merchant account must be approved;
+- the advocate pack must include whether a verification fee for job-seeking crew counts as a job-seeker fee (hr and legal flagged this).
