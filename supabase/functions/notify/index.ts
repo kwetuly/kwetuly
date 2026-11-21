@@ -145,6 +145,11 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return { subject: `Traveller interest: ${v('section')} / ${v('item')}`, body: `${v('name')} (${v('contact')}) wants ${v('item')}. ${v('message')}` };
     case 'interest_business':
       return { subject: `Business wants to list: ${v('business') || v('name')}`, body: `${v('name')} (${v('contact')}) wants to be listed under ${v('section')} / ${v('item')}. ${v('message')}` };
+    case 'identifier_read_limit':
+      // To every admin. No name, number or account in the alert: details are in the check log.
+      return sw
+        ? { subject: 'Usomaji wa namba za utambulisho umesimamishwa', body: 'Msimamizi amefikia kikomo cha kusoma namba kamili za utambulisho (20 kwa saa). Usomaji zaidi umesimamishwa kwa saa moja. Tafadhali angalia kumbukumbu ya ukaguzi kwenye dashibodi ya msimamizi.' }
+        : { subject: 'Identity number reads paused', body: 'An admin reached the limit for full identity number reads (20 an hour). Further reads are paused for an hour. Please look at the check log in the admin dashboard.' };
     default:
       return { subject: 'Kwetuly update', body: v('message') };
   }
