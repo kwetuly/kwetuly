@@ -1,13 +1,15 @@
 # Kwetuly voice
 
-Status: draft by marketing, 2026-11-08. Walter approves it. Walter also checks all Kiswahili wording before anyone uses it.
+Status: approved by Walter on 2026-11-08 ("yes to all recommendations"). Walter still checks all Kiswahili wording before anyone uses it.
 
 Walter, 2026-11-08: "We Tanzanians are polite, so let's be polite." Kwetuly is about local people. Every line should first sound natural and courteous to a Tanzanian reader, and then sound warm to a visitor.
+
+Our lane: professional and polite, and not only about guides. Guides are the way in, but porters, cooks, drivers, hosts and owners are named with the same respect.
 
 ## 1. Who we speak about, in this order
 
 1. **Local guides.** Guides are the way in. A traveller meets and chooses a guide first, and the rest of the trip follows from that person. Our promise stays the same: "Tanzania is only as good as your guide. So choose yours."
-2. **Porters and cooks.** Porters and cooks make the mountain and the camp possible. Name them with respect and never as extras. Walter says "wagumu" for porters, and the usual written word is "wapagazi". Walter chooses which one we use in public texts.
+2. **Porters and cooks.** Porters and cooks make the mountain and the camp possible. Name them with respect and never as extras. In public texts we write "wapagazi" (Walter, 2026-11-08). "Wagumu" is Walter's spoken word for porters and is not used in public texts.
 3. **Drivers.** Drivers are local people we are proud of. **Transfers are switched off**, so we name drivers as people, not as a service to book. Do not write "book a driver", "airport transfer" or "match-day transfers" until Walter switches transfers on.
 4. **Hosts and owners.** This means owners of hotels, lodges, homestays and Airbnb-style apartments, and owners of curio, gem and gear-rental shops. Walter's wording is "Airbnb-style apartments", never "Airbnb" alone. These owners list with us. A "Checked by Kwetuly" badge says what was checked and when. It never says "recommended".
 5. **Other local people.** This means people who cook at home, craftspeople, families, neighbours and the people of the place a traveller visits. We speak about them as hosts, not as sights.
@@ -63,7 +65,7 @@ These are drafts. Walter checks every line.
 | English | Kiswahili (draft, Walter checks) | Note |
 | --- | --- | --- |
 | guide | mwongozaji (plural waongozaji) | Already used across the dictionaries. Keep it consistent. |
-| porter | mpagazi (wapagazi) / wagumu | Walter chooses. |
+| porter | mpagazi (wapagazi) | Chosen by Walter, 2026-11-08. Not "wagumu" in public texts. |
 | cook | mpishi (wapishi) | |
 | driver | dereva (madereva) | A person, not a service to book while transfers are off. |
 | host, homestay owner | mwenyeji (wenyeji) | |
@@ -71,6 +73,8 @@ These are drafts. Walter checks every line.
 | shop owner | mwenye duka | |
 | traveller, guest | msafiri, mgeni | "Mgeni" is warmer in welcome lines. |
 | local people | watu wa hapa, wenyeji | |
+| deposit | amana | Chosen by Walter, 2026-11-08. Only use it where deposits are actually switched on. |
+| check, checked | kukagua, imekaguliwa | Chosen by Walter, 2026-11-08. Not "kuhakiki". |
 
 ## 5. Politeness in each language
 
@@ -89,17 +93,17 @@ By localization, 2026-11-08, short version of Section 2 of `docs/brand/voice-pol
 
 **German (Sie).** Keep Sie, always capitalised (Sie, Ihr, Ihnen). Buttons in the infinitive ("Anmelden", "Senden"). "Bitte" in requests and errors ("Bitte prüfen Sie...").
 
-**Italian (tu).** Keep the warm tu usual in Italian travel apps; "Lei" sounds like a bank letter. "Per favore" in errors, "grazie" after actions. Buttons in the tu imperative ("Accedi", "Invia"). Welcome without assuming gender: "Ti diamo il benvenuto su Kwetuly!" rather than "Benvenuto" (Walter decides).
+**Italian (tu).** Keep the warm tu usual in Italian travel apps; "Lei" sounds like a bank letter. "Per favore" in errors, "grazie" after actions. Buttons in the tu imperative ("Accedi", "Invia"). Welcome without assuming gender: "Ti diamo il benvenuto su Kwetuly" rather than "Benvenuto" (approved by Walter, 2026-11-08).
 
 **Polish (Ty, capitalised).** Ty forms with capitalised pronouns (Ty, Tobie, Cię); Pan/Pani is avoided because we do not know the user's gender. Welcome: "Witamy w Kwetuly!". Buttons in the imperative ("Zaloguj się", "Wyślij").
 
-**Chinese (你 or 您).** Today traveller texts use 你 and only legal texts use 您. 您 is the usual polite form in Chinese travel and booking services; Walter decides whether to switch all traveller texts at once. Never mix the two. Use 请 for requests, 谢谢 after actions, 欢迎 for welcome ("欢迎来到 Kwetuly！").
+**Chinese (您).** Use 您 in every traveller text (approved by Walter, 2026-11-08). zh.ts has switched; the zh parts of the area files (ux, extras, business, travel, sign-ins) still use 你 and will follow in a later pass. Never mix the two within a screen. For a group, write 各位 or reword; never write 您们. Use 请 for requests, 谢谢 after actions, 欢迎 for welcome ("欢迎来到 Kwetuly").
 
 ## 6. Current lines that break these rules
 
-These lines are listed for their owners to fix. They are not edited here.
+Fixed by localization in all 7 dictionaries, 2026-11-21. These lines are listed here for history:
 
-- `home.afconBody` (en/sw) says "Match-day transfers..." / "Usafiri wa siku za mechi...". This claims transfers, which are switched off.
-- `home.hook` (en/sw) says "The best trips are made by a guide." / "Safari bora...". This uses "best".
-- `intro.s3Body` (en/sw) says "safe deposits with mobile money or card". Check whether deposits are on.
-- `join.provider.body` (en ~line 171) says "Hotels, drivers, shops and tour companies: list services and hire crew." Check whether drivers can list services while transfers are off.
+- `home.afconBody` claimed match-day transfers. It now says "City tours and day trips with local guides. Coming soon."
+- `home.hook` used "best". It now says "...But a trip is made by a guide and a local team."
+- `intro.s3Body` claimed safe deposits. The deposits part is removed; add it back only when deposits are switched on.
+- `join.provider.body` listed drivers offering services. It now says "Hotels, shops and tour companies: list your business and hire crew."
