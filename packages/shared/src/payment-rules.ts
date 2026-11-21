@@ -85,6 +85,7 @@ export type DepositDecision = {
     | 'reference_mismatch'
     | 'expired'
     | 'stale'
+    | 'attempts_unclear'
     | 'open';
 };
 
@@ -105,6 +106,9 @@ export type DepositLimits = {
  *   - Any other successful payment is held as 'review' for an admin, never 'paid'.
  *   - A successful payment on an order Kwetuly had given up on ('failed') goes to 'review'.
  *   - A failed attempt while the hosted page is still open stays 'pending': the traveller may retry there.
+ *   - `attemptsUnclear`: the provider showed an attempt that was not successful, but Kwetuly could not
+ *     list every attempt on this order (security-reviewer M4). Instead of giving up on it ('failed'),
+ *     it is held as 'review' so an admin checks it against the provider's records.
  */
 export function decideDeposit(input: {
   stored: 'pending' | 'failed';
@@ -113,8 +117,9 @@ export function decideDeposit(input: {
   ageMs: number;
   tx: ProviderTx;
   limits: DepositLimits;
+  attemptsUnclear?: boolean;
 }): DepositDecision {
-  const { stored, orderId, amountTzs, ageMs, tx, limits } = input;
+  const { stored, orderId, amountTzs, ageMs, tx, limits, attemptsUnclear = false } = input;
   if (tx.found && tx.txRef !== orderId) return { status: stored, reason: 'reference_mismatch' };
   const state = tx.found && typeof tx.status === 'string' ? tx.status.trim().toLowerCase() : '';
   const successful = tx.found && state === 'successful';
@@ -131,10 +136,31 @@ export function decideDeposit(input: {
     return { status: 'paid', reason: 'paid' };
   }
 
+  let decision: DepositDecision;
   if (tx.found && state === 'pending') {
-    return ageMs > limits.staleMs ? { status: 'failed', reason: 'stale' } : { status: 'pending', reason: 'open' };
+    decision = ageMs > limits.staleMs ? { status: 'failed', reason: 'stale' } : { status: 'pending', reason: 'open' };
+  } else {
+    decision = ageMs > limits.sessionMs + limits.graceMs ? { status: 'failed', reason: 'expired' } : { status: 'pending', reason: 'open' };
   }
-  return ageMs > limits.sessionMs + limits.graceMs ? { status: 'failed', reason: 'expired' } : { status: 'pending', reason: 'open' };
+  if (decision.status === 'failed' && tx.found && attemptsUnclear) return { status: 'review', reason: 'attempts_unclear' };
+  return decision;
+}
+
+/**
+ * From a list of the provider's transactions for one order (all attempts on the hosted page), the id of
+ * a successful one for exactly this tx_ref, or null. Used because verify-by-reference may answer with
+ * one attempt only (security-reviewer M4).
+ */
+export function successfulAttemptId(list: unknown, orderId: string): string | null {
+  if (!Array.isArray(list)) return null;
+  for (const item of list.slice(0, 50)) {
+    if (!item || typeof item !== 'object') continue;
+    const tx = item as Record<string, unknown>;
+    const id = tx.id;
+    const plainId = (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null;
+    if (plainId && tx.tx_ref === orderId && typeof tx.status === 'string' && tx.status.trim().toLowerCase() === 'successful') return plainId;
+  }
+  return null;
 }
 
 /** Provider payment page domains. Only subdomains (e.g. "checkout.flutterwave.com") pass, not the bare domain. */
@@ -168,30 +194,45 @@ async function sameSecret(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
-/** Shortest secret hash Kwetuly accepts for webhooks (Walter sets it in the Flutterwave dashboard). */
+/** Shortest webhook secret Kwetuly accepts (Walter sets it in the Flutterwave dashboard). */
 export const MIN_WEBHOOK_SECRET_LENGTH = 32;
 
+/** Which Flutterwave webhook scheme this account uses. Exactly one is accepted (security-reviewer L1). */
+export type WebhookMode = 'v3' | 'v4';
+export const parseWebhookMode = (raw: string | null | undefined): WebhookMode | null => (raw === 'v3' || raw === 'v4' ? raw : null);
+
 /**
- * Checks a Flutterwave webhook.
- *   - `flutterwave-signature` header (current docs): base64 HMAC-SHA256 of the raw body with the secret hash.
- *   - Otherwise `verif-hash` header (v3 docs): must equal the secret hash.
- * When a signature header is present it must be valid; there is no fallback to verif-hash then.
+ * Checks a Flutterwave webhook under ONE scheme, with that scheme's own secret:
+ *   - v4: header `flutterwave-signature` = base64 HMAC-SHA256 of the raw body, keyed with the v4 signing secret.
+ *   - v3: header `verif-hash` = the v3 secret hash.
+ * The other scheme's header is never used, and a header that is present but empty is invalid.
  */
 export async function verifyFlutterwaveWebhook(
   rawBody: string,
   headers: { signature: string | null; verifHash: string | null },
-  secretHash: string,
+  config: { mode: WebhookMode | null; secret: string },
 ): Promise<boolean> {
-  if (secretHash.length < MIN_WEBHOOK_SECRET_LENGTH) return false;
-  if (headers.signature) {
-    const key = await crypto.subtle.importKey('raw', encoder.encode(secretHash), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  if (!config.mode || config.secret.length < MIN_WEBHOOK_SECRET_LENGTH) return false;
+  if (config.mode === 'v4') {
+    const given = (headers.signature ?? '').trim();
+    if (!given) return false;
+    const key = await crypto.subtle.importKey('raw', encoder.encode(config.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody)));
     let binary = '';
     for (const byte of mac) binary += String.fromCharCode(byte);
-    return sameSecret(btoa(binary), headers.signature.trim());
+    return sameSecret(btoa(binary), given);
   }
-  if (headers.verifHash) return sameSecret(secretHash, headers.verifHash);
-  return false;
+  const given = headers.verifHash ?? '';
+  if (!given) return false;
+  return sameSecret(config.secret, given);
+}
+
+/**
+ * Log key for an unsigned or wrongly signed call naming one of our orders: one row per order per hour at
+ * most (security-reviewer M3), so a script cannot fill the callback log.
+ */
+export function invalidEventKey(txRef: string, nowMs: number): string {
+  return `invalid:${txRef}:${new Date(nowMs).toISOString().slice(0, 13)}`;
 }
 
 /** What Kwetuly reads from a webhook body: only keys to look the order up with, never its amounts or status. */
@@ -217,36 +258,29 @@ export function readWebhook(body: unknown): WebhookRef {
   return { eventKey, eventType, txRef, transactionId };
 }
 
-const SENSITIVE_EXACT = new Set(['ip', 'pan', 'bin', 'cvv', 'cvc', 'pin', 'otp']);
-const SENSITIVE_PARTS = ['phone', 'email', 'name', 'card', 'digit', 'fingerprint', 'address', 'account', 'msisdn', 'token', 'expiry', 'customer', 'bvn', 'nin'];
+// Fields kept in the callback log (security-reviewer L2): an allow-list, everything else is dropped,
+// so no name, phone, e-mail, card, account, address, IP or free text is ever stored.
+const KEEP_TOP = ['event', 'type', 'webhook_id', 'id', 'timestamp', 'event.type'];
+const KEEP_DATA = ['id', 'tx_ref', 'reference', 'flw_ref', 'status', 'amount', 'charged_amount', 'currency', 'app_fee', 'merchant_fee', 'amount_settled', 'payment_type', 'created_at'];
 
-const sensitiveKey = (key: string) => {
-  const k = key.toLowerCase();
-  return SENSITIVE_EXACT.has(k) || SENSITIVE_PARTS.some((part) => k.includes(part));
-};
-
-function maskLeaf(value: unknown): unknown {
-  if (value === null || value === undefined || typeof value === 'boolean') return value;
-  const text = String(value);
-  return text.length >= 6 ? `***${text.slice(-2)}` : '***';
-}
+const keepValue = (value: unknown) =>
+  typeof value === 'number' || typeof value === 'boolean' ? value : typeof value === 'string' ? value.replace(/[^\w .:+-]/g, '').slice(0, 64) : null;
 
 /**
- * A copy of a provider payload that is safe to keep in the callback log: phone numbers, e-mail, names,
- * card details, account numbers, addresses, IPs and tokens are masked (at most the last 2 characters
- * stay); long text is cut; depth and list length are capped.
+ * The part of a provider callback that is safe to keep: a few top-level keys and, under `data`, only
+ * amounts, references, status, type and time. Values are plain numbers or short plain text.
  */
-export function maskPayload(value: unknown, masked = false, depth = 0): unknown {
-  if (depth > 6) return '[cut]';
-  if (Array.isArray(value)) return value.slice(0, 20).map((item) => maskPayload(item, masked, depth + 1));
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value as Record<string, unknown>).slice(0, 60)) {
-      out[key.slice(0, 60)] = maskPayload(item, masked || sensitiveKey(key), depth + 1);
-    }
-    return out;
+export function pickPayload(body: unknown): Record<string, unknown> | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const root = body as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of KEEP_TOP) if (key in root) out[key] = keepValue(root[key]);
+  const data = root.data;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const kept: Record<string, unknown> = {};
+    for (const key of KEEP_DATA) if (key in (data as Record<string, unknown>)) kept[key] = keepValue((data as Record<string, unknown>)[key]);
+    out.data = kept;
   }
-  if (masked) return maskLeaf(value);
-  return typeof value === 'string' ? value.slice(0, 200) : value;
+  return out;
 }
 // END payment-rules

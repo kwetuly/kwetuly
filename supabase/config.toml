@@ -1,0 +1,8 @@
+# Supabase CLI settings. One [functions.<name>] section per Edge Function; other branches add their own
+# sections next to these (do not merge them into one).
+
+# payments: Flutterwave webhooks and the pg_cron sweeper send no Supabase JWT, so the gateway must not
+# require one. The function checks every caller itself: webhook signature, sweep secret, or the user's
+# token for check, checkout and status (security-reviewer L4).
+[functions.payments]
+verify_jwt = false

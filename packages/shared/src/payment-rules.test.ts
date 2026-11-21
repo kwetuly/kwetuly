@@ -8,7 +8,10 @@ import {
   depositTzs,
   isAllowedPaymentUrl,
   isOrderId,
-  maskPayload,
+  invalidEventKey,
+  parseWebhookMode,
+  pickPayload,
+  successfulAttemptId,
   parseMoney2,
   parseRateHundredths,
   parseWholeTzs,
@@ -142,6 +145,14 @@ describe('decideDeposit', () => {
     expect(decide(ok({ status: 'pending' }), 'pending', after)).toEqual({ status: 'pending', reason: 'open' });
     expect(decide(ok({ status: 'pending' }), 'pending', 25 * 3600_000)).toEqual({ status: 'failed', reason: 'stale' });
   });
+
+  it('holds an expired order for review when an attempt exists but not all attempts could be listed', () => {
+    const run = (tx: ProviderTx) =>
+      decideDeposit({ stored: 'pending', orderId: ORDER, amountTzs: 260000, ageMs: 71 * 60_000, tx, limits: LIMITS, attemptsUnclear: true });
+    expect(run(ok({ status: 'failed' }))).toEqual({ status: 'review', reason: 'attempts_unclear' });
+    expect(run({ found: false })).toEqual({ status: 'failed', reason: 'expired' });
+    expect(run(ok())).toEqual({ status: 'paid', reason: 'paid' });
+  });
 });
 
 describe('isAllowedPaymentUrl', () => {
@@ -181,25 +192,61 @@ describe('isAllowedPaymentUrl', () => {
 });
 
 describe('verifyFlutterwaveWebhook', () => {
-  const secret = 'test-secret-hash-0123456789abcdef0123';
+  const v4 = 'v4-signing-secret-0123456789abcdef0123';
+  const v3 = 'v3-secret-hash-0123456789abcdef012345';
   const body = JSON.stringify({ event: 'charge.completed', data: { id: 1, tx_ref: ORDER } });
-  const signature = createHmac('sha256', secret).update(body).digest('base64');
+  const signature = createHmac('sha256', v4).update(body).digest('base64');
 
-  it('accepts a correct HMAC signature or a correct verif-hash', async () => {
-    expect(await verifyFlutterwaveWebhook(body, { signature, verifHash: null }, secret)).toBe(true);
-    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: secret }, secret)).toBe(true);
+  it('v4: accepts only a correct HMAC signature made with the v4 secret', async () => {
+    expect(await verifyFlutterwaveWebhook(body, { signature, verifHash: null }, { mode: 'v4', secret: v4 })).toBe(true);
+    expect(await verifyFlutterwaveWebhook(`${body} `, { signature, verifHash: null }, { mode: 'v4', secret: v4 })).toBe(false);
+    const withV3Key = createHmac('sha256', v3).update(body).digest('base64');
+    expect(await verifyFlutterwaveWebhook(body, { signature: withV3Key, verifHash: null }, { mode: 'v4', secret: v4 })).toBe(false);
   });
 
-  it('refuses a wrong, missing or misplaced signature', async () => {
-    expect(await verifyFlutterwaveWebhook(`${body} `, { signature, verifHash: null }, secret)).toBe(false);
-    expect(await verifyFlutterwaveWebhook(body, { signature: 'AAAA', verifHash: secret }, secret)).toBe(false);
-    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: `${secret}x` }, secret)).toBe(false);
-    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: null }, secret)).toBe(false);
+  it('v4: never falls back to verif-hash, and an empty signature header is invalid', async () => {
+    expect(await verifyFlutterwaveWebhook(body, { signature: '', verifHash: v4 }, { mode: 'v4', secret: v4 })).toBe(false);
+    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: v4 }, { mode: 'v4', secret: v4 })).toBe(false);
+    expect(await verifyFlutterwaveWebhook(body, { signature: '   ', verifHash: null }, { mode: 'v4', secret: v4 })).toBe(false);
   });
 
-  it('refuses everything when the secret hash is short or unset', async () => {
-    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: 'short' }, 'short')).toBe(false);
-    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: '' }, '')).toBe(false);
+  it('v3: accepts only the v3 secret hash in verif-hash, never a signature', async () => {
+    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: v3 }, { mode: 'v3', secret: v3 })).toBe(true);
+    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: `${v3}x` }, { mode: 'v3', secret: v3 })).toBe(false);
+    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: '' }, { mode: 'v3', secret: v3 })).toBe(false);
+    const sig3 = createHmac('sha256', v3).update(body).digest('base64');
+    expect(await verifyFlutterwaveWebhook(body, { signature: sig3, verifHash: null }, { mode: 'v3', secret: v3 })).toBe(false);
+  });
+
+  it('refuses everything without a mode or with a short secret', async () => {
+    expect(await verifyFlutterwaveWebhook(body, { signature, verifHash: v3 }, { mode: null, secret: v4 })).toBe(false);
+    expect(await verifyFlutterwaveWebhook(body, { signature: null, verifHash: 'short' }, { mode: 'v3', secret: 'short' })).toBe(false);
+    expect(parseWebhookMode('v3')).toBe('v3');
+    expect(parseWebhookMode('V4')).toBeNull();
+    expect(parseWebhookMode(undefined)).toBeNull();
+  });
+});
+
+describe('invalidEventKey', () => {
+  it('gives one key per order per hour', () => {
+    const t = Date.parse('2026-11-22T10:15:00Z');
+    expect(invalidEventKey(ORDER, t)).toBe(`invalid:${ORDER}:2026-11-22T10`);
+    expect(invalidEventKey(ORDER, t + 40 * 60_000)).toBe(invalidEventKey(ORDER, t));
+    expect(invalidEventKey(ORDER, t + 50 * 60_000)).not.toBe(invalidEventKey(ORDER, t));
+  });
+});
+
+describe('successfulAttemptId', () => {
+  it('finds a successful attempt for this order only', () => {
+    const list = [
+      { id: 11, tx_ref: ORDER, status: 'failed' },
+      { id: 12, tx_ref: `RAF${'b2'.repeat(16)}`, status: 'successful' },
+      { id: 13, tx_ref: ORDER, status: 'successful' },
+    ];
+    expect(successfulAttemptId(list, ORDER)).toBe('13');
+    expect(successfulAttemptId(list.slice(0, 2), ORDER)).toBeNull();
+    expect(successfulAttemptId([{ id: '1; x', tx_ref: ORDER, status: 'successful' }], ORDER)).toBeNull();
+    expect(successfulAttemptId(null, ORDER)).toBeNull();
   });
 });
 
@@ -223,37 +270,47 @@ describe('readWebhook', () => {
   });
 });
 
-describe('maskPayload', () => {
-  it('masks personal and card details, keeps amounts and references', () => {
-    const masked = maskPayload({
+describe('pickPayload', () => {
+  it('keeps only allow-listed fields: no personal, card or free-text data', () => {
+    const kept = pickPayload({
       event: 'charge.completed',
+      'event.type': 'CARD_TRANSACTION',
       data: {
+        id: 285959875,
         tx_ref: ORDER,
+        flw_ref: 'FLW-MOCK-1',
         amount: 260000,
+        charged_amount: 260000,
+        app_fee: 14726.4,
         currency: 'TZS',
         status: 'successful',
-        description: 'Deposit',
+        payment_type: 'card',
+        narration: 'Asha Mushi 0712345678',
+        processor_response: 'Approved by Asha',
         ip: '197.250.1.1',
+        mobile: '255712345678',
         customer: { name: 'Asha', email: 'asha@example.com', phone_number: '255712345678' },
-        card: { first_6digits: '539983', last_4digits: '8381', expiry: '09/32' },
-        account_id: 12345,
+        card: { first_6digits: '539983', last_4digits: '8381' },
       },
     }) as { data: Record<string, unknown> };
-    expect(masked.data.tx_ref).toBe(ORDER);
-    expect(masked.data.amount).toBe(260000);
-    expect(masked.data.description).toBe('Deposit');
-    expect(masked.data.ip).toBe('***.1');
-    expect(masked.data.customer).toEqual({ name: '***', email: '***om', phone_number: '***78' });
-    expect(masked.data.card).toEqual({ first_6digits: '***83', last_4digits: '***', expiry: '***' });
-    expect(masked.data.account_id).toBe('***');
-    expect(JSON.stringify(masked)).not.toContain('255712345678');
+    expect(kept.data).toEqual({
+      id: 285959875,
+      tx_ref: ORDER,
+      flw_ref: 'FLW-MOCK-1',
+      status: 'successful',
+      amount: 260000,
+      charged_amount: 260000,
+      currency: 'TZS',
+      app_fee: 14726.4,
+      payment_type: 'card',
+    });
+    const text = JSON.stringify(kept);
+    for (const secret of ['0712345678', '255712345678', 'Asha', 'asha@', '539983', '8381', '197.250']) expect(text).not.toContain(secret);
   });
 
-  it('caps depth, lists and text', () => {
-    let deep: unknown = 'x';
-    for (let i = 0; i < 10; i++) deep = { a: deep };
-    expect(JSON.stringify(maskPayload(deep))).toContain('[cut]');
-    expect((maskPayload(Array.from({ length: 50 }, (_, i) => i)) as unknown[]).length).toBe(20);
-    expect((maskPayload('y'.repeat(500)) as string).length).toBe(200);
+  it('drops nested objects and odd values', () => {
+    expect(pickPayload({ data: { status: { nested: 'x' }, amount: '1<script>' } })).toEqual({ data: { status: null, amount: '1script' } });
+    expect(pickPayload(null)).toBeNull();
+    expect(pickPayload([1])).toBeNull();
   });
 });

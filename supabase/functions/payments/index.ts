@@ -20,16 +20,20 @@
 //   KWETULY_ENV           must be "test". Live is refused by this build (LIVE_ALLOWED below) until
 //                         Walter approves live keys and the live switch; that needs a code change and review.
 //   FLW_SECRET_KEY        Flutterwave TEST secret key (starts with FLWSECK_TEST-). A live key is refused.
-//   FLW_SECRET_HASH       the webhook "secret hash" set in the Flutterwave dashboard, at least 32 random characters.
+//   FLW_WEBHOOK_MODE      "v3" or "v4": the ONE webhook scheme this Flutterwave account uses (the other is refused).
+//   FLW_SECRET_HASH       v3 only: the webhook "secret hash" (header verif-hash), at least 32 random characters.
+//   FLW_WEBHOOK_SIGNING_SECRET  v4 only: the key for the flutterwave-signature HMAC, at least 32 characters.
+//                         Never the same value as FLW_SECRET_HASH.
 //   USD_TZS_RATE          shillings per US dollar used to price deposits, e.g. "2600" or "2650.75".
 //   USD_TZS_RATE_SOURCE   where that rate comes from, e.g. "BoT mean 2026-11-21" (saved on every order).
 //   PAYMENTS_SWEEP_SECRET at least 32 random characters; the same value is in Vault as payments_sweep_secret.
-//   SITE_URL              e.g. "https://kwetuly.com" (default).
+//   SITE_URL              required, no default: the test site, e.g. "https://staging.kwetuly.com" or
+//                         "http://localhost:3000". Travellers come back there after paying.
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const env = (key: string, fallback = '') => Deno.env.get(key) ?? fallback;
-const SITE_URL = env('SITE_URL', 'https://kwetuly.com').replace(/\/$/, '');
+const SITE_URL = env('SITE_URL').replace(/\/$/, '');
 const FLW_API = 'https://api.flutterwave.com/v3';
 
 // The live Supabase project. Test keys are never used there.
@@ -127,6 +131,7 @@ export type DepositDecision = {
     | 'reference_mismatch'
     | 'expired'
     | 'stale'
+    | 'attempts_unclear'
     | 'open';
 };
 
@@ -147,6 +152,9 @@ export type DepositLimits = {
  *   - Any other successful payment is held as 'review' for an admin, never 'paid'.
  *   - A successful payment on an order Kwetuly had given up on ('failed') goes to 'review'.
  *   - A failed attempt while the hosted page is still open stays 'pending': the traveller may retry there.
+ *   - `attemptsUnclear`: the provider showed an attempt that was not successful, but Kwetuly could not
+ *     list every attempt on this order (security-reviewer M4). Instead of giving up on it ('failed'),
+ *     it is held as 'review' so an admin checks it against the provider's records.
  */
 export function decideDeposit(input: {
   stored: 'pending' | 'failed';
@@ -155,8 +163,9 @@ export function decideDeposit(input: {
   ageMs: number;
   tx: ProviderTx;
   limits: DepositLimits;
+  attemptsUnclear?: boolean;
 }): DepositDecision {
-  const { stored, orderId, amountTzs, ageMs, tx, limits } = input;
+  const { stored, orderId, amountTzs, ageMs, tx, limits, attemptsUnclear = false } = input;
   if (tx.found && tx.txRef !== orderId) return { status: stored, reason: 'reference_mismatch' };
   const state = tx.found && typeof tx.status === 'string' ? tx.status.trim().toLowerCase() : '';
   const successful = tx.found && state === 'successful';
@@ -173,10 +182,31 @@ export function decideDeposit(input: {
     return { status: 'paid', reason: 'paid' };
   }
 
+  let decision: DepositDecision;
   if (tx.found && state === 'pending') {
-    return ageMs > limits.staleMs ? { status: 'failed', reason: 'stale' } : { status: 'pending', reason: 'open' };
+    decision = ageMs > limits.staleMs ? { status: 'failed', reason: 'stale' } : { status: 'pending', reason: 'open' };
+  } else {
+    decision = ageMs > limits.sessionMs + limits.graceMs ? { status: 'failed', reason: 'expired' } : { status: 'pending', reason: 'open' };
   }
-  return ageMs > limits.sessionMs + limits.graceMs ? { status: 'failed', reason: 'expired' } : { status: 'pending', reason: 'open' };
+  if (decision.status === 'failed' && tx.found && attemptsUnclear) return { status: 'review', reason: 'attempts_unclear' };
+  return decision;
+}
+
+/**
+ * From a list of the provider's transactions for one order (all attempts on the hosted page), the id of
+ * a successful one for exactly this tx_ref, or null. Used because verify-by-reference may answer with
+ * one attempt only (security-reviewer M4).
+ */
+export function successfulAttemptId(list: unknown, orderId: string): string | null {
+  if (!Array.isArray(list)) return null;
+  for (const item of list.slice(0, 50)) {
+    if (!item || typeof item !== 'object') continue;
+    const tx = item as Record<string, unknown>;
+    const id = tx.id;
+    const plainId = (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null;
+    if (plainId && tx.tx_ref === orderId && typeof tx.status === 'string' && tx.status.trim().toLowerCase() === 'successful') return plainId;
+  }
+  return null;
 }
 
 /** Provider payment page domains. Only subdomains (e.g. "checkout.flutterwave.com") pass, not the bare domain. */
@@ -210,30 +240,45 @@ async function sameSecret(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
-/** Shortest secret hash Kwetuly accepts for webhooks (Walter sets it in the Flutterwave dashboard). */
+/** Shortest webhook secret Kwetuly accepts (Walter sets it in the Flutterwave dashboard). */
 export const MIN_WEBHOOK_SECRET_LENGTH = 32;
 
+/** Which Flutterwave webhook scheme this account uses. Exactly one is accepted (security-reviewer L1). */
+export type WebhookMode = 'v3' | 'v4';
+export const parseWebhookMode = (raw: string | null | undefined): WebhookMode | null => (raw === 'v3' || raw === 'v4' ? raw : null);
+
 /**
- * Checks a Flutterwave webhook.
- *   - `flutterwave-signature` header (current docs): base64 HMAC-SHA256 of the raw body with the secret hash.
- *   - Otherwise `verif-hash` header (v3 docs): must equal the secret hash.
- * When a signature header is present it must be valid; there is no fallback to verif-hash then.
+ * Checks a Flutterwave webhook under ONE scheme, with that scheme's own secret:
+ *   - v4: header `flutterwave-signature` = base64 HMAC-SHA256 of the raw body, keyed with the v4 signing secret.
+ *   - v3: header `verif-hash` = the v3 secret hash.
+ * The other scheme's header is never used, and a header that is present but empty is invalid.
  */
 export async function verifyFlutterwaveWebhook(
   rawBody: string,
   headers: { signature: string | null; verifHash: string | null },
-  secretHash: string,
+  config: { mode: WebhookMode | null; secret: string },
 ): Promise<boolean> {
-  if (secretHash.length < MIN_WEBHOOK_SECRET_LENGTH) return false;
-  if (headers.signature) {
-    const key = await crypto.subtle.importKey('raw', encoder.encode(secretHash), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  if (!config.mode || config.secret.length < MIN_WEBHOOK_SECRET_LENGTH) return false;
+  if (config.mode === 'v4') {
+    const given = (headers.signature ?? '').trim();
+    if (!given) return false;
+    const key = await crypto.subtle.importKey('raw', encoder.encode(config.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
     const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody)));
     let binary = '';
     for (const byte of mac) binary += String.fromCharCode(byte);
-    return sameSecret(btoa(binary), headers.signature.trim());
+    return sameSecret(btoa(binary), given);
   }
-  if (headers.verifHash) return sameSecret(secretHash, headers.verifHash);
-  return false;
+  const given = headers.verifHash ?? '';
+  if (!given) return false;
+  return sameSecret(config.secret, given);
+}
+
+/**
+ * Log key for an unsigned or wrongly signed call naming one of our orders: one row per order per hour at
+ * most (security-reviewer M3), so a script cannot fill the callback log.
+ */
+export function invalidEventKey(txRef: string, nowMs: number): string {
+  return `invalid:${txRef}:${new Date(nowMs).toISOString().slice(0, 13)}`;
 }
 
 /** What Kwetuly reads from a webhook body: only keys to look the order up with, never its amounts or status. */
@@ -259,41 +304,36 @@ export function readWebhook(body: unknown): WebhookRef {
   return { eventKey, eventType, txRef, transactionId };
 }
 
-const SENSITIVE_EXACT = new Set(['ip', 'pan', 'bin', 'cvv', 'cvc', 'pin', 'otp']);
-const SENSITIVE_PARTS = ['phone', 'email', 'name', 'card', 'digit', 'fingerprint', 'address', 'account', 'msisdn', 'token', 'expiry', 'customer', 'bvn', 'nin'];
+// Fields kept in the callback log (security-reviewer L2): an allow-list, everything else is dropped,
+// so no name, phone, e-mail, card, account, address, IP or free text is ever stored.
+const KEEP_TOP = ['event', 'type', 'webhook_id', 'id', 'timestamp', 'event.type'];
+const KEEP_DATA = ['id', 'tx_ref', 'reference', 'flw_ref', 'status', 'amount', 'charged_amount', 'currency', 'app_fee', 'merchant_fee', 'amount_settled', 'payment_type', 'created_at'];
 
-const sensitiveKey = (key: string) => {
-  const k = key.toLowerCase();
-  return SENSITIVE_EXACT.has(k) || SENSITIVE_PARTS.some((part) => k.includes(part));
-};
-
-function maskLeaf(value: unknown): unknown {
-  if (value === null || value === undefined || typeof value === 'boolean') return value;
-  const text = String(value);
-  return text.length >= 6 ? `***${text.slice(-2)}` : '***';
-}
+const keepValue = (value: unknown) =>
+  typeof value === 'number' || typeof value === 'boolean' ? value : typeof value === 'string' ? value.replace(/[^\w .:+-]/g, '').slice(0, 64) : null;
 
 /**
- * A copy of a provider payload that is safe to keep in the callback log: phone numbers, e-mail, names,
- * card details, account numbers, addresses, IPs and tokens are masked (at most the last 2 characters
- * stay); long text is cut; depth and list length are capped.
+ * The part of a provider callback that is safe to keep: a few top-level keys and, under `data`, only
+ * amounts, references, status, type and time. Values are plain numbers or short plain text.
  */
-export function maskPayload(value: unknown, masked = false, depth = 0): unknown {
-  if (depth > 6) return '[cut]';
-  if (Array.isArray(value)) return value.slice(0, 20).map((item) => maskPayload(item, masked, depth + 1));
-  if (value && typeof value === 'object') {
-    const out: Record<string, unknown> = {};
-    for (const [key, item] of Object.entries(value as Record<string, unknown>).slice(0, 60)) {
-      out[key.slice(0, 60)] = maskPayload(item, masked || sensitiveKey(key), depth + 1);
-    }
-    return out;
+export function pickPayload(body: unknown): Record<string, unknown> | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+  const root = body as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of KEEP_TOP) if (key in root) out[key] = keepValue(root[key]);
+  const data = root.data;
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const kept: Record<string, unknown> = {};
+    for (const key of KEEP_DATA) if (key in (data as Record<string, unknown>)) kept[key] = keepValue((data as Record<string, unknown>)[key]);
+    out.data = kept;
   }
-  if (masked) return maskLeaf(value);
-  return typeof value === 'string' ? value.slice(0, 200) : value;
+  return out;
 }
 // END payment-rules
 
 const RATE100 = parseRateHundredths(env('USD_TZS_RATE'));
+const WEBHOOK_MODE = parseWebhookMode(env('FLW_WEBHOOK_MODE'));
+const WEBHOOK_SECRET = WEBHOOK_MODE === 'v3' ? env('FLW_SECRET_HASH') : WEBHOOK_MODE === 'v4' ? env('FLW_WEBHOOK_SIGNING_SECRET') : '';
 const RATE_SOURCE = `env:${env('USD_TZS_RATE_SOURCE').replace(/[^\w .:/()-]/g, '').trim()}`.slice(0, 60);
 
 // Mode guard. A configuration error switches payments off (config answers enabled: false, every other
@@ -306,7 +346,12 @@ const CONFIG_ERROR = (() => {
   if (!PROJECT_REF) return 'SUPABASE_URL has no project ref';
   if (PROJECT_REF === LIVE_PROJECT_REF) return 'test keys in the live project';
   if (!env('FLW_SECRET_KEY').startsWith('FLWSECK_TEST-')) return 'FLW_SECRET_KEY is missing or not a test key';
-  if (env('FLW_SECRET_HASH').length < MIN_WEBHOOK_SECRET_LENGTH) return 'FLW_SECRET_HASH is missing or shorter than 32 characters';
+  if (!WEBHOOK_MODE) return 'FLW_WEBHOOK_MODE must be "v3" or "v4"';
+  if (WEBHOOK_SECRET.length < MIN_WEBHOOK_SECRET_LENGTH) return `${WEBHOOK_MODE === 'v3' ? 'FLW_SECRET_HASH' : 'FLW_WEBHOOK_SIGNING_SECRET'} is missing or shorter than 32 characters`;
+  if (env('FLW_SECRET_HASH') && env('FLW_SECRET_HASH') === env('FLW_WEBHOOK_SIGNING_SECRET')) return 'the v3 and v4 webhook secrets must differ';
+  if (env('PAYMENTS_SWEEP_SECRET').length < 32) return 'PAYMENTS_SWEEP_SECRET is missing or shorter than 32 characters';
+  if (!/^(https:\/\/[a-z0-9.-]+|http:\/\/localhost(:\d{2,5})?)$/i.test(SITE_URL)) return 'SITE_URL is missing or not https (or http://localhost)';
+  if (SITE_URL === 'https://kwetuly.com' || SITE_URL === 'https://www.kwetuly.com') return 'SITE_URL is the live site; use the test site';
   if (RATE100 === null) return 'USD_TZS_RATE is missing or not a plain rate';
   if (RATE_SOURCE.length <= 'env:'.length + 2) return 'USD_TZS_RATE_SOURCE is missing';
   return '';
@@ -338,6 +383,8 @@ const SWEEP_BATCH = 25;
 const SWEEP_FAILED_BATCH = 10;
 
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
+// Error the database deposit guard raises (private.guard_new_payment): mapped to 'no_deposit'.
+const DEPOSIT_GUARD = { code: 'P0001', hint: 'kwetuly_deposit_guard' };
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -393,15 +440,19 @@ type Admin = ReturnType<typeof admin>;
 type Source = 'checkout' | 'payer_check' | 'webhook' | 'sweeper';
 
 class DbError extends Error {
-  constructor(message: string, readonly code: string) {
+  constructor(message: string, readonly code: string, readonly constraint = '') {
     super(message);
   }
 }
+// The unique index a 23505 came from (security-reviewer L5), read from Postgres' message text.
+const constraintOf = (error: { message?: string; details?: string } | null) =>
+  /unique constraint "([a-z0-9_]+)"/.exec(`${error?.message ?? ''} ${error?.details ?? ''}`)?.[1] ?? '';
+const ONE_PAID_INDEXES = ['payments_one_paid_offer', 'payments_one_paid_member'];
 
 // Conditional change: only from `from`, so a repeated or parallel check never changes a row twice.
 async function setStatus(db: Admin, id: string, from: string, patch: Record<string, unknown>, source: Source) {
   const { data, error } = await db.from('payments').update({ ...patch, status_source: source }).eq('id', id).eq('status', from).select('id');
-  if (error) throw new DbError(`Deposit ${id}: status update failed (${error.code})`, error.code ?? '');
+  if (error) throw new DbError(`Deposit ${id}: status update failed (${error.code})`, error.code ?? '', constraintOf(error));
   return (data?.length ?? 0) > 0;
 }
 
@@ -460,8 +511,13 @@ async function otherPaid(db: Admin, payment: PaymentTarget & { id: string }) {
 }
 
 // Flutterwave's own answer for an order: by transaction id when a signed webhook or an earlier check gave
-// one, otherwise by our reference (tx_ref).
-async function verifyAtProvider(orderId: string, transactionId: string | null): Promise<{ tx: ProviderTx; data: Record<string, unknown> | null }> {
+// one, otherwise by our reference (tx_ref). The hosted page allows several attempts under one tx_ref, and
+// verify-by-reference may answer with one of them only (security-reviewer M4): when that answer is not
+// successful, every attempt on the order is listed and a successful one is used. If the list cannot be
+// read, `attemptsUnclear` makes an order that would be given up on go to 'review' instead.
+type Verified = { tx: ProviderTx; data: Record<string, unknown> | null; attemptsUnclear: boolean };
+
+async function verifyAtProvider(orderId: string, transactionId: string | null): Promise<Verified> {
   const read = (data: Record<string, unknown>): ProviderTx => ({
     found: true,
     status: data.status,
@@ -470,38 +526,87 @@ async function verifyAtProvider(orderId: string, transactionId: string | null): 
     chargedAmount: data.charged_amount,
     currency: data.currency,
   });
+  const successful = (data: Record<string, unknown>) => typeof data.status === 'string' && data.status.toLowerCase() === 'successful';
   try {
     if (transactionId) {
       const data = await flw(`/transactions/${transactionId}/verify`, 'GET');
-      if (data.tx_ref === orderId) return { tx: read(data), data };
+      if (data.tx_ref === orderId) return { tx: read(data), data, attemptsUnclear: false };
       console.error(`Deposit ${orderId}: transaction id belongs to another reference; checking by reference`);
     }
     const data = await flw(`/transactions/verify_by_reference?tx_ref=${encodeURIComponent(orderId)}`, 'GET');
-    return { tx: read(data), data };
+    if (successful(data)) return { tx: read(data), data, attemptsUnclear: false };
+    try {
+      // All attempts on this order (endpoint and filter to confirm in the sandbox).
+      const list = await flw(`/transactions?tx_ref=${encodeURIComponent(orderId)}`, 'GET');
+      const id = successfulAttemptId(list, orderId);
+      if (id) {
+        const paid = await flw(`/transactions/${id}/verify`, 'GET');
+        if (paid.tx_ref === orderId) return { tx: read(paid), data: paid, attemptsUnclear: false };
+      }
+      return { tx: read(data), data, attemptsUnclear: false };
+    } catch (err) {
+      console.error(`Deposit ${orderId}: attempts could not be listed (${err instanceof FlwError ? `HTTP ${err.http}` : 'error'})`);
+      return { tx: read(data), data, attemptsUnclear: true };
+    }
   } catch (err) {
-    if (err instanceof FlwError && err.notFound) return { tx: { found: false }, data: null };
+    if (err instanceof FlwError && err.notFound) return { tx: { found: false }, data: null, attemptsUnclear: false };
     throw err;
   }
 }
 
-// What Flutterwave reported, saved with a paid or review status. Exact decimals, no floats.
-function settledFields(data: Record<string, unknown> | null) {
+// What Flutterwave reported, saved on the payment row with a paid or review status (payer, payee and
+// admins can read these). Exact whole shillings, no floats.
+function settledFields(data: Record<string, unknown> | null): Record<string, unknown> {
   if (!data) return {};
-  const currency = parseCurrency(data.currency);
-  const fee = parseMoney2(data.app_fee);
-  const settledAmount = parseMoney2(data.amount_settled);
   const id = data.id;
   return {
     provider_amount: parseWholeTzs(data.amount),
     provider_reference: plain(data.flw_ref, 80),
     provider_channel: plain(data.payment_type, 40),
     provider_transaction_id: (typeof id === 'number' && Number.isSafeInteger(id)) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null,
+  };
+}
+
+// The provider's fee and settled amount: admins only (payment_provider_details, security-reviewer L6).
+async function saveProviderDetails(db: Admin, paymentId: string, data: Record<string, unknown> | null) {
+  if (!data) return;
+  const currency = parseCurrency(data.currency);
+  const fee = parseMoney2(data.app_fee);
+  const settledAmount = parseMoney2(data.amount_settled);
+  const { error } = await db.from('payment_provider_details').upsert({
+    payment_id: paymentId,
     provider_fee: fee,
     provider_fee_currency: fee === null ? null : currency,
-    // Settlement currency is assumed to be the charge currency (TZS); to verify in the sandbox.
+    // Settlement currency assumed to be the charge currency (TZS); to verify in the sandbox.
     provider_settled_amount: settledAmount,
     provider_settled_currency: settledAmount === null ? null : currency,
-  };
+    updated_at: new Date().toISOString(),
+  });
+  if (error) console.error(`Deposit ${paymentId}: provider details not saved (${error.code})`);
+}
+
+const withoutTxId = (patch: Record<string, unknown>) => Object.fromEntries(Object.entries(patch).filter(([key]) => key !== 'provider_transaction_id'));
+
+// moveStatus with the unique indexes handled one by one (security-reviewer L5):
+//   payments_one_paid_offer / _member: another order for this deposit is already paid: 'review' (paid_twice);
+//   payments_provider_tx_unique: this Flutterwave transaction is already on another order: 'review'
+//   without the transaction id (duplicate_transaction), so a retry does not hit the same index again.
+async function moveChecked(db: Admin, id: string, from: string, patch: Record<string, unknown>, source: Source, completed?: Record<string, unknown>): Promise<string> {
+  try {
+    return await moveStatus(db, id, from, patch, source, completed);
+  } catch (err) {
+    if (!(err instanceof DbError) || err.code !== '23505') throw err;
+    if (err.constraint === 'payments_provider_tx_unique') {
+      console.error(`Deposit ${id}: provider transaction already recorded on another order; held for review`);
+      const review = { ...withoutTxId(patch), status: 'review', status_reason: 'duplicate_transaction', paid_at: null };
+      return moveStatus(db, id, from, review, source, completed ? withoutTxId(completed) : undefined);
+    }
+    if (patch.status === 'paid' && ONE_PAID_INDEXES.includes(err.constraint)) {
+      console.error(`Deposit ${id}: second paid order for the same deposit; held for review`);
+      return moveStatus(db, id, from, { ...patch, status: 'review', status_reason: 'paid_twice', paid_at: null }, source, completed);
+    }
+    throw err;
+  }
 }
 
 type Claim = { column: 'last_checked_at' | 'payer_checked_at'; ms: number };
@@ -537,7 +642,7 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     if (!claimed?.length) return stored;
   }
 
-  let verified: Awaited<ReturnType<typeof verifyAtProvider>>;
+  let verified: Verified;
   try {
     verified = await verifyAtProvider(orderId, opts.transactionId ?? payment.provider_transaction_id ?? null);
   } catch (err) {
@@ -552,7 +657,15 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     throw err;
   }
 
-  const decision = decideDeposit({ stored: payment.status, orderId, amountTzs: payment.amount_tzs, ageMs: age, tx: verified.tx, limits: LIMITS });
+  const decision = decideDeposit({
+    stored: payment.status,
+    orderId,
+    amountTzs: Number(payment.amount_tzs),
+    ageMs: age,
+    tx: verified.tx,
+    limits: LIMITS,
+    attemptsUnclear: verified.attemptsUnclear,
+  });
   if (decision.reason === 'reference_mismatch') {
     console.error(`Deposit ${orderId}: Flutterwave answered for another reference; nothing changed`);
     return stored;
@@ -563,7 +676,9 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
   if (payment.status === 'failed') {
     if (decision.status !== 'review') return stored;
     console.error(`Deposit ${orderId}: paid at Flutterwave after it was marked failed; held for review`);
-    return { status: await moveStatus(db, payment.id, 'failed', { ...settled, status: 'review', status_reason: decision.reason }, opts.source) };
+    const now = await moveChecked(db, payment.id, 'failed', { ...settled, status: 'review', status_reason: decision.reason }, opts.source);
+    await saveProviderDetails(db, payment.id, verified.data);
+    return { status: now };
   }
 
   let { status, reason }: { status: string; reason: string } = decision;
@@ -584,14 +699,9 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     status_reason: reason,
     paid_at: status === 'paid' ? new Date().toISOString() : null,
   };
-  try {
-    return { status: await moveStatus(db, payment.id, 'pending', patch, opts.source, completed) };
-  } catch (err) {
-    // 23505 on 'paid': a parallel check marked another order for this deposit paid a moment ago.
-    if (status !== 'paid' || !(err instanceof DbError) || err.code !== '23505') throw err;
-    console.error(`Deposit ${orderId}: second paid order for the same deposit; held for review`);
-    return { status: await moveStatus(db, payment.id, 'pending', { ...patch, status: 'review', status_reason: 'paid_twice', paid_at: null }, opts.source, completed) };
-  }
+  const now = await moveChecked(db, payment.id, 'pending', patch, opts.source, completed);
+  if (completed) await saveProviderDetails(db, payment.id, verified.data);
+  return { status: now };
 }
 
 // ---------------------------------------------------------------------------
@@ -658,50 +768,96 @@ async function sweep(db: Admin) {
 // Checkout
 // ---------------------------------------------------------------------------
 // Amounts in whole US cents, so nothing is rounded before the shillings are worked out.
-type Order = { payee: string; description: string; cents: number; offerId?: string; memberId?: string };
+// cutoffAt: when (ms since 1970) the last day to start this deposit ends, at midnight Tanzania time, or
+// null when no date limits it (undated offer without valid_until). The hosted page closes by then.
+type Order = { payee: string; description: string; cents: number; offerId?: string; memberId?: string; cutoffAt: number | null };
 
-// Deposits go only to approved guides (offering as themselves) or to owners of an approved,
-// non-sample business listing.
+// The last day a new deposit can be started is this many days before the trip's start date (Tanzania
+// date): only if start_date >= today + 8. So no deposit is taken inside the 7-day no-refund window
+// (Walter, 2026-11-07). Same number as c_last_day_before_start in private.guard_new_payment(); change both.
+const DEPOSIT_LAST_DAY_BEFORE_START = 8;
+// The date in Tanzania (UTC+3 all year) `days` from today, e.g. "2026-11-30".
+const tanzaniaDate = (days = 0) => new Date(Date.now() + 3 * 3600_000 + days * 24 * 3600_000).toISOString().slice(0, 10);
+// Midnight in Tanzania at the start of `date` + `days`, in ms since 1970.
+const tanzaniaMidnight = (date: string, days: number) => Date.parse(`${date}T00:00:00+03:00`) + days * 24 * 3600_000;
+// The last day to start a deposit is start_date - 8, so it ends at midnight starting start_date - 7.
+const startCutoff = (startDate: string) => tanzaniaMidnight(startDate, 1 - DEPOSIT_LAST_DAY_BEFORE_START);
+// A hosted page never gets less than this; closer to the cut-off no new order is made ('no_deposit').
+const MIN_SESSION_MINUTES = 5;
+// Page lifetime in whole minutes: 60, or less so the page closes before the cut-off. null: too close.
+function sessionMinutes(cutoffAt: number | null) {
+  if (cutoffAt === null) return SESSION_MINUTES;
+  const left = Math.floor((cutoffAt - Date.now()) / 60_000);
+  if (left < MIN_SESSION_MINUTES) return null;
+  return Math.min(SESSION_MINUTES, left);
+}
+
+// Deposits go only to approved, real (not sample) guides offering as themselves, or to owners of an
+// approved, non-sample business listing. Same test as private.guard_new_payment().
 async function offererApproved(db: Admin, userId: string, guideId: string | null) {
   if (guideId) {
-    const { data } = await db.from('guides').select('id').eq('id', guideId).eq('owner_id', userId).eq('verification_status', 'approved').maybeSingle();
+    const { data } = await db
+      .from('guides')
+      .select('id')
+      .eq('id', guideId)
+      .eq('owner_id', userId)
+      .eq('verification_status', 'approved')
+      .eq('is_sample', false)
+      .maybeSingle();
     return Boolean(data);
   }
   const { data } = await db.from('providers').select('id').eq('owner_id', userId).eq('verification_status', 'approved').eq('is_sample', false).limit(1);
   return (data ?? []).length > 0;
 }
 
+// Same rules as private.guard_new_payment() (security-reviewer M1), so `check` hides the Pay box and
+// checkout refuses before anything is saved; the database refuses again if this code is ever skipped.
 async function loadOrder(db: Admin, userId: string, kind: string, id: string): Promise<Order | string> {
+  const earliestStart = tanzaniaDate(DEPOSIT_LAST_DAY_BEFORE_START);
   if (kind === 'offer') {
     const { data: offer } = await db
       .from('trip_offers')
-      .select('id, status, offered_by, guide_id, price_total_usd, deposit_percent, trip_requests!inner(traveler_id, title)')
+      .select('id, status, offered_by, guide_id, price_total_usd, deposit_percent, valid_until, trip_requests!inner(traveler_id, title, status, start_date, flexible_dates)')
       .eq('id', id)
       .maybeSingle();
-    const request = offer?.trip_requests as unknown as { traveler_id: string; title: string } | undefined;
+    const request = offer?.trip_requests as unknown as
+      | { traveler_id: string; title: string; status: string; start_date: string | null; flexible_dates: boolean }
+      | undefined;
     if (!offer || request?.traveler_id !== userId) return 'not_found';
     if (offer.status !== 'accepted') return 'not_accepted';
     if (!offer.deposit_percent) return 'no_deposit';
+    // A closed request takes no deposit ('booked', the normal state after accepting, stays payable).
+    if (request.status === 'closed') return 'no_deposit';
+    // A dated request: only if it starts on or after today + 8 days (Tanzania date); started trips too.
+    if (request.start_date && request.start_date < earliestStart) return 'no_deposit';
+    // Flexible or no dates: only until the offer's valid_until (inclusive), if the guide set one.
+    if ((request.flexible_dates || !request.start_date) && offer.valid_until && offer.valid_until < tanzaniaDate()) return 'no_deposit';
     if (!(await offererApproved(db, offer.offered_by, offer.guide_id))) return 'not_approved';
+    const cutoffs = [
+      ...(request.start_date ? [startCutoff(request.start_date)] : []),
+      ...((request.flexible_dates || !request.start_date) && offer.valid_until ? [tanzaniaMidnight(offer.valid_until, 1)] : []),
+    ];
     return {
       payee: offer.offered_by,
       description: `Deposit: ${request.title}`.slice(0, 200),
       cents: offer.price_total_usd * offer.deposit_percent, // whole dollars x percent = cents
       offerId: offer.id,
+      cutoffAt: cutoffs.length ? Math.min(...cutoffs) : null,
     };
   }
   if (kind === 'group') {
     const { data: member } = await db
       .from('group_trip_members')
-      .select('id, status, seats, traveler_id, price_per_person_usd, group_trips!inner(organizer_id, guide_id, organizer_kind, status, cancelled, title, deposit_percent)')
+      .select('id, status, seats, traveler_id, price_per_person_usd, group_trips!inner(organizer_id, guide_id, organizer_kind, status, cancelled, start_date, title, deposit_percent)')
       .eq('id', id)
       .maybeSingle();
     const trip = member?.group_trips as unknown as
-      | { organizer_id: string; guide_id: string | null; organizer_kind: string; status: string; cancelled: boolean; title: string; deposit_percent: number }
+      | { organizer_id: string; guide_id: string | null; organizer_kind: string; status: string; cancelled: boolean; start_date: string; title: string; deposit_percent: number }
       | undefined;
     if (!member || member.traveler_id !== userId || !trip) return 'not_found';
     if (member.status !== 'accepted') return 'not_accepted';
     if (trip.status !== 'approved' || trip.cancelled || trip.organizer_kind === 'traveller') return 'no_deposit';
+    if (trip.start_date < earliestStart) return 'no_deposit';
     // Charge the price saved on the member row when they were accepted, not today's price.
     const price = member.price_per_person_usd as number | null;
     if (!trip.deposit_percent || !price) return 'no_deposit';
@@ -711,6 +867,7 @@ async function loadOrder(db: Admin, userId: string, kind: string, id: string): P
       description: `Deposit: ${trip.title} (${member.seats})`.slice(0, 200),
       cents: price * member.seats * trip.deposit_percent,
       memberId: member.id,
+      cutoffAt: startCutoff(trip.start_date),
     };
   }
   return 'bad_request';
@@ -735,6 +892,9 @@ async function check(db: Admin, userId: string, kind: string, id: string) {
 async function checkout(db: Admin, user: { id: string; email?: string }, body: Record<string, unknown>) {
   const order = await loadOrder(db, user.id, str(body.kind), str(body.id));
   if (typeof order === 'string') return json({ error: order }, order === 'not_found' ? 404 : 400);
+  // The hosted page must close before the last day to start this deposit ends: 60 minutes, or less.
+  const session = sessionMinutes(order.cutoffAt);
+  if (session === null) return json({ error: 'no_deposit' }, 400);
   const target = order.offerId ? 'trip_offer_id' : 'group_member_id';
   const targetId = (order.offerId ?? order.memberId)!;
 
@@ -825,6 +985,12 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
     .single();
   if (error || !inserted) {
     if (error?.code === '23505') return json({ error: 'pending_order' }, 409);
+    // private.guard_new_payment refused it (trip within 8 days or started, request closed, offer
+    // expired, payee not approved, amount mismatch, already paid or in review). Only that is 'no_deposit'.
+    if (error?.code === DEPOSIT_GUARD.code && error.hint === DEPOSIT_GUARD.hint) {
+      const now = await settledError(db, order);
+      return now ? json({ error: now }, 409) : json({ error: 'no_deposit' }, 400);
+    }
     console.error(`Deposit ${orderId}: insert failed (${error?.code ?? 'no row'})`);
     return json({ error: 'save_failed' }, 500);
   }
@@ -848,7 +1014,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
       },
       customizations: { title: 'Kwetuly deposit', description: cleanText(order.description, 100, 'Kwetuly deposit') },
       meta: { kind: order.offerId ? 'offer_deposit' : 'group_deposit' },
-      configurations: { session_duration: SESSION_MINUTES, max_retry_attempt: 5 },
+      configurations: { session_duration: session, max_retry_attempt: 5 },
     });
     const url = data.link;
     if (!isAllowedPaymentUrl(url)) throw new Error('Payment page not allowed');
@@ -869,7 +1035,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
 // Webhook
 // ---------------------------------------------------------------------------
 async function webhook(db: Admin, raw: string, signature: string | null, verifHash: string | null) {
-  const valid = await verifyFlutterwaveWebhook(raw, { signature, verifHash }, env('FLW_SECRET_HASH'));
+  const valid = await verifyFlutterwaveWebhook(raw, { signature, verifHash }, { mode: WEBHOOK_MODE, secret: WEBHOOK_SECRET });
   let parsed: unknown = null;
   try {
     parsed = JSON.parse(raw);
@@ -880,11 +1046,15 @@ async function webhook(db: Admin, raw: string, signature: string | null, verifHa
   const base = { provider: 'flutterwave', event_type: ref.eventType, tx_ref: ref.txRef, provider_transaction_id: ref.transactionId };
 
   if (!valid) {
-    // Logged only when it names one of our orders (ids are unguessable), so random traffic cannot fill
-    // the log. No body is kept for an unsigned call.
+    // Logged only when it names one of our orders, and at most once per order per hour (M3), so a
+    // script cannot fill the log. No body is kept for an unsigned call.
     if (ref.txRef) {
       const { data: known } = await db.from('payments').select('id').eq('order_id', ref.txRef).maybeSingle();
-      if (known) await db.from('payment_events').insert({ ...base, event_key: `invalid:${crypto.randomUUID()}`, signature_valid: false });
+      if (known) {
+        await db
+          .from('payment_events')
+          .upsert({ ...base, event_key: invalidEventKey(ref.txRef, Date.now()), signature_valid: false }, { onConflict: 'provider,event_key', ignoreDuplicates: true });
+      }
     }
     console.error('payments webhook: signature missing or wrong; refused');
     return json({ error: 'signature' }, 401);
@@ -893,7 +1063,7 @@ async function webhook(db: Admin, raw: string, signature: string | null, verifHa
   const eventKey = ref.eventKey ?? `nokey:${crypto.randomUUID()}`;
   const { error: logError } = await db
     .from('payment_events')
-    .upsert({ ...base, event_key: eventKey, signature_valid: true, payload: maskPayload(parsed) }, { onConflict: 'provider,event_key', ignoreDuplicates: true });
+    .upsert({ ...base, event_key: eventKey, signature_valid: true, payload: pickPayload(parsed) }, { onConflict: 'provider,event_key', ignoreDuplicates: true });
   if (logError) console.error(`payments webhook: log failed (${logError.code})`);
 
   if (!ref.txRef) return json({ ok: true });
