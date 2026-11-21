@@ -597,6 +597,8 @@ export const de: Dictionary = {
     phoneRequired: 'Bitte zuerst Ihre Telefonnummer im Konto ergänzen.',
     error: 'Online-Zahlung ist gerade nicht verfügbar. Bitte später erneut versuchen.',
     returnTitle: 'Zahlung',
+    notFound: 'Wir konnten diese Zahlung nicht finden. Wenn Sie gerade bezahlt haben, öffnen Sie Ihre Reisen, um den Stand zu sehen.',
+    myTrips: 'Meine Reisen',
     checkAgain: 'Erneut prüfen',
     back: 'Zurück',
     direct: 'Den Rest zahlen Sie wie vereinbart direkt an Ihren Guide.',

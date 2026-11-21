@@ -592,6 +592,8 @@ export const zh: Dictionary = {
     phoneRequired: '请先在账户中添加您的电话号码。',
     error: '在线支付暂时不可用，请稍后再试。',
     returnTitle: '付款',
+    notFound: '我们找不到这笔付款。如果您刚刚付款，请打开您的行程查看状态。',
+    myTrips: '我的行程',
     checkAgain: '再次查询',
     back: '返回',
     direct: '余款按与导游的约定直接支付。',

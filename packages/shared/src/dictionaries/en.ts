@@ -776,6 +776,8 @@ export const en = {
     phoneRequired: 'Add your phone number in your account first.',
     error: 'Online payment is not available right now. Please try again later.',
     returnTitle: 'Payment',
+    notFound: 'We could not find this payment. If you have just paid, open your trips to see its status.',
+    myTrips: 'My trips',
     checkAgain: 'Check again',
     back: 'Back',
     direct: 'Pay the rest directly as agreed with your guide.',

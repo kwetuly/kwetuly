@@ -597,6 +597,8 @@ export const pl: Dictionary = {
     phoneRequired: 'Najpierw dodaj numer telefonu w swoim koncie.',
     error: 'Płatność online jest teraz niedostępna. Spróbuj później.',
     returnTitle: 'Płatność',
+    notFound: 'Nie znaleźliśmy tej płatności. Jeśli właśnie zapłaciłeś, otwórz swoje podróże, aby zobaczyć jej status.',
+    myTrips: 'Moje podróże',
     checkAgain: 'Sprawdź ponownie',
     back: 'Wróć',
     direct: 'Resztę zapłać bezpośrednio, jak ustalono z przewodnikiem.',

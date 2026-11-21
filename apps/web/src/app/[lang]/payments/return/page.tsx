@@ -4,12 +4,16 @@ import { Suspense } from 'react';
 import { CheckCircle2, Clock, SearchCheck, XCircle } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { requireUser } from '@/lib/auth';
+import { getCurrentUser, requireUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { isOrderId } from '@kwetuly/shared';
 import { callPayments } from '@/lib/payments';
 import { createClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'Payment', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.payments.returnTitle, robots: { index: false } };
+}
 
 // The processor sends the traveller back here (Flutterwave adds status, tx_ref and transaction_id to
 // the address). Nothing in the address is trusted: the server asks the processor for the real result.
@@ -25,12 +29,16 @@ export default async function PaymentReturnPage({ searchParams }: PageProps<'/[l
 }
 
 async function Result({ searchParams, t, locale }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary; locale: Locale }) {
-  await requireUser(locale);
   const params = await searchParams;
   // Our own `order`, or the processor's echo of it (Flutterwave: `tx_ref`, the same id). Only used to look up the payer's own row.
   const pick = (v: string | string[] | undefined) => (typeof v === 'string' ? v.slice(0, 35) : '');
   const candidate = [pick(params.order), pick(params.tx_ref)].find((v) => isOrderId(v));
   const orderId = candidate ?? null;
+  // Signed out (e.g. the phone opened the return link in another browser): come back here after sign-in.
+  // Only a well-formed order id is carried over, so the address stays a plain local path.
+  const here = `/${locale}/payments/return${orderId ? `?order=${orderId}` : ''}`;
+  if (!(await getCurrentUser())) redirect(`/${locale}/login?next=${encodeURIComponent(here)}`);
+  await requireUser(locale, here);
   const p = t.payments;
 
   const supabase = await createClient();
@@ -52,7 +60,12 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
       : Promise.resolve({ data: null }),
   ]);
   if (!orderId || !payment) {
-    return <p className="card">{p.error}</p>;
+    return (
+      <div className="card space-y-4 text-center">
+        <p>{orderId ? p.notFound : p.error}</p>
+        <Link href={`/${locale}/dashboard`} className="btn">{p.myTrips}</Link>
+      </div>
+    );
   }
 
   let state = payment.status;

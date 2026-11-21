@@ -778,6 +778,8 @@ export const sw: Dictionary = {
     phoneRequired: 'Kwanza ongeza namba yako ya simu kwenye akaunti.',
     error: 'Malipo ya mtandaoni hayapatikani sasa. Jaribu tena baadaye.',
     returnTitle: 'Malipo',
+    notFound: 'Hatukuweza kupata malipo haya. Kama umelipa sasa hivi, fungua safari zako kuona hali yake.',
+    myTrips: 'Safari zangu',
     checkAgain: 'Angalia tena',
     back: 'Rudi',
     direct: 'Lipa kiasi kilichobaki moja kwa moja kama mlivyokubaliana na mwongozaji.',
