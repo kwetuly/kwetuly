@@ -301,3 +301,197 @@ For legal (to add to the advocate memo):
 - Holding crew NIDA numbers and images: the same questions as in the guide checks memo.
 - Which pay floor applies per day to porters and cooks (the legal note has only secondary sources), so `pay_floors` can be filled.
 - Whether a crew member's public "trip record" counts as a reference that creates liability for Kwetuly.
+
+---
+
+## Addendum 2026-11-21: paid verification
+
+Step 1 of `docs/team/plan-paid-verification-2026-11-21.md` ("PV" below), written by `tech-lead`. Built on "Walter's answers (2026-11-21)" in `docs/team/decisions-2026-11-21.md`, GC sections 1-3, and the migrations up to `20261108000000`. **Paper only:** no migration, no code, no amount. Where this addendum and sections 2.1-2.7 above disagree, this addendum wins.
+
+What changes in the design above:
+- 2.3: crew now pay their own verification (Walter, answer 6). `check_orders` and the "payer is never the crew member" trigger are dropped.
+- 2.1 and fact 6: a crew row may still exist without an account (team lists, `trip_crew`), but **only a person with their own account can be verified**, because only they can pay (PV fact 6).
+- 2.5: the review window is 30 days, not 14 (A.7).
+- 2.3: the GC tables are not copied per subject. They become tables about the **person** (the account), with the business as a second subject only for business papers (A.1).
+
+Facts from the migrations that shape this:
+1. `public.user_role` is `traveler, provider, investor, admin, guide`. `complete_onboarding` (latest in `20261025000000`) accepts `traveler, guide, provider` once; `handle_new_user` accepts a metadata role from `traveler, provider, investor, guide`. Only trusted sessions change `profiles.role` (`guard_profile_role`).
+2. `guides.owner_id` is unique; `providers.owner_id` is not (one owner, several businesses).
+3. `private.is_verified_guide()` today means "approved guide" and gates jobs and the Guide Hub. The word "verified" is about to mean "documents current and paid", so this helper is renamed in D (A.5) to avoid a silent change of meaning.
+4. No GC table, `live_until` or `tz_today` exists yet in any migration. Migration A is the first.
+5. The `verification` bucket is private, 15 MB, own-folder insert for onboarded users, own read and delete.
+6. `site_settings` is readable by anyone and written by admins; `badge_fee` is `{"amount_usd": null}`.
+7. `payments.kind` allows only `offer_deposit` and `group_deposit`; rows come only from Edge Functions.
+8. `can_review_guide` has no time window; `conversations` has no `contact_unlocked_at`, only the boolean.
+
+### A.1 Person documents and identifiers
+
+**Subject.** Every document belongs to a person: `user_id uuid not null` (fk `profiles` on delete cascade). Business papers also carry `provider_id uuid` (fk `providers` on delete cascade), required for the business kinds and forbidden for the others (check constraint). Reason for leaving PV 3.2's "exactly one of guide_id, crew_member_id, provider_id": a NIDA card, a passport and a driving licence belong to the human, not to one of their profiles. A porter who later becomes a guide (C7), or a guide who also owns a lodge, is checked once and every profile reuses that check. It also means migration A does not depend on `crew_members` (migration B).
+
+**Kinds**, enum `public.person_document_kind`: `identity` (NIDA), `passport`, `guide_licence`, `first_aid`, `wfr`, `driving_licence`, `business_licence`, `tin_certificate`, `operator_licence`, `other` (with a title). No kind for papers nobody has confirmed (porter cards, food-handler certificates): those stay `other` until legal names them. Business kinds: `business_licence`, `tin_certificate`, `operator_licence`.
+
+Dated kinds (`valid_until` required on the check): `passport`, `guide_licence`, `first_aid`, `wfr`, `driving_licence`, `business_licence`, `operator_licence`. Undated: `identity`, `tin_certificate`, `other` (optional date).
+
+`public.person_documents` (uploads; the owner writes, admins review)
+
+| Column | Notes |
+| --- | --- |
+| id uuid pk | also the file name in storage |
+| user_id, provider_id | as above |
+| kind, title | title 2-80 characters, only for `other` |
+| path text not null | `verification/{user_id}/{id}.{ext}`; the guard checks the first folder is `user_id` and the object exists |
+| stated_valid_until date null | what the person typed; the admin confirms the real date on the check |
+| uploaded_at timestamptz | forced to `now()` for untrusted sessions |
+| review_state | enum `document_review_state`: `waiting`, `accepted`, `rejected`, `withdrawn` (by the owner before review) |
+| review_reason | null, or one of a fixed list (check): `unreadable`, `name_mismatch`, `expired`, `wrong_document`, `not_complete`, `other`. Required when `rejected` |
+| review_note text null | up to 300 characters, shown to the owner. Masked like messages (no digit runs, so no ID number can be typed into it) |
+| reviewed_at timestamptz null | |
+| removed_at timestamptz null | the file was deleted under the retention rule; the row and dates stay |
+
+The reviewer is **not** a column here. Every review writes a `person_check_log` row with the actor, so the owner never reads an admin's id.
+
+`public.person_document_checks` (what Kwetuly looked at; admins only write): GC 1b with `user_id`, `provider_id`, `kind`, `title`, `document_id` (fk on delete set null), `method` (`nida_card`, `nida_number`, `passport_page`, `passport_number`; required for `identity` and `passport`, null otherwise), `checked_at`, `valid_until`, `ended_at`, `end_reason` (`renewed`, `withdrawn`), `reminder_sent_at`, `expired_notice_at`. One current row per (subject, kind), or per (subject, lower(title)) for `other`, by partial unique indexes. The insert trigger refuses an already expired `valid_until` and ends the previous current row. Accepting a document and creating its check happen in one admin action, so a document is never `accepted` without a check.
+
+`public.person_check_log` (audit; admins read, triggers write): `id, user_id, provider_id, document_id, check_id, action` (`uploaded`, `accepted`, `rejected`, `withdrawn`, `checked`, `check_ended`, `identifier_set`, `identifier_viewed`, `sample_set`, `sample_cleared`), `actor`, `reason`, `field` (for identifiers: which one, never the value), `created_at`.
+
+`public.person_identifiers` (one row per person, `user_id` pk)
+
+| Column | Notes |
+| --- | --- |
+| nida_cipher bytea, nida_last3 text, nida_hmac bytea | |
+| passport_cipher bytea, passport_last3 text, passport_hmac bytea | |
+| passport_country char(2) | ISO 3166 code, not secret |
+| passport_valid_until date | not secret; mirrored on the passport check |
+| tin_cipher bytea, tin_last3 text | the person's own TIN (guides, for payouts later) |
+| key_version smallint not null | for key rotation |
+| updated_at | |
+
+`public.business_identifiers` (`provider_id` pk): `tin_cipher`, `tin_last3`, `key_version`, `updated_at`. A company TIN is less private than a person's, but it is treated the same way.
+
+**Encryption** (Walter's instruction, replacing GC 1f's "later"):
+- AES-256-GCM in server code only (web server action, or the Edge Function for the app). The key is a server secret (`IDENTIFIER_KEY_V1`) in `.env.local` locally and the hosting secret store in production; a second key (`IDENTIFIER_HMAC_KEY`) makes the `_hmac` columns, so an admin can be told "this NIDA is already on another account" without decrypting. Neither key is ever in the database, the app bundle, or Vault.
+- The database never sees the number in clear, so format checks (NIDA 20 digits, passport 6-12 letters and digits, TIN 9-10 digits; all still to be confirmed) live in `packages/shared` and run in the server code. The database checks only shapes: `*_last3 ~ '^[0-9A-Z]{3}$'`, cipher and hmac set together.
+- `_hmac` has a plain index, **not** a unique index: a unique error would let anyone test whether a number is registered. Duplicates show as a flag in the admin queue.
+- Client roles have **no** insert, update or select grant on either identifiers table. Writes come only from the server code with the service role, after it has checked the session. The owner reads `public.my_identifiers()` (last 3 digits, passport country and date). Admins read `public.admin_identifiers_masked(user)`. A full read is one server action that decrypts, shows the value once and logs `identifier_viewed`.
+- Losing the key loses every number. Walter keeps a copy in his password manager; rotation re-encrypts row by row by `key_version`.
+
+**Files.** The private `verification` bucket as today. Admins open a file through a signed link made on the server for 60 seconds, per click, never stored, never in a notice, log or URL we control. A client-side step strips photo metadata (location) before upload. Deleting the account removes rows by cascade, and the existing bucket cleanup removes the files.
+
+**Who sends what** (PV 3.1; legal confirms before anything is required): NIDA for every Tanzanian; driving licence for drivers and for guides who drive guests; guide licence and first aid or WFR for guides; business licence and TIN certificate for businesses, plus the operator licence for tour operators. Passport: only for non-Tanzanian business owners until Walter answers PV decision 6 and the advocate answers on non-citizen crew and guides. The tables accept a passport from anyone; only the requirement rules in A.3 decide whether it counts.
+
+### A.2 The crew account type
+
+- `crew` is added to `public.user_role`. Account types the server knows: `traveler`, `crew`, `guide`, `provider` (business), `admin` (and `investor`, unused).
+- `complete_onboarding(p_role, p_phone, p_full_name, p_invite_code, p_crew_roles job_role[] default null)`: for `crew`, at least one of `porter`, `cook`, `driver`, `assistant_guide`. It creates the `crew_members` row (section 2.1) with `owner_id = auth.uid()`, `consent_status = 'confirmed'`, `consent_method = 'own_account'`. `handle_new_user` does **not** accept `crew` from sign-up metadata, so the role is chosen only on the welcome step.
+- `crew_members.roles` is the set of roles the person works in (one to four). `other` stays allowed for team lists but has no price and cannot be verified.
+- **One person, two crew roles** (porter and cook): one crew row, both roles, **one subscription** at the price of the highest-ranked role they want verified (PV decision 10). The subscription records `covers_rank`; a role counts as paid when its rank is at or below `covers_rank`. Each role still needs its own documents (a driver also needs a current driving licence). Adding a higher role mid-period: the higher role shows "checked, not paid" until the person renews at the higher price. Early renewal starts the day after the current `paid_until`. There is no credit or pro-rating, so Kwetuly never holds stored value (Bank of Tanzania rule).
+- **One person, crew and guide** (C7): the guide subscription covers the person's crew roles too, since guide ranks above every crew role (proposal). A business is separate: one subscription per business listing.
+- Adding a second profile: a crew account may add a guide profile (the C7 path). A traveller account may **not** add a crew profile; it needs a new account or an admin. This keeps the traveller and crew sides apart (proposal for Walter, A.8).
+- `profiles.role` decides the default screens. The server decides features from the rows a person owns (A.5), never from which profile the app has switched on.
+
+### A.3 How "verified" is worked out
+
+For each profile (a guide row, a crew role, a business row):
+
+```
+documents_until = date until which every required check for that profile is current, null if one is missing
+paid_until      = latest end date of the profile's paid periods (A.4), null if none
+verified_until  = least(documents_until, paid_until + grace_days)     -- null if either is null
+verified        = approved and not suspended
+                  and (is_sample or verified_until >= private.tz_today())
+                  and (crew only) consent_status = 'confirmed' and role rank <= covers_rank
+```
+
+- **No nightly job.** `documents_until` (stored as `guides.live_until`, `crew_members.live_until`, `providers.live_until`, all kept by triggers on `person_document_checks` as in GC 1e) and `paid_until` (stored on the same rows by a trigger on `subscriptions`) are dates. Every rule compares them with `private.tz_today()` at read time, so a lapse switches features off on the right day even if every job fails. Reminder jobs only send notices; they never switch anything. `least()` ignores nulls in Postgres, so the function returns null explicitly when either part is missing.
+- Required checks are constants in `private.required_kinds(profile_kind, role, drives, business_type)`, mirrored in `packages/shared` with matching tests: porter, cook, assistant guide: `identity`; driver: `identity`, `driving_licence`; guide: GC 2d; business: owner `identity` (or `passport` for a non-Tanzanian owner), `business_licence`, `tin_certificate`, and `operator_licence` for tour operators.
+- **Grace:** 7 days, a placeholder (PV decision 8), read from `site_settings` key `verification_grace_days` by `private.grace_days()`. The admin page shows it as "placeholder" until Walter confirms it.
+- **Switch for payment.** `site_settings` key `verification_payment_required`, false by default. While false, the payment part counts as met and only documents count (today's GC rule). This lets D ship before live charging (gate 6.1) without switching every approved guide off. Only Walter turns it on, and the page first shows how many people would lose features that day. Whether people already approved get free time at switch-on is Walter's call.
+- **Statuses for screens** (PV 1.2) come from one function, `private.member_status(...)`, returning `registered`, `documents_sent`, `checked_not_paid`, `verified`, `grace`, `locked`, `rejected` or `suspended`. Only `rejected` (on the document or profile) and `suspended` (new admin-only `suspended_at`, `suspended_reason` on guides, crew_members and providers, protected by the guard triggers) are stored.
+- Public wording does not change: travellers see what was checked and when, never "verified".
+
+### A.4 Prices and subscriptions (no processor inside)
+
+`public.price_ranks`: `account_type` (enum `priced_account_type`: `porter`, `cook`, `driver`, `assistant_guide`, `guide`, `business`), `business_type text null`, `rank int`, `confirmed boolean` (false until Walter places it), unique on (type, business type). Rank is per account type, not per price row, so it lives here. Seeded with Walter's own order (porter, then guide, then business) and the other places marked unconfirmed.
+
+`public.price_list`: as PV 2.1 without `rank`, plus `rank_warning_ack_at` and `rank_warning_ack_by`.
+- `amount_tzs` null means **"not set"**, and the checkout refuses it. Every grid cell (PV 2.2) is seeded with a null amount, status `draft`; crew verification rows are seeded `legal_hold` (gate 6.3). No amount is ever seeded.
+- Checks: `amount_tzs > 0` and below a typo ceiling when set; exactly one of amount and percent, matching the period; only one active row per (type, business type, service, period) on any date (trigger); `legal_hold` cannot go to `active` in the same save.
+- A row that any subscription points at is frozen; a price change is a new row from a date. Each save is logged.
+- **Rank warning:** `public.price_rank_conflicts()` (admins only) lists every pair where a lower-ranked type pays more than a higher-ranked type for the same service and period. The page shows it; saving anyway sets `rank_warning_ack_at`. It never blocks.
+- `site_settings.badge_fee` becomes a `price_list` row (business, badge, year). The settings key is removed once the code reads the new table (with Walter's OK).
+
+`public.subscriptions` (one row per paid period, never edited after it is active)
+
+| Column | Notes |
+| --- | --- |
+| id uuid pk | |
+| user_id uuid null, provider_id uuid null | exactly one: a person (crew and guide) or a business |
+| account_type, covers_rank | copied from `price_ranks` at purchase |
+| price_id fk price_list, amount_tzs, period | copied at purchase; never changes |
+| starts_on, ends_on date | early renewal starts the day after the current end |
+| status | `pending`, `active`, `cancelled` (never paid), `refunded` |
+| source | `payment`, `admin_grant` (free time given by Walter, with `grant_reason`), `sample` |
+| payment_id uuid null unique, fk payments | one period per payment, so a repeated webhook does nothing |
+| is_test boolean not null default true | stays true until gate 6.1; test periods never count once payment is required |
+| created_at | |
+
+- Grace is not stored; it follows from `ends_on`.
+- Clients have **no** write grant. Owners read their own; admins read all. Rows come from `private.apply_subscription_payment(payment_id)` (security definer, service role only), which takes the amount from `price_list` and never from the client, and from `public.admin_grant_period(...)` (admin, logged).
+- **Processor slot:** migration E (payments-engineer, after Walter picks PesaPal, Flutterwave or AzamPay) adds `payments.kind = 'subscription'`, `payments.subscription_id`, generic `processor` and `processor_ref` columns, and an Edge Function with one small adapter per processor: create checkout, check the webhook signature, fetch status. Nothing in A to D names a processor.
+
+### A.5 Feature rules per account type and status
+
+One function, `private.has_feature(p_code text) returns boolean` (security definer, stable, `search_path = ''`), with the codes as a fixed `case` inside, so no admin screen can grant a feature. The same list is in `packages/shared/src/features.ts` for screens, and a test compares the two. Policies call it as `(select private.has_feature('...'))` so it runs once per query.
+
+| Code | Who has it |
+| --- | --- |
+| `traveller.request_trip`, `traveller.join_group`, `traveller.call`, `traveller.review`, `traveller.deposit` | role `traveler`. Guides and businesses keep what they can do today until Walter decides (A.8). **Never** role `crew` |
+| `crew.profile`, `crew.team`, `crew.trip_list`, `crew.feedback`, `crew.courses` | owner of a crew row, any status |
+| `crew.public_profile`, `crew.trip_record` | verified for at least one role |
+| `crew.jobs`, `crew.looking_for_work` | owner of a crew row with documents checked; **not** behind payment while crew prices are on legal hold (gate 6.3) |
+| `guide.draft`, `guide.uploads`, `guide.hub` | owner of a guide row, any status |
+| `guide.listed`, `guide.enquiries`, `guide.calls`, `guide.offers`, `guide.packages`, `guide.group_trips`, `guide.deposits`, `guide.crew_team_shown` | verified guide |
+| `business.draft`, `business.uploads` | owner of a business row, any status |
+| `business.listed`, `business.orders`, `business.offers`, `business.catalogue` | verified business (for that business row) |
+| `directory.crew` (read crew profiles) | verified guide or verified business |
+| `admin.*` | `private.is_admin()` (two-step session) |
+
+Per-row rules ("this business is verified", "this guide is listed") use `private.guide_is_verified(...)`, `private.provider_is_verified(...)` and `private.crew_role_verified(...)`, never the condition written out again (risk 10 above).
+
+Server enforcement in D (not only hidden screens):
+- **Reads of people:** "Read guides" and "Anyone reads approved providers" switch to the verified helpers, as do `can_offer`, `can_organize_group`, `lead_target_ok` and every place GC fact 2 lists. `private.is_verified_guide()` is renamed `private.is_approved_guide()` for the Hub and replaced by `has_feature` where the meaning is "verified".
+- **Porter away from traveller data:** inserts into `trip_requests`, `group_trip_members`, `call_requests`, `guide_reviews` and deposit checkouts require the matching `traveller.*` code. Reads of traveller data are already limited to the traveller, the people in that conversation or trip, and admins. Crew are never one of those (an open trip request needs `can_offer`, which crew never pass). D adds SQL tests that prove it for every traveller table.
+- **Traveller away from crew data:** `crew_members`, crew checks, `jobs`, `job_interest` and the Hub require a crew, guide or business code. `crew_private` and `person_*` stay owner and admin only. A traveller sees crew only through the thanks function (2.6).
+- **Gaps that RLS cannot close:** anonymous enquiries (`leads`, open to signed-out visitors today) cannot be refused to a crew member who signs out. That is fine: the rule protects account data, not public forms.
+
+### A.6 Migration split
+
+All drafts are tested on a local or test project; none goes live without Walter's yes (gate 6.2).
+
+| | Tables and functions | RLS and grants | security-reviewer checks |
+| --- | --- | --- | --- |
+| **A** person documents and identifiers | enums `person_document_kind`, `document_review_state`; `person_documents`, `person_document_checks`, `person_check_log`, `person_identifiers`, `business_identifiers`; `private.tz_today()`, `private.review_window_days()` (A.7); guard, renewal and log triggers; `my_identifiers()`, `admin_identifiers_masked()`. No gate yet, so nothing changes for anyone | documents: owner select and insert (own `user_id`, own business), owner delete only while `waiting`, admin all; checks: admin writes, owner reads own, public check lines from D only; log: admin select, no client writes; identifiers: no client grants at all; storage policies unchanged | owner cannot set `review_state`, `reviewed_at`, checks or log rows; path ownership and object existence; reason note masking; no unique index on `_hmac` (number probing); cipher handling, key storage and rotation, nothing decrypted in SQL; the full-read action logs every read and never puts a value in a URL, log or error; signed links short and never stored; photo metadata stripped; cascade and file cleanup on account deletion; `aal2` on every admin path |
+| **B** crew account type | B1: `alter type user_role add value 'crew'` (alone: a new enum value cannot be used in the same transaction). B2: `crew_members`, `crew_private` (2.1), guard trigger, new `complete_onboarding`, `add_crew_profile()`, `scrub_deleted_user` extended; `handle_new_user` unchanged (no `crew` from metadata) | crew_members: owner select and update (profile fields and switches only), admin all, others nothing until D; crew_private: owner and admin only | role cannot be self-set or switched (traveller to crew); guard on `status`, `live_until`, `paid_until`, `suspended_*`, `is_sample`, `consent_method`; `p_crew_roles` cannot include `guide`; one crew row per account; the deletion question in 3.9 (recommended: delete the row) |
+| **C** prices and subscriptions | `price_ranks`, `price_list` (all amounts null), `subscriptions`; `site_settings` keys `verification_grace_days`, `verification_payment_required`; `apply_subscription_payment()`, `admin_grant_period()`, `price_rank_conflicts()`; triggers that keep `paid_until` and `covers_rank` on guides, crew and providers; badge fee row | price tables: anyone reads `active` rows, admins write; subscriptions: owner reads own, admins read, no client writes; functions: execute revoked from public, anon and authenticated except where named | the client never chooses an amount; a null or `legal_hold` price cannot be bought; frozen rows after first use; admin grants logged and limited; `is_test` cannot count once payment is required; idempotency on `payment_id`; `site_settings` writes need `aal2`; no processor secrets in tables |
+| **D** feature rules | `private.has_feature()`, `guide_is_verified`, `provider_is_verified`, `crew_role_verified`, `member_status`, `required_kinds`; `suspended_*` columns; public check-line policy on `person_document_checks` (column grant as GC 3); rewrite of every policy and helper in GC fact 2 plus the traveller inserts and crew reads in A.5; the `can_review_guide` window and `conversations.contact_unlocked_at` (A.7) | as A.5; ships together with the code release, because it hides people at once | a policy missed in the inventory; existing approved guides and businesses stay listed while `verification_payment_required` is false; samples still show; opening the Hub to unapproved guides (PV 1.3) exposes forum posts to anyone who signs up as a guide (Walter to confirm); security definer helpers in policies have fixed `search_path`, no recursion, and run once per query; SQL tests as porter, traveller, unverified guide, verified guide, business and admin |
+
+Migration E (payments, after the processor choice) is payments-engineer's, A.4.
+
+### A.7 The 30-day review window, for every review
+
+- One constant, `private.review_window_days()` = 30, mirrored in shared code. Every "can still write" rule compares `private.tz_today()` with an anchor date plus 30.
+- Guide notes on crew (2.5): 30 days after the trip file's `end_date` (was 14).
+- Crew thanks (2.6): written with the traveller review, so the same window.
+- Traveller reviews of guides (`can_review_guide`, no window today): anchor = the trip file's `end_date` when there is one (3.8); otherwise the call's `scheduled_at` (or the date it was marked completed); otherwise the date the conversation was unlocked. D adds `conversations.contact_unlocked_at`, set by the existing unlock trigger. Conversations unlocked before D get D's release date as their anchor, so nobody loses the chance on the day it ships.
+- Editing: the author may edit within the same 30 days; after that only withdraw. Admins can always hide.
+- Reply and appeal times for crew (FR: 7 to reply, 14 to appeal) count from when the note is shown. Walter said "30 days" for reviews; whether replies and appeals also move to 30 is open (A.8).
+- Admin review of uploaded documents is not a "review" in this sense. It keeps the 2-day service level (`docs/operations/admin-queues.md`), and the admin queue marks anything waiting longer than 30 days in red.
+
+### A.8 Questions for Walter (added to PV's list)
+
+1. Documents belong to the person, not to each profile (A.1). Recommended: yes.
+2. Payment is "required" only when you switch it on, after gate 6.1 (A.3). Recommended: yes. And do people already approved get free time at switch-on?
+3. A guide's subscription also covers that person's crew roles (A.2). Recommended: yes.
+4. Do guides and businesses keep traveller features (enquire, request a trip, join a group trip), or do they need a traveller account? Recommended: keep them for now; only crew lose traveller features.
+5. A traveller account cannot add a crew profile (A.2). Recommended: yes.
+6. Crew reply and appeal times: keep 7 and 14 days, or 30? Recommended: keep 7 and 14, counted from when the note is shown.
