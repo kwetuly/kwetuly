@@ -10,13 +10,19 @@ import {
   isOrderId,
   invalidEventKey,
   parseWebhookMode,
-  pickPayload,
-  successfulAttemptId,
+  pickFlutterwavePayload,
+  successfulFlutterwaveAttemptId,
   parseMoney2,
   parseRateHundredths,
   parseWholeTzs,
-  readWebhook,
+  readFlutterwaveWebhook,
   verifyFlutterwaveWebhook,
+  isPaymentUrlOn,
+  paymentConsoleName,
+  ACTIVE_PAYMENT_PROVIDER,
+  ALL_PAYMENT_DOMAINS,
+  PAYMENT_PROVIDERS,
+  PAYMENT_PROVIDER_NAME,
   type ProviderTx,
 } from './payment-rules';
 
@@ -34,19 +40,34 @@ const ok = (over: Partial<Extract<ProviderTx, { found: true }>> = {}): ProviderT
 const decide = (tx: ProviderTx, stored: 'pending' | 'failed' = 'pending', ageMs = 5 * 60_000) =>
   decideDeposit({ stored, orderId: ORDER, amountTzs: 260000, ageMs, tx, limits: LIMITS });
 
-describe('the Edge Function copy', () => {
-  it('is identical to this file', () => {
-    const block = (path: URL) => {
-      const text = readFileSync(fileURLToPath(path), 'utf8').replace(/\r\n/g, '\n');
-      const start = text.indexOf('// BEGIN payment-rules');
-      const end = text.indexOf('// END payment-rules');
-      expect(start).toBeGreaterThanOrEqual(0);
-      expect(end).toBeGreaterThan(start);
-      return text.slice(start, end);
-    };
-    const shared = block(new URL('./payment-rules.ts', import.meta.url));
-    const edge = block(new URL('../../../supabase/functions/payments/index.ts', import.meta.url));
-    expect(edge).toBe(shared);
+describe('the Edge Function copies', () => {
+  const block = (path: string, name: string) => {
+    const text = readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8').replace(/\r\n/g, '\n');
+    const start = text.indexOf(`// BEGIN ${name}\n`);
+    const end = text.indexOf(`// END ${name}\n`);
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    return text.slice(start, end);
+  };
+  const EDGE = '../../../supabase/functions/payments/';
+
+  it('core.ts has the provider-neutral block word for word', () => {
+    expect(block(`${EDGE}core.ts`, 'payment-rules')).toBe(block('./payment-rules.ts', 'payment-rules'));
+  });
+
+  it('providers/flutterwave.ts has the Flutterwave block word for word', () => {
+    expect(block(`${EDGE}providers/flutterwave.ts`, 'flutterwave-rules')).toBe(block('./payment-rules.ts', 'flutterwave-rules'));
+  });
+
+  it('keeps processor names out of the neutral block and the core', () => {
+    const neutral = block('./payment-rules.ts', 'payment-rules');
+    expect(neutral).not.toMatch(/flutterwave|flw_|FLW_|tx_ref|charged_amount|verif-hash/i);
+    const core = readFileSync(fileURLToPath(new URL(`${EDGE}index.ts`, import.meta.url)), 'utf8')
+      .split('\n')
+      .filter((line) => !line.trim().startsWith('//'))
+      .join('\n');
+    // payment_events.tx_ref is a database column name, not a Flutterwave field.
+    expect(core.replace(/tx_ref: ref\.txRef/g, '')).not.toMatch(/flutterwave|flw|tx_ref|charged_amount|verif-hash|app_fee|amount_settled/i);
   });
 });
 
@@ -236,43 +257,43 @@ describe('invalidEventKey', () => {
   });
 });
 
-describe('successfulAttemptId', () => {
+describe('successfulFlutterwaveAttemptId', () => {
   it('finds a successful attempt for this order only', () => {
     const list = [
       { id: 11, tx_ref: ORDER, status: 'failed' },
       { id: 12, tx_ref: `RAF${'b2'.repeat(16)}`, status: 'successful' },
       { id: 13, tx_ref: ORDER, status: 'successful' },
     ];
-    expect(successfulAttemptId(list, ORDER)).toBe('13');
-    expect(successfulAttemptId(list.slice(0, 2), ORDER)).toBeNull();
-    expect(successfulAttemptId([{ id: '1; x', tx_ref: ORDER, status: 'successful' }], ORDER)).toBeNull();
-    expect(successfulAttemptId(null, ORDER)).toBeNull();
+    expect(successfulFlutterwaveAttemptId(list, ORDER)).toBe('13');
+    expect(successfulFlutterwaveAttemptId(list.slice(0, 2), ORDER)).toBeNull();
+    expect(successfulFlutterwaveAttemptId([{ id: '1; x', tx_ref: ORDER, status: 'successful' }], ORDER)).toBeNull();
+    expect(successfulFlutterwaveAttemptId(null, ORDER)).toBeNull();
   });
 });
 
-describe('readWebhook', () => {
+describe('readFlutterwaveWebhook', () => {
   it('reads only the lookup keys', () => {
-    expect(readWebhook({ event: 'charge.completed', data: { id: 285959875, tx_ref: ORDER, status: 'successful', amount: 1 } })).toEqual({
+    expect(readFlutterwaveWebhook({ event: 'charge.completed', data: { id: 285959875, tx_ref: ORDER, status: 'successful', amount: 1 } })).toEqual({
       eventKey: 'charge.completed:285959875:successful',
       eventType: 'charge.completed',
       txRef: ORDER,
       transactionId: '285959875',
     });
-    expect(readWebhook({ webhook_id: 'wbk_1', type: 'charge.completed', data: { reference: ORDER } }).eventKey).toBe('wbk_1');
+    expect(readFlutterwaveWebhook({ webhook_id: 'wbk_1', type: 'charge.completed', data: { reference: ORDER } }).eventKey).toBe('wbk_1');
   });
 
   it('drops references and ids that are not ours or not plain', () => {
-    const ref = readWebhook({ event: 'charge.completed', data: { id: '1; drop table', tx_ref: 'RAF1' } });
+    const ref = readFlutterwaveWebhook({ event: 'charge.completed', data: { id: '1; drop table', tx_ref: 'RAF1' } });
     expect(ref.txRef).toBeNull();
     expect(ref.transactionId).toBeNull();
-    expect(readWebhook(null)).toEqual({ eventKey: null, eventType: null, txRef: null, transactionId: null });
-    expect(readWebhook([1, 2])).toEqual({ eventKey: null, eventType: null, txRef: null, transactionId: null });
+    expect(readFlutterwaveWebhook(null)).toEqual({ eventKey: null, eventType: null, txRef: null, transactionId: null });
+    expect(readFlutterwaveWebhook([1, 2])).toEqual({ eventKey: null, eventType: null, txRef: null, transactionId: null });
   });
 });
 
-describe('pickPayload', () => {
+describe('pickFlutterwavePayload', () => {
   it('keeps only allow-listed fields: no personal, card or free-text data', () => {
-    const kept = pickPayload({
+    const kept = pickFlutterwavePayload({
       event: 'charge.completed',
       'event.type': 'CARD_TRANSACTION',
       data: {
@@ -309,8 +330,27 @@ describe('pickPayload', () => {
   });
 
   it('drops nested objects and odd values', () => {
-    expect(pickPayload({ data: { status: { nested: 'x' }, amount: '1<script>' } })).toEqual({ data: { status: null, amount: '1script' } });
-    expect(pickPayload(null)).toBeNull();
-    expect(pickPayload([1])).toBeNull();
+    expect(pickFlutterwavePayload({ data: { status: { nested: 'x' }, amount: '1<script>' } })).toEqual({ data: { status: null, amount: '1script' } });
+    expect(pickFlutterwavePayload(null)).toBeNull();
+    expect(pickFlutterwavePayload([1])).toBeNull();
   });
 });
+
+describe('the active processor', () => {
+  it('is one known processor with its own payment-page domains', () => {
+    expect(PAYMENT_PROVIDERS[ACTIVE_PAYMENT_PROVIDER.id as keyof typeof PAYMENT_PROVIDERS]).toBe(ACTIVE_PAYMENT_PROVIDER);
+    expect(PAYMENT_PROVIDER_NAME).toBe('Flutterwave');
+    expect(isAllowedPaymentUrl('https://checkout.flutterwave.com/p')).toBe(isPaymentUrlOn('https://checkout.flutterwave.com/p', ACTIVE_PAYMENT_PROVIDER.paymentDomains));
+    expect(isAllowedPaymentUrl('https://checkout.example.com/p', ['example.com'])).toBe(true);
+    expect(isPaymentUrlOn('https://checkout.flutterwave.com/p', [])).toBe(false);
+    expect(ALL_PAYMENT_DOMAINS).toContain('flutterwave.com');
+  });
+
+  it('names where admins check a payment, also for parked Selcom rows', () => {
+    expect(paymentConsoleName('flutterwave')).toBe('Flutterwave dashboard');
+    expect(paymentConsoleName('selcom')).toBe('Selcom portal');
+    expect(paymentConsoleName(null)).toBe('Flutterwave dashboard');
+    expect(paymentConsoleName('constructor')).toBe('constructor dashboard');
+  });
+});
+

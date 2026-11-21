@@ -1,29 +1,29 @@
-// Deposits through Flutterwave hosted checkout ("Standard"): Visa and Mastercard (with 3-D Secure) and
-// Tanzanian mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa). Travellers are charged in
-// Tanzanian shillings. Card numbers are typed only on Flutterwave's own page; Kwetuly never sees them.
+// Deposits through a payment processor's hosted checkout. Travellers are charged in Tanzanian
+// shillings; card numbers are typed only on the processor's own page, Kwetuly never sees them.
+// This file is the provider-neutral core: routing, sign-in, database writes, the deposit decision,
+// limits and the sweeper. Everything processor-specific is in providers/<name>.ts (today
+// providers/flutterwave.ts), behind the PaymentProvider interface in providers/types.ts; the adapter is
+// picked from PAYMENTS_PROVIDER by providers/index.ts.
 //
-//   POST { action: "config" }                       → { enabled, rate, rate100 } (anyone; Pay box, ≈ TSh prices)
+//   POST { action: "config" }                       → { enabled, rate, rate100, provider } (anyone; Pay box, ≈ TSh prices)
 //   POST { action: "check", kind, id } + user token  → { ok } or { error } (can this deposit be paid now?)
 //   POST { action: "checkout", kind: "offer"|"group", id, locale } + user token → { url, order_id }
-//   POST { action: "status", order_id } + user token → { status } (asks Flutterwave, updates the row)
+//   POST { action: "status", order_id } + user token → { status } (asks the processor, updates the row)
 //   POST { action: "sweep" } + header x-kwetuly-sweep → counts only (pg_cron, 20261122100000_flutterwave_provider.sql)
-//   POST from Flutterwave (webhook: header flutterwave-signature or verif-hash)
+//   POST from the processor (a webhook, recognised by the adapter from its headers)
 //        → signature checked first (401 if wrong), logged masked in payment_events, then the order is
-//          re-checked with Flutterwave's verify endpoint. The webhook body's amount and status are never used.
+//          re-checked with the processor's verify API. The webhook body's amount and status are never used.
 //
-// Money state changes only here, on the server, after Flutterwave's verify answer. The return URL and
+// Money state changes only here, on the server, after the processor's verify answer. The return URL and
 // the app never change a status. Every change records status_source and updated_at (who and when).
 //
 // Secrets (Supabase dashboard, Edge Functions, Secrets; names in supabase/functions/.env.example).
 // Without all of them payments stay switched off:
-//   PAYMENTS_PROVIDER     must be "flutterwave". Anything else (Selcom is parked) keeps payments off.
+//   PAYMENTS_PROVIDER     a processor with an adapter in providers/index.ts: "flutterwave". Anything else
+//                         (Selcom is parked) keeps payments off.
 //   KWETULY_ENV           must be "test". Live is refused by this build (LIVE_ALLOWED below) until
 //                         Walter approves live keys and the live switch; that needs a code change and review.
-//   FLW_SECRET_KEY        Flutterwave TEST secret key (starts with FLWSECK_TEST-). A live key is refused.
-//   FLW_WEBHOOK_MODE      "v3" or "v4": the ONE webhook scheme this Flutterwave account uses (the other is refused).
-//   FLW_SECRET_HASH       v3 only: the webhook "secret hash" (header verif-hash), at least 32 random characters.
-//   FLW_WEBHOOK_SIGNING_SECRET  v4 only: the key for the flutterwave-signature HMAC, at least 32 characters.
-//                         Never the same value as FLW_SECRET_HASH.
+//   the adapter's own     e.g. FLW_* for Flutterwave (providers/flutterwave.ts); a live key is refused there.
 //   USD_TZS_RATE          shillings per US dollar used to price deposits, e.g. "2600" or "2650.75".
 //   USD_TZS_RATE_SOURCE   where that rate comes from, e.g. "BoT mean 2026-11-21" (saved on every order).
 //   PAYMENTS_SWEEP_SECRET at least 32 random characters; the same value is in Vault as payments_sweep_secret.
@@ -31,10 +31,25 @@
 //                         "http://localhost:3000". Travellers come back there after paying.
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import {
+  centsToUsd,
+  decideDeposit,
+  depositTzs,
+  invalidEventKey,
+  isOrderId,
+  isPaymentUrlOn,
+  parseCurrency,
+  parseMoney2,
+  parseRateHundredths,
+  parseWholeTzs,
+  sameSecret,
+  type DepositLimits,
+} from './core.ts';
+import { pickProvider } from './providers/index.ts';
+import { ProviderHttpError, type PaymentDetails, type PaymentProvider, type VerifiedPayment } from './providers/types.ts';
 
 const env = (key: string, fallback = '') => Deno.env.get(key) ?? fallback;
 const SITE_URL = env('SITE_URL').replace(/\/$/, '');
-const FLW_API = 'https://api.flutterwave.com/v3';
 
 // The live Supabase project. Test keys are never used there.
 const LIVE_PROJECT_REF = 'zsymxfommlxqqfywekuy';
@@ -49,306 +64,21 @@ const PROJECT_REF = (() => {
   }
 })();
 
-// ---------------------------------------------------------------------------
-// Copy of packages/shared/src/payment-rules.ts (Deno cannot import that package). Do not edit here:
-// change the shared file and paste its block; payment-rules.test.ts fails if the two differ.
-// ---------------------------------------------------------------------------
-// BEGIN payment-rules
-/** Order ids Kwetuly creates (sent to the provider as tx_ref): "RAF" + 32 lower-case hex characters. */
-export const ORDER_ID_PATTERN = /^RAF[0-9a-f]{32}$/;
-export const isOrderId = (value: unknown): value is string => typeof value === 'string' && ORDER_ID_PATTERN.test(value);
-
-/** "2600" -> 260000, "2650.75" -> 265075 (shillings per US dollar, in hundredths). null when not a plain positive rate. */
-export function parseRateHundredths(raw: string | null | undefined): number | null {
-  const match = /^\s*(\d{1,6})(?:\.(\d{1,2}))?\s*$/.exec(raw ?? '');
-  if (!match) return null;
-  const value = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
-  return value > 0 ? value : null;
-}
-
-/**
- * Deposit in whole shillings from whole US cents and the rate in hundredths, rounded UP to the next
- * 100 shillings: ceil(cents x rate100 / 1 000 000) x 100. Integer maths only.
- */
-export function depositTzs(cents: number, rate100: number): number {
-  if (!Number.isSafeInteger(cents) || !Number.isSafeInteger(rate100) || cents <= 0 || rate100 <= 0) {
-    throw new RangeError('depositTzs: whole positive numbers only');
-  }
-  const product = cents * rate100;
-  if (!Number.isSafeInteger(product)) throw new RangeError('depositTzs: amount too large');
-  const rest = product % 1_000_000;
-  const hundreds = (product - rest) / 1_000_000 + (rest === 0 ? 0 : 1);
-  return hundreds * 100;
-}
-
-/** Whole US cents as an exact decimal string for numeric(10,2), e.g. 12345 -> "123.45". */
-export function centsToUsd(cents: number): string {
-  if (!Number.isSafeInteger(cents) || cents < 0) throw new RangeError('centsToUsd: whole cents only');
-  return `${Math.trunc(cents / 100)}.${String(cents % 100).padStart(2, '0')}`;
-}
-
-/** A whole-shilling amount the provider reported (number, or text such as "260000" or "260000.00"); null otherwise. */
-export function parseWholeTzs(raw: unknown): number | null {
-  if (typeof raw === 'number') return Number.isSafeInteger(raw) && raw >= 0 ? raw : null;
-  if (typeof raw !== 'string') return null;
-  const text = raw.replace(/,/g, '').trim();
-  return /^\d{1,12}(\.0{1,2})?$/.test(text) ? parseInt(text, 10) : null;
-}
-
-/** An amount with at most 2 decimals as exact text for numeric(14,2) (fees, settled amounts); null otherwise. */
-export function parseMoney2(raw: unknown): string | null {
-  let text: string;
-  if (typeof raw === 'number') {
-    if (!Number.isFinite(raw) || raw < 0) return null;
-    text = String(raw);
-  } else if (typeof raw === 'string') {
-    text = raw.replace(/,/g, '').trim();
-  } else {
-    return null;
-  }
-  return /^\d{1,12}(\.\d{1,2})?$/.test(text) ? text : null;
-}
-
-/** A 3-letter currency code, upper case; null otherwise. */
-export const parseCurrency = (raw: unknown): string | null =>
-  typeof raw === 'string' && /^[A-Za-z]{3}$/.test(raw.trim()) ? raw.trim().toUpperCase() : null;
-
-/** What the provider's verify call said about one order. `found: false`: the provider knows no payment for it. */
-export type ProviderTx =
-  | { found: false }
-  | { found: true; status: unknown; txRef: unknown; amount: unknown; chargedAmount: unknown; currency: unknown };
-
-export type DepositDecision = {
-  status: 'paid' | 'review' | 'failed' | 'pending';
-  reason:
-    | 'paid'
-    | 'amount_mismatch'
-    | 'currency_mismatch'
-    | 'fee_charged_to_payer'
-    | 'charged_unknown'
-    | 'paid_after_failed'
-    | 'still_failed'
-    | 'reference_mismatch'
-    | 'expired'
-    | 'stale'
-    | 'attempts_unclear'
-    | 'open';
-};
-
-export type DepositLimits = {
-  /** How long the hosted payment page stays open (sent to the provider). */
-  sessionMs: number;
-  /** Extra time after the session before an unpaid order is given up on. */
-  graceMs: number;
-  /** A payment the provider still reports as pending (mobile money push) is given up on after this. */
-  staleMs: number;
-};
-
-/**
- * Decides a stored order's next status from the provider's verify answer. Never trusts a webhook body
- * or a return URL: only the server's own verify call is passed in here.
- *   - 'paid' only when the provider says successful, for this tx_ref, in TZS, for exactly our amount,
- *     and the payer was charged exactly that amount (Kwetuly pays the provider's fee, not the traveller).
- *   - Any other successful payment is held as 'review' for an admin, never 'paid'.
- *   - A successful payment on an order Kwetuly had given up on ('failed') goes to 'review'.
- *   - A failed attempt while the hosted page is still open stays 'pending': the traveller may retry there.
- *   - `attemptsUnclear`: the provider showed an attempt that was not successful, but Kwetuly could not
- *     list every attempt on this order (security-reviewer M4). Instead of giving up on it ('failed'),
- *     it is held as 'review' so an admin checks it against the provider's records.
- */
-export function decideDeposit(input: {
-  stored: 'pending' | 'failed';
-  orderId: string;
-  amountTzs: number;
-  ageMs: number;
-  tx: ProviderTx;
-  limits: DepositLimits;
-  attemptsUnclear?: boolean;
-}): DepositDecision {
-  const { stored, orderId, amountTzs, ageMs, tx, limits, attemptsUnclear = false } = input;
-  if (tx.found && tx.txRef !== orderId) return { status: stored, reason: 'reference_mismatch' };
-  const state = tx.found && typeof tx.status === 'string' ? tx.status.trim().toLowerCase() : '';
-  const successful = tx.found && state === 'successful';
-
-  if (stored === 'failed') return successful ? { status: 'review', reason: 'paid_after_failed' } : { status: 'failed', reason: 'still_failed' };
-
-  if (successful) {
-    if (parseCurrency(tx.currency) !== 'TZS') return { status: 'review', reason: 'currency_mismatch' };
-    if (parseWholeTzs(tx.amount) !== amountTzs) return { status: 'review', reason: 'amount_mismatch' };
-    const charged = parseWholeTzs(tx.chargedAmount);
-    if (charged === null) return { status: 'review', reason: 'charged_unknown' };
-    if (charged > amountTzs) return { status: 'review', reason: 'fee_charged_to_payer' };
-    if (charged !== amountTzs) return { status: 'review', reason: 'amount_mismatch' };
-    return { status: 'paid', reason: 'paid' };
-  }
-
-  let decision: DepositDecision;
-  if (tx.found && state === 'pending') {
-    decision = ageMs > limits.staleMs ? { status: 'failed', reason: 'stale' } : { status: 'pending', reason: 'open' };
-  } else {
-    decision = ageMs > limits.sessionMs + limits.graceMs ? { status: 'failed', reason: 'expired' } : { status: 'pending', reason: 'open' };
-  }
-  if (decision.status === 'failed' && tx.found && attemptsUnclear) return { status: 'review', reason: 'attempts_unclear' };
-  return decision;
-}
-
-/**
- * From a list of the provider's transactions for one order (all attempts on the hosted page), the id of
- * a successful one for exactly this tx_ref, or null. Used because verify-by-reference may answer with
- * one attempt only (security-reviewer M4).
- */
-export function successfulAttemptId(list: unknown, orderId: string): string | null {
-  if (!Array.isArray(list)) return null;
-  for (const item of list.slice(0, 50)) {
-    if (!item || typeof item !== 'object') continue;
-    const tx = item as Record<string, unknown>;
-    const id = tx.id;
-    const plainId = (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null;
-    if (plainId && tx.tx_ref === orderId && typeof tx.status === 'string' && tx.status.trim().toLowerCase() === 'successful') return plainId;
-  }
-  return null;
-}
-
-/** Provider payment page domains. Only subdomains (e.g. "checkout.flutterwave.com") pass, not the bare domain. */
-export const FLUTTERWAVE_PAYMENT_DOMAINS: readonly string[] = ['flutterwave.com'];
-
-const PAYMENT_URL = /^https:\/\/([A-Za-z0-9.-]+)(?::443)?(?:[/?#][\x21-\x5b\x5d-\x7e]*)?$/;
-const HOST_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-
-/**
- * True only for an https address on a subdomain of one of `domains`, safe to send a payer to.
- * Refuses other schemes, userinfo, ports other than 443, lookalike hosts, IP addresses, trailing dots,
- * spaces, control or non-ASCII characters, backslashes, and anything longer than 2048 characters.
- * Pure string check, so it behaves the same in browsers, React Native, Node and Deno.
- */
-export function isAllowedPaymentUrl(url: unknown, domains: readonly string[] = FLUTTERWAVE_PAYMENT_DOMAINS): url is string {
-  if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return false;
-  const match = PAYMENT_URL.exec(url);
-  if (!match) return false;
-  const host = match[1].toLowerCase();
-  if (host.length > 253 || !host.split('.').every((label) => HOST_LABEL.test(label))) return false;
-  return domains.some((domain) => host.endsWith(`.${domain}`));
-}
-
-const encoder = new TextEncoder();
-
-async function sameSecret(a: string, b: string): Promise<boolean> {
-  // Compare SHA-256 digests in constant time, so timing says nothing about the secret.
-  const [x, y] = await Promise.all([a, b].map(async (s) => new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(s)))));
-  let diff = 0;
-  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
-  return diff === 0;
-}
-
-/** Shortest webhook secret Kwetuly accepts (Walter sets it in the Flutterwave dashboard). */
-export const MIN_WEBHOOK_SECRET_LENGTH = 32;
-
-/** Which Flutterwave webhook scheme this account uses. Exactly one is accepted (security-reviewer L1). */
-export type WebhookMode = 'v3' | 'v4';
-export const parseWebhookMode = (raw: string | null | undefined): WebhookMode | null => (raw === 'v3' || raw === 'v4' ? raw : null);
-
-/**
- * Checks a Flutterwave webhook under ONE scheme, with that scheme's own secret:
- *   - v4: header `flutterwave-signature` = base64 HMAC-SHA256 of the raw body, keyed with the v4 signing secret.
- *   - v3: header `verif-hash` = the v3 secret hash.
- * The other scheme's header is never used, and a header that is present but empty is invalid.
- */
-export async function verifyFlutterwaveWebhook(
-  rawBody: string,
-  headers: { signature: string | null; verifHash: string | null },
-  config: { mode: WebhookMode | null; secret: string },
-): Promise<boolean> {
-  if (!config.mode || config.secret.length < MIN_WEBHOOK_SECRET_LENGTH) return false;
-  if (config.mode === 'v4') {
-    const given = (headers.signature ?? '').trim();
-    if (!given) return false;
-    const key = await crypto.subtle.importKey('raw', encoder.encode(config.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody)));
-    let binary = '';
-    for (const byte of mac) binary += String.fromCharCode(byte);
-    return sameSecret(btoa(binary), given);
-  }
-  const given = headers.verifHash ?? '';
-  if (!given) return false;
-  return sameSecret(config.secret, given);
-}
-
-/**
- * Log key for an unsigned or wrongly signed call naming one of our orders: one row per order per hour at
- * most (security-reviewer M3), so a script cannot fill the callback log.
- */
-export function invalidEventKey(txRef: string, nowMs: number): string {
-  return `invalid:${txRef}:${new Date(nowMs).toISOString().slice(0, 13)}`;
-}
-
-/** What Kwetuly reads from a webhook body: only keys to look the order up with, never its amounts or status. */
-export type WebhookRef = { eventKey: string | null; eventType: string | null; txRef: string | null; transactionId: string | null };
-
-const plainText = (value: unknown, max: number) =>
-  typeof value === 'string' || typeof value === 'number' ? String(value).replace(/[^\w.:-]/g, '').slice(0, max) || null : null;
-
-export function readWebhook(body: unknown): WebhookRef {
-  const root = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
-  const data = root.data && typeof root.data === 'object' && !Array.isArray(root.data) ? (root.data as Record<string, unknown>) : {};
-  const eventType = plainText(root.event ?? root.type, 60);
-  const ref = data.tx_ref ?? data.reference;
-  const txRef = isOrderId(ref) ? ref : null;
-  const rawId = data.id;
-  const transactionId =
-    (typeof rawId === 'number' && Number.isSafeInteger(rawId) && rawId > 0) || (typeof rawId === 'string' && /^\d{1,20}$/.test(rawId)) ? String(rawId) : null;
-  // A stable key per delivery, so repeats are logged once: the provider's webhook id when it sends one,
-  // otherwise event type + transaction id + reported status.
-  const eventKey =
-    plainText(root.webhook_id ?? root.id, 120) ??
-    (eventType && (transactionId || txRef) ? `${eventType}:${transactionId ?? txRef}:${plainText(data.status, 20) ?? ''}`.slice(0, 120) : null);
-  return { eventKey, eventType, txRef, transactionId };
-}
-
-// Fields kept in the callback log (security-reviewer L2): an allow-list, everything else is dropped,
-// so no name, phone, e-mail, card, account, address, IP or free text is ever stored.
-const KEEP_TOP = ['event', 'type', 'webhook_id', 'id', 'timestamp', 'event.type'];
-const KEEP_DATA = ['id', 'tx_ref', 'reference', 'flw_ref', 'status', 'amount', 'charged_amount', 'currency', 'app_fee', 'merchant_fee', 'amount_settled', 'payment_type', 'created_at'];
-
-const keepValue = (value: unknown) =>
-  typeof value === 'number' || typeof value === 'boolean' ? value : typeof value === 'string' ? value.replace(/[^\w .:+-]/g, '').slice(0, 64) : null;
-
-/**
- * The part of a provider callback that is safe to keep: a few top-level keys and, under `data`, only
- * amounts, references, status, type and time. Values are plain numbers or short plain text.
- */
-export function pickPayload(body: unknown): Record<string, unknown> | null {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-  const root = body as Record<string, unknown>;
-  const out: Record<string, unknown> = {};
-  for (const key of KEEP_TOP) if (key in root) out[key] = keepValue(root[key]);
-  const data = root.data;
-  if (data && typeof data === 'object' && !Array.isArray(data)) {
-    const kept: Record<string, unknown> = {};
-    for (const key of KEEP_DATA) if (key in (data as Record<string, unknown>)) kept[key] = keepValue((data as Record<string, unknown>)[key]);
-    out.data = kept;
-  }
-  return out;
-}
-// END payment-rules
-
+const PROVIDER: PaymentProvider | null = pickProvider(env('PAYMENTS_PROVIDER'));
 const RATE100 = parseRateHundredths(env('USD_TZS_RATE'));
-const WEBHOOK_MODE = parseWebhookMode(env('FLW_WEBHOOK_MODE'));
-const WEBHOOK_SECRET = WEBHOOK_MODE === 'v3' ? env('FLW_SECRET_HASH') : WEBHOOK_MODE === 'v4' ? env('FLW_WEBHOOK_SIGNING_SECRET') : '';
 const RATE_SOURCE = `env:${env('USD_TZS_RATE_SOURCE').replace(/[^\w .:/()-]/g, '').trim()}`.slice(0, 60);
 
 // Mode guard. A configuration error switches payments off (config answers enabled: false, every other
-// action 503, no Flutterwave call); it never falls back to a default.
+// action 503, no processor call); it never falls back to a default.
 const CONFIG_ERROR = (() => {
-  if (env('PAYMENTS_PROVIDER') !== 'flutterwave') return 'PAYMENTS_PROVIDER is not "flutterwave"';
+  if (!PROVIDER) return 'PAYMENTS_PROVIDER is not a processor with an adapter (providers/index.ts)';
   const mode = env('KWETULY_ENV');
   if (mode === 'live' && !LIVE_ALLOWED) return 'live payments are not switched on in this build';
   if (mode !== 'test') return 'KWETULY_ENV must be "test"';
   if (!PROJECT_REF) return 'SUPABASE_URL has no project ref';
   if (PROJECT_REF === LIVE_PROJECT_REF) return 'test keys in the live project';
-  if (!env('FLW_SECRET_KEY').startsWith('FLWSECK_TEST-')) return 'FLW_SECRET_KEY is missing or not a test key';
-  if (!WEBHOOK_MODE) return 'FLW_WEBHOOK_MODE must be "v3" or "v4"';
-  if (WEBHOOK_SECRET.length < MIN_WEBHOOK_SECRET_LENGTH) return `${WEBHOOK_MODE === 'v3' ? 'FLW_SECRET_HASH' : 'FLW_WEBHOOK_SIGNING_SECRET'} is missing or shorter than 32 characters`;
-  if (env('FLW_SECRET_HASH') && env('FLW_SECRET_HASH') === env('FLW_WEBHOOK_SIGNING_SECRET')) return 'the v3 and v4 webhook secrets must differ';
+  const providerError = PROVIDER.configError();
+  if (providerError) return providerError;
   if (env('PAYMENTS_SWEEP_SECRET').length < 32) return 'PAYMENTS_SWEEP_SECRET is missing or shorter than 32 characters';
   if (!/^(https:\/\/[a-z0-9.-]+|http:\/\/localhost(:\d{2,5})?)$/i.test(SITE_URL)) return 'SITE_URL is missing or not https (or http://localhost)';
   if (SITE_URL === 'https://kwetuly.com' || SITE_URL === 'https://www.kwetuly.com') return 'SITE_URL is the live site; use the test site';
@@ -357,21 +87,27 @@ const CONFIG_ERROR = (() => {
   return '';
 })();
 const enabled = () => CONFIG_ERROR === '';
+// The adapter, only once every check above passed. Every processor call goes through this.
+const gateway = (): PaymentProvider => {
+  if (!enabled() || !PROVIDER) throw new Error('payments switched off');
+  return PROVIDER;
+};
+// The provider column value for rows this build makes and re-checks ('' while switched off; no row is touched then).
+const PROVIDER_ID = PROVIDER?.id ?? '';
 // Logged once per start-up: mode, provider and project only, never keys.
 console.log(`payments: provider ${env('PAYMENTS_PROVIDER') || 'unset'}, mode ${env('KWETULY_ENV') || 'unset'}, project ${PROJECT_REF || 'unknown'}${CONFIG_ERROR ? `; switched off: ${CONFIG_ERROR}` : ''}`);
 
-// Hosted page lifetime sent to Flutterwave (configurations.session_duration, minutes; to verify in the sandbox).
+// Hosted page lifetime sent to the processor, in minutes.
 const SESSION_MINUTES = 60;
 const LIMITS: DepositLimits = { sessionMs: SESSION_MINUTES * 60_000, graceMs: 10 * 60_000, staleMs: 24 * 3600_000 };
 // An open order's page is offered again only while it has at least 10 minutes left.
 const LINK_REUSE_MS = (SESSION_MINUTES - 10) * 60_000;
 // Failed orders are re-checked for this long (one Kwetuly gave up on may still be paid); after that the
-// daily reconciliation against Flutterwave's transaction export covers them.
+// daily reconciliation against the processor's transaction export covers them.
 const FAILED_RECHECK_MS = 3 * 24 * 3600_000;
 const PAYER_MIN_INTERVAL_MS = 5_000;
 const CHECKOUT_MIN_INTERVAL_S = 10;
 const CHECKOUT_FAILED_CHECKS = 5;
-const FLW_TIMEOUT_MS = 10_000;
 const MAX_BODY_BYTES = 16 * 1024;
 // Sweeper (pg_cron every 5 minutes).
 const SWEEP_DEADLINE_MS = 45_000;
@@ -392,34 +128,7 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } });
 
-// ---------------------------------------------------------------------------
-// Flutterwave client: bearer secret key. Only the path (no query) and the HTTP status are logged,
-// never the answer body (it holds names, phone numbers, e-mail and card details).
-// ---------------------------------------------------------------------------
-class FlwError extends Error {
-  constructor(message: string, readonly http: number, readonly notFound: boolean) {
-    super(message);
-  }
-}
-
-async function flw(path: string, method: 'GET' | 'POST', body?: unknown): Promise<Record<string, unknown>> {
-  if (!enabled()) throw new Error(`Flutterwave ${path.split('?')[0]}: payments switched off`);
-  const res = await fetch(`${FLW_API}${path}`, {
-    method,
-    headers: { Authorization: `Bearer ${env('FLW_SECRET_KEY')}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(FLW_TIMEOUT_MS),
-  });
-  const answer = (await res.json().catch(() => ({}))) as { status?: unknown; message?: unknown; data?: unknown };
-  if (!res.ok || answer.status !== 'success' || !answer.data || typeof answer.data !== 'object') {
-    // "No transaction was found for this id/reference" (to verify the exact wording in the sandbox).
-    const notFound = typeof answer.message === 'string' && /no transaction|not found/i.test(answer.message);
-    throw new FlwError(`Flutterwave ${path.split('?')[0]}: HTTP ${res.status}${notFound ? ' not found' : ''}`, res.status, notFound);
-  }
-  return answer.data as Record<string, unknown>;
-}
-
-// Flutterwave wants 255XXXXXXXXX. Optional: only pre-fills mobile money on the hosted page.
+// Tanzanian mobile number as 255XXXXXXXXX, or null. Optional: only pre-fills mobile money on the hosted page.
 function tzPhone(raw: string | null) {
   const digits = (raw ?? '').replace(/\D/g, '');
   if (/^0[67]\d{8}$/.test(digits)) return `255${digits.slice(1)}`;
@@ -429,6 +138,7 @@ function tzPhone(raw: string | null) {
 const cleanText = (raw: string, max: number, fallback: string) =>
   Array.from(raw.normalize('NFC').replace(/\p{C}/gu, ' ').replace(/\s+/g, ' ').trim() || fallback).slice(0, max).join('').trim() || fallback;
 const cleanEmail = (raw: string | undefined) => (raw && /^[^\s\p{C}]{3,254}$/u.test(raw) && /^[^@]+@[^@]+\.[^@]+$/.test(raw) ? raw : 'payments@kwetuly.com');
+// Plain short text for references an adapter reports (it cleans them too; this is the core's own limit).
 const plain = (v: unknown, max: number) => (typeof v === 'string' || typeof v === 'number' ? String(v).replace(/[^\w.:-]/g, '').slice(0, max) || null : null);
 
 const admin = () => createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), { auth: { persistSession: false } });
@@ -462,13 +172,13 @@ async function readStatus(db: Admin, id: string) {
   return data.status as string;
 }
 
-// Moves a row and returns its real status afterwards. If another path changed it first and Flutterwave
+// Moves a row and returns its real status afterwards. If another path changed it first and the processor
 // has just reported the money taken (`completed`), a row now 'failed' goes on to 'review'.
 async function moveStatus(db: Admin, id: string, from: string, patch: Record<string, unknown>, source: Source, completed?: Record<string, unknown>): Promise<string> {
   if (await setStatus(db, id, from, patch, source)) return String(patch.status);
   const now = await readStatus(db, id);
   if (now === 'failed' && completed) {
-    console.error(`Deposit ${id}: paid at Flutterwave while being marked failed; held for review`);
+    console.error(`Deposit ${id}: paid at the processor while being marked failed; held for review`);
     if (await setStatus(db, id, 'failed', { ...completed, status: 'review', status_reason: 'paid_after_failed' }, source)) return 'review';
     return readStatus(db, id);
   }
@@ -510,74 +220,34 @@ async function otherPaid(db: Admin, payment: PaymentTarget & { id: string }) {
   return (data?.length ?? 0) > 0;
 }
 
-// Flutterwave's own answer for an order: by transaction id when a signed webhook or an earlier check gave
-// one, otherwise by our reference (tx_ref). The hosted page allows several attempts under one tx_ref, and
-// verify-by-reference may answer with one of them only (security-reviewer M4): when that answer is not
-// successful, every attempt on the order is listed and a successful one is used. If the list cannot be
-// read, `attemptsUnclear` makes an order that would be given up on go to 'review' instead.
-type Verified = { tx: ProviderTx; data: Record<string, unknown> | null; attemptsUnclear: boolean };
+// The processor's own answer for an order (providers/<name>.ts verify): by transaction id when a signed
+// webhook or an earlier check gave one, otherwise by our order id. When the processor could not list
+// every attempt on the order, `attemptsUnclear` makes an order that would be given up on go to 'review'.
+const verifyAtProvider = (orderId: string, transactionId: string | null): Promise<VerifiedPayment> => gateway().verify(orderId, transactionId);
 
-async function verifyAtProvider(orderId: string, transactionId: string | null): Promise<Verified> {
-  const read = (data: Record<string, unknown>): ProviderTx => ({
-    found: true,
-    status: data.status,
-    txRef: data.tx_ref,
-    amount: data.amount,
-    chargedAmount: data.charged_amount,
-    currency: data.currency,
-  });
-  const successful = (data: Record<string, unknown>) => typeof data.status === 'string' && data.status.toLowerCase() === 'successful';
-  try {
-    if (transactionId) {
-      const data = await flw(`/transactions/${transactionId}/verify`, 'GET');
-      if (data.tx_ref === orderId) return { tx: read(data), data, attemptsUnclear: false };
-      console.error(`Deposit ${orderId}: transaction id belongs to another reference; checking by reference`);
-    }
-    const data = await flw(`/transactions/verify_by_reference?tx_ref=${encodeURIComponent(orderId)}`, 'GET');
-    if (successful(data)) return { tx: read(data), data, attemptsUnclear: false };
-    try {
-      // All attempts on this order (endpoint and filter to confirm in the sandbox).
-      const list = await flw(`/transactions?tx_ref=${encodeURIComponent(orderId)}`, 'GET');
-      const id = successfulAttemptId(list, orderId);
-      if (id) {
-        const paid = await flw(`/transactions/${id}/verify`, 'GET');
-        if (paid.tx_ref === orderId) return { tx: read(paid), data: paid, attemptsUnclear: false };
-      }
-      return { tx: read(data), data, attemptsUnclear: false };
-    } catch (err) {
-      console.error(`Deposit ${orderId}: attempts could not be listed (${err instanceof FlwError ? `HTTP ${err.http}` : 'error'})`);
-      return { tx: read(data), data, attemptsUnclear: true };
-    }
-  } catch (err) {
-    if (err instanceof FlwError && err.notFound) return { tx: { found: false }, data: null, attemptsUnclear: false };
-    throw err;
-  }
-}
-
-// What Flutterwave reported, saved on the payment row with a paid or review status (payer, payee and
+// What the processor reported, saved on the payment row with a paid or review status (payer, payee and
 // admins can read these). Exact whole shillings, no floats.
-function settledFields(data: Record<string, unknown> | null): Record<string, unknown> {
-  if (!data) return {};
-  const id = data.id;
+function settledFields(details: PaymentDetails | null): Record<string, unknown> {
+  if (!details) return {};
   return {
-    provider_amount: parseWholeTzs(data.amount),
-    provider_reference: plain(data.flw_ref, 80),
-    provider_channel: plain(data.payment_type, 40),
-    provider_transaction_id: (typeof id === 'number' && Number.isSafeInteger(id)) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null,
+    provider_amount: parseWholeTzs(details.amount),
+    provider_reference: plain(details.reference, 80),
+    provider_channel: plain(details.channel, 40),
+    provider_transaction_id: details.transactionId !== null && /^[\w.:-]{1,80}$/.test(details.transactionId) ? details.transactionId : null,
   };
 }
 
 // The provider's fee and settled amount: admins only (payment_provider_details, security-reviewer L6).
-async function saveProviderDetails(db: Admin, paymentId: string, data: Record<string, unknown> | null) {
-  if (!data) return;
-  const currency = parseCurrency(data.currency);
-  const fee = parseMoney2(data.app_fee);
-  const settledAmount = parseMoney2(data.amount_settled);
+async function saveProviderDetails(db: Admin, paymentId: string, details: PaymentDetails | null) {
+  if (!details) return;
+  const currency = parseCurrency(details.currency);
+  const fee = parseMoney2(details.fee);
+  const settledAmount = parseMoney2(details.settledAmount);
   const { error } = await db.from('payment_provider_details').upsert({
     payment_id: paymentId,
     provider_fee: fee,
     provider_fee_currency: fee === null ? null : currency,
-    // Settlement currency assumed to be the charge currency (TZS); to verify in the sandbox.
+    // Settlement currency assumed to be the charge currency (TZS); to verify in the sandbox per processor.
     provider_settled_amount: settledAmount,
     provider_settled_currency: settledAmount === null ? null : currency,
     updated_at: new Date().toISOString(),
@@ -589,7 +259,7 @@ const withoutTxId = (patch: Record<string, unknown>) => Object.fromEntries(Objec
 
 // moveStatus with the unique indexes handled one by one (security-reviewer L5):
 //   payments_one_paid_offer / _member: another order for this deposit is already paid: 'review' (paid_twice);
-//   payments_provider_tx_unique: this Flutterwave transaction is already on another order: 'review'
+//   payments_provider_tx_unique: this processor transaction is already on another order: 'review'
 //   without the transaction id (duplicate_transaction), so a retry does not hit the same index again.
 async function moveChecked(db: Admin, id: string, from: string, patch: Record<string, unknown>, source: Source, completed?: Record<string, unknown>): Promise<string> {
   try {
@@ -611,14 +281,14 @@ async function moveChecked(db: Admin, id: string, from: string, patch: Record<st
 
 type Claim = { column: 'last_checked_at' | 'payer_checked_at'; ms: number };
 
-// Ask Flutterwave for the real result and record it. Used by the webhook, the sweeper, checkout, the
+// Ask the processor for the real result and record it. Used by the webhook, the sweeper, checkout, the
 // return page and the app. Safe to repeat: every change is conditional on the stored status.
 async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source: Source; transactionId?: string | null }): Promise<{ status: string } | null> {
   const { data: payment } = await db
     .from('payments')
     .select('id, status, amount_tzs, trip_offer_id, group_member_id, payee_user_id, created_at, provider_transaction_id')
     .eq('order_id', orderId)
-    .eq('provider', 'flutterwave')
+    .eq('provider', PROVIDER_ID)
     .maybeSingle();
   if (!payment) return null;
   const stored = { status: payment.status as string };
@@ -642,13 +312,13 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     if (!claimed?.length) return stored;
   }
 
-  let verified: Verified;
+  let verified: VerifiedPayment;
   try {
     verified = await verifyAtProvider(orderId, opts.transactionId ?? payment.provider_transaction_id ?? null);
   } catch (err) {
-    // A pending order Flutterwave has not answered about for a day is given up on (still re-checked 3 days).
+    // A pending order the processor has not answered about for a day is given up on (still re-checked 3 days).
     if (payment.status === 'pending' && age > LIMITS.staleMs) {
-      console.error(`Deposit ${orderId}: no answer from Flutterwave for over a day; marked failed`);
+      console.error(`Deposit ${orderId}: no answer from the processor for over a day; marked failed`);
       return { status: await moveStatus(db, payment.id, 'pending', { status: 'failed', status_reason: 'stale' }, opts.source) };
     }
     if (claimedAt && opts.claim?.column === 'last_checked_at' && payment.status === 'pending') {
@@ -667,17 +337,17 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     attemptsUnclear: verified.attemptsUnclear,
   });
   if (decision.reason === 'reference_mismatch') {
-    console.error(`Deposit ${orderId}: Flutterwave answered for another reference; nothing changed`);
+    console.error(`Deposit ${orderId}: the processor answered for another reference; nothing changed`);
     return stored;
   }
-  const settled = settledFields(verified.data);
+  const settled = settledFields(verified.details);
   const completed = verified.tx.found && String(verified.tx.status).toLowerCase() === 'successful' ? settled : undefined;
 
   if (payment.status === 'failed') {
     if (decision.status !== 'review') return stored;
-    console.error(`Deposit ${orderId}: paid at Flutterwave after it was marked failed; held for review`);
+    console.error(`Deposit ${orderId}: paid at the processor after it was marked failed; held for review`);
     const now = await moveChecked(db, payment.id, 'failed', { ...settled, status: 'review', status_reason: decision.reason }, opts.source);
-    await saveProviderDetails(db, payment.id, verified.data);
+    await saveProviderDetails(db, payment.id, verified.details);
     return { status: now };
   }
 
@@ -700,7 +370,7 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
     paid_at: status === 'paid' ? new Date().toISOString() : null,
   };
   const now = await moveChecked(db, payment.id, 'pending', patch, opts.source, completed);
-  if (completed) await saveProviderDetails(db, payment.id, verified.data);
+  if (completed) await saveProviderDetails(db, payment.id, verified.details);
   return { status: now };
 }
 
@@ -709,14 +379,8 @@ async function refresh(db: Admin, orderId: string, opts: { claim?: Claim; source
 // asks this function to re-check pending orders (closing expired ones) and recent failed ones (a late
 // payment goes to 'review'). Answers counts only, never order ids or amounts.
 // ---------------------------------------------------------------------------
-async function sameSecretText(expected: string, given: string) {
-  if (expected.length < 32 || given === '') return false;
-  const enc = new TextEncoder();
-  const [a, b] = await Promise.all([expected, given].map(async (s) => new Uint8Array(await crypto.subtle.digest('SHA-256', enc.encode(s)))));
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
-}
+// Timing-safe (sameSecret compares SHA-256 digests); a short expected secret or an empty header never passes.
+const sameSecretText = async (expected: string, given: string) => expected.length >= 32 && given !== '' && (await sameSecret(expected, given));
 
 async function sweep(db: Admin) {
   const now = Date.now();
@@ -725,7 +389,7 @@ async function sweep(db: Admin) {
     db
       .from('payments')
       .select('order_id, status')
-      .eq('provider', 'flutterwave')
+      .eq('provider', PROVIDER_ID)
       .eq('status', 'pending')
       .lt('created_at', iso(now - SWEEP_MIN_AGE_MS))
       .or(`last_checked_at.is.null,last_checked_at.lt."${iso(now - SWEEP_INTERVAL_MS)}"`)
@@ -734,7 +398,7 @@ async function sweep(db: Admin) {
     db
       .from('payments')
       .select('order_id, status')
-      .eq('provider', 'flutterwave')
+      .eq('provider', PROVIDER_ID)
       .eq('status', 'failed')
       .gt('created_at', iso(now - FAILED_RECHECK_MS))
       .or(`last_checked_at.is.null,last_checked_at.lt."${iso(now - SWEEP_FAILED_INTERVAL_MS)}"`)
@@ -913,7 +577,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
   const settled = await settledError(db, order);
   if (settled) return json({ error: settled }, 409);
 
-  // One open order per deposit. A Flutterwave payment link cannot be cancelled, so an open order is
+  // One open order per deposit. A hosted payment link cannot be cancelled, so an open order is
   // re-checked; while its page is still fresh the traveller is sent back to the same page, otherwise
   // they wait until it expires (the sweeper then closes it).
   const { data: open, error: openError } = await db.from('payments').select('id, order_id').eq(target, targetId).eq('status', 'pending');
@@ -925,7 +589,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
       if (current?.status === 'review') return json({ error: 'under_review' }, 409);
       if (current?.status === 'pending') {
         const { data: link } = await db.from('payment_checkout_links').select('url, created_at').eq('payment_id', earlier.id).maybeSingle();
-        if (link && Date.now() - new Date(link.created_at).getTime() < LINK_REUSE_MS && isAllowedPaymentUrl(link.url)) {
+        if (link && Date.now() - new Date(link.created_at).getTime() < LINK_REUSE_MS && isPaymentUrlOn(link.url, gateway().paymentDomains)) {
           return json({ url: link.url, order_id: earlier.order_id, reused: true });
         }
         return json({ error: 'pending_order', order_id: earlier.order_id }, 409);
@@ -942,7 +606,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
     .select('order_id')
     .eq(target, targetId)
     .eq('status', 'failed')
-    .eq('provider', 'flutterwave')
+    .eq('provider', PROVIDER_ID)
     .gt('created_at', new Date(Date.now() - FAILED_RECHECK_MS).toISOString())
     .order('created_at', { ascending: false })
     .limit(CHECKOUT_FAILED_CHECKS);
@@ -978,7 +642,7 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
       usd_tzs_rate: centsToUsd(rate100), // hundredths as an exact decimal, e.g. 265075 -> "2650.75"
       rate_source: RATE_SOURCE,
       order_id: orderId,
-      provider: 'flutterwave',
+      provider: PROVIDER_ID,
       status_source: 'checkout',
     })
     .select('id')
@@ -998,33 +662,32 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
   const { data: profile } = await db.from('profiles').select('full_name, phone').eq('id', user.id).single();
   const phone = tzPhone(profile?.phone ?? null);
   try {
-    // Fee bearer: Flutterwave Standard has no documented per-payment "merchant pays" field, so the
-    // dashboard setting must be "merchant pays" (Walter). The server enforces it anyway: a payment
-    // whose charged_amount is above our amount is held for review, never 'paid' (decideDeposit).
-    const data = await flw('/payments', 'POST', {
-      tx_ref: orderId,
-      amount: tzs,
+    // Exact whole shillings in TZS. The processor's fee is paid by Kwetuly: a payment whose charged amount
+    // is above ours is held for review, never 'paid' (decideDeposit).
+    const provider = gateway();
+    const { paymentUrl: url } = await provider.createCheckout({
+      orderId,
+      amountTzs: tzs,
       currency: 'TZS',
-      redirect_url: `${SITE_URL}/${lang}/payments/return?order=${orderId}`,
-      payment_options: 'card,mobilemoneytanzania',
+      kind: order.offerId ? 'offer_deposit' : 'group_deposit',
       customer: {
         email: cleanEmail(user.email),
         name: cleanText(profile?.full_name ?? '', 60, 'Kwetuly traveller'),
-        ...(phone ? { phonenumber: phone } : {}),
+        phone,
       },
-      customizations: { title: 'Kwetuly deposit', description: cleanText(order.description, 100, 'Kwetuly deposit') },
-      meta: { kind: order.offerId ? 'offer_deposit' : 'group_deposit' },
-      configurations: { session_duration: session, max_retry_attempt: 5 },
+      redirectUrl: `${SITE_URL}/${lang}/payments/return?order=${orderId}`,
+      title: 'Kwetuly deposit',
+      description: cleanText(order.description, 100, 'Kwetuly deposit'),
+      sessionMinutes: session,
     });
-    const url = data.link;
-    if (!isAllowedPaymentUrl(url)) throw new Error('Payment page not allowed');
+    if (!isPaymentUrlOn(url, provider.paymentDomains)) throw new Error('Payment page not allowed');
     const { error: linkError } = await db.from('payment_checkout_links').insert({ payment_id: inserted.id, url });
     if (linkError) console.error(`Deposit ${orderId}: link not saved (${linkError.code})`);
     return json({ url, order_id: orderId });
   } catch (err) {
-    // The link may still exist at Flutterwave (a timeout after it was made): the sweeper re-checks failed
+    // The link may still exist at the processor (a timeout after it was made): the sweeper re-checks failed
     // orders for 3 days, so a payment on it reaches 'review'.
-    const why = err instanceof FlwError ? `HTTP ${err.http}` : err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError') ? 'timeout' : err instanceof Error && err.message === 'Payment page not allowed' ? 'payment page not allowed' : 'other error';
+    const why = err instanceof ProviderHttpError ? `HTTP ${err.http}` : err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError') ? 'timeout' : err instanceof Error && err.message === 'Payment page not allowed' ? 'payment page not allowed' : 'other error';
     console.error(`Deposit ${orderId}: create payment failed (${why})`);
     await moveStatus(db, inserted.id, 'pending', { status: 'failed', status_reason: 'gateway_error' }, 'checkout').catch((e) => console.error(e instanceof Error ? e.message : e));
     return json({ error: 'gateway_error' }, 502);
@@ -1034,16 +697,17 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
 // ---------------------------------------------------------------------------
 // Webhook
 // ---------------------------------------------------------------------------
-async function webhook(db: Admin, raw: string, signature: string | null, verifHash: string | null) {
-  const valid = await verifyFlutterwaveWebhook(raw, { signature, verifHash }, { mode: WEBHOOK_MODE, secret: WEBHOOK_SECRET });
+async function webhook(db: Admin, raw: string, headers: Headers) {
+  const provider = gateway();
+  const valid = await provider.verifyWebhook(headers, raw);
   let parsed: unknown = null;
   try {
     parsed = JSON.parse(raw);
   } catch {
     // not JSON
   }
-  const ref = readWebhook(parsed);
-  const base = { provider: 'flutterwave', event_type: ref.eventType, tx_ref: ref.txRef, provider_transaction_id: ref.transactionId };
+  const ref = provider.readWebhook(parsed);
+  const base = { provider: provider.id, event_type: ref.eventType, tx_ref: ref.txRef, provider_transaction_id: ref.transactionId };
 
   if (!valid) {
     // Logged only when it names one of our orders, and at most once per order per hour (M3), so a
@@ -1063,7 +727,7 @@ async function webhook(db: Admin, raw: string, signature: string | null, verifHa
   const eventKey = ref.eventKey ?? `nokey:${crypto.randomUUID()}`;
   const { error: logError } = await db
     .from('payment_events')
-    .upsert({ ...base, event_key: eventKey, signature_valid: true, payload: pickPayload(parsed) }, { onConflict: 'provider,event_key', ignoreDuplicates: true });
+    .upsert({ ...base, event_key: eventKey, signature_valid: true, payload: provider.pickPayload(parsed) }, { onConflict: 'provider,event_key', ignoreDuplicates: true });
   if (logError) console.error(`payments webhook: log failed (${logError.code})`);
 
   if (!ref.txRef) return json({ ok: true });
@@ -1074,11 +738,11 @@ async function webhook(db: Admin, raw: string, signature: string | null, verifHa
     await db
       .from('payment_events')
       .update({ processed_at: new Date().toISOString(), result_status: result?.status ?? 'unknown_order' })
-      .eq('provider', 'flutterwave')
+      .eq('provider', provider.id)
       .eq('event_key', eventKey);
     return json({ ok: true });
   } catch (err) {
-    // 500 so Flutterwave retries (if retries are on); the sweeper covers it too.
+    // 500 so the processor retries (if retries are on); the sweeper covers it too.
     console.error(err instanceof Error ? err.message : 'webhook refresh failed');
     return json({ error: 'retry' }, 500);
   }
@@ -1116,9 +780,8 @@ Deno.serve(async (req) => {
   const raw = await readCapped(req, MAX_BODY_BYTES);
   if (raw === null) return json({ error: 'too_large' }, 413);
 
-  const signature = req.headers.get('flutterwave-signature');
-  const verifHash = req.headers.get('verif-hash');
-  const isWebhook = signature !== null || verifHash !== null;
+  // A webhook is recognised by the adapter from its own headers (Flutterwave: flutterwave-signature or verif-hash).
+  const isWebhook = PROVIDER?.isWebhook(req.headers) ?? false;
 
   let body: Record<string, unknown> = {};
   if (!isWebhook) {
@@ -1128,12 +791,14 @@ Deno.serve(async (req) => {
     } catch {
       // not JSON: an empty request
     }
-    if (body.action === 'config') return json({ enabled: enabled(), rate: enabled() ? RATE100! / 100 : null, rate100: enabled() ? RATE100 : null });
+    if (body.action === 'config') {
+      return json({ enabled: enabled(), rate: enabled() ? RATE100! / 100 : null, rate100: enabled() ? RATE100 : null, provider: enabled() ? PROVIDER_ID : null });
+    }
   }
   if (!enabled()) return json({ error: 'not_configured' }, 503);
   const db = admin();
 
-  if (isWebhook) return webhook(db, raw, signature, verifHash);
+  if (isWebhook) return webhook(db, raw, req.headers);
 
   if (body.action === 'sweep') {
     if (!(await sameSecretText(env('PAYMENTS_SWEEP_SECRET'), req.headers.get('x-kwetuly-sweep') ?? ''))) return json({ error: 'forbidden' }, 403);

@@ -2,7 +2,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { isAllowedPaymentUrl } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
-// Trip requests with offers, deposits (Flutterwave hosted checkout) and chat alerts: the same tables and rules as the website.
+// Trip requests with offers, deposits (the payment processor's hosted checkout) and chat alerts: the same tables and rules as the website.
 
 export type TripRequest = {
   id: string;
@@ -158,7 +158,8 @@ export async function offerContacts(offerId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Deposits through the `payments` Edge Function (Flutterwave). Hidden until payments are set up there.
+// Deposits through the `payments` Edge Function (processor: ACTIVE_PAYMENT_PROVIDER in packages/shared).
+// Hidden until payments are set up there.
 // Statuses change only in that function; the app only opens the hosted page and asks for the result.
 // ---------------------------------------------------------------------------
 /** Whether payments are set up, the shillings-per-dollar rate for "≈ TSh" prices, and the same rate in whole hundredths. */
@@ -243,7 +244,7 @@ export async function listMyDeposits(userId: string) {
   }[];
 }
 
-/** Opens Flutterwave's payment page (card number typed only there); afterwards the server asks Flutterwave for the result. */
+/** Opens the processor's payment page (card number typed only there); afterwards the server asks the processor for the result. */
 export async function payDeposit(kind: 'offer' | 'group', id: string, locale: string): Promise<'paid' | 'pending' | 'failed' | string> {
   const { data, error } = await supabase.functions.invoke('payments', { body: { action: 'checkout', kind, id, locale } });
   const result = (data ?? {}) as { url?: string; order_id?: string; error?: string };

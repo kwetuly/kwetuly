@@ -769,7 +769,7 @@ export const sw: Dictionary = {
   },
   payments: {
     title: 'Lipa amana yako',
-    body: 'Lipa kwa usalama kwa kadi (Visa, Mastercard) au pesa kwa simu (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) kwenye ukurasa wa malipo wa Flutterwave. Namba ya kadi yako unaiandika huko tu, si kwenye Kwetuly.',
+    body: 'Lipa kwa usalama kwa kadi (Visa, Mastercard) au pesa kwa simu (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) kwenye ukurasa wa malipo wa {provider}. Namba ya kadi yako unaiandika huko tu, si kwenye Kwetuly.',
     cta: 'Lipa amana',
     amount: 'Amana',
     paid: 'Amana imelipwa',

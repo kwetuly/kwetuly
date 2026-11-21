@@ -1,6 +1,7 @@
 // Event names shared by the website and the app, so funnels in PostHog line up across both.
 // Rule: never put names, emails, phone numbers, message text or other personal details in
 // properties. Public ids (guide/tour slugs, locale, screen) are fine.
+import { ALL_PAYMENT_DOMAINS } from './payment-rules';
 
 export const EVENTS = {
   ctaClicked: 'cta_clicked',
@@ -26,13 +27,15 @@ export const POSTHOG_DEFAULT_HOST = 'https://eu.i.posthog.com';
 
 const BLOCKED = /(e-?mail|phone|name|message|body|text|password|token)/i;
 
-// Payment pages carry the order id in the address (/payments/return?order=RAF...), and Flutterwave's own
-// pages (the referrer after paying) can carry payment tokens. Analytics gets those addresses without
-// the query string or #hash. Other addresses are left as they are.
+// Payment pages carry the order id in the address (/payments/return?order=RAF...), and the payment
+// processor's own pages (the referrer after paying) can carry payment tokens. Analytics gets those
+// addresses without the query string or #hash. Other addresses are left as they are. The processor
+// domains come from PAYMENT_PROVIDERS (payment-rules.ts): every known processor, not only the active one.
+const PROVIDER_HOSTS = ALL_PAYMENT_DOMAINS.map((domain) => domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 const PRIVATE_PATH = /\/payments(\/|$)/;
-const PRIVATE_HOST = /(^|\.)(flutterwave\.com)$/i;
+const PRIVATE_HOST = new RegExp(String.raw`(^|\.)(${PROVIDER_HOSTS})$`, 'i');
 
-/** Strips the query string and hash from a payment-page or Flutterwave address (full URL or path). */
+/** Strips the query string and hash from a payment-page or payment-processor address (full URL or path). */
 export function redactUrl(value: string): string {
   const isPath = value.startsWith('/');
   if (!isPath && !/^https?:\/\//i.test(value)) return value;
@@ -45,13 +48,13 @@ export function redactUrl(value: string): string {
   }
 }
 
-// Text that holds a payment-page or Flutterwave address with a query string or #hash anywhere inside it,
+// Text that holds a payment-page or processor address with a query string or #hash anywhere inside it,
 // also without "https://" or a leading "/" (e.g. "en/payments/return?order=..." or a web-vitals
 // attribution string). The query string and hash after such an address are cut off.
 const PAYMENT_QUERY = /(\/payments\/[^\s?#"'<>]*)[?#][^\s"'<>]*/g;
-const PROVIDER_QUERY = /((?:^|[\s/"'.])(?:[\w-]+\.)*(?:flutterwave\.com)(?:[/:][^\s?#"'<>]*)?)[?#][^\s"'<>]*/gi;
+const PROVIDER_QUERY = new RegExp(String.raw`((?:^|[\s/"'.])(?:[\w-]+\.)*(?:${PROVIDER_HOSTS})(?:[/:][^\s?#"'<>]*)?)[?#][^\s"'<>]*`, 'gi');
 
-/** redactUrl, then cuts the query string and hash after any payment or Flutterwave address inside the text. */
+/** redactUrl, then cuts the query string and hash after any payment or processor address inside the text. */
 export function redactText(value: string): string {
   const url = redactUrl(value);
   if (url !== value) return url;

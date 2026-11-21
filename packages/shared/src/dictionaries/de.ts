@@ -588,7 +588,7 @@ export const de: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Anzahlung bezahlen',
-    body: 'Sicher bezahlen mit Karte (Visa, Mastercard) oder Mobile Money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) auf der Zahlungsseite von Flutterwave. Ihre Kartennummer geben Sie nur dort ein, nie bei Kwetuly.',
+    body: 'Sicher bezahlen mit Karte (Visa, Mastercard) oder Mobile Money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) auf der Zahlungsseite von {provider}. Ihre Kartennummer geben Sie nur dort ein, nie bei Kwetuly.',
     cta: 'Anzahlung bezahlen',
     amount: 'Anzahlung',
     paid: 'Anzahlung bezahlt',

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { pageMeta } from '@/lib/seo';
 import { LegalPage } from '@/components/legal-page';
+import { PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
@@ -20,7 +21,8 @@ const PROVIDERS: [string, string][] = [
   ['Anthropic', 'Answers questions sent to the travel concierge'],
   ['PostHog (EU)', 'Cookieless usage statistics'],
   ['Google and Facebook', 'Sign-in, only if you choose it'],
-  ['Flutterwave', 'Card and mobile-money payments, only when deposits are switched on'],
+  // The active processor's name comes from packages/shared (payment-rules.ts, ACTIVE_PAYMENT_PROVIDER).
+  [PAYMENT_PROVIDER_NAME, 'Card and mobile-money payments, only when deposits are switched on'],
   ['OpenFreeMap and Amazon Web Services', 'Map images on tour pages; they see your IP address when a map loads'],
 ];
 

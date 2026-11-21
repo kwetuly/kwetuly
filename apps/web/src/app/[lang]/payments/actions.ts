@@ -12,8 +12,9 @@ const localeOf = (formData: FormData): Locale => {
   return hasLocale(value) ? value : defaultLocale;
 };
 
-// Starts a checkout for a deposit and sends the traveller to Flutterwave's hosted payment page.
-// The payment page address is checked again here: only https pages on Flutterwave's own domain.
+// Starts a checkout for a deposit and sends the traveller to the processor's hosted payment page.
+// The payment page address is checked again here: only https pages on the active processor's own
+// domains (isAllowedPaymentUrl, ACTIVE_PAYMENT_PROVIDER in packages/shared).
 export async function startPayment(formData: FormData) {
   const locale = localeOf(formData);
   await requireUser(locale);

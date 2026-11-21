@@ -588,7 +588,7 @@ export const pl: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Zapłać zaliczkę',
-    body: 'Zapłać bezpiecznie kartą (Visa, Mastercard) lub mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) na stronie płatności Flutterwave. Numer karty wpisujesz tylko tam, nigdy w Kwetuly.',
+    body: 'Zapłać bezpiecznie kartą (Visa, Mastercard) lub mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) na stronie płatności {provider}. Numer karty wpisujesz tylko tam, nigdy w Kwetuly.',
     cta: 'Zapłać zaliczkę',
     amount: 'Zaliczka',
     paid: 'Zaliczka zapłacona',

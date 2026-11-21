@@ -1,14 +1,17 @@
-// Provider-agnostic deposit rules (payments-engineer, 2026-11-22, Flutterwave switch).
+// Deposit rules (payments-engineer; provider adapters 2026-11-21, Flutterwave chosen, Selcom parked).
 //
-// The `payments` Edge Function (Deno) cannot import this package, so the block between the BEGIN and
-// END lines below is copied into supabase/functions/payments/index.ts word for word.
-// payment-rules.test.ts fails if the two copies differ: change this file, then paste the block there.
+// The `payments` Edge Function (Deno) cannot import this package, so two blocks below are copied into
+// it word for word; payment-rules.test.ts fails if a copy differs (change this file, then paste):
+//   - BEGIN/END payment-rules:     provider-neutral rules  -> supabase/functions/payments/core.ts
+//   - BEGIN/END flutterwave-rules: Flutterwave field names -> supabase/functions/payments/providers/flutterwave.ts
+// Below the blocks (this package only): which processor is active, its name and payment-page domains,
+// for the website and the app. Switching processor: docs in supabase/functions/payments/providers/index.ts.
 //
 // Money rules: whole US cents and whole shillings only, no floating-point maths on amounts; fees and
 // settled amounts are kept as exact decimal strings (numeric(14,2) in the database).
 
 // BEGIN payment-rules
-/** Order ids Kwetuly creates (sent to the provider as tx_ref): "RAF" + 32 lower-case hex characters. */
+/** Order ids Kwetuly creates (sent to the provider as its merchant reference): "RAF" + 32 lower-case hex characters. */
 export const ORDER_ID_PATTERN = /^RAF[0-9a-f]{32}$/;
 export const isOrderId = (value: unknown): value is string => typeof value === 'string' && ORDER_ID_PATTERN.test(value);
 
@@ -67,7 +70,14 @@ export function parseMoney2(raw: unknown): string | null {
 export const parseCurrency = (raw: unknown): string | null =>
   typeof raw === 'string' && /^[A-Za-z]{3}$/.test(raw.trim()) ? raw.trim().toUpperCase() : null;
 
-/** What the provider's verify call said about one order. `found: false`: the provider knows no payment for it. */
+/**
+ * What the provider's verify call said about one order, in Kwetuly's own field names (the provider
+ * adapter maps its fields onto these). `found: false`: the provider knows no payment for it.
+ *   - status: the provider's status; after trim and lower case 'successful' means paid, 'pending' means
+ *     still open, anything else is not paid. An adapter whose provider uses other words maps them.
+ *   - txRef: the order id the provider echoes back (must equal ours, or nothing changes).
+ *   - amount: what the order was for; chargedAmount: what the payer was charged; currency: their currency.
+ */
 export type ProviderTx =
   | { found: false }
   | { found: true; status: unknown; txRef: unknown; amount: unknown; chargedAmount: unknown; currency: unknown };
@@ -101,7 +111,7 @@ export type DepositLimits = {
 /**
  * Decides a stored order's next status from the provider's verify answer. Never trusts a webhook body
  * or a return URL: only the server's own verify call is passed in here.
- *   - 'paid' only when the provider says successful, for this tx_ref, in TZS, for exactly our amount,
+ *   - 'paid' only when the provider says successful, for this order id, in TZS, for exactly our amount,
  *     and the payer was charged exactly that amount (Kwetuly pays the provider's fee, not the traveller).
  *   - Any other successful payment is held as 'review' for an admin, never 'paid'.
  *   - A successful payment on an order Kwetuly had given up on ('failed') goes to 'review'.
@@ -146,26 +156,6 @@ export function decideDeposit(input: {
   return decision;
 }
 
-/**
- * From a list of the provider's transactions for one order (all attempts on the hosted page), the id of
- * a successful one for exactly this tx_ref, or null. Used because verify-by-reference may answer with
- * one attempt only (security-reviewer M4).
- */
-export function successfulAttemptId(list: unknown, orderId: string): string | null {
-  if (!Array.isArray(list)) return null;
-  for (const item of list.slice(0, 50)) {
-    if (!item || typeof item !== 'object') continue;
-    const tx = item as Record<string, unknown>;
-    const id = tx.id;
-    const plainId = (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null;
-    if (plainId && tx.tx_ref === orderId && typeof tx.status === 'string' && tx.status.trim().toLowerCase() === 'successful') return plainId;
-  }
-  return null;
-}
-
-/** Provider payment page domains. Only subdomains (e.g. "checkout.flutterwave.com") pass, not the bare domain. */
-export const FLUTTERWAVE_PAYMENT_DOMAINS: readonly string[] = ['flutterwave.com'];
-
 const PAYMENT_URL = /^https:\/\/([A-Za-z0-9.-]+)(?::443)?(?:[/?#][\x21-\x5b\x5d-\x7e]*)?$/;
 const HOST_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
@@ -175,7 +165,7 @@ const HOST_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
  * spaces, control or non-ASCII characters, backslashes, and anything longer than 2048 characters.
  * Pure string check, so it behaves the same in browsers, React Native, Node and Deno.
  */
-export function isAllowedPaymentUrl(url: unknown, domains: readonly string[] = FLUTTERWAVE_PAYMENT_DOMAINS): url is string {
+export function isPaymentUrlOn(url: unknown, domains: readonly string[]): url is string {
   if (typeof url !== 'string' || url.length === 0 || url.length > 2048) return false;
   const match = PAYMENT_URL.exec(url);
   if (!match) return false;
@@ -186,7 +176,7 @@ export function isAllowedPaymentUrl(url: unknown, domains: readonly string[] = F
 
 const encoder = new TextEncoder();
 
-async function sameSecret(a: string, b: string): Promise<boolean> {
+export async function sameSecret(a: string, b: string): Promise<boolean> {
   // Compare SHA-256 digests in constant time, so timing says nothing about the secret.
   const [x, y] = await Promise.all([a, b].map(async (s) => new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(s)))));
   let diff = 0;
@@ -194,8 +184,45 @@ async function sameSecret(a: string, b: string): Promise<boolean> {
   return diff === 0;
 }
 
-/** Shortest webhook secret Kwetuly accepts (Walter sets it in the Flutterwave dashboard). */
+/** Shortest webhook secret Kwetuly accepts (Walter sets it in the provider's dashboard). */
 export const MIN_WEBHOOK_SECRET_LENGTH = 32;
+
+/**
+ * Log key for an unsigned or wrongly signed call naming one of our orders: one row per order per hour at
+ * most (security-reviewer M3), so a script cannot fill the callback log.
+ */
+export function invalidEventKey(txRef: string, nowMs: number): string {
+  return `invalid:${txRef}:${new Date(nowMs).toISOString().slice(0, 13)}`;
+}
+
+/**
+ * What Kwetuly reads from a webhook body: only keys to look the order up with, never its amounts or
+ * status. eventKey: stable per delivery (repeats are logged once); txRef: our order id; transactionId:
+ * the provider's own transaction id, used to verify.
+ */
+export type WebhookRef = { eventKey: string | null; eventType: string | null; txRef: string | null; transactionId: string | null };
+// END payment-rules
+
+// BEGIN flutterwave-rules
+/** Flutterwave's payment page domains. Only subdomains (e.g. "checkout.flutterwave.com") pass, not the bare domain. */
+export const FLUTTERWAVE_PAYMENT_DOMAINS: readonly string[] = ['flutterwave.com'];
+
+/**
+ * From a list of Flutterwave's transactions for one order (all attempts on the hosted page), the id of
+ * a successful one for exactly this tx_ref, or null. Used because verify-by-reference may answer with
+ * one attempt only (security-reviewer M4).
+ */
+export function successfulFlutterwaveAttemptId(list: unknown, orderId: string): string | null {
+  if (!Array.isArray(list)) return null;
+  for (const item of list.slice(0, 50)) {
+    if (!item || typeof item !== 'object') continue;
+    const tx = item as Record<string, unknown>;
+    const id = tx.id;
+    const plainId = (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null;
+    if (plainId && tx.tx_ref === orderId && typeof tx.status === 'string' && tx.status.trim().toLowerCase() === 'successful') return plainId;
+  }
+  return null;
+}
 
 /** Which Flutterwave webhook scheme this account uses. Exactly one is accepted (security-reviewer L1). */
 export type WebhookMode = 'v3' | 'v4';
@@ -216,8 +243,9 @@ export async function verifyFlutterwaveWebhook(
   if (config.mode === 'v4') {
     const given = (headers.signature ?? '').trim();
     if (!given) return false;
-    const key = await crypto.subtle.importKey('raw', encoder.encode(config.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody)));
+    const utf8 = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', utf8.encode(config.secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, utf8.encode(rawBody)));
     let binary = '';
     for (const byte of mac) binary += String.fromCharCode(byte);
     return sameSecret(btoa(binary), given);
@@ -227,21 +255,10 @@ export async function verifyFlutterwaveWebhook(
   return sameSecret(config.secret, given);
 }
 
-/**
- * Log key for an unsigned or wrongly signed call naming one of our orders: one row per order per hour at
- * most (security-reviewer M3), so a script cannot fill the callback log.
- */
-export function invalidEventKey(txRef: string, nowMs: number): string {
-  return `invalid:${txRef}:${new Date(nowMs).toISOString().slice(0, 13)}`;
-}
-
-/** What Kwetuly reads from a webhook body: only keys to look the order up with, never its amounts or status. */
-export type WebhookRef = { eventKey: string | null; eventType: string | null; txRef: string | null; transactionId: string | null };
-
 const plainText = (value: unknown, max: number) =>
   typeof value === 'string' || typeof value === 'number' ? String(value).replace(/[^\w.:-]/g, '').slice(0, max) || null : null;
 
-export function readWebhook(body: unknown): WebhookRef {
+export function readFlutterwaveWebhook(body: unknown): WebhookRef {
   const root = body && typeof body === 'object' && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
   const data = root.data && typeof root.data === 'object' && !Array.isArray(root.data) ? (root.data as Record<string, unknown>) : {};
   const eventType = plainText(root.event ?? root.type, 60);
@@ -267,10 +284,10 @@ const keepValue = (value: unknown) =>
   typeof value === 'number' || typeof value === 'boolean' ? value : typeof value === 'string' ? value.replace(/[^\w .:+-]/g, '').slice(0, 64) : null;
 
 /**
- * The part of a provider callback that is safe to keep: a few top-level keys and, under `data`, only
+ * The part of a Flutterwave callback that is safe to keep: a few top-level keys and, under `data`, only
  * amounts, references, status, type and time. Values are plain numbers or short plain text.
  */
-export function pickPayload(body: unknown): Record<string, unknown> | null {
+export function pickFlutterwavePayload(body: unknown): Record<string, unknown> | null {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
   const root = body as Record<string, unknown>;
   const out: Record<string, unknown> = {};
@@ -283,4 +300,52 @@ export function pickPayload(body: unknown): Record<string, unknown> | null {
   }
   return out;
 }
-// END payment-rules
+// END flutterwave-rules
+
+// ---------------------------------------------------------------------------
+// The processor, in one place for the website and the app (not copied into the Edge Function, which
+// picks its adapter from PAYMENTS_PROVIDER). Labels and domains only: no keys, no amounts.
+// ---------------------------------------------------------------------------
+export type PaymentProviderInfo = {
+  /** Same id as payments.provider in the database and PAYMENTS_PROVIDER in the Edge Function. */
+  id: string;
+  /** Name shown to travellers (privacy page, Pay box) and admins. */
+  name: string;
+  /** Where an admin checks a payment by hand. */
+  console: string;
+  /** Payment page domains a traveller may be sent to (subdomains only). */
+  paymentDomains: readonly string[];
+};
+
+/** Processors with an adapter in supabase/functions/payments/providers. */
+export const PAYMENT_PROVIDERS = {
+  flutterwave: { id: 'flutterwave', name: 'Flutterwave', console: 'Flutterwave dashboard', paymentDomains: FLUTTERWAVE_PAYMENT_DOMAINS },
+} as const satisfies Record<string, PaymentProviderInfo>;
+
+export type PaymentProviderId = keyof typeof PAYMENT_PROVIDERS;
+
+/** The processor deposits use now. Must be the same as PAYMENTS_PROVIDER in the payments Edge Function. */
+export const ACTIVE_PAYMENT_PROVIDER: PaymentProviderInfo = PAYMENT_PROVIDERS.flutterwave;
+
+/** The active processor's name, e.g. for "{provider}" in the payments texts. */
+export const PAYMENT_PROVIDER_NAME = ACTIVE_PAYMENT_PROVIDER.name;
+
+/** Every known processor's payment-page domains (analytics strips query strings on all of them). */
+export const ALL_PAYMENT_DOMAINS: readonly string[] = Object.values(PAYMENT_PROVIDERS).flatMap((p) => [...p.paymentDomains]);
+
+/**
+ * True only for an https payment page of the active processor (see isPaymentUrlOn). The website and the
+ * app check the Edge Function's answer again with this before sending a traveller there.
+ */
+export function isAllowedPaymentUrl(url: unknown, domains: readonly string[] = ACTIVE_PAYMENT_PROVIDER.paymentDomains): url is string {
+  return isPaymentUrlOn(url, domains);
+}
+
+/** Where an admin checks a payment row by hand, by its `provider` column (older rows may be 'selcom', parked). */
+export function paymentConsoleName(provider: string | null | undefined): string {
+  if (provider === 'selcom') return 'Selcom portal';
+  if (!provider) return ACTIVE_PAYMENT_PROVIDER.console;
+  return Object.prototype.hasOwnProperty.call(PAYMENT_PROVIDERS, provider)
+    ? PAYMENT_PROVIDERS[provider as PaymentProviderId].console
+    : `${provider} dashboard`;
+}

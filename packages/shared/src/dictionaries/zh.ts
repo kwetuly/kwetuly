@@ -583,7 +583,7 @@ export const zh: Dictionary = {
   offers: en.offers,
   payments: {
     title: '支付订金',
-    body: '在 Flutterwave 的支付页面上用银行卡（Visa、Mastercard）或移动支付（M-Pesa、Mixx by Yas、Airtel Money、HaloPesa）安全付款。卡号只在该页面输入，绝不在 Kwetuly 上输入。',
+    body: '在 {provider} 的支付页面上用银行卡（Visa、Mastercard）或移动支付（M-Pesa、Mixx by Yas、Airtel Money、HaloPesa）安全付款。卡号只在该页面输入，绝不在 Kwetuly 上输入。',
     cta: '支付订金',
     amount: '订金',
     paid: '订金已支付',

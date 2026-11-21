@@ -588,7 +588,7 @@ export const fr: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Payer votre acompte',
-    body: 'Payez en toute sécurité par carte (Visa, Mastercard) ou mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) sur la page de paiement de Flutterwave. Vous saisissez votre numéro de carte uniquement là, jamais sur Kwetuly.',
+    body: 'Payez en toute sécurité par carte (Visa, Mastercard) ou mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) sur la page de paiement de {provider}. Vous saisissez votre numéro de carte uniquement là, jamais sur Kwetuly.',
     cta: 'Payer l’acompte',
     amount: 'Acompte',
     paid: 'Acompte payé',

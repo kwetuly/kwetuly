@@ -1,9 +1,10 @@
 import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
 
-// Deposits run through the `payments` Supabase Edge Function (Flutterwave hosted checkout). It stays
-// switched off until PAYMENTS_PROVIDER=flutterwave and the test keys are set there; then the Pay
-// buttons appear on their own. Statuses change only in that function, never from this website.
+// Deposits run through the `payments` Supabase Edge Function (the processor's hosted checkout; the
+// processor is ACTIVE_PAYMENT_PROVIDER in packages/shared). It stays switched off until PAYMENTS_PROVIDER
+// and that processor's test keys are set there; then the Pay buttons appear on their own.
+// Statuses change only in that function, never from this website.
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/payments`;
 
 export async function callPayments(body: Record<string, string>, accessToken?: string) {

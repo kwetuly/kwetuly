@@ -1,5 +1,5 @@
 import { CreditCard } from 'lucide-react';
-import { depositTzs } from '@kwetuly/shared';
+import { depositTzs, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { depositPayable, depositUsd, paymentsConfig } from '@/lib/payments';
@@ -83,7 +83,7 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
       <p className="text-2xl font-extrabold">
         ${depositUsd(totalUsd, percent).toLocaleString(locale)} <span className="text-sm font-semibold">({percent}%)</span>
       </p>
-      <p className="text-sm opacity-80">{p.body}</p>
+      <p className="text-sm opacity-80">{p.body.replace('{provider}', PAYMENT_PROVIDER_NAME)}</p>
       {tzs !== null && <p className="text-sm font-semibold">{p.charged.replace('{amount}', tzs.toLocaleString(locale))}</p>}
       {error && <p className="rounded-[5px] bg-red-50 p-2 text-sm text-red-800">{errorText(error, p)}</p>}
       <SubmitButton className="btn w-full">{p.cta}</SubmitButton>

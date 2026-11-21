@@ -1,4 +1,4 @@
-import { GUIDE_EXPERTISE } from '@kwetuly/shared';
+import { GUIDE_EXPERTISE, paymentConsoleName } from '@kwetuly/shared';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -463,7 +463,7 @@ type PaymentRow = {
 
 // Phone numbers on the payments list are masked with maskPhone (lib/admin-format).
 
-// Deposits paid on the provider's page (Flutterwave). Kwetuly pays them out to the guide or company, then ticks them here.
+// Deposits paid on the payment processor's page. Kwetuly pays them out to the guide or company, then ticks them here.
 // Paid deposits the database will refuse to mark paid out, by exactly the rule in private.guard_payout.
 // A paid, not-yet-paid-out deposit is stopped when:
 // * group deposit: its trip is cancelled or rejected (status not 'approved' or 'pending'), or the
@@ -638,7 +638,7 @@ async function Payments({ t, locale, searchParams }: { t: Dictionary; locale: Lo
                     p.status === 'paid' ? 'bg-mint text-forest' : p.status === 'review' ? 'bg-gold/25 text-charcoal' : 'bg-red-50 text-red-800'
                   }`}
                 >
-                  {p.status === 'review' ? `review: check in the ${p.provider === 'selcom' ? 'Selcom portal' : 'Flutterwave dashboard'}` : p.status}
+                  {p.status === 'review' ? `review: check in the ${paymentConsoleName(p.provider)}` : p.status}
                 </span>
               </p>
               {p.provider_amount != null && Number(p.provider_amount) !== p.amount_tzs && (

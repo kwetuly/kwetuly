@@ -767,7 +767,7 @@ export const en = {
   },
   payments: {
     title: 'Pay your deposit',
-    body: 'Pay securely by card (Visa, Mastercard) or mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) on Flutterwave’s payment page. You type your card number only there, never on Kwetuly.',
+    body: 'Pay securely by card (Visa, Mastercard) or mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) on {provider}’s payment page. You type your card number only there, never on Kwetuly.',
     cta: 'Pay deposit',
     amount: 'Deposit',
     paid: 'Deposit paid',

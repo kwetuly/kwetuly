@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { paymentsEnabled } from '@/lib/payments';
+import { ACTIVE_PAYMENT_PROVIDER } from '@kwetuly/shared';
 import { adminDateTime, hoursSince, waitedFor } from '@/lib/admin-format';
 import { TARGET_HOURS, loadQueue, type QueueItem, type ReviewKind } from '@/lib/admin-queue';
 import { AdminMenu } from './admin-menu';
@@ -164,7 +165,7 @@ async function HomeContent({ locale }: { locale: Locale }) {
             icon: Wallet,
             href: `/${locale}/admin/all#payments`,
             count: paymentsReview.error || paymentsToPay.error ? null : toPay,
-            line: `${paymentsReview.count ?? 0} to check in the Flutterwave dashboard, ${paymentsToPay.count ?? 0} to pay out`,
+            line: `${paymentsReview.count ?? 0} to check in the ${ACTIVE_PAYMENT_PROVIDER.console}, ${paymentsToPay.count ?? 0} to pay out`,
           } satisfies Tile,
         ]
       : []),
