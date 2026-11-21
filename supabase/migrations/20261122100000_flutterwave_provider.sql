@@ -109,8 +109,8 @@ $$;
 -- A. Provider columns.
 -- ---------------------------------------------------------------------------
 alter table public.payments
-  add column if not exists provider text not null default 'selcom' check (provider in ('selcom', 'flutterwave')),
-  add column if not exists provider_transaction_id text check (provider_transaction_id ~ '^[0-9]{1,20}$'),
+  add column if not exists provider text not null default 'selcom' check (provider ~ '^[a-z][a-z0-9_]{1,30}$'),
+  add column if not exists provider_transaction_id text check (provider_transaction_id ~ '^[A-Za-z0-9._:-]{1,64}$'),
   add column if not exists status_reason text check (length(status_reason) <= 40),
   add column if not exists status_source text check (status_source in ('checkout', 'payer_check', 'webhook', 'sweeper')),
   add column if not exists last_checked_at timestamptz,
@@ -164,11 +164,11 @@ comment on table public.payment_provider_details is
 -- ---------------------------------------------------------------------------
 create table if not exists public.payment_events (
   id uuid primary key default gen_random_uuid(),
-  provider text not null check (provider in ('selcom', 'flutterwave')),
+  provider text not null check (provider ~ '^[a-z][a-z0-9_]{1,30}$'),
   event_key text not null check (length(event_key) <= 160),
   event_type text check (length(event_type) <= 60),
   tx_ref text check (tx_ref ~ '^RAF[0-9a-f]{32}$'),
-  provider_transaction_id text check (provider_transaction_id ~ '^[0-9]{1,20}$'),
+  provider_transaction_id text check (provider_transaction_id ~ '^[A-Za-z0-9._:-]{1,64}$'),
   signature_valid boolean not null,
   payload jsonb check (pg_column_size(payload) <= 8192),
   received_at timestamptz not null default now(),

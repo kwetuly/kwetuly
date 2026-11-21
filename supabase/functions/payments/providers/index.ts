@@ -8,8 +8,8 @@
 //        (allow-list, no personal data), createCheckout() (exact whole TZS), verify() (the processor's
 //        own API; status mapped so 'successful' / 'pending' mean what decideDeposit expects).
 //   2. One line in ADAPTERS below.
-//   3. A migration adding the id to the CHECKs on payments.provider and payment_events.provider
-//      (20261122100000_flutterwave_provider.sql allows only 'selcom' and 'flutterwave').
+//   3. No database change: payments.provider and payment_events.provider accept any lowercase id,
+//      and provider_transaction_id any safe id up to 64 characters (the adapter checks the exact shape).
 //   4. packages/shared/src/payment-rules.ts: the processor in PAYMENT_PROVIDERS and, when it goes
 //      live, ACTIVE_PAYMENT_PROVIDER (name and payment-page domains for the website and the app).
 //   5. Its secrets in supabase/functions/.env.example, the privacy page, and the security review.
