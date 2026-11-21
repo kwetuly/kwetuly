@@ -7,6 +7,8 @@
 //   - verify() asks the processor's own API; webhook bodies and return URLs are never trusted for status
 //     or amounts. If a processor allows several attempts per order, verify() must find a successful one
 //     or report attemptsUnclear.
+//   - ProviderTx.txRef is the reference the PROCESSOR sends back in its answer, never the orderId passed
+//     in: the core compares the two, so copying the input would defeat that check (review L6).
 //   - Never log or return names, phone numbers, e-mail, card or account details; log path and HTTP status only.
 import type { ProviderTx, WebhookRef } from '../core.ts';
 

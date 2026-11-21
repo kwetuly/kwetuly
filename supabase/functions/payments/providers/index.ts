@@ -19,11 +19,13 @@
 import { flutterwaveProvider } from './flutterwave.ts';
 import type { PaymentProvider } from './types.ts';
 
-const ADAPTERS: Record<string, () => PaymentProvider> = {
+// `allowed`: the core's own gate (test mode, live refused, project checks). Adapters refuse every
+// processor call while it answers false, even if a future core edit forgets gateway() (review L1).
+const ADAPTERS: Record<string, (allowed: () => boolean) => PaymentProvider> = {
   flutterwave: flutterwaveProvider,
 };
 
 /** The adapter named by PAYMENTS_PROVIDER, or null (payments off). */
-export function pickProvider(name: string): PaymentProvider | null {
-  return Object.prototype.hasOwnProperty.call(ADAPTERS, name) ? ADAPTERS[name]() : null;
+export function pickProvider(name: string, allowed: () => boolean): PaymentProvider | null {
+  return Object.prototype.hasOwnProperty.call(ADAPTERS, name) ? ADAPTERS[name](allowed) : null;
 }

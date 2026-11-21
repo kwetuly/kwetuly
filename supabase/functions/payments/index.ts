@@ -64,7 +64,7 @@ const PROJECT_REF = (() => {
   }
 })();
 
-const PROVIDER: PaymentProvider | null = pickProvider(env('PAYMENTS_PROVIDER'));
+const PROVIDER: PaymentProvider | null = pickProvider(env('PAYMENTS_PROVIDER'), () => enabled());
 const RATE100 = parseRateHundredths(env('USD_TZS_RATE'));
 const RATE_SOURCE = `env:${env('USD_TZS_RATE_SOURCE').replace(/[^\w .:/()-]/g, '').trim()}`.slice(0, 60);
 
@@ -227,13 +227,16 @@ const verifyAtProvider = (orderId: string, transactionId: string | null): Promis
 
 // What the processor reported, saved on the payment row with a paid or review status (payer, payee and
 // admins can read these). Exact whole shillings, no floats.
+// Same shape as the CHECK on payments.provider_transaction_id (20261122100000, review L2).
+const PROVIDER_TX_ID = /^[A-Za-z0-9._:-]{1,64}$/;
+
 function settledFields(details: PaymentDetails | null): Record<string, unknown> {
   if (!details) return {};
   return {
     provider_amount: parseWholeTzs(details.amount),
     provider_reference: plain(details.reference, 80),
     provider_channel: plain(details.channel, 40),
-    provider_transaction_id: details.transactionId !== null && /^[\w.:-]{1,80}$/.test(details.transactionId) ? details.transactionId : null,
+    provider_transaction_id: details.transactionId !== null && PROVIDER_TX_ID.test(details.transactionId) ? details.transactionId : null,
   };
 }
 
@@ -585,6 +588,8 @@ async function checkout(db: Admin, user: { id: string; email?: string }, body: R
   for (const earlier of open ?? []) {
     try {
       const current = await refresh(db, earlier.order_id, { source: 'checkout' });
+      // Made with another processor (after a switch): never open a second order beside it (review L4).
+      if (current === null) return json({ error: 'pending_order', order_id: earlier.order_id }, 409);
       if (current?.status === 'paid') return json({ error: 'already_paid' }, 409);
       if (current?.status === 'review') return json({ error: 'under_review' }, 409);
       if (current?.status === 'pending') {

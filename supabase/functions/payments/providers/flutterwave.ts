@@ -121,7 +121,9 @@ const FLW_TIMEOUT_MS = 10_000;
 const plain = (v: unknown, max: number) => (typeof v === 'string' || typeof v === 'number' ? String(v).replace(/[^\w.:-]/g, '').slice(0, max) || null : null);
 
 /** The Flutterwave adapter, configured from the FLW_* secrets read once at start-up. */
-export function flutterwaveProvider(): PaymentProvider {
+const FLW_TX_ID = /^\d{1,20}$/;
+
+export function flutterwaveProvider(allowed: () => boolean): PaymentProvider {
   const secretKey = env('FLW_SECRET_KEY');
   const mode = parseWebhookMode(env('FLW_WEBHOOK_MODE'));
   const secret = mode === 'v3' ? env('FLW_SECRET_HASH') : mode === 'v4' ? env('FLW_WEBHOOK_SIGNING_SECRET') : '';
@@ -138,7 +140,7 @@ export function flutterwaveProvider(): PaymentProvider {
   // Bearer secret key. Only the path (no query) and the HTTP status are logged, never the answer body
   // (it holds names, phone numbers, e-mail and card details).
   async function flw(path: string, method: 'GET' | 'POST', body?: unknown): Promise<Record<string, unknown>> {
-    if (!ready) throw new Error(`Flutterwave ${path.split('?')[0]}: payments switched off`);
+    if (!ready || !allowed()) throw new Error(`Flutterwave ${path.split('?')[0]}: payments switched off`);
     const res = await fetch(`${FLW_API}${path}`, {
       method,
       headers: { Authorization: `Bearer ${secretKey}`, 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -168,7 +170,7 @@ export function flutterwaveProvider(): PaymentProvider {
     return {
       amount: data.amount,
       currency: data.currency,
-      transactionId: (typeof id === 'number' && Number.isSafeInteger(id)) || (typeof id === 'string' && /^\d{1,20}$/.test(id)) ? String(id) : null,
+      transactionId: (typeof id === 'number' && Number.isSafeInteger(id) && id > 0) || (typeof id === 'string' && FLW_TX_ID.test(id) && !/^0+$/.test(id)) ? String(id) : null,
       reference: plain(data.flw_ref, 80),
       channel: plain(data.payment_type, 40),
       fee: data.app_fee,
@@ -223,8 +225,9 @@ export function flutterwaveProvider(): PaymentProvider {
     // order that would be given up on go to 'review' instead.
     async verify(orderId: string, transactionId: string | null): Promise<VerifiedPayment> {
       try {
-        if (transactionId) {
-          const data = await flw(`/transactions/${transactionId}/verify`, 'GET');
+        // Flutterwave ids are digits only; anything else is ignored and the reference is used (review L3).
+        if (transactionId && FLW_TX_ID.test(transactionId)) {
+          const data = await flw(`/transactions/${encodeURIComponent(transactionId)}/verify`, 'GET');
           if (data.tx_ref === orderId) return found(data, false);
           console.error(`Deposit ${orderId}: transaction id belongs to another reference; checking by reference`);
         }
@@ -234,8 +237,8 @@ export function flutterwaveProvider(): PaymentProvider {
           // All attempts on this order (endpoint and filter to confirm in the sandbox).
           const list = await flw(`/transactions?tx_ref=${encodeURIComponent(orderId)}`, 'GET');
           const id = successfulFlutterwaveAttemptId(list, orderId);
-          if (id) {
-            const paid = await flw(`/transactions/${id}/verify`, 'GET');
+          if (id && FLW_TX_ID.test(id)) {
+            const paid = await flw(`/transactions/${encodeURIComponent(id)}/verify`, 'GET');
             if (paid.tx_ref === orderId) return found(paid, false);
           }
           return found(data, false);
