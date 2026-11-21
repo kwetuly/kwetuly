@@ -1,0 +1,13 @@
+# Supabase CLI settings used by `supabase functions deploy`. Only the JWT check per function is pinned
+# here (security review LA6); everything else keeps the CLI defaults.
+# notify and payments are not listed on purpose: they keep the flags they were deployed with
+# (payments receives the processor's webhook without a user token). Pin them here when devops confirms.
+project_id = "kwetuly"
+
+[functions.identifiers]
+# Called with the signed-in person's token; the gateway checks it, and the function checks it again.
+verify_jwt = true
+
+[functions.verification-sweep]
+# Called by pg_cron with VERIFICATION_SWEEP_SECRET, which is not a JWT. The function checks the secret.
+verify_jwt = false

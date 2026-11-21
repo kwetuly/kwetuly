@@ -35,7 +35,8 @@
 --     using (bucket_id = 'verification' and owner_id = (select auth.uid())::text);
 --   drop policy "Users upload own verification docs" on storage.objects; then re-create it as in
 --     20261016001800_onboarded_gate_followup.sql;
---   drop function public.svc_verification_sweep_mark(text[]), public.svc_verification_sweep_list(int),
+--   drop function public.svc_verification_sweep_halted(), public.svc_expire_stale_waiting(boolean),
+--     public.svc_verification_bucket_count(), public.svc_verification_sweep_mark(text[]), public.svc_verification_sweep_list(int),
 --     public.svc_identifier_cipher_for_read(uuid, text, uuid, uuid, text, text),
 --     public.svc_identifier_set(uuid, uuid, uuid, text, text, text, text, smallint, smallint, text, date, text),
 --     public.admin_identifiers_masked(uuid), public.admin_business_identifiers_masked(uuid),
@@ -45,7 +46,7 @@
 --     private.verification_path_has_row(text), private.verification_object_exists(text, uuid),
 --     private.person_doc_log(), private.person_check_log_trigger(), private.guard_person_check(),
 --     private.guard_person_document(), private.mask_digit_runs(text), private.retention_days(text),
---     private.review_window_days(), private.tz_today();
+--     private.waiting_limit_days(), private.review_window_days(), private.tz_today();
 --   drop table public.business_identifiers, public.person_identifiers, public.person_check_log,
 --     public.person_document_checks, public.person_documents;
 --   drop type public.document_review_state, public.person_document_kind;
@@ -86,6 +87,7 @@ set search_path = ''
 as $$
   select case p_state
     when 'withdrawn' then 0
+    when 'expired' then 0
     when 'rejected' then 30
     when 'accepted' then 90
   end;
@@ -93,8 +95,22 @@ $$;
 
 revoke execute on function private.retention_days(text) from public, anon, authenticated;
 
--- Hides digit runs (5 or more digits, spaces, dots, dashes or slashes between them) so no ID
--- number can be typed into an admin note.
+-- LA4: a document nobody reviewed within this many days becomes 'expired' and its file is swept
+-- (PROPOSAL, legal and operations to confirm). The admin queue marks anything past 30 days in red.
+create or replace function private.waiting_limit_days()
+returns int
+language sql
+immutable
+set search_path = ''
+as $$
+  select 60;
+$$;
+
+revoke execute on function private.waiting_limit_days() from public, anon, authenticated;
+
+-- Hides digit runs (5 or more digits; spaces, dots, commas, colons, underscores, dashes or slashes
+-- between them) so no ID number can be typed into an admin note. A convenience, not a control (LA2).
+-- The result is cut to 300 characters, so masking never makes a valid note too long (LA1).
 create or replace function private.mask_digit_runs(p_text text)
 returns text
 language plpgsql
@@ -108,12 +124,12 @@ begin
   if p_text is null then
     return null;
   end if;
-  for v_match in select (regexp_matches(p_text, '\d[\d\s./-]*\d', 'g'))[1] loop
+  for v_match in select (regexp_matches(p_text, '\d[\d\s.,:_/-]*\d', 'g'))[1] loop
     if length(regexp_replace(v_match, '\D', '', 'g')) >= 5 then
       v_out := replace(v_out, v_match, '[number hidden]');
     end if;
   end loop;
-  return v_out;
+  return left(v_out, 300);
 end;
 $$;
 
@@ -137,7 +153,8 @@ create type public.person_document_kind as enum (
   'other'
 );
 
-create type public.document_review_state as enum ('waiting', 'accepted', 'rejected', 'withdrawn');
+-- 'expired': nobody reviewed it within private.waiting_limit_days() (LA4); set only by the sweep.
+create type public.document_review_state as enum ('waiting', 'accepted', 'rejected', 'withdrawn', 'expired');
 
 -- ---------------------------------------------------------------------------
 -- 3. person_documents
@@ -248,7 +265,9 @@ grant execute on function private.verification_object_exists(text, uuid) to auth
 grant execute on function private.verification_path_has_row(text) to authenticated;
 grant execute on function private.verification_path_deletable(text) to authenticated;
 
--- Guard. NOT security definer, so private.is_trusted() sees the real caller.
+-- Guard. NOT security definer. MA1: it tests the database role, not private.is_trusted(), so an
+-- admin writing from the website or app (role authenticated) gets every client check too. Only
+-- security definer functions (role postgres) and service_role pass.
 create or replace function private.guard_person_document()
 returns trigger
 language plpgsql
@@ -256,9 +275,10 @@ set search_path = ''
 as $$
 declare
   v_open int;
+  v_client boolean := current_user in ('anon', 'authenticated');
 begin
   if tg_op = 'INSERT' then
-    if not private.is_trusted() then
+    if v_client then
       if new.user_id is distinct from (select auth.uid()) then
         raise exception 'Documents can only be added to your own account' using errcode = '42501';
       end if;
@@ -269,6 +289,7 @@ begin
       new.removed_at := null;
       new.uploaded_at := now();
       new.consented_at := now();
+      new.title := private.mask_digit_runs(new.title);
       if new.provider_id is not null and not exists (
            select 1 from public.providers p
            where p.id = new.provider_id and p.owner_id = (select auth.uid())) then
@@ -289,7 +310,7 @@ begin
   end if;
 
   -- UPDATE: clients have no update grant or policy; this also binds the security definer functions.
-  if not private.is_trusted() then
+  if v_client then
     raise exception 'Documents cannot be changed' using errcode = '42501';
   end if;
   if new.id <> old.id or new.user_id <> old.user_id or new.provider_id is distinct from old.provider_id
@@ -382,7 +403,8 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if not private.is_trusted() then
+  -- MA1: the role, not private.is_trusted(), so admins on the website or app are refused too.
+  if current_user in ('anon', 'authenticated') then
     raise exception 'Only Kwetuly records checks' using errcode = '42501';
   end if;
   if tg_op = 'INSERT' then
@@ -438,8 +460,8 @@ create table public.person_check_log (
   check_id uuid references public.person_document_checks (id) on delete set null,
   action text not null check (action in (
     'uploaded', 'accepted', 'rejected', 'withdrawn', 'checked', 'check_ended', 'file_removed',
-    'document_opened', 'identifier_set', 'identifier_cleared', 'identifier_viewed',
-    'sample_set', 'sample_cleared')),
+    'expired', 'document_opened', 'identifier_set', 'identifier_cleared', 'identifier_viewed',
+    'identifier_read_refused', 'sample_set', 'sample_cleared')),
   actor uuid,                -- who did it; null for the sweep. No foreign key, so it survives.
   reason text check (char_length(reason) <= 300),
   field text check (field in ('nida', 'passport', 'tin', 'business_tin')),   -- never the value
@@ -710,6 +732,7 @@ begin
   if char_length(p_note) > 300 then
     raise exception 'Note too long' using errcode = '23514';
   end if;
+  -- The guard masks digit runs and cuts the result to 300 characters (LA1).
 
   if p_decision = 'accept' then
     if not private.verification_object_exists(d.path, d.user_id) then
@@ -833,6 +856,7 @@ begin
   if p_field not in ('nida', 'passport', 'tin', 'business_tin') then
     raise exception 'bad_field' using errcode = '22023';
   end if;
+  perform pg_advisory_xact_lock(hashtext('identifier_write:' || p_actor::text));   -- LA8
   if (select count(*) from public.person_check_log l
       where l.actor = p_actor and l.action in ('identifier_set', 'identifier_cleared')
         and l.created_at > now() - interval '24 hours') >= 10 then
@@ -911,8 +935,10 @@ grant execute on function public.svc_identifier_set(uuid, uuid, uuid, text, text
 
 -- M5: an admin full read. The log row is written in the same transaction that hands out the cipher,
 -- so no cipher leaves the database without its identifier_viewed row. The Edge Function decrypts only
--- after this returns. Rate limit: 20 reads per admin per hour; above that the read is refused and
--- every admin is alerted once per hour.
+-- after this returns.
+-- MA2: returns jsonb, {"cipher": "<base64>"} or {"error": "rate_limited" | "not_found"}. A refused
+-- read does not raise, so its identifier_read_refused log row and the alert to every admin (once per
+-- hour) commit. Rate limit: 20 reads per admin per hour, serialised per admin by an advisory lock (LA8).
 create or replace function public.svc_identifier_cipher_for_read(
   p_actor uuid,
   p_actor_aal text,
@@ -921,7 +947,7 @@ create or replace function public.svc_identifier_cipher_for_read(
   p_field text,
   p_reason text
 )
-returns text
+returns jsonb
 language plpgsql
 security definer
 set search_path = ''
@@ -929,6 +955,7 @@ as $$
 declare
   v_cipher bytea;
   v_admin uuid;
+  v_alerted boolean;
 begin
   if p_actor_aal is distinct from 'aal2'
      or not exists (select 1 from public.profiles p where p.id = p_actor and p.role = 'admin') then
@@ -937,35 +964,46 @@ begin
   if char_length(btrim(coalesce(p_reason, ''))) not between 5 and 300 then
     raise exception 'reason_required' using errcode = '23514';
   end if;
+  if p_field = 'business_tin' then
+    if p_provider is null then
+      raise exception 'bad_field' using errcode = '22023';
+    end if;
+    select p.owner_id into p_user from public.providers p where p.id = p_provider;
+  elsif p_field not in ('nida', 'passport', 'tin') or p_provider is not null then
+    raise exception 'bad_field' using errcode = '22023';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext('identifier_read:' || p_actor::text));
   if (select count(*) from public.person_check_log l
       where l.actor = p_actor and l.action = 'identifier_viewed'
         and l.created_at > now() - interval '1 hour') >= 20 then
-    if not exists (select 1 from public.notification_outbox o
-                   where o.event = 'identifier_read_limit' and o.created_at > now() - interval '1 hour') then
+    select exists (select 1 from public.person_check_log l
+                   where l.action = 'identifier_read_refused' and l.created_at > now() - interval '1 hour')
+      into v_alerted;
+    insert into public.person_check_log (user_id, provider_id, action, actor, reason, field)
+    values (p_user, p_provider, 'identifier_read_refused', p_actor, 'rate_limited', p_field);
+    if not v_alerted then
       for v_admin in select p.id from public.profiles p where p.role = 'admin' loop
         perform private.notify_user('identifier_read_limit', v_admin, '{}'::jsonb, null, array['email']);
       end loop;
     end if;
-    raise exception 'rate_limited' using errcode = 'P0001';
+    return jsonb_build_object('error', 'rate_limited');
   end if;
 
   if p_field = 'business_tin' then
     select b.tin_cipher into v_cipher from public.business_identifiers b where b.provider_id = p_provider;
-    select p.owner_id into p_user from public.providers p where p.id = p_provider;
-  elsif p_field in ('nida', 'passport', 'tin') and p_provider is null then
+  else
     select case p_field when 'nida' then i.nida_cipher when 'passport' then i.passport_cipher else i.tin_cipher end
       into v_cipher
     from public.person_identifiers i where i.user_id = p_user;
-  else
-    raise exception 'bad_field' using errcode = '22023';
   end if;
   if v_cipher is null then
-    raise exception 'not_found' using errcode = 'P0002';
+    return jsonb_build_object('error', 'not_found');
   end if;
 
   insert into public.person_check_log (user_id, provider_id, action, actor, reason, field)
   values (p_user, p_provider, 'identifier_viewed', p_actor, private.mask_digit_runs(btrim(p_reason)), p_field);
-  return encode(v_cipher, 'base64');
+  return jsonb_build_object('cipher', encode(v_cipher, 'base64'));
 end;
 $$;
 
@@ -974,6 +1012,10 @@ grant execute on function public.svc_identifier_cipher_for_read(uuid, text, uuid
 
 -- H2 / M11: the verification files to delete, with the reason. Never lists a waiting document's
 -- file, nor old guide and business papers still referenced by guide_private or provider_private.
+--
+-- MA3, REQUIRED: every column, in any table, that stores a path in the `verification` bucket MUST be
+-- added to `legacy` below in the same migration that creates it. Otherwise the 'no_row' rule deletes
+-- those files within the hour. Run the sweep with {"dry_run": true} after any such migration.
 create or replace function public.svc_verification_sweep_list(p_limit int default 500)
 returns table (name text, reason text)
 language sql
@@ -1006,7 +1048,7 @@ as $$
       and not exists (select 1 from public.person_documents d where d.path = o.name)
       and not exists (select 1 from legacy l where l.p in (o.name, 'verification/' || o.name))
     union all
-    -- decided and past the retention period
+    -- decided (or expired unreviewed) and past the retention period
     select o.name, 'retention_' || d.review_state::text
     from objs o
     join public.person_documents d on d.path = o.name
@@ -1022,7 +1064,54 @@ $$;
 revoke all on function public.svc_verification_sweep_list(int) from public, anon, authenticated;
 grant execute on function public.svc_verification_sweep_list(int) to service_role;
 
--- After the Edge Function deleted the files: mark the rows (the row and its dates stay).
+-- MA3: the size of the bucket, for the sweep's circuit breaker (no names).
+create or replace function public.svc_verification_bucket_count()
+returns bigint
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*) from storage.objects o where o.bucket_id = 'verification';
+$$;
+
+revoke all on function public.svc_verification_bucket_count() from public, anon, authenticated;
+grant execute on function public.svc_verification_bucket_count() to service_role;
+
+-- LA4: documents nobody reviewed within private.waiting_limit_days() become 'expired' (their file is
+-- then swept). With p_dry_run it only counts. Returns the number of rows.
+create or replace function public.svc_expire_stale_waiting(p_dry_run boolean default true)
+returns int
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_count int;
+begin
+  if p_dry_run then
+    select count(*) into v_count from public.person_documents d
+    where d.review_state = 'waiting'
+      and d.uploaded_at < now() - make_interval(days => private.waiting_limit_days());
+    return v_count;
+  end if;
+  perform set_config('kwetuly.log_reason', 'not_reviewed_in_time', true);
+  update public.person_documents d
+  set review_state = 'expired'
+  where d.review_state = 'waiting'
+    and d.uploaded_at < now() - make_interval(days => private.waiting_limit_days());
+  get diagnostics v_count = row_count;
+  perform set_config('kwetuly.log_reason', '', true);
+  return v_count;
+end;
+$$;
+
+revoke all on function public.svc_expire_stale_waiting(boolean) from public, anon, authenticated;
+grant execute on function public.svc_expire_stale_waiting(boolean) to service_role;
+
+-- LA7: after the Edge Function deleted files, mark the rows (the row and its dates stay). Only rows
+-- whose file is really gone from storage are marked, so removed_at is true when written. Also catches
+-- decided rows past retention whose file disappeared some other way.
 create or replace function public.svc_verification_sweep_mark(p_names text[])
 returns int
 language plpgsql
@@ -1034,7 +1123,12 @@ declare
 begin
   update public.person_documents d
   set removed_at = now()
-  where d.path = any (p_names) and d.removed_at is null and d.review_state <> 'waiting';
+  where d.removed_at is null
+    and d.review_state <> 'waiting'
+    and (d.path = any (p_names)
+         or coalesce(d.reviewed_at, d.uploaded_at)
+            + make_interval(days => private.retention_days(d.review_state::text)) <= now())
+    and not exists (select 1 from storage.objects o where o.bucket_id = 'verification' and o.name = d.path);
   get diagnostics v_count = row_count;
   return v_count;
 end;
@@ -1042,6 +1136,29 @@ $$;
 
 revoke all on function public.svc_verification_sweep_mark(text[]) from public, anon, authenticated;
 grant execute on function public.svc_verification_sweep_mark(text[]) to service_role;
+
+-- MA3: the sweep stopped itself. Alerts every admin by email, at most once per 6 hours.
+create or replace function public.svc_verification_sweep_halted()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_admin uuid;
+begin
+  if exists (select 1 from public.notification_outbox o
+             where o.event = 'verification_sweep_halted' and o.created_at > now() - interval '6 hours') then
+    return;
+  end if;
+  for v_admin in select p.id from public.profiles p where p.role = 'admin' loop
+    perform private.notify_user('verification_sweep_halted', v_admin, '{}'::jsonb, null, array['email']);
+  end loop;
+end;
+$$;
+
+revoke all on function public.svc_verification_sweep_halted() from public, anon, authenticated;
+grant execute on function public.svc_verification_sweep_halted() to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 8. Storage policies for the `verification` bucket

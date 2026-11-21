@@ -33,7 +33,8 @@ export const datedDocumentKinds: readonly PersonDocumentKind[] = [
 /** Kinds a person may upload an image of today. Passport photo pages wait for legal and Walter. */
 export const uploadableDocumentKinds: readonly PersonDocumentKind[] = personDocumentKinds.filter((k) => k !== 'passport');
 
-export const documentReviewStates = ['waiting', 'accepted', 'rejected', 'withdrawn'] as const;
+/** 'expired': nobody reviewed it in time (set by the sweep); the person can upload again. */
+export const documentReviewStates = ['waiting', 'accepted', 'rejected', 'withdrawn', 'expired'] as const;
 export type DocumentReviewState = (typeof documentReviewStates)[number];
 
 export const documentRejectReasons = ['unreadable', 'name_mismatch', 'expired', 'wrong_document', 'not_complete', 'other'] as const;

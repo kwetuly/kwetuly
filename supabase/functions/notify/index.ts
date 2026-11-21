@@ -150,6 +150,11 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Usomaji wa namba za utambulisho umesimamishwa', body: 'Msimamizi amefikia kikomo cha kusoma namba kamili za utambulisho (20 kwa saa). Usomaji zaidi umesimamishwa kwa saa moja. Tafadhali angalia kumbukumbu ya ukaguzi kwenye dashibodi ya msimamizi.' }
         : { subject: 'Identity number reads paused', body: 'An admin reached the limit for full identity number reads (20 an hour). Further reads are paused for an hour. Please look at the check log in the admin dashboard.' };
+    case 'verification_sweep_halted':
+      // To every admin. Counts are in the function log, never names.
+      return sw
+        ? { subject: 'Ufutaji wa nyaraka umesimamishwa', body: 'Ufutaji wa kila saa wa nyaraka za utambulisho ulitaka kufuta faili nyingi kuliko kawaida, kwa hiyo haukufuta chochote. Tafadhali endesha "verification-sweep" kwa dry_run na uangalie kabla ya kuendelea.' }
+        : { subject: 'Document sweep stopped', body: 'The hourly sweep of identity documents wanted to delete more files than usual, so it deleted nothing. Please run "verification-sweep" with dry_run and check before it continues.' };
     default:
       return { subject: 'Kwetuly update', body: v('message') };
   }

@@ -154,12 +154,15 @@ Deno.serve(async (req) => {
     const { data: profile } = await client.from('profiles').select('role').eq('id', user.id).maybeSingle();
     if (profile?.role !== 'admin') return reply({ error: 'forbidden' }, 403);
 
-    const { data: cipherB64, error } = await client.rpc('svc_identifier_cipher_for_read', {
+    // Returns { cipher } or { error }; a refused read is logged and alerted in the database (MA2).
+    const { data, error } = await client.rpc('svc_identifier_cipher_for_read', {
       p_actor: user.id, p_actor_aal: 'aal2', p_user: field === 'business_tin' ? null : userId,
       p_provider: providerId, p_field: field, p_reason: reason,
     });
+    const result = (data ?? {}) as { cipher?: string; error?: string };
+    const cipherB64 = result.cipher;
     if (error || typeof cipherB64 !== 'string') {
-      const e = dbError(error?.message ?? 'not_found');
+      const e = dbError(error?.message ?? result.error ?? 'not_found');
       console.error('identifiers: read refused', e.code);
       return reply({ error: e.code }, e.status);
     }
