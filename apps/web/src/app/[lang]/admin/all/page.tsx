@@ -437,6 +437,7 @@ type PaymentRow = {
   amount_tzs: number;
   amount_usd: number;
   status: string;
+  order_id: string;
   provider_reference: string | null;
   provider_channel: string | null;
   payout_done: boolean;
@@ -445,12 +446,18 @@ type PaymentRow = {
   payout_at?: string | null;
   // Added by 20261016001600_payments_review_fixes.sql; optional until that migration is applied.
   provider_amount?: number | null;
+  // Added by 20261122100000_flutterwave_provider.sql; optional until that migration is applied.
+  provider?: string | null;
+  provider_fee?: string | number | null;
+  provider_fee_currency?: string | null;
+  status_reason?: string | null;
+  status_source?: string | null;
   created_at: string;
 };
 
 // Phone numbers on the payments list are masked with maskPhone (lib/admin-format).
 
-// Deposits paid through Selcom. Kwetuly pays them out to the guide or company, then ticks them here.
+// Deposits paid on the provider's page (Flutterwave). Kwetuly pays them out to the guide or company, then ticks them here.
 async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
   const user = await requireAdmin(locale);
   if (user.role !== 'admin') return null;
@@ -489,14 +496,18 @@ async function Payments({ t, locale }: { t: Dictionary; locale: Locale }) {
                     p.status === 'paid' ? 'bg-mint text-forest' : p.status === 'review' ? 'bg-gold/25 text-charcoal' : 'bg-red-50 text-red-800'
                   }`}
                 >
-                  {p.status === 'review' ? 'review: check with Selcom' : p.status}
+                  {p.status === 'review' ? `review: check in the ${p.provider === 'selcom' ? 'Selcom portal' : 'Flutterwave dashboard'}` : p.status}
                 </span>
               </p>
               {p.provider_amount != null && Number(p.provider_amount) !== p.amount_tzs && (
-                <p className="font-semibold">Selcom reported TZS {Number(p.provider_amount).toLocaleString('en')}</p>
+                <p className="font-semibold">Provider reported TZS {Number(p.provider_amount).toLocaleString('en')}</p>
+              )}
+              {p.status_reason && p.status !== 'paid' && <p className="font-semibold">Reason: {p.status_reason.replace(/_/g, ' ')}</p>}
+              {p.provider_fee != null && (
+                <p className="text-muted">Provider fee (paid by Kwetuly): {p.provider_fee_currency ?? ''} {String(p.provider_fee)}</p>
               )}
               <p className="text-muted">
-                {new Date(p.created_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {p.provider_channel ?? ''} {p.provider_reference ?? ''}
+                {new Date(p.created_at).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam' })} · {p.provider ?? ''} {p.provider_channel ?? ''} {p.provider_reference ?? ''} · {p.order_id}
               </p>
               <p>From: {who(p.user_id)}</p>
               <p className="font-semibold">{a.payee}: {who(p.payee_user_id)}</p>

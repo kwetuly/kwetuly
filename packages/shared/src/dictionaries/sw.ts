@@ -755,7 +755,7 @@ export const sw: Dictionary = {
   },
   payments: {
     title: 'Lipa amana yako',
-    body: 'Lipa kwa usalama kwa M-Pesa, Mixx by Yas, Airtel Money, Halopesa au kadi kupitia Selcom.',
+    body: 'Lipa kwa usalama kwa kadi (Visa, Mastercard) au pesa kwa simu (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) kwenye ukurasa wa malipo wa Flutterwave. Namba ya kadi yako unaiandika huko tu, si kwenye Kwetuly.',
     cta: 'Lipa amana',
     amount: 'Amana',
     paid: 'Amana imelipwa',
@@ -772,11 +772,12 @@ export const sw: Dictionary = {
     notPaid: 'Amana bado haijalipwa.',
     paidOn: 'Imelipwa {date}',
     review: 'Tunakagua malipo haya',
-    reviewNote: 'Jibu la Selcom halikulingana na tulichotarajia, kwa hiyo timu ya Kwetuly inayakagua malipo haya. Tafadhali usilipe tena. Tutakujulisha yakishakaguliwa.',
+    reviewNote: 'Jibu la mtoa huduma wa malipo halikulingana na tulichotarajia, kwa hiyo timu ya Kwetuly inayakagua malipo haya. Tafadhali usilipe tena. Tutakujulisha yakishakaguliwa.',
     checking: 'Inakaguliwa na Kwetuly. Tafadhali usilipe tena.',
     underReview: 'Tunakagua malipo ya amana hii. Tafadhali usilipe tena. Tutakujulisha yakishakaguliwa.',
-    pendingOrder: 'Malipo uliyoanza bado yako wazi kwenye Selcom. Yamalizie huko, au jaribu tena baada ya saa moja hivi.',
+    pendingOrder: 'Malipo uliyoanza bado yako wazi. Yamalizie kwenye ukurasa wa malipo, au jaribu tena baada ya saa moja hivi.',
     notApproved: 'Mwongozaji au biashara hii bado haiwezi kupokea amana kupitia Kwetuly. Mlipe moja kwa moja kama mlivyokubaliana.',
+    charged: 'Utatozwa TSh {amount}. Kama kadi yako ni ya sarafu nyingine, benki yako itabadilisha kwa kiwango chake.',
   },
   alerts: {
     mute: 'Zima taarifa',

@@ -583,7 +583,7 @@ export const zh: Dictionary = {
   offers: en.offers,
   payments: {
     title: '支付订金',
-    body: '通过 Selcom 使用 M-Pesa、Mixx by Yas、Airtel Money、Halopesa 或银行卡安全支付。',
+    body: '在 Flutterwave 的支付页面上用银行卡（Visa、Mastercard）或移动支付（M-Pesa、Mixx by Yas、Airtel Money、HaloPesa）安全付款。卡号只在该页面输入，绝不在 Kwetuly 上输入。',
     cta: '支付订金',
     amount: '订金',
     paid: '订金已支付',
@@ -600,11 +600,12 @@ export const zh: Dictionary = {
     notPaid: '订金尚未支付。',
     paidOn: '{date} 已支付',
     review: '我们正在核对这笔付款',
-    reviewNote: 'Selcom 返回的结果与预期不符，Kwetuly 团队正在人工核对这笔付款。请不要重复付款。核对完成后我们会通知您。',
+    reviewNote: '支付服务商返回的结果与预期不符，Kwetuly 团队正在人工核对这笔付款。请不要重复付款。核对完成后我们会通知您。',
     checking: 'Kwetuly 正在核对。请不要重复付款。',
     underReview: '我们正在核对这笔订金的付款。请不要重复付款。核对完成后我们会通知您。',
-    pendingOrder: '您之前发起的付款在 Selcom 仍未关闭。请在那里完成付款，或约一小时后再试。',
+    pendingOrder: '您之前发起的付款仍未关闭。请在支付页面完成付款，或约一小时后再试。',
     notApproved: '该导游或商家暂时无法通过 Kwetuly 收取订金。请按约定直接付款给对方。',
+    charged: '您将被收取 {amount} 坦桑尼亚先令（TSh）。如果您的银行卡是其他货币，您的银行会按其自己的汇率换算。',
   },
   alerts: {
     mute: '关闭提醒',

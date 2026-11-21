@@ -588,7 +588,7 @@ export const de: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Anzahlung bezahlen',
-    body: 'Sicher bezahlen mit M-Pesa, Mixx by Yas, Airtel Money, Halopesa oder Karte über Selcom.',
+    body: 'Sicher bezahlen mit Karte (Visa, Mastercard) oder Mobile Money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) auf der Zahlungsseite von Flutterwave. Ihre Kartennummer geben Sie nur dort ein, nie bei Kwetuly.',
     cta: 'Anzahlung bezahlen',
     amount: 'Anzahlung',
     paid: 'Anzahlung bezahlt',
@@ -605,11 +605,12 @@ export const de: Dictionary = {
     notPaid: 'Anzahlung noch nicht bezahlt.',
     paidOn: 'Bezahlt am {date}',
     review: 'Wir prüfen diese Zahlung',
-    reviewNote: 'Die Antwort von Selcom passt nicht zu dem, was wir erwartet haben. Das Kwetuly-Team prüft diese Zahlung deshalb von Hand. Bitte zahlen Sie nicht noch einmal. Wir melden uns, sobald sie geprüft ist.',
+    reviewNote: 'Die Antwort des Zahlungsanbieters passt nicht zu dem, was wir erwartet haben. Das Kwetuly-Team prüft diese Zahlung deshalb von Hand. Bitte zahlen Sie nicht noch einmal. Wir melden uns, sobald sie geprüft ist.',
     checking: 'Wird von Kwetuly geprüft. Bitte zahlen Sie nicht noch einmal.',
     underReview: 'Wir prüfen eine Zahlung für diese Anzahlung. Bitte zahlen Sie nicht noch einmal. Wir melden uns, sobald sie geprüft ist.',
-    pendingOrder: 'Eine begonnene Zahlung ist bei Selcom noch offen. Schließen Sie sie dort ab oder versuchen Sie es in etwa einer Stunde erneut.',
+    pendingOrder: 'Eine begonnene Zahlung ist noch offen. Schließen Sie sie auf der Zahlungsseite ab oder versuchen Sie es in etwa einer Stunde erneut.',
     notApproved: 'Dieser Guide oder dieses Unternehmen kann noch keine Anzahlungen über Kwetuly annehmen. Bitte zahlen Sie wie vereinbart direkt.',
+    charged: 'Belastet werden Ihnen {amount} TSh. Ist Ihre Karte in einer anderen Währung, rechnet Ihre Bank zu ihrem eigenen Kurs um.',
   },
   alerts: {
     mute: 'Hinweise stummschalten',

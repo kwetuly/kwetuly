@@ -164,7 +164,7 @@ async function HomeContent({ locale }: { locale: Locale }) {
             icon: Wallet,
             href: `/${locale}/admin/all#payments`,
             count: paymentsReview.error || paymentsToPay.error ? null : toPay,
-            line: `${paymentsReview.count ?? 0} to check with Selcom, ${paymentsToPay.count ?? 0} to pay out`,
+            line: `${paymentsReview.count ?? 0} to check in the Flutterwave dashboard, ${paymentsToPay.count ?? 0} to pay out`,
           } satisfies Tile,
         ]
       : []),

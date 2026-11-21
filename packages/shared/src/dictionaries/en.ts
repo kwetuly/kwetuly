@@ -753,7 +753,7 @@ export const en = {
   },
   payments: {
     title: 'Pay your deposit',
-    body: 'Pay securely with M-Pesa, Mixx by Yas, Airtel Money, Halopesa or card through Selcom.',
+    body: 'Pay securely by card (Visa, Mastercard) or mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) on Flutterwave’s payment page. You type your card number only there, never on Kwetuly.',
     cta: 'Pay deposit',
     amount: 'Deposit',
     paid: 'Deposit paid',
@@ -770,11 +770,12 @@ export const en = {
     notPaid: 'Deposit not paid yet.',
     paidOn: 'Paid {date}',
     review: 'We’re checking this payment',
-    reviewNote: 'Selcom’s answer did not match what we expected, so the Kwetuly team is checking this payment by hand. Please don’t pay again. We will let you know when it is checked.',
+    reviewNote: 'The payment provider’s answer did not match what we expected, so the Kwetuly team is checking this payment by hand. Please don’t pay again. We will let you know when it is checked.',
     checking: 'Being checked by Kwetuly. Please don’t pay again.',
     underReview: 'We’re checking a payment for this deposit. Please don’t pay again. We will let you know when it is checked.',
-    pendingOrder: 'A payment you started is still open at Selcom. Finish it there, or try again in about an hour.',
+    pendingOrder: 'A payment you started is still open. Finish it on the payment page, or try again in about an hour.',
     notApproved: 'This guide or business cannot take deposits through Kwetuly yet. Pay them directly as agreed.',
+    charged: 'You are charged TSh {amount}. If your card is in another currency, your bank converts it at its own rate.',
   },
   alerts: {
     mute: 'Mute alerts',

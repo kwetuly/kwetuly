@@ -19,3 +19,4 @@ export * from './display-name';
 export * from './group-trip-rules';
 export * from './links';
 export * from './catalogue';
+export * from './payment-rules';

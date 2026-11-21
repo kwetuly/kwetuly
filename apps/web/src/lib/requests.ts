@@ -90,7 +90,7 @@ export async function paidDeposits(column: 'trip_offer_id' | 'group_member_id', 
   return new Set((data ?? []).map((row) => (row as Record<string, string>)[column]));
 }
 
-/** `review`: Selcom reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
+/** `review`: the payment provider reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
 export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
 /** Where the deposit for one offer or group-trip spot is: not paid, being checked, held by Kwetuly, or paid to the guide. */

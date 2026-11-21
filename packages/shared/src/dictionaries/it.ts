@@ -588,7 +588,7 @@ export const it: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Paga l’acconto',
-    body: 'Paga in sicurezza con M-Pesa, Mixx by Yas, Airtel Money, Halopesa o carta tramite Selcom.',
+    body: 'Paga in sicurezza con carta (Visa, Mastercard) o mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) sulla pagina di pagamento di Flutterwave. Il numero della carta lo inserisci solo lì, mai su Kwetuly.',
     cta: 'Paga l’acconto',
     amount: 'Acconto',
     paid: 'Acconto pagato',
@@ -605,11 +605,12 @@ export const it: Dictionary = {
     notPaid: 'Acconto non ancora pagato.',
     paidOn: 'Pagato il {date}',
     review: 'Stiamo verificando questo pagamento',
-    reviewNote: 'La risposta di Selcom non corrisponde a quanto previsto, quindi il team Kwetuly sta verificando il pagamento a mano. Non pagare di nuovo. Ti avviseremo appena verificato.',
+    reviewNote: 'La risposta del fornitore di pagamento non corrisponde a quanto previsto, quindi il team Kwetuly sta verificando il pagamento a mano. Non pagare di nuovo. Ti avviseremo appena verificato.',
     checking: 'In verifica da parte di Kwetuly. Non pagare di nuovo.',
     underReview: 'Stiamo verificando un pagamento per questo acconto. Non pagare di nuovo. Ti avviseremo appena verificato.',
-    pendingOrder: 'Un pagamento che hai iniziato è ancora aperto su Selcom. Completalo lì, oppure riprova tra circa un’ora.',
+    pendingOrder: 'Un pagamento che hai iniziato è ancora aperto. Completalo sulla pagina di pagamento, oppure riprova tra circa un’ora.',
     notApproved: 'Questa guida o attività non può ancora ricevere acconti tramite Kwetuly. Pagala direttamente come concordato.',
+    charged: 'Ti vengono addebitati {amount} TSh. Se la tua carta è in un’altra valuta, la tua banca la converte al proprio tasso.',
   },
   alerts: {
     mute: 'Silenzia avvisi',

@@ -1,7 +1,8 @@
 import * as WebBrowser from 'expo-web-browser';
+import { isAllowedPaymentUrl } from '@kwetuly/shared';
 import { supabase } from './supabase';
 
-// Trip requests with offers, deposits (Selcom) and chat alerts: the same tables and rules as the website.
+// Trip requests with offers, deposits (Flutterwave hosted checkout) and chat alerts: the same tables and rules as the website.
 
 export type TripRequest = {
   id: string;
@@ -157,20 +158,25 @@ export async function offerContacts(offerId: string) {
 }
 
 // ---------------------------------------------------------------------------
-// Deposits through Selcom (the `payments` Edge Function). Hidden until Selcom is set up.
+// Deposits through the `payments` Edge Function (Flutterwave). Hidden until payments are set up there.
+// Statuses change only in that function; the app only opens the hosted page and asks for the result.
 // ---------------------------------------------------------------------------
-/** Whether Selcom is set up, and the shillings-per-dollar rate for "≈ TSh" prices (null until set). */
-export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
+/** Whether payments are set up, the shillings-per-dollar rate for "≈ TSh" prices, and the same rate in whole hundredths. */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null; rate100: number | null }> {
   const { data } = await supabase.functions.invoke('payments', { body: { action: 'config' } });
-  const result = (data ?? {}) as { enabled?: boolean; rate?: number | null };
-  return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
+  const result = (data ?? {}) as { enabled?: boolean; rate?: number | null; rate100?: number | null };
+  return {
+    enabled: Boolean(result.enabled),
+    rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null,
+    rate100: Number.isSafeInteger(result.rate100) && (result.rate100 as number) > 0 ? (result.rate100 as number) : null,
+  };
 }
 
 export async function paymentsEnabled(): Promise<boolean> {
   return (await paymentsConfig()).enabled;
 }
 
-/** `review`: Selcom reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
+/** `review`: the payment provider reported a payment Kwetuly must check by hand; treat it as "being checked", never as unpaid. */
 export type DepositState = { paid: boolean; review: boolean; paidAt: string | null; paidOut: boolean; amountUsd: number | null };
 
 /** Where a deposit is: not paid, being checked, held by Kwetuly, or paid to the guide. */
@@ -237,11 +243,11 @@ export async function listMyDeposits(userId: string) {
   }[];
 }
 
-/** Opens the Selcom payment page; when the traveller comes back, asks Selcom for the result. */
+/** Opens Flutterwave's payment page (card number typed only there); afterwards the server asks Flutterwave for the result. */
 export async function payDeposit(kind: 'offer' | 'group', id: string, locale: string): Promise<'paid' | 'pending' | 'failed' | string> {
   const { data, error } = await supabase.functions.invoke('payments', { body: { action: 'checkout', kind, id, locale } });
   const result = (data ?? {}) as { url?: string; order_id?: string; error?: string };
-  if (error || !result.url || !result.order_id) {
+  if (error || !isAllowedPaymentUrl(result.url) || !result.order_id) {
     // Error responses carry a code such as "phone_required".
     const body = error && 'context' in error ? await (error.context as Response).json().catch(() => ({})) : {};
     return (body as { error?: string }).error ?? result.error ?? 'gateway_error';

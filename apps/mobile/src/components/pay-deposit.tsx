@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { depositTzs } from '@kwetuly/shared';
 import { Button, Card, IconSquare } from '@/components/ui';
 import { GLYPHS } from '@/components/glyph';
-import { depositPayable, depositState, payDeposit, paymentsEnabled } from '@/lib/api-requests';
+import { depositPayable, depositState, payDeposit, paymentsConfig } from '@/lib/api-requests';
 import { useI18n } from '@/lib/i18n';
 import { useType } from '@/lib/use-type';
 import { brand, colors, space, textSize } from '@/theme';
 
 type Props = { kind: 'offer' | 'group'; id: string; totalUsd: number; percent: number };
 
-// Deposit for an accepted offer or group-trip spot, paid on Selcom's page. Hidden until Selcom is set
-// up, and hidden when this deposit cannot be paid online (the Edge Function's own rules decide).
+// Deposit for an accepted offer or group-trip spot, paid on Flutterwave's page and charged in TSh.
+// Hidden until payments are set up, and hidden when this deposit cannot be paid online (the Edge Function's own rules decide).
 // 2026-11 restyle: only the look changed here (fonts, colours, the paid line split in two); no payment logic.
 export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const { t, locale } = useI18n();
@@ -19,7 +20,8 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const p = t.payments;
   const queryClient = useQueryClient();
   const column = kind === 'offer' ? 'trip_offer_id' : 'group_member_id';
-  const enabled = useQuery({ queryKey: ['payments-enabled'], queryFn: paymentsEnabled, staleTime: 10 * 60_000 });
+  const config = useQuery({ queryKey: ['payments-config'], queryFn: paymentsConfig, staleTime: 10 * 60_000 });
+  const enabled = { data: config.data?.enabled };
   const paid = useQuery({ queryKey: ['deposit-state', id], queryFn: () => depositState(column, id) });
   const payable = useQuery({
     queryKey: ['deposit-payable', id],
@@ -50,6 +52,10 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   if (paid.data?.review) return checking;
   if (!enabled.data || !payable.data || payable.data === 'hidden') return null;
   if (payable.data === 'review') return checking;
+  // Display only, same integer maths as the server; the server saves the real amount at checkout.
+  const cents = totalUsd * percent;
+  const rate100 = config.data?.rate100 ?? null;
+  const tzs = rate100 && Number.isSafeInteger(cents) && cents > 0 ? depositTzs(cents, rate100) : null;
 
   async function pay() {
     setBusy(true);
@@ -78,6 +84,7 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
         ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: textSize.subhead, ...font.semibold }}>({percent}%)</Text>
       </Text>
       <Text style={{ ...type.callout, color: colors.secondaryLabel }}>{p.body}</Text>
+      {tzs !== null && <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{p.charged.replace('{amount}', tzs.toLocaleString(locale))}</Text>}
       {note ? <Text selectable accessibilityRole="alert" style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{note}</Text> : null}
       <Button title={p.cta} onPress={pay} loading={busy} />
       {note === p.pending && <Button title={p.checkAgain} variant="outline" size="md" onPress={() => paid.refetch()} />}
