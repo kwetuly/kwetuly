@@ -384,3 +384,29 @@ Before charging anyone:
 - the company must be registered (Walter, 2026-11-08);
 - the chosen processor's live merchant account must be approved;
 - the advocate pack must include whether a verification fee for job-seeking crew counts as a job-seeker fee (hr and legal flagged this).
+
+## Walter's answers, round 2 (2026-11-21): "yess to all"
+
+These are recorded as the recommended options.
+
+**Verification plan** (`docs/team/plan-paid-verification-2026-11-21.md`, PV 1-10):
+1. Start from the proposed table of what each account type sees.
+2. Ranking: porter < guide < business. The places of cook, driver and assistant guide, and of each business type, are set by Walter in admin later.
+3. Documents are checked first, then the member pays.
+4. Crew job features stay free until the advocate answers.
+5. Business verification is the yearly business badge, one product.
+6. Passports only for non-Tanzanian business owners for now. Travellers stay private.
+7. 30 days for all reviews.
+8. 7 days of grace.
+9. NIDA and passport numbers are encrypted from the start.
+10. Two crew roles: one subscription at the higher role's price.
+
+**Design addendum** (A.8 1-6):
+1. Documents belong to the person.
+2. Payment is required only when Walter turns the switch on. Any free time for people already approved is decided by Walter at switch-on.
+3. A guide's subscription covers that person's crew roles.
+4. Guides and businesses keep traveller features; crew don't.
+5. A traveller account can't add a crew profile.
+6. Crew keep 7 days to reply and 14 to appeal.
+
+**Payment processor:** Flutterwave, with PesaPal as runner-up. Walter opens the Flutterwave test account himself. Live use only after company registration and Flutterwave's written answers.
