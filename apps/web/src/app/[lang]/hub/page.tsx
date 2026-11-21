@@ -65,7 +65,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
       .from('payments')
       .select('id, description, amount_tzs, amount_usd, status, paid_at, payout_done, created_at')
       .eq('payee_user_id', user.id)
-      // 'review': Selcom reported a payment Kwetuly is checking by hand; shown as "being checked".
+      // 'review': the payment provider reported a payment Kwetuly is checking by hand; shown as "being checked".
       .in('status', ['paid', 'review'])
       .order('created_at', { ascending: false })
       .limit(50)

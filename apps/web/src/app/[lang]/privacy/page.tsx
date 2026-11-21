@@ -20,7 +20,7 @@ const PROVIDERS: [string, string][] = [
   ['Anthropic', 'Answers questions sent to the travel concierge'],
   ['PostHog (EU)', 'Cookieless usage statistics'],
   ['Google and Facebook', 'Sign-in, only if you choose it'],
-  ['Selcom', 'Card and mobile-money payments, only when deposits are switched on'],
+  ['Flutterwave', 'Card and mobile-money payments, only when deposits are switched on'],
   ['OpenFreeMap and Amazon Web Services', 'Map images on tour pages; they see your IP address when a map loads'],
 ];
 

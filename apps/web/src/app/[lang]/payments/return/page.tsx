@@ -5,12 +5,14 @@ import { CheckCircle2, Clock, SearchCheck, XCircle } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
+import { isOrderId } from '@kwetuly/shared';
 import { callPayments } from '@/lib/payments';
 import { createClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'Payment', robots: { index: false } };
 
-// Selcom sends the traveller back here. We ask Selcom for the real result rather than trusting the URL.
+// Flutterwave sends the traveller back here (it adds status, tx_ref and transaction_id to the address).
+// Nothing in the address is trusted: the server asks Flutterwave for the real result.
 export default async function PaymentReturnPage({ searchParams }: PageProps<'/[lang]/payments/return'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   return (
@@ -24,8 +26,11 @@ export default async function PaymentReturnPage({ searchParams }: PageProps<'/[l
 
 async function Result({ searchParams, t, locale }: { searchParams: Promise<Record<string, string | string[] | undefined>>; t: Dictionary; locale: Locale }) {
   await requireUser(locale);
-  const order = (await searchParams).order;
-  const orderId = typeof order === 'string' && /^RAF\d{10,20}$/.test(order) ? order : null;
+  const params = await searchParams;
+  // Our own `order`, or Flutterwave's `tx_ref` (the same id). Only used to look up the payer's own row.
+  const pick = (v: string | string[] | undefined) => (typeof v === 'string' ? v.slice(0, 35) : '');
+  const candidate = [pick(params.order), pick(params.tx_ref)].find((v) => isOrderId(v));
+  const orderId = candidate ?? null;
   const p = t.payments;
 
   const supabase = await createClient();
@@ -51,8 +56,8 @@ async function Result({ searchParams, t, locale }: { searchParams: Promise<Recor
   }
 
   let state = payment.status;
-  // Failed orders are asked about too: one Kwetuly gave up on may still have been paid at Selcom,
-  // and the Edge Function then holds it for review.
+  // Failed orders are asked about too: one Kwetuly gave up on may still have been paid, and the Edge
+  // Function then holds it for review.
   if (state === 'pending' || state === 'failed') {
     const result = await callPayments({ action: 'status', order_id: orderId }, session.session?.access_token).catch(() => ({ status: 'pending' }));
     state = result.status ?? 'pending';

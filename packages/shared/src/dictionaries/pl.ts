@@ -588,7 +588,7 @@ export const pl: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Zapłać zaliczkę',
-    body: 'Zapłać bezpiecznie przez M-Pesa, Mixx by Yas, Airtel Money, Halopesa lub kartą w Selcom.',
+    body: 'Zapłać bezpiecznie kartą (Visa, Mastercard) lub mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) na stronie płatności Flutterwave. Numer karty wpisujesz tylko tam, nigdy w Kwetuly.',
     cta: 'Zapłać zaliczkę',
     amount: 'Zaliczka',
     paid: 'Zaliczka zapłacona',
@@ -605,11 +605,12 @@ export const pl: Dictionary = {
     notPaid: 'Zaliczka jeszcze nie zapłacona.',
     paidOn: 'Zapłacono {date}',
     review: 'Sprawdzamy tę płatność',
-    reviewNote: 'Odpowiedź Selcom nie zgadza się z tym, czego oczekiwaliśmy, więc zespół Kwetuly sprawdza tę płatność ręcznie. Nie płać ponownie. Damy znać, gdy będzie sprawdzona.',
+    reviewNote: 'Odpowiedź operatora płatności nie zgadza się z tym, czego oczekiwaliśmy, więc zespół Kwetuly sprawdza tę płatność ręcznie. Nie płać ponownie. Damy znać, gdy będzie sprawdzona.',
     checking: 'Sprawdzana przez Kwetuly. Nie płać ponownie.',
     underReview: 'Sprawdzamy płatność za tę zaliczkę. Nie płać ponownie. Damy znać, gdy będzie sprawdzona.',
-    pendingOrder: 'Rozpoczęta płatność jest wciąż otwarta w Selcom. Dokończ ją tam albo spróbuj ponownie za około godzinę.',
+    pendingOrder: 'Rozpoczęta płatność jest wciąż otwarta. Dokończ ją na stronie płatności albo spróbuj ponownie za około godzinę.',
     notApproved: 'Ten przewodnik lub firma nie może jeszcze przyjmować zaliczek przez Kwetuly. Zapłać bezpośrednio, jak ustalono.',
+    charged: 'Zostaniesz obciążony kwotą {amount} TSh. Jeśli karta jest w innej walucie, bank przeliczy ją po własnym kursie.',
   },
   alerts: {
     mute: 'Wycisz powiadomienia',

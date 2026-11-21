@@ -588,7 +588,7 @@ export const fr: Dictionary = {
   offers: en.offers,
   payments: {
     title: 'Payer votre acompte',
-    body: 'Payez en toute sécurité par M-Pesa, Mixx by Yas, Airtel Money, Halopesa ou carte via Selcom.',
+    body: 'Payez en toute sécurité par carte (Visa, Mastercard) ou mobile money (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa) sur la page de paiement de Flutterwave. Vous saisissez votre numéro de carte uniquement là, jamais sur Kwetuly.',
     cta: 'Payer l’acompte',
     amount: 'Acompte',
     paid: 'Acompte payé',
@@ -605,11 +605,12 @@ export const fr: Dictionary = {
     notPaid: 'Acompte pas encore payé.',
     paidOn: 'Payé le {date}',
     review: 'Nous vérifions ce paiement',
-    reviewNote: 'La réponse de Selcom ne correspond pas à ce que nous attendions : l’équipe Kwetuly vérifie ce paiement à la main. Ne payez pas une deuxième fois. Nous vous préviendrons une fois la vérification faite.',
+    reviewNote: 'La réponse du prestataire de paiement ne correspond pas à ce que nous attendions : l’équipe Kwetuly vérifie ce paiement à la main. Ne payez pas une deuxième fois. Nous vous préviendrons une fois la vérification faite.',
     checking: 'En cours de vérification par Kwetuly. Ne payez pas une deuxième fois.',
     underReview: 'Nous vérifions un paiement pour cet acompte. Ne payez pas une deuxième fois. Nous vous préviendrons une fois la vérification faite.',
-    pendingOrder: 'Un paiement que vous avez commencé est encore ouvert chez Selcom. Terminez-le, ou réessayez dans une heure environ.',
+    pendingOrder: 'Un paiement que vous avez commencé est encore ouvert. Terminez-le sur la page de paiement, ou réessayez dans une heure environ.',
     notApproved: 'Ce guide ou cette entreprise ne peut pas encore recevoir d’acompte via Kwetuly. Payez-le directement, comme convenu.',
+    charged: 'Vous êtes débité de {amount} TSh. Si votre carte est dans une autre devise, votre banque la convertit à son propre taux.',
   },
   alerts: {
     mute: 'Couper les alertes',
