@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import { Suspense } from 'react';
 import Link from 'next/link';
@@ -34,10 +34,16 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     openGraph: { siteName: 'Kwetuly', type: 'website', images: [DEFAULT_SHARE_IMAGE], ...ogLocales(locale) },
     twitter: { card: 'summary_large_image' },
+    // Added to an iPhone home screen: open full screen with the name "Kwetuly" under the icon
+    // (app/apple-icon.png). Android and desktop read app/manifest.ts.
+    appleWebApp: { capable: true, title: 'Kwetuly', statusBarStyle: 'default' },
     // Invite-only soft launch: keep every page out of search results until NEXT_PUBLIC_INDEXING=on.
     ...(INDEXING_ON ? {} : { robots: { index: false, follow: false } }),
   };
 }
+
+// Colours the phone's address bar and the installed app's title bar in brand green.
+export const viewport: Viewport = { themeColor: '#1D951A' };
 
 export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const locale = await getLocale();

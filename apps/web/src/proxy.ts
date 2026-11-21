@@ -102,5 +102,5 @@ function groupTripMissing(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|api/|icon|apple-icon|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt|xml)$).*)'],
+  matcher: ['/((?!_next/|api/|icon|apple-icon|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt|xml)$).*)'],
 };

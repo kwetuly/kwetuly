@@ -415,7 +415,7 @@ const SECTIONS: MenuSection[] = [
       {
         slug: 'afcon-2027', icon: 'trophy',
         label: L('AFCON 2027', 'AFCON 2027', 'CAN 2027', 'Coppa d’Africa 2027', 'Afrika-Cup 2027', 'Puchar Narodów Afryki 2027', '2027 非洲国家杯'),
-        blurb: L('Match-day transfers and city tours', 'Usafiri wa mechi na ziara za mji', 'Transferts les jours de match et visites de ville', 'Transfer nei giorni di gara e tour in città', 'Transfers an Spieltagen und Stadttouren', 'Transfery w dni meczów i zwiedzanie miast', '比赛日接送与城市游览'),
+        blurb: L('City tours and day trips with local guides', 'Ziara za mjini na safari za siku moja', 'Visites de ville et excursions avec des guides locaux', 'Tour in città ed escursioni con guide locali', 'Stadttouren und Tagesausflüge mit lokalen Guides', 'Zwiedzanie miast i wycieczki z lokalnymi przewodnikami', '城市游览以及本地导游带领的一日游'),
       },
       {
         slug: 'invest', icon: 'trending-up', href: '/invest', status: 'live',
