@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardCheck,
   ClipboardList,
+  FileCheck2,
   HandCoins,
   Image as ImageIcon,
   Inbox,
@@ -14,6 +15,7 @@ import {
   Newspaper,
   ShieldAlert,
   ShoppingBag,
+  Tags,
   Star,
   Users,
   Wallet,
@@ -31,6 +33,7 @@ export function AdminMenu({ locale, current }: { locale: string; current?: strin
       title: 'Approvals',
       rows: [
         { href: `${a}/review`, label: 'Review waiting items', icon: ClipboardCheck },
+        { href: `${a}/documents`, label: 'Documents to check', hint: 'Verification uploads', icon: FileCheck2 },
         { href: `${a}/trips`, label: 'Tours and operators', icon: MapIcon },
         { href: `${a}/listings`, label: 'Business listings', icon: Building2 },
       ],
@@ -48,6 +51,7 @@ export function AdminMenu({ locale, current }: { locale: string; current?: strin
       rows: [
         { href: `${a}/all#payments`, label: 'Payments', hint: 'On the old page for now', icon: Wallet },
         { href: `${a}/commissions`, label: 'Commissions', icon: HandCoins },
+        { href: `${a}/prices`, label: 'Prices', hint: 'Not set yet', icon: Tags },
         { href: `${a}/all#businesses`, label: 'Badge fee and badge requests', hint: 'On the old page for now', icon: BadgeCheck },
       ],
     },

@@ -56,7 +56,7 @@ export function DirectUpload({ name, bucket, userId, prefix, accept, labels }: P
     const type = body.type || file.type;
     const ext = type === 'application/pdf' ? 'pdf' : type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
     const target = `${userId}/${prefix}-${Date.now()}.${ext}`;
-    const { error } = await createClient().storage.from(bucket).upload(target, body, { contentType: type, upsert: false });
+    const { error } = await createClient().storage.from(bucket).upload(target, body, { contentType: type, upsert: false, ...(bucket === 'verification' ? { cacheControl: '0' } : {}) });
     if (error) return setState('error');
     setPath(target);
     setState('done');

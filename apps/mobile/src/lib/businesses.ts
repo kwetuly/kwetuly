@@ -111,7 +111,7 @@ type Upload = { uri: string; mimeType: string };
 
 async function upload(bucket: 'avatars' | 'verification', path: string, file: Upload) {
   const body = await (await fetch(file.uri)).arrayBuffer();
-  const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType: file.mimeType });
+  const { error } = await supabase.storage.from(bucket).upload(path, body, { contentType: file.mimeType, ...(bucket === 'verification' ? { cacheControl: '0' } : {}) });
   check(error);
 }
 

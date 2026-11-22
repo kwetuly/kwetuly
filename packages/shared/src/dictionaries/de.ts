@@ -600,6 +600,7 @@ export const de: Dictionary = {
     notFound: 'Wir konnten diese Zahlung nicht finden. Wenn Sie gerade bezahlt haben, öffnen Sie Ihre Reisen, um den Stand zu sehen.',
     myTrips: 'Meine Reisen',
     checkAgain: 'Erneut prüfen',
+    opensSoon: 'Zahlungen per Karte und Mobile Money sind bald möglich. Vielen Dank für Ihre Geduld.',
     back: 'Zurück',
     direct: 'Den Rest zahlen Sie wie vereinbart direkt an Ihren Guide.',
     heldNote: 'Kwetuly hält sie, bis wir Ihren Guide bezahlen.',

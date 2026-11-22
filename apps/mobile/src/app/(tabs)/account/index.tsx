@@ -4,7 +4,7 @@ import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { openExternal } from '@/lib/open-external';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS, LOCALES, LOCALE_NAMES } from '@kwetuly/shared';
+import { CALL_TOPICS, LOCALES, LOCALE_NAMES, verificationText } from '@kwetuly/shared';
 import { ConnectedSignIns } from '@/components/connected-sign-ins';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { GLYPHS } from '@/components/glyph';
@@ -42,6 +42,9 @@ export default function AccountScreen() {
   // The one filled button: finish setup, when the account is not set up yet. Everything else is a row.
   const needsFinish = !!profile.data && !profile.data.onboarded_at;
   const approvedGuide = myGuide?.verification_status === 'approved';
+  // Guides and business owners send documents for Kwetuly to check; travellers never see this row.
+  const showVerification = role === 'guide' || role === 'provider' || role === 'admin' || !!myGuide || approvedBusiness;
+  const v = verificationText(locale);
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: layout.screenX, gap: layout.sectionGap, paddingBottom: space.xxxl }}>
@@ -150,6 +153,19 @@ export default function AccountScreen() {
               ))}
             </Card>
           </Section>
+
+          {showVerification && (
+            <ListGroup>
+              <ListRow icon={GLYPHS.document} title={v.title} subtitle={v.menuHint} onPress={() => router.push('/verification' as Href)} />
+            </ListGroup>
+          )}
+
+          {/* Admin screens stay on the website only (two-step sign-in, 60-second file links, audit log). */}
+          {role === 'admin' && (
+            <ListGroup>
+              <ListRow icon={GLYPHS.admin} title={v.adminWebsite} subtitle={v.adminWebsiteHint} accessibilityRole="link" onPress={() => WebBrowser.openBrowserAsync(`${SITE_URL}/${locale}/admin`)} />
+            </ListGroup>
+          )}
 
           <ConnectedSignIns />
 

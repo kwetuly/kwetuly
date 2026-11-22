@@ -779,6 +779,7 @@ export const en = {
     notFound: 'We could not find this payment. If you have just paid, open your trips to see its status.',
     myTrips: 'My trips',
     checkAgain: 'Check again',
+    opensSoon: 'Card and mobile money payments open soon. Thank you for your patience.',
     back: 'Back',
     direct: 'Pay the rest directly as agreed with your guide.',
     heldNote: 'Kwetuly holds it until we pay your guide.',

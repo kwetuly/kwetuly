@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { businessDocumentKinds, datedDocumentKinds, documentRejectReasons, documentReviewStates, personDocumentKinds, personDocumentPath, uploadableDocumentKinds } from './person-documents';
+import { tanzaniaToday } from './group-trip-rules';
+import { addDaysIso, businessDocumentKinds, datedDocumentKinds, documentRejectReasons, documentReviewStates, documentSlots, personDocumentKinds, personDocumentPath, slotStatus, uploadableDocumentKinds, verificationSummary, type MemberCheck, type MemberDocument } from './person-documents';
 
 const sql = readFileSync(new URL('../../../supabase/migrations/20261122000000_person_documents_identifiers.sql', import.meta.url), 'utf8');
 const quoted = (block: string) => [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
@@ -35,5 +36,61 @@ describe('personDocumentPath', () => {
     expect(personDocumentPath('u', 'd', '.JPG')).toBe('u/d.jpg');
     expect(personDocumentPath('u', 'd', 'pdf')).toBe('u/d.pdf');
     expect(personDocumentPath('u', 'd', 'heic')).toBeNull();
+  });
+});
+
+const doc = (over: Partial<MemberDocument>): MemberDocument => ({
+  id: 'd1', kind: 'identity', title: null, provider_id: null, review_state: 'waiting', review_reason: null,
+  stated_valid_until: null, uploaded_at: '2026-11-01T10:00:00Z', reviewed_at: null, ...over,
+});
+const chk = (over: Partial<MemberCheck>): MemberCheck => ({
+  id: 'c1', kind: 'identity', title: null, provider_id: null, checked_at: '2026-11-02T10:00:00Z', valid_until: null, ended_at: null, ...over,
+});
+
+describe('documentSlots', () => {
+  it('guides send NIDA, licence, first aid or WFR, optional driving licence', () => {
+    const kinds = documentSlots({ guide: true, business: false, tanzanian: true }).map((s) => s.kind);
+    expect(kinds).toEqual(['identity', 'guide_licence', 'first_aid', 'wfr', 'driving_licence', 'other']);
+  });
+  it('non-Tanzanian business owners send no NIDA and never a passport image', () => {
+    const kinds = documentSlots({ guide: false, business: true, tanzanian: false }).map((s) => s.kind);
+    expect(kinds).toEqual(['business_licence', 'tin_certificate', 'operator_licence', 'other']);
+    expect(kinds.every((k) => uploadableDocumentKinds.includes(k))).toBe(true);
+  });
+});
+
+describe('verificationSummary', () => {
+  const today = '2026-11-22';
+  it('nothing sent', () => {
+    expect(verificationSummary([], [], today).state).toBe('none');
+  });
+  it('waiting', () => {
+    expect(verificationSummary([doc({})], [], today)).toMatchObject({ state: 'waiting', waiting: 1 });
+  });
+  it('checked, active until the earliest end date', () => {
+    const s = verificationSummary([doc({ review_state: 'accepted' })], [chk({}), chk({ id: 'c2', kind: 'guide_licence', valid_until: '2027-06-01' })], today);
+    expect(s).toMatchObject({ state: 'checked', activeUntil: '2027-06-01' });
+  });
+  it('ending soon and expired', () => {
+    expect(verificationSummary([], [chk({ valid_until: '2026-12-10' })], today).state).toBe('expiring');
+    expect(verificationSummary([], [chk({ valid_until: '2026-11-21' })], today).state).toBe('expired');
+  });
+  it('rejected until a new upload of the same paper', () => {
+    const rejected = doc({ review_state: 'rejected', review_reason: 'unreadable', reviewed_at: '2026-11-03T00:00:00Z' });
+    expect(verificationSummary([rejected], [], today).state).toBe('rejected');
+    const again = doc({ id: 'd2', uploaded_at: '2026-11-05T00:00:00Z' });
+    expect(verificationSummary([rejected, again], [], today).state).toBe('waiting');
+  });
+});
+
+describe('slotStatus and dates', () => {
+  it('finds the newest upload and the current check of a paper', () => {
+    const s = slotStatus('identity', null, [doc({}), doc({ id: 'd2', uploaded_at: '2026-11-09T00:00:00Z' })], [chk({ ended_at: '2026-11-03T00:00:00Z' })]);
+    expect(s.latest?.id).toBe('d2');
+    expect(s.check).toBeNull();
+  });
+  it('adds days and knows the Tanzanian date', () => {
+    expect(addDaysIso('2026-12-31', 1)).toBe('2027-01-01');
+    expect(tanzaniaToday(new Date('2026-11-22T22:30:00Z'))).toBe('2026-11-23');
   });
 });

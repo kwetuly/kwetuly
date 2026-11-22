@@ -595,6 +595,7 @@ export const zh: Dictionary = {
     notFound: '我们找不到这笔付款。如果您刚刚付款，请打开您的行程查看状态。',
     myTrips: '我的行程',
     checkAgain: '再次查询',
+    opensSoon: '银行卡和移动支付即将开放。感谢您的耐心等待。',
     back: '返回',
     direct: '余款按与导游的约定直接支付。',
     heldNote: '订金由 Kwetuly 保管，之后支付给您的导游。',

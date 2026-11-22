@@ -23,3 +23,4 @@ export { guideStatusText, type GuideStatusText } from './guide-status';
 export { SIGN_INS_TEXT } from './sign-ins';
 export { CATALOGUE_TEXT, catalogueText, type CatalogueText } from './catalogue';
 export { HOSTS_TEXT, hostsText, type HostsText } from './hosts';
+export { verificationText, fillText, type VerificationText } from './verification';
