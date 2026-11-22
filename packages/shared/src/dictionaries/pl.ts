@@ -600,6 +600,7 @@ export const pl: Dictionary = {
     notFound: 'Nie znaleźliśmy tej płatności. Jeśli właśnie zapłaciłeś, otwórz swoje podróże, aby zobaczyć jej status.',
     myTrips: 'Moje podróże',
     checkAgain: 'Sprawdź ponownie',
+    opensSoon: 'Płatności kartą i mobile money już wkrótce. Dziękujemy za cierpliwość.',
     back: 'Wróć',
     direct: 'Resztę zapłać bezpośrednio, jak ustalono z przewodnikiem.',
     heldNote: 'Kwetuly przechowuje ją, dopóki nie zapłacimy przewodnikowi.',

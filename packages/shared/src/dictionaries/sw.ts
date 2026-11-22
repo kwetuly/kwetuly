@@ -781,6 +781,7 @@ export const sw: Dictionary = {
     notFound: 'Hatukuweza kupata malipo haya. Kama umelipa sasa hivi, fungua safari zako kuona hali yake.',
     myTrips: 'Safari zangu',
     checkAgain: 'Angalia tena',
+    opensSoon: 'Malipo kwa kadi na pesa ya simu yatafunguliwa hivi karibuni. Asante kwa uvumilivu wako.',
     back: 'Rudi',
     direct: 'Lipa kiasi kilichobaki moja kwa moja kama mlivyokubaliana na mwongozaji.',
     heldNote: 'Kwetuly inaishikilia hadi tumlipe mwongozaji wako.',

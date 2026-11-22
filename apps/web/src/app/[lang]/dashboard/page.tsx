@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, type DocumentStatus } from '@kwetuly/shared';
-import { Circle, CircleCheck, ShieldCheck } from 'lucide-react';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, type DocumentStatus } from '@kwetuly/shared';
+import { Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireUser, type CurrentUser } from '@/lib/auth';
@@ -52,10 +52,29 @@ export default async function DashboardPage({ searchParams }: PageProps<'/[lang]
       <Suspense fallback={<div className="mt-6 h-96 animate-pulse rounded-[5px] bg-surface" />}>
         <DashboardForRole t={t} locale={locale} searchParams={searchParams} />
       </Suspense>
+      <Suspense fallback={null}>
+        <VerificationLink locale={locale} />
+      </Suspense>
       <Link href={`/${locale}/security`} className="mt-6 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 text-sm font-semibold hover:border-leaf">
         <ShieldCheck className="size-5 text-leaf-dark" aria-hidden /> {t.ux.securityLink}
       </Link>
     </div>
+  );
+}
+
+// Guides, business owners and admins: the way to the Verification page. Travellers never see it.
+async function VerificationLink({ locale }: { locale: Locale }) {
+  const user = await getCurrentUser();
+  if (!user || !(user.role === 'guide' || user.role === 'provider' || user.role === 'admin' || user.guide || (await businessApproval(user)) !== 'none')) return null;
+  const v = verificationText(locale);
+  return (
+    <Link href={`/${locale}/dashboard/verification`} className="mt-6 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 hover:border-leaf">
+      <FileCheck2 className="size-5 shrink-0 text-leaf-dark" aria-hidden />
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{v.title}</span>
+        <span className="block text-sm text-muted">{v.menuHint}</span>
+      </span>
+    </Link>
   );
 }
 

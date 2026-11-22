@@ -40,8 +40,9 @@ function errorText(error: string, p: Dictionary['payments']) {
   }
 }
 
-// Deposit box for an accepted offer or group-trip spot. Hidden until online payments are set up, and hidden
-// when this deposit cannot be paid online (the Edge Function's own rules decide).
+// Deposit box for an accepted offer or group-trip spot. While online payments are switched off it shows the
+// amount with a disabled Pay button and "opens soon"; once on, it is hidden when this deposit cannot be paid
+// online (the Edge Function's own rules decide).
 export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, paidOut, back, error, t, locale, dark }: Props) {
   const p = t.payments;
   if (percent <= 0) return null;
@@ -61,7 +62,22 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
   );
   if (review) return checking;
   const config = await paymentsConfig();
-  if (!config.enabled) return null;
+  // Payments switched off (Walter, 2026-11-22: show every button): the box stays, with the amount and
+  // a disabled Pay button. The payable check is skipped: while off, the Edge Function answers
+  // not_configured to every check, so it cannot tell us more.
+  if (!config.enabled) {
+    return (
+      <div id="pay" className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
+        <p className="flex items-center gap-2 font-bold"><CreditCard className="size-5" aria-hidden /> {p.title}</p>
+        <p className="text-2xl font-extrabold">
+          ${depositUsd(totalUsd, percent).toLocaleString(locale)} <span className="text-sm font-semibold">({percent}%)</span>
+        </p>
+        <button type="button" className="btn w-full" disabled aria-describedby="pay-soon">{p.cta}</button>
+        <p id="pay-soon" className="text-sm font-semibold">{p.opensSoon}</p>
+        <p className="text-xs opacity-70">{p.direct}</p>
+      </div>
+    );
+  }
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getSession();

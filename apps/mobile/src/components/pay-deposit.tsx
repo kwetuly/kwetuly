@@ -12,7 +12,8 @@ import { brand, colors, space, textSize } from '@/theme';
 type Props = { kind: 'offer' | 'group'; id: string; totalUsd: number; percent: number };
 
 // Deposit for an accepted offer or group-trip spot, paid on the payment processor's page (PAYMENT_PROVIDER_NAME) and charged in TSh.
-// Hidden until payments are set up, and hidden when this deposit cannot be paid online (the Edge Function's own rules decide).
+// While payments are switched off: the amount, a disabled Pay button and "opens soon". Once on, hidden when this
+// deposit cannot be paid online (the Edge Function's own rules decide).
 // 2026-11 restyle: only the look changed here (fonts, colours, the paid line split in two); no payment logic.
 export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   const { t, locale } = useI18n();
@@ -50,6 +51,21 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
     </Card>
   );
   if (paid.data?.review) return checking;
+  // Payments switched off (Walter, 2026-11-22: show every button): the amount and a disabled Pay button
+  // with "opens soon". While off, the Edge Function answers not_configured to every check.
+  if (config.data && !config.data.enabled && paid.data?.paid === false) {
+    return (
+      <Card style={{ backgroundColor: brand.sand }}>
+        <Text style={{ ...type.cardTitle, color: brand.ink }}>{p.title}</Text>
+        <Text style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>
+          ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: textSize.subhead, ...font.semibold }}>({percent}%)</Text>
+        </Text>
+        <Button title={p.cta} onPress={() => undefined} disabled accessibilityLabel={`${p.cta}. ${p.opensSoon}`} />
+        <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{p.opensSoon}</Text>
+        <Text style={type.caption}>{p.direct}</Text>
+      </Card>
+    );
+  }
   if (!enabled.data || !payable.data || payable.data === 'hidden') return null;
   if (payable.data === 'review') return checking;
   // Display only, same integer maths as the server; the server saves the real amount at checkout.

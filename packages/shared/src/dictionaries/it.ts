@@ -600,6 +600,7 @@ export const it: Dictionary = {
     notFound: 'Non abbiamo trovato questo pagamento. Se hai appena pagato, apri i tuoi viaggi per vederne lo stato.',
     myTrips: 'I miei viaggi',
     checkAgain: 'Controlla di nuovo',
+    opensSoon: 'I pagamenti con carta e mobile money arrivano presto. Grazie per la pazienza.',
     back: 'Indietro',
     direct: 'Paga il resto direttamente come concordato con la guida.',
     heldNote: 'Kwetuly lo trattiene finché non paghiamo la tua guida.',

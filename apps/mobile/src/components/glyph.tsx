@@ -62,4 +62,8 @@ export const GLYPHS = {
   bookmarkFilled: { ios: 'bookmark.fill', android: 'bookmark_added' },
   phone: { ios: 'phone', android: 'call' },
   mail: { ios: 'envelope', android: 'mail' },
+  document: { ios: 'doc.text', android: 'description' },
+  shield: { ios: 'checkmark.shield', android: 'verified_user' },
+  card: { ios: 'creditcard', android: 'credit_card' },
+  admin: { ios: 'gearshape', android: 'admin_panel_settings' },
 } as const satisfies Record<string, GlyphName>;
