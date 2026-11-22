@@ -106,7 +106,7 @@ const en = {
 
   noticeTitle: 'Your privacy',
   noticeBody:
-    'Your documents are kept in a private store. Only Kwetuly admins with two-step sign-in can open them, and every opening is recorded. We use them only to check who you are and what you are licensed to do, and never show them to travellers. Files are deleted after the check; the check dates are kept. Identity numbers are encrypted.',
+    'Your documents are kept in a private store. Only Kwetuly admins with two-step sign-in can open them, and every opening is recorded. We use them only to check who you are and what you are licensed to do, and never show them to travellers. Files are deleted after the check; the check dates are kept. Identity numbers are encrypted. Please note: photos are cleaned of hidden details, such as the place where they were taken, before they are sent. PDF files are kept exactly as you send them, including any hidden details inside them.',
   noticeAgree: 'I have read this and agree that Kwetuly checks my documents.',
   noticeLink: 'Read the full privacy notice',
 
@@ -251,7 +251,7 @@ const sw: VerificationText = {
 
   noticeTitle: 'Faragha yako',
   noticeBody:
-    'Nyaraka zako zinahifadhiwa mahali pa siri. Ni wasimamizi wa Kwetuly wenye kuingia kwa hatua mbili tu wanaoweza kuzifungua, na kila ufunguaji unarekodiwa. Tunazitumia tu kukagua wewe ni nani na leseni ulizo nazo, na hatuzionyeshi kwa wasafiri. Mafaili yanafutwa baada ya ukaguzi; tarehe za ukaguzi zinabaki. Namba za utambulisho zinasimbwa.',
+    'Nyaraka zako zinahifadhiwa mahali pa siri. Ni wasimamizi wa Kwetuly wenye kuingia kwa hatua mbili tu wanaoweza kuzifungua, na kila ufunguaji unarekodiwa. Tunazitumia tu kukagua wewe ni nani na leseni ulizo nazo, na hatuzionyeshi kwa wasafiri. Mafaili yanafutwa baada ya ukaguzi; tarehe za ukaguzi zinabaki. Namba za utambulisho zinasimbwa. Tafadhali fahamu: taarifa zilizofichwa kwenye picha, kama mahali zilipopigwa, huondolewa kabla hazijatumwa. Mafaili ya PDF yanahifadhiwa kama ulivyoyatuma, pamoja na taarifa zozote zilizofichwa ndani yake.',
   noticeAgree: 'Nimesoma haya na ninakubali Kwetuly ikague nyaraka zangu.',
   noticeLink: 'Soma taarifa kamili ya faragha',
 

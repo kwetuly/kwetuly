@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { tanzaniaToday } from './group-trip-rules';
-import { addDaysIso, businessDocumentKinds, datedDocumentKinds, documentRejectReasons, documentReviewStates, documentSlots, personDocumentKinds, personDocumentPath, slotStatus, uploadableDocumentKinds, verificationSummary, type MemberCheck, type MemberDocument } from './person-documents';
+import { addDaysIso, businessDocumentKinds, detectDocumentFileType, datedDocumentKinds, documentRejectReasons, documentReviewStates, documentSlots, personDocumentKinds, personDocumentPath, slotStatus, uploadableDocumentKinds, verificationSummary, type MemberCheck, type MemberDocument } from './person-documents';
 
 const sql = readFileSync(new URL('../../../supabase/migrations/20261122000000_person_documents_identifiers.sql', import.meta.url), 'utf8');
 const quoted = (block: string) => [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
@@ -92,5 +92,25 @@ describe('slotStatus and dates', () => {
   it('adds days and knows the Tanzanian date', () => {
     expect(addDaysIso('2026-12-31', 1)).toBe('2027-01-01');
     expect(tanzaniaToday(new Date('2026-11-22T22:30:00Z'))).toBe('2026-11-23');
+  });
+});
+
+describe('detectDocumentFileType (security review L3)', () => {
+  const b = (...v: number[]) => new Uint8Array(v);
+  const text = (s: string) => new TextEncoder().encode(s);
+  it('knows JPEG, PNG, WebP and PDF by their first bytes', () => {
+    expect(detectDocumentFileType(b(0xff, 0xd8, 0xff, 0xe0, 0, 0x10))?.contentType).toBe('image/jpeg');
+    expect(detectDocumentFileType(b(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0))?.contentType).toBe('image/png');
+    expect(detectDocumentFileType(text('RIFF\x24\x00\x00\x00WEBPVP8 '))?.contentType).toBe('image/webp');
+    expect(detectDocumentFileType(text('%PDF-1.7\n'))?.ext).toBe('pdf');
+  });
+  it('refuses anything else, including look-alikes', () => {
+    expect(detectDocumentFileType(text('<!doctype html><html>'))).toBeNull();
+    expect(detectDocumentFileType(text('RIFF\x24\x00\x00\x00WAVEfmt '))).toBeNull();
+    expect(detectDocumentFileType(text('%PDF'))).toBeNull();
+    expect(detectDocumentFileType(b(0x89, 0x50, 0x4e, 0x47))).toBeNull();
+    expect(detectDocumentFileType(b(0xff, 0xd8))).toBeNull();
+    expect(detectDocumentFileType(new Uint8Array())).toBeNull();
+    expect(detectDocumentFileType(text(' %PDF-1.7'))).toBeNull();
   });
 });

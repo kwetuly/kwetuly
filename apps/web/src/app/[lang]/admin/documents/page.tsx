@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { adminDate, adminDateTime, darToday, waitedFor } from '@/lib/admin-format';
 import { SubmitButton } from '@/components/submit-button';
 import { AdminMenu } from '../admin-menu';
-import { endCheck, openDocument, reviewDocument } from './actions';
+import { endCheck, reviewDocument } from './actions';
 
 export const metadata: Metadata = { title: 'Documents', robots: { index: false } };
 
@@ -47,7 +47,7 @@ const REASONS: Record<(typeof documentRejectReasons)[number], string> = {
 };
 
 // Admin texts are English only (docs/design/admin-dashboard-layout.md). One card per waiting document:
-// open the file (logged first, 60-second link), compare the name with the profile, then accept with the
+// open the file (logged first, sent by our server, never cached), compare the name with the profile, then accept with the
 // valid-until date or reject with a reason. Never "approve all". No AI or OCR reads these files.
 // Fixed texts for the codes the actions put in the address (security review L1). Unknown codes show nothing.
 const OK_TEXT: Record<string, string> = {
@@ -58,6 +58,7 @@ const OK_TEXT: Record<string, string> = {
 const ERROR_TEXT: Record<string, string> = {
   not_found: 'This document or check was not found. It may have been withdrawn.',
   file_missing: 'The file could not be opened. If it is missing, reject it as unreadable.',
+  bad_file: 'This file is not a JPG, PNG, WebP or PDF, so it was not opened. Please reject it as unreadable.',
   date_needed: 'Please enter the valid-until date printed on the document.',
   reason_needed: 'Please choose a reason.',
   end_reason: 'Please give a reason (5 to 300 characters).',
@@ -181,10 +182,10 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                 </div>
               </dl>
 
-              <form action={openDocument}>
-                <input type="hidden" name="locale" value={locale} />
-                <input type="hidden" name="document_id" value={d.id} />
-                <SubmitButton className="btn-outline">Open the file (60 seconds)</SubmitButton>
+              {/* A plain form to the file route (no signed link reaches the browser); the file opens in a new tab. */}
+              <form method="post" action={`/${locale}/admin/documents/${d.id}/file`} target="_blank">
+                <button type="submit" className="btn-outline" aria-describedby={`warn-${d.id}`}>Open the file in a new tab</button>
+                <p id={`warn-${d.id}`} className="mt-1 text-sm text-muted">Never follow links or fill in forms inside a document.</p>
               </form>
 
               {own ? (
