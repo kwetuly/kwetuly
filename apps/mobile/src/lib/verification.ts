@@ -57,7 +57,7 @@ export async function uploadDocument(input: {
 }): Promise<UploadError | null> {
   const id = Crypto.randomUUID();
   const path = personDocumentPath(input.userId, id, 'jpg')!;
-  const upload = await supabase.storage.from('verification').upload(path, await bytesOf(input.file.uri), { contentType: input.file.mimeType, upsert: false });
+  const upload = await supabase.storage.from('verification').upload(path, await bytesOf(input.file.uri), { contentType: input.file.mimeType, upsert: false, cacheControl: '0' });
   if (upload.error) return 'upload';
   const { error } = await supabase.from('person_documents').insert({
     id,

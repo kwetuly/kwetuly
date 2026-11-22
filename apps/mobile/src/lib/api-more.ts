@@ -261,7 +261,7 @@ export async function saveGuideProfile(
     if (!doc.upload) continue;
     const ext = EXTENSIONS[doc.upload.mimeType] ?? 'jpg';
     const path = `${userId}/${doc.prefix}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('verification').upload(path, await bytesOf(doc.upload.uri), { contentType: doc.upload.mimeType });
+    const { error: uploadError } = await supabase.storage.from('verification').upload(path, await bytesOf(doc.upload.uri), { contentType: doc.upload.mimeType, cacheControl: '0' });
     check(uploadError);
     privateData[doc.column] = path;
     cleared[doc.check] = null;

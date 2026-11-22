@@ -23,8 +23,18 @@ function done(back: string, params: Record<string, string>, anchor = ''): never 
   redirect(`${back}?${new URLSearchParams(params)}${anchor}`);
 }
 
-/** Short database message for the admin (English); never contains a number (notes are masked). */
-const short = (message: string | undefined) => (message ?? 'failed').slice(0, 120);
+// Only short fixed codes go into the address (security review L1): the page maps each to a fixed text
+// and ignores anything else, so a crafted link cannot show its own message and no database text is logged.
+function code(message: string | undefined): string {
+  const m = message ?? '';
+  if (/already been decided/i.test(m)) return 'decided';
+  if (/another admin/i.test(m)) return 'own_document';
+  if (/missing/i.test(m)) return 'file_missing';
+  if (/already expired/i.test(m)) return 'expired';
+  if (/not found|no file|no current check/i.test(m)) return 'not_found';
+  if (/admins only/i.test(m)) return 'not_admin';
+  return 'failed';
+}
 
 /**
  * Opens one file: records "document opened" FIRST (admin_log_document_opened returns the path), then
@@ -34,12 +44,12 @@ const short = (message: string | undefined) => (message ?? 'failed').slice(0, 12
 export async function openDocument(formData: FormData) {
   const { back } = await adminOnly(formData);
   const id = String(formData.get('document_id') ?? '');
-  if (!UUID.test(id)) done(back, { error: 'Unknown document' });
+  if (!UUID.test(id)) done(back, { e: 'not_found' });
   const supabase = await createClient();
   const { data: path, error } = await supabase.rpc('admin_log_document_opened', { p_document: id });
-  if (error || typeof path !== 'string') done(back, { error: short(error?.message) });
+  if (error || typeof path !== 'string') done(back, { e: code(error?.message) });
   const { data: signed } = await supabase.storage.from('verification').createSignedUrl(path, 60);
-  if (!signed?.signedUrl) done(back, { error: 'The file could not be opened. If it is missing, reject it as unreadable.' }, `#doc-${id}`);
+  if (!signed?.signedUrl) done(back, { e: 'file_missing' }, `#doc-${id}`);
   redirect(signed.signedUrl);
 }
 
@@ -47,14 +57,14 @@ export async function reviewDocument(formData: FormData) {
   const { back } = await adminOnly(formData);
   const id = String(formData.get('document_id') ?? '');
   const decision = String(formData.get('decision') ?? '');
-  if (!UUID.test(id) || (decision !== 'accept' && decision !== 'reject')) done(back, { error: 'Unknown document' });
+  if (!UUID.test(id) || (decision !== 'accept' && decision !== 'reject')) done(back, { e: 'not_found' });
   const kind = String(formData.get('kind') ?? '');
   const dated = formData.get('dated') === '1';
   const validUntil = String(formData.get('valid_until') ?? '').trim();
   const reason = String(formData.get('reason') ?? '');
   const note = String(formData.get('note') ?? '').trim().slice(0, 300) || null;
-  if (decision === 'accept' && dated && !DATE.test(validUntil)) done(back, { error: 'Please enter the valid-until date printed on the document.' }, `#doc-${id}`);
-  if (decision === 'reject' && !(documentRejectReasons as readonly string[]).includes(reason)) done(back, { error: 'Please choose a reason.' }, `#doc-${id}`);
+  if (decision === 'accept' && dated && !DATE.test(validUntil)) done(back, { e: 'date_needed' }, `#doc-${id}`);
+  if (decision === 'reject' && !(documentRejectReasons as readonly string[]).includes(reason)) done(back, { e: 'reason_needed' }, `#doc-${id}`);
 
   const supabase = await createClient();
   const { error } = await supabase.rpc('admin_review_document', {
@@ -66,18 +76,18 @@ export async function reviewDocument(formData: FormData) {
     p_reason: decision === 'reject' ? reason : null,
     p_note: note,
   });
-  if (error) done(back, { error: short(error.message) }, `#doc-${id}`);
-  done(back, { ok: decision === 'accept' ? 'Accepted. The check is recorded.' : 'Rejected. The person sees the reason.' });
+  if (error) done(back, { e: code(error.message) }, `#doc-${id}`);
+  done(back, { ok: decision === 'accept' ? 'accepted' : 'rejected' });
 }
 
 export async function endCheck(formData: FormData) {
   const { back } = await adminOnly(formData);
   const id = String(formData.get('check_id') ?? '');
   const reason = String(formData.get('reason') ?? '').trim();
-  if (!UUID.test(id)) done(back, { error: 'Unknown check' }, '#checks');
-  if (reason.length < 5 || reason.length > 300) done(back, { error: 'Please give a reason (5 to 300 characters).' }, '#checks');
+  if (!UUID.test(id)) done(back, { e: 'not_found' }, '#checks');
+  if (reason.length < 5 || reason.length > 300) done(back, { e: 'end_reason' }, '#checks');
   const supabase = await createClient();
   const { error } = await supabase.rpc('admin_end_check', { p_check: id, p_reason: reason });
-  if (error) done(back, { error: short(error.message) }, '#checks');
-  done(back, { ok: 'The check was ended.' }, '#checks');
+  if (error) done(back, { e: code(error.message) }, '#checks');
+  done(back, { ok: 'ended' }, '#checks');
 }

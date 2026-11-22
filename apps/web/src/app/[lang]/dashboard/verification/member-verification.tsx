@@ -234,7 +234,7 @@ function UploadForm({ slot, providerId, again, v, userId, today }: Props & { slo
     const documentId = crypto.randomUUID();
     const path = personDocumentPath(userId, documentId, ext)!;
     const supabase = createClient();
-    const upload = await supabase.storage.from('verification').upload(path, body, { contentType: body.type, upsert: false });
+    const upload = await supabase.storage.from('verification').upload(path, body, { contentType: body.type, upsert: false, cacheControl: '0' });
     if (upload.error) {
       setState('idle');
       return setError(v.errors.upload);

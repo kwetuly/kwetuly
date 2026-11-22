@@ -49,6 +49,25 @@ const REASONS: Record<(typeof documentRejectReasons)[number], string> = {
 // Admin texts are English only (docs/design/admin-dashboard-layout.md). One card per waiting document:
 // open the file (logged first, 60-second link), compare the name with the profile, then accept with the
 // valid-until date or reject with a reason. Never "approve all". No AI or OCR reads these files.
+// Fixed texts for the codes the actions put in the address (security review L1). Unknown codes show nothing.
+const OK_TEXT: Record<string, string> = {
+  accepted: 'Accepted. The check is recorded.',
+  rejected: 'Rejected. The person sees the reason.',
+  ended: 'The check was ended.',
+};
+const ERROR_TEXT: Record<string, string> = {
+  not_found: 'This document or check was not found. It may have been withdrawn.',
+  file_missing: 'The file could not be opened. If it is missing, reject it as unreadable.',
+  date_needed: 'Please enter the valid-until date printed on the document.',
+  reason_needed: 'Please choose a reason.',
+  end_reason: 'Please give a reason (5 to 300 characters).',
+  decided: 'This document has already been decided.',
+  own_document: 'Another admin must review your own documents.',
+  expired: 'This document has already expired, so it cannot be accepted.',
+  not_admin: 'Please sign in again with two-step sign-in.',
+  failed: 'That did not work. Please try again.',
+};
+
 export default async function DocumentsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const locale = await getLocale();
   return (
@@ -73,8 +92,8 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const admin = await requireAdmin(locale);
   const params = await searchParams;
-  const ok = typeof params.ok === 'string' ? params.ok.slice(0, 200) : '';
-  const error = typeof params.error === 'string' ? params.error.slice(0, 200) : '';
+  const ok = typeof params.ok === 'string' ? (OK_TEXT[params.ok] ?? '') : '';
+  const error = typeof params.e === 'string' ? (ERROR_TEXT[params.e] ?? '') : '';
   const supabase = await createClient();
   const [waiting, checks] = await Promise.all([
     supabase
