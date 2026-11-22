@@ -66,13 +66,18 @@ function adminOnly(request: NextRequest) {
   const match = /^\/([a-z]{2})\/admin(?:\/|$)/.exec(request.nextUrl.pathname);
   if (!match || !hasLocale(match[1])) return undefined;
   const lang = match[1];
-  const go = (path: string) => {
-    const response = NextResponse.redirect(new URL(path, request.url));
+  // Where to come back after signing in: the admin page itself, never a file address (a file is opened
+  // only by the form on the documents page). The login action checks it again with safeLocalPath.
+  const path = request.nextUrl.pathname;
+  const next = /^\/[a-z]{2}\/admin\/documents\/[^/]+\/file\/?$/.test(path) ? `/${lang}/admin/documents` : path;
+  // 303, not 307: a POST from an admin form (such as "Open the file") then arrives at sign-in as a GET.
+  const go = (target: string) => {
+    const response = NextResponse.redirect(new URL(target, request.url), 303);
     response.headers.set('Cache-Control', 'private, no-store');
     return response;
   };
   return async (supabase: Parameters<NonNullable<Parameters<typeof updateSession>[2]>>[0], user: { id: string } | null) => {
-    if (!user) return go(`/${lang}/login`);
+    if (!user) return go(`/${lang}/login?next=${encodeURIComponent(next)}`);
     const [{ data: profile, error }, { data: level }] = await Promise.all([
       supabase.from('profiles').select('role').eq('id', user.id).maybeSingle() as PromiseLike<{ data: { role: string } | null; error: unknown }>,
       supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
@@ -80,7 +85,7 @@ function adminOnly(request: NextRequest) {
     // On a database error stay closed: send them home rather than show admin pages.
     if (error || profile?.role !== 'admin') return go(`/${lang}`);
     if (level?.currentLevel === 'aal2') return null;
-    if (level?.nextLevel === 'aal2') return go(`/${lang}/login/verify?next=${encodeURIComponent(`/${lang}/admin`)}`);
+    if (level?.nextLevel === 'aal2') return go(`/${lang}/login/verify?next=${encodeURIComponent(next)}`);
     return go(`/${lang}/security?admin=two-step`);
   };
 }

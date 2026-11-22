@@ -251,7 +251,7 @@ const sw: VerificationText = {
 
   noticeTitle: 'Faragha yako',
   noticeBody:
-    'Nyaraka zako zinahifadhiwa mahali pa siri. Ni wasimamizi wa Kwetuly wenye kuingia kwa hatua mbili tu wanaoweza kuzifungua, na kila ufunguaji unarekodiwa. Tunazitumia tu kukagua wewe ni nani na leseni ulizo nazo, na hatuzionyeshi kwa wasafiri. Mafaili yanafutwa baada ya ukaguzi; tarehe za ukaguzi zinabaki. Namba za utambulisho zinasimbwa. Tafadhali fahamu: picha husafishwa taarifa zilizofichwa, kama mahali zilipopigwa, kabla ya kutumwa. Mafaili ya PDF yanahifadhiwa kama ulivyoyatuma, pamoja na taarifa zozote zilizofichwa ndani yake.',
+    'Nyaraka zako zinahifadhiwa mahali pa siri. Ni wasimamizi wa Kwetuly wenye kuingia kwa hatua mbili tu wanaoweza kuzifungua, na kila ufunguaji unarekodiwa. Tunazitumia tu kukagua wewe ni nani na leseni ulizo nazo, na hatuzionyeshi kwa wasafiri. Mafaili yanafutwa baada ya ukaguzi; tarehe za ukaguzi zinabaki. Namba za utambulisho zinasimbwa. Tafadhali fahamu: taarifa zilizofichwa kwenye picha, kama mahali zilipopigwa, huondolewa kabla hazijatumwa. Mafaili ya PDF yanahifadhiwa kama ulivyoyatuma, pamoja na taarifa zozote zilizofichwa ndani yake.',
   noticeAgree: 'Nimesoma haya na ninakubali Kwetuly ikague nyaraka zangu.',
   noticeLink: 'Soma taarifa kamili ya faragha',
 

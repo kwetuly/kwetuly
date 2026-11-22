@@ -184,7 +184,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
 
               {/* A plain form to the file route (no signed link reaches the browser); the file opens in a new tab. */}
               <form method="post" action={`/${locale}/admin/documents/${d.id}/file`} target="_blank">
-                <button type="submit" className="btn-outline">Open the file in a new tab</button>
+                <button type="submit" className="btn-outline" aria-describedby={`warn-${d.id}`}>Open the file in a new tab</button>
+                <p id={`warn-${d.id}`} className="mt-1 text-sm text-muted">Never follow links or fill in forms inside a document.</p>
               </form>
 
               {own ? (
