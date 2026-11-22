@@ -42,12 +42,18 @@ where id in ('a1a1a1a1-0000-4000-8000-0000000000a1', 'b2b2b2b2-0000-4000-8000-00
 update public.profiles set role = 'admin' where id = 'c3c3c3c3-0000-4000-8000-0000000000c3';
 
 -- Businesses (as postgres, so they can start approved):
---   e1 restaurant (a1, approved), e2 spa (a1, approved), e3 salon (b2, approved), e4 restaurant (a1, pending)
+--   e1 restaurant (a1, approved), e2 spa (a1, approved), e3 salon (b2, approved), e4 restaurant (a1, pending),
+--   e5 hotel (b2, approved; M1: changed to a restaurant later)
+-- NOT NULL columns without defaults on providers: id (has a default), owner_id, business_name, base_region.
 insert into public.providers (id, owner_id, business_name, base_region, business_type, verification_status)
 values ('e1e1e1e1-0000-4000-8000-0000000000e1', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'RS test kitchen', 'Arusha', 'restaurant', 'approved'),
        ('e2e2e2e2-0000-4000-8000-0000000000e2', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'RS test spa', 'Arusha', 'spa', 'approved'),
        ('e3e3e3e3-0000-4000-8000-0000000000e3', 'b2b2b2b2-0000-4000-8000-0000000000b2', 'RS test salon', 'Moshi', 'salon', 'approved'),
-       ('e4e4e4e4-0000-4000-8000-0000000000e4', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'RS test cafe', 'Arusha', 'restaurant', 'pending');
+       ('e4e4e4e4-0000-4000-8000-0000000000e4', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'RS test cafe', 'Arusha', 'restaurant', 'pending'),
+       ('e5e5e5e5-0000-4000-8000-0000000000e5', 'b2b2b2b2-0000-4000-8000-0000000000b2', 'RS test guesthouse', 'Moshi', 'hotel', 'approved');
+select pg_temp.check((select approved_business_type = 'hotel' from public.providers where id = 'e5e5e5e5-0000-4000-8000-0000000000e5')
+                     and (select approved_business_type is null from public.providers where id = 'e4e4e4e4-0000-4000-8000-0000000000e4'),
+                     'approved type recorded at approval only');
 
 select pg_temp.check((select count(*) = 4 from public.price_list
                       where service_code in ('reservation_commission', 'reservation_unpriced_fee')
@@ -124,6 +130,12 @@ select pg_temp.expect_error($q$select public.admin_activate_price(
 reset role;
 
 -- 3. Admin with two-step: fill in and activate test rates -----------------------
+-- The log entries made from here on (now() is the same for the whole transaction, so count by id).
+create temp table rs_mark on commit drop as select coalesce(max(id), 0) as m from public.price_list_log;
+grant select on rs_mark to authenticated;
+select pg_temp.expect_error($q$update public.price_list_log set action = 'edited'$q$, 'rewriting the price log');
+select pg_temp.expect_error($q$delete from public.price_list_log$q$, 'deleting the price log');
+select pg_temp.expect_error($q$delete from public.price_list where status = 'draft'$q$, 'deleting a draft price');
 select set_config('request.jwt.claims', '{"sub":"c3c3c3c3-0000-4000-8000-0000000000c3","role":"authenticated","aal":"aal2"}', true);
 set local role authenticated;
 create temp table rs_ids on commit drop as
@@ -166,7 +178,11 @@ select pg_temp.check((select amount_tzs = 2000 from public.reservation_rate('e1e
                      'today''s rate is still the old one');
 select pg_temp.expect_error($q$select public.admin_end_price((select id from rs_ids where business_type = 'salon'), private.tz_today() - 1)$q$,
   'ending a price in the past');
-select pg_temp.check((select count(*) >= 7 from public.admin_price_log(100)), 'every save is logged');
+-- 4 drafts saved, 4 activated, 1 version created, 1 version saved, 1 old rate ended, 1 version activated.
+select pg_temp.check((select count(*) = 12 from public.admin_price_log(200) l where l.id > (select m from rs_mark)),
+                     'every save is logged, refused saves are not');
+select pg_temp.expect_error($q$update public.providers set takes_reservations = true
+  where id = 'e1e1e1e1-0000-4000-8000-0000000000e1'$q$, 'admin switches a business on directly');
 reset role;
 
 -- 4. Owner a1 switches on --------------------------------------------------------
@@ -203,6 +219,11 @@ select pg_temp.check((select b = '{licence_check_missing}'
                      'spa still needs the licence check');
 select pg_temp.expect_error($q$insert into public.business_services (provider_id, name)
   values ('e3e3e3e3-0000-4000-8000-0000000000e3', 'Haircut')$q$, 'service for another owner''s business');
+select pg_temp.expect_error($q$update public.business_services set provider_id = 'e4e4e4e4-0000-4000-8000-0000000000e4'
+  where name = 'Foot massage'$q$, 'owner moves a service to another business');
+select pg_temp.check((select count(*) = 1 and bool_and(note = 'Family event')
+                      from public.business_closed_dates_with_notes('e1e1e1e1-0000-4000-8000-0000000000e1')),
+                     'owner reads closed-date notes');
 reset role;
 
 -- Kwetuly records a current licence check (only server code can).
@@ -221,6 +242,37 @@ select pg_temp.check((select b = '{not_approved}'
                      'pending business is refused');
 reset role;
 
+-- 4b. Another owner (b2) ---------------------------------------------------------
+select set_config('request.jwt.claims', '{"sub":"b2b2b2b2-0000-4000-8000-0000000000b2","role":"authenticated","aal":"aal1"}', true);
+set local role authenticated;
+-- RLS hides a1's rows from b2's writes: no error, nothing changes (checked below as postgres).
+update public.business_services set name = 'Changed by b2' where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2';
+delete from public.business_services where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2';
+update public.business_closed_dates set note = 'Changed by b2' where provider_id = 'e1e1e1e1-0000-4000-8000-0000000000e1';
+delete from public.business_closed_dates where provider_id = 'e1e1e1e1-0000-4000-8000-0000000000e1';
+select pg_temp.expect_error($q$select * from public.business_closed_dates_with_notes('e1e1e1e1-0000-4000-8000-0000000000e1')$q$,
+  'another owner reads closed-date notes');
+-- M1: approved as a hotel, changed to a restaurant by the owner.
+update public.providers set business_type = 'restaurant', approved_business_type = 'restaurant'
+where id = 'e5e5e5e5-0000-4000-8000-0000000000e5';
+select pg_temp.check((select business_type = 'restaurant' and approved_business_type = 'hotel'
+                      from public.providers where id = 'e5e5e5e5-0000-4000-8000-0000000000e5'),
+                     'owner cannot write the approved type');
+select public.accept_reservation_terms('e5e5e5e5-0000-4000-8000-0000000000e5', private.reservation_terms_version());
+select public.set_business_hours('e5e5e5e5-0000-4000-8000-0000000000e5', '[{"weekday":5,"opens":"12:00","closes":"22:00"}]');
+select pg_temp.check((select b = '{type_not_approved}'
+                      from (select public.set_takes_reservations('e5e5e5e5-0000-4000-8000-0000000000e5', true) b) x),
+                     'type changed after approval is refused');
+select pg_temp.expect_error($q$update public.providers set takes_reservations = true
+  where id = 'e5e5e5e5-0000-4000-8000-0000000000e5'$q$, 'type changed after approval, direct switch');
+reset role;
+select pg_temp.check((select count(*) = 2 and bool_and(name <> 'Changed by b2') from public.business_services
+                      where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2'),
+                     'another owner cannot change or delete services');
+select pg_temp.check((select count(*) = 1 and bool_and(note = 'Family event') from public.business_closed_dates
+                      where provider_id = 'e1e1e1e1-0000-4000-8000-0000000000e1'),
+                     'another owner cannot change or delete closed dates');
+
 -- 5. Signed-out visitor --------------------------------------------------------
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 set local role anon;
@@ -230,6 +282,9 @@ select pg_temp.check((select count(*) = 0 from public.business_hours where provi
                      'visitor cannot read hours of a pending business');
 select pg_temp.check((select count(*) = 2 from public.business_services where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2'),
                      'visitor reads active services of the spa');
+select pg_temp.check((select count(*) = 1 from public.business_closed_dates where provider_id = 'e1e1e1e1-0000-4000-8000-0000000000e1'),
+                     'visitor reads closed dates of a reserving business');
+select pg_temp.expect_error($q$select note from public.business_closed_dates$q$, 'visitor reads closed-date notes');
 select pg_temp.check((select count(*) = 0 from public.price_list where status <> 'active'), 'visitor sees active prices only');
 select pg_temp.check((select count(*) = 0 from public.reservation_rate('e4e4e4e4-0000-4000-8000-0000000000e4')),
                      'no rate shown for a pending business');
@@ -243,6 +298,11 @@ where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2' and kind = 'business_
 select pg_temp.check((select takes_reservations from public.providers where id = 'e2e2e2e2-0000-4000-8000-0000000000e2')
                      and not private.provider_open_for_reservations('e2e2e2e2-0000-4000-8000-0000000000e2'),
                      'spa closes for reservations when the licence check ends');
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+set local role anon;
+select pg_temp.check((select count(*) = 0 from public.reservation_rate('e2e2e2e2-0000-4000-8000-0000000000e2')),
+                     'no rate shown to visitors once the spa is closed');
+reset role;
 
 -- 7. Owner changes and switches off ------------------------------------------------
 select set_config('request.jwt.claims', '{"sub":"a1a1a1a1-0000-4000-8000-0000000000a1","role":"authenticated","aal":"aal1"}', true);

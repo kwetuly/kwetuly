@@ -24,27 +24,33 @@
 --      functions below; clients have no write grant. Active rows cannot be edited: a change is a new
 --      version from a date, and activating it ends the previous one on that date. No backdating.
 --   3. providers: takes_reservations, reservation_terms_version, reservation_terms_at,
---      reservation_min_notice_min, reservation_max_days. A guard trigger keeps the terms columns
---      server-only and refuses takes_reservations = true unless every rule passes:
---        approved business; type restaurant, spa or salon; current terms accepted; opening hours set;
+--      reservation_min_notice_min, reservation_max_days, approved_business_type (the type Kwetuly
+--      approved; backfilled for approved businesses). A guard trigger keeps the terms columns and the
+--      approved type server-only, lets only the owner switch on, and refuses takes_reservations = true
+--      unless every rule passes:
+--        approved business, still of the approved type; type restaurant, spa or salon; current terms accepted; opening hours set;
 --        spa (spa and massage): a current business_licence check by Kwetuly; an active commission rate
 --        for the type; spa and salon: at least one active service that has a rate (a priced service
 --        with the percent rate, or an unpriced one with the per-person fee).
---      The rules are checked again at reading time by private.provider_open_for_reservations(), so a
---      licence that expires, a rate that ends or hours that are removed close reservations that day.
+--      The full rules are checked again by private.provider_open_for_reservations() (the rate shown to
+--      visitors now; the booking function in slice 2), so a licence that expires, a rate that ends or
+--      hours that are removed close reservations that day. Public read policies use the cheap
+--      private.provider_takes_reservations() (switched on, approved, approved type).
 --   4. Functions for the owner screens (frontend-engineer): reservation_setup_status,
---      accept_reservation_terms, set_takes_reservations, set_business_hours, reservation_rate.
---      Closed dates and services are plain table writes under RLS.
+--      accept_reservation_terms, set_takes_reservations, set_business_hours, reservation_rate,
+--      business_closed_dates_with_notes. Closed dates and services are plain table writes under RLS.
 --   5. Functions for /admin/prices: admin_price_rows, admin_price_log, admin_save_price_draft,
 --      admin_activate_price, admin_new_price_version, admin_end_price.
 --
 -- Access rules:
 --   business_hours, business_closed_dates, business_services: anyone reads rows of a business that is
 --     open for reservations (services: active ones only); the owner reads and writes his own; admins
---     (two-step) all. Column grants: provider_id cannot be changed after insert.
+--     (two-step) all. Column grants: provider_id cannot be changed after insert. Closed-date notes are
+--     not readable by the public (column grant); the owner reads them through a function.
 --   price_list: anyone reads ACTIVE rows, without the admin note; admins read all through
 --     admin_price_rows(). No client insert, update or delete grant at all.
---   price_list_log: admins read; only the trigger writes.
+--   price_list_log: admins read; only the trigger writes; no update, delete or truncate for anyone.
+--   price_list rows are never deleted (drafts included) and cannot be truncated.
 --   Security definer functions: search_path = '', execute revoked from public; granted only to the
 --     roles named next to each.
 --
@@ -58,16 +64,20 @@
 --     public.admin_price_log(integer), public.admin_price_rows(), public.reservation_rate(uuid, uuid),
 --     public.set_business_hours(uuid, jsonb), public.set_takes_reservations(uuid, boolean),
 --     public.accept_reservation_terms(uuid, text), public.reservation_setup_status(uuid),
+--     public.business_closed_dates_with_notes(uuid),
 --     private.guard_provider_reservations(), private.provider_open_for_reservations(uuid),
---     private.reservation_blockers(uuid, text, public.review_status, text),
+--     private.provider_takes_reservations(uuid), private.price_list_log_append_only(),
+--     private.reservation_blockers(uuid, text, public.review_status, text, text),
 --     private.reservation_rate_for(text, uuid, uuid), private.price_list_guard(), private.price_list_log_row(),
 --     private.guard_business_hours(), private.guard_business_rows(), private.owns_provider(uuid),
 --     private.reservation_terms_version();
+--   drop trigger price_list_log_no_change on public.price_list_log; (and the two no_truncate triggers)
 --   drop table public.price_list_log, public.price_list, public.business_services,
 --     public.business_closed_dates, public.business_hours;
 --   drop type public.priced_account_type;   -- only if migration C has not used it
 --   alter table public.providers drop column takes_reservations, drop column reservation_terms_version,
---     drop column reservation_terms_at, drop column reservation_min_notice_min, drop column reservation_max_days;
+--     drop column reservation_terms_at, drop column reservation_min_notice_min, drop column reservation_max_days,
+--     drop column approved_business_type;
 
 -- ---------------------------------------------------------------------------
 -- 0. Small helpers
@@ -109,7 +119,20 @@ alter table public.providers
   add column if not exists reservation_terms_version text,
   add column if not exists reservation_terms_at timestamptz,
   add column if not exists reservation_min_notice_min integer not null default 120,
-  add column if not exists reservation_max_days integer not null default 60;
+  add column if not exists reservation_max_days integer not null default 60,
+  -- The business type Kwetuly approved (security review M1). Set only by trusted callers (admins,
+  -- server code) by providers_reservations_guard; owners cannot write it. Reservations need
+  -- business_type = approved_business_type, so an owner cannot approve as a hotel and then take
+  -- reservations as an unchecked spa.
+  add column if not exists approved_business_type text;
+
+comment on column public.providers.approved_business_type is
+  'Business type at Kwetuly''s approval. Set by trusted callers only (guard). Reservations need business_type to match.';
+
+-- Backfill for businesses approved before this migration (touches updated_at of those rows).
+update public.providers
+set approved_business_type = business_type
+where verification_status = 'approved' and approved_business_type is null;
 
 alter table public.providers drop constraint if exists providers_reservation_rules;
 alter table public.providers add constraint providers_reservation_rules check (
@@ -256,8 +279,8 @@ create table if not exists public.price_list (
   status text not null default 'draft' check (status in ('draft', 'active', 'legal_hold')),
   note text check (note is null or char_length(note) <= 300),
   rank_warning_ack_at timestamptz,
-  rank_warning_ack_by uuid references public.profiles (id) on delete set null,
-  created_by uuid references public.profiles (id) on delete set null,
+  rank_warning_ack_by uuid,   -- no foreign key: deleting an admin account must not rewrite price rows
+  created_by uuid,            -- no foreign key, as above
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint price_list_value_matches_period check (
@@ -287,14 +310,34 @@ comment on column public.price_list.max_guests_counted is
 
 create table if not exists public.price_list_log (
   id bigint generated always as identity primary key,
-  price_id uuid references public.price_list (id) on delete set null,
+  price_id uuid references public.price_list (id),   -- price rows are never deleted (guard)
   action text not null check (action in ('created', 'edited', 'activated', 'ended', 'status_changed')),
-  actor uuid references public.profiles (id) on delete set null,
+  actor uuid,   -- who saved it; no foreign key, so the record survives a deleted admin account
   before jsonb,
   after jsonb,
   created_at timestamptz not null default now()
 );
 create index if not exists price_list_log_price_idx on public.price_list_log (price_id, created_at desc);
+
+-- The log is append-only for everyone, server code included (security review L5).
+create or replace function private.price_list_log_append_only()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception 'Prices and the price log cannot be removed or rewritten' using errcode = 'P0001';
+end;
+$$;
+revoke execute on function private.price_list_log_append_only() from public;
+drop trigger if exists price_list_log_no_change on public.price_list_log;
+create trigger price_list_log_no_change
+  before update or delete on public.price_list_log
+  for each row execute function private.price_list_log_append_only();
+drop trigger if exists price_list_log_no_truncate on public.price_list_log;
+create trigger price_list_log_no_truncate
+  before truncate on public.price_list_log
+  for each statement execute function private.price_list_log_append_only();
 
 -- Same key = same rate: (account, business type, service, period); reservation rates ignore the
 -- period, so a type cannot have a per-guest and a percent rate at the same time.
@@ -307,11 +350,9 @@ declare
   v_today date := private.tz_today();
   v_reservation boolean;
 begin
+  -- Price rows are never deleted, drafts included: every row has log entries (security review L5).
   if tg_op = 'DELETE' then
-    if old.status <> 'draft' then
-      raise exception 'Only draft prices can be removed' using errcode = 'P0001';
-    end if;
-    return old;
+    raise exception 'Prices are never deleted. End an active price or leave the draft unused.' using errcode = 'P0001';
   end if;
 
   if tg_op = 'INSERT' then
@@ -365,6 +406,10 @@ drop trigger if exists price_list_guard on public.price_list;
 create trigger price_list_guard
   before insert or update or delete on public.price_list
   for each row execute function private.price_list_guard();
+drop trigger if exists price_list_no_truncate on public.price_list;
+create trigger price_list_no_truncate
+  before truncate on public.price_list
+  for each statement execute function private.price_list_log_append_only();
 
 create or replace function private.price_list_log_row()
 returns trigger
@@ -491,9 +536,10 @@ revoke execute on function private.reservation_rate_for(text, uuid, uuid) from p
 grant execute on function private.reservation_rate_for(text, uuid, uuid) to anon, authenticated, service_role;
 
 -- Every reason a business cannot take reservations today, as fixed codes (empty = it can).
--- Takes the type, status and terms as arguments so the providers guard can pass the NEW row.
+-- Takes the type, status, approved type and terms as arguments so the providers guard can pass the
+-- values it trusts (OLD status for client callers, security review L2).
 create or replace function private.reservation_blockers(
-  p_provider uuid, p_business_type text, p_status public.review_status, p_terms text)
+  p_provider uuid, p_business_type text, p_status public.review_status, p_approved_type text, p_terms text)
 returns text[]
 language plpgsql
 stable
@@ -508,6 +554,9 @@ declare
 begin
   if p_status is distinct from 'approved' then
     b := array_append(b, 'not_approved');
+  elsif p_business_type is distinct from p_approved_type then
+    -- Approved as another type (security review M1): Kwetuly has not checked this type.
+    b := array_append(b, 'type_not_approved');
   end if;
   if p_business_type is null or p_business_type not in ('restaurant', 'spa', 'salon') then
     return array_append(b, 'type_not_reservable');
@@ -548,10 +597,12 @@ begin
   return b;
 end;
 $$;
-revoke execute on function private.reservation_blockers(uuid, text, public.review_status, text) from public;
-grant execute on function private.reservation_blockers(uuid, text, public.review_status, text) to authenticated, service_role;
+revoke execute on function private.reservation_blockers(uuid, text, public.review_status, text, text) from public;
+grant execute on function private.reservation_blockers(uuid, text, public.review_status, text, text) to authenticated, service_role;
 
 -- Open for reservations today: switched on AND every rule still passes (licence, rate, hours, ...).
+-- The full check. Slice 2's booking function must call this; the public read policies use the cheap
+-- private.provider_takes_reservations() below instead (security review L4).
 create or replace function private.provider_open_for_reservations(p_provider uuid)
 returns boolean
 language sql
@@ -562,16 +613,36 @@ as $$
   select coalesce((
     select p.takes_reservations
        and cardinality(private.reservation_blockers(p.id, p.business_type, p.verification_status,
-                                                    p.reservation_terms_version)) = 0
+                                                    p.approved_business_type, p.reservation_terms_version)) = 0
     from public.providers p
     where p.id = p_provider), false);
 $$;
 revoke execute on function private.provider_open_for_reservations(uuid) from public;
-grant execute on function private.provider_open_for_reservations(uuid) to anon, authenticated;
+grant execute on function private.provider_open_for_reservations(uuid) to anon, authenticated, service_role;
 
--- Guard on providers (security invoker: current_user is the caller's role). Clients never write the
--- terms columns; only accept_reservation_terms() does. Switching on is refused while a rule fails,
--- for every caller, admins and service code included.
+-- Cheap check for read policies: switched on, approved, and still the approved type.
+create or replace function private.provider_takes_reservations(p_provider uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.providers p
+    where p.id = p_provider and p.takes_reservations and p.verification_status = 'approved'
+      and p.business_type = p.approved_business_type);
+$$;
+revoke execute on function private.provider_takes_reservations(uuid) from public;
+grant execute on function private.provider_takes_reservations(uuid) to anon, authenticated;
+
+-- Guard on providers (security invoker: current_user is the caller's role).
+--   * Clients never write the terms columns (only accept_reservation_terms() does) nor
+--     approved_business_type. Trusted callers (admins, server code) set approved_business_type
+--     automatically when a business becomes approved or an approved business changes type.
+--   * Switching on is refused while a rule fails, for every caller. For client callers the rules use
+--     the OLD status and approved type (L2), and only the owner may switch on directly (L1); admins
+--     switch off only.
 create or replace function private.guard_provider_reservations()
 returns trigger
 language plpgsql
@@ -579,6 +650,8 @@ set search_path = ''
 as $$
 declare
   v_client boolean := current_user in ('anon', 'authenticated');
+  v_status public.review_status;
+  v_approved text;
   v_blockers text[];
 begin
   if v_client then
@@ -591,11 +664,31 @@ begin
       new.reservation_terms_at := old.reservation_terms_at;
     end if;
   end if;
+
+  if not private.is_trusted() then
+    new.approved_business_type := case when tg_op = 'INSERT' then null else old.approved_business_type end;
+  elsif new.verification_status = 'approved'
+        and (tg_op = 'INSERT' or old.verification_status is distinct from 'approved'
+             or new.business_type is distinct from old.business_type) then
+    new.approved_business_type := new.business_type;
+  end if;
+
   if new.business_type not in ('restaurant', 'spa', 'salon') then
     new.takes_reservations := false;
   end if;
+
   if new.takes_reservations and (tg_op = 'INSERT' or not old.takes_reservations) then
-    v_blockers := private.reservation_blockers(new.id, new.business_type, new.verification_status,
+    if v_client then
+      if tg_op = 'INSERT' or old.owner_id is distinct from (select auth.uid()) then
+        raise exception 'Only the owner can switch reservations on' using errcode = '42501';
+      end if;
+      v_status := old.verification_status;
+      v_approved := old.approved_business_type;
+    else
+      v_status := new.verification_status;
+      v_approved := new.approved_business_type;
+    end if;
+    v_blockers := private.reservation_blockers(new.id, new.business_type, v_status, v_approved,
                                                new.reservation_terms_version);
     if cardinality(v_blockers) > 0 then
       raise exception 'reservations_blocked: %', array_to_string(v_blockers, ',') using errcode = 'P0001';
@@ -621,7 +714,10 @@ alter table public.price_list_log enable row level security;
 revoke all on public.business_hours, public.business_closed_dates, public.business_services,
   public.price_list, public.price_list_log from anon, authenticated;
 
-grant select on public.business_hours, public.business_closed_dates, public.business_services to anon, authenticated;
+grant select on public.business_hours, public.business_services to anon, authenticated;
+-- Closed dates: the note is the owner's own (security review L3). Visitors and other members read the
+-- dates only; the owner and admins read notes through public.business_closed_dates_with_notes().
+grant select (provider_id, day, created_at) on public.business_closed_dates to anon, authenticated;
 grant insert (provider_id, weekday, opens, closes), update (weekday, opens, closes), delete
   on public.business_hours to authenticated;
 grant insert (provider_id, day, note), update (note), delete on public.business_closed_dates to authenticated;
@@ -638,7 +734,7 @@ grant select on public.price_list_log to authenticated;
 drop policy if exists "Anyone reads hours of reserving businesses" on public.business_hours;
 create policy "Anyone reads hours of reserving businesses" on public.business_hours
   for select to anon, authenticated
-  using ((select private.provider_open_for_reservations(provider_id))
+  using ((select private.provider_takes_reservations(provider_id))
          or (select private.owns_provider(provider_id)) or (select private.is_admin()));
 drop policy if exists "Owners and admins write hours" on public.business_hours;
 create policy "Owners and admins write hours" on public.business_hours
@@ -649,7 +745,7 @@ create policy "Owners and admins write hours" on public.business_hours
 drop policy if exists "Anyone reads closed dates of reserving businesses" on public.business_closed_dates;
 create policy "Anyone reads closed dates of reserving businesses" on public.business_closed_dates
   for select to anon, authenticated
-  using ((select private.provider_open_for_reservations(provider_id))
+  using ((select private.provider_takes_reservations(provider_id))
          or (select private.owns_provider(provider_id)) or (select private.is_admin()));
 drop policy if exists "Owners and admins write closed dates" on public.business_closed_dates;
 create policy "Owners and admins write closed dates" on public.business_closed_dates
@@ -660,7 +756,7 @@ create policy "Owners and admins write closed dates" on public.business_closed_d
 drop policy if exists "Anyone reads active services of reserving businesses" on public.business_services;
 create policy "Anyone reads active services of reserving businesses" on public.business_services
   for select to anon, authenticated
-  using ((active and (select private.provider_open_for_reservations(provider_id)))
+  using ((active and (select private.provider_takes_reservations(provider_id)))
          or (select private.owns_provider(provider_id)) or (select private.is_admin()));
 drop policy if exists "Owners and admins write services" on public.business_services;
 create policy "Owners and admins write services" on public.business_services
@@ -682,7 +778,8 @@ create policy "Admins read the price log" on public.price_list_log
 -- 6. Functions for the business owner screens
 -- ---------------------------------------------------------------------------
 -- The disclosure: what the business pays Kwetuly for a reservation (nothing is added for the guest).
--- Public for approved businesses; the owner and admins also see it before approval.
+-- Visitors and other members see it only for a business open for reservations today (security
+-- review L8); the owner and admins see it before switching on.
 create or replace function public.reservation_rate(p_provider uuid, p_service uuid default null)
 returns table (kind text, amount_tzs integer, percent numeric, max_guests_counted integer)
 language sql
@@ -694,11 +791,32 @@ as $$
   from public.providers p
   cross join lateral private.reservation_rate_for(p.business_type, p.id, p_service) r
   where p.id = p_provider
-    and (p.verification_status = 'approved'
-         or p.owner_id = (select auth.uid()) or (select private.is_admin()));
+    and (p.owner_id = (select auth.uid()) or (select private.is_admin())
+         or private.provider_open_for_reservations(p.id));
 $$;
 revoke execute on function public.reservation_rate(uuid, uuid) from public;
 grant execute on function public.reservation_rate(uuid, uuid) to anon, authenticated;
+
+-- Closed dates with the owner's notes. Owner or admin only (the notes are not public, L3).
+create or replace function public.business_closed_dates_with_notes(p_provider uuid)
+returns table (day date, note text)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not (private.owns_provider(p_provider) or private.is_admin()) then
+    raise exception 'Business not found' using errcode = 'P0001';
+  end if;
+  return query
+    select d.day, d.note from public.business_closed_dates d
+    where d.provider_id = p_provider
+    order by d.day;
+end;
+$$;
+revoke execute on function public.business_closed_dates_with_notes(uuid) from public, anon;
+grant execute on function public.business_closed_dates_with_notes(uuid) to authenticated;
 
 -- Everything the owner setup screen needs in one call. Owner or admin only.
 create or replace function public.reservation_setup_status(p_provider uuid)
@@ -728,7 +846,8 @@ begin
   if not found or not (p.owner_id = (select auth.uid()) or private.is_admin()) then
     raise exception 'Business not found' using errcode = 'P0001';
   end if;
-  v_blockers := private.reservation_blockers(p.id, p.business_type, p.verification_status, p.reservation_terms_version);
+  v_blockers := private.reservation_blockers(p.id, p.business_type, p.verification_status, p.approved_business_type,
+                                            p.reservation_terms_version);
   return query
     select p.takes_reservations,
            p.takes_reservations and cardinality(v_blockers) = 0,
@@ -787,7 +906,8 @@ begin
     update public.providers set takes_reservations = false where id = p_provider;
     return '{}'::text[];
   end if;
-  v_blockers := private.reservation_blockers(p.id, p.business_type, p.verification_status, p.reservation_terms_version);
+  v_blockers := private.reservation_blockers(p.id, p.business_type, p.verification_status, p.approved_business_type,
+                                            p.reservation_terms_version);
   if cardinality(v_blockers) > 0 then
     return v_blockers;
   end if;

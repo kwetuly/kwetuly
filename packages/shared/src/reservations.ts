@@ -15,6 +15,7 @@ export type ReservableBusinessType = (typeof reservableBusinessTypes)[number];
  */
 export const reservationBlockers = [
   'not_approved',
+  'type_not_approved', // the business type was changed after Kwetuly approved it
   'type_not_reservable',
   'terms_not_accepted',
   'no_opening_hours',

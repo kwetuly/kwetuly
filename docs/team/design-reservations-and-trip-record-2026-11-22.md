@@ -122,6 +122,7 @@ Enum `public.reservation_status`: `requested`, `confirmed`, `declined`, `other_t
 
 **Functions (no direct insert or update grant on either table):**
 - `public.place_reservation(provider, service, starts_at, party_size, note, diet_line, trip_file_id null)` (security definer): signed in and onboarded (`private.is_onboarded()`); not crew (when B exists); business approved and `takes_reservations`; an active rate exists; time rules; at most 5 open requests per traveller and 3 per traveller per business per day; inserts the `leads` row (message built without the diet line), the reservation with the rate copied, and the diet line.
+  - Security review of slice 1 (L9, 2026-11-22): the function must call `private.provider_open_for_reservations(provider)` (the full rules: approved type, licence, rate, hours, services), not the cheap `private.provider_takes_reservations()` used by the read policies. At request time it copies into the reservation the rate kind (`per_guest`, `percent`, `per_person`), the rate value, `max_guests_counted`, the `price_list_id` of the row used (from `private.reservation_rate_for(type, provider, service)`) and the service's `price_tzs`, so a later price or rate change never changes what was disclosed. Services referenced by a reservation cannot be deleted (foreign key without cascade); owners switch them off instead.
 - `public.reservation_action(id, action, offered_starts_at null, note null)` (security definer, state machine):
 
 | From | Action | By | To |

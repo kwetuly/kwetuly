@@ -122,8 +122,9 @@ export default async function PricesPage({ searchParams }: { searchParams: Searc
 async function Content({ locale, searchParams }: { locale: Locale; searchParams: SearchParams }) {
   await requireAdmin(locale);
   const params = await searchParams;
-  const ok = typeof params.ok === 'string' ? (OK_TEXT[params.ok] ?? '') : '';
-  const error = typeof params.e === 'string' ? (ERROR_TEXT[params.e] ?? '') : '';
+  // Own keys only, so "?ok=constructor" cannot reach Object.prototype (security review L6).
+  const ok = typeof params.ok === 'string' && Object.hasOwn(OK_TEXT, params.ok) ? OK_TEXT[params.ok] : '';
+  const error = typeof params.e === 'string' && Object.hasOwn(ERROR_TEXT, params.e) ? ERROR_TEXT[params.e] : '';
   return (
     <div className="mt-4 space-y-10">
       {ok && <p role="status" className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{ok}</p>}
