@@ -27,6 +27,16 @@
 -- Trip files (slice 4) do not exist yet: trip_file_id and trip_day_no are plain columns without a
 -- foreign key; slice 4 adds the key and the "linked by trip" guide rule.
 --
+-- Security review of slice 2 (docs/team/security-review-reservations-slice-2-2026-11-22.md), fixed here:
+--   M1 the traveller may say how many came; more than the business counted holds the commission;
+--      admin_reservation_quality_month() shows no-show, low-count and late-cancel rates per business.
+--   M2 the no-show pause ignores no-shows with an open dispute and counts from the reservation time;
+--      "did not come" only 30 minutes after the time; admin outcome business_fault (nothing owed, no strike).
+--   M3 caps: 10 requests a day (3 for accounts younger than 3 days), 5 traveller cancellations a day.
+--   M4 note and business_note cleared 30 days after the date; owners see the note only until then.
+--   L1 owners read through functions only. L2 provider_ref. L3 per-row errors in the job. L4 admins
+--   alerted on a late "no". L5 invoiced -> waived, final. L7 null-safe traveller check. L8 fixed log codes.
+--
 -- What it does:
 --   1. enum public.reservation_status: requested, confirmed, declined, other_time_offered, cancelled,
 --      no_show, completed. "Disputed" is a flag (disputed_at), not a status.
@@ -49,8 +59,9 @@
 --   7. Feature switch feature.reservation_commission_billing, off.
 --
 -- Access rules (RLS on every table):
---   reservations: the traveller reads own; the business owner reads his businesses'; admins (two-step)
---     read all. No writes from clients.
+--   reservations: the traveller reads own rows; admins (two-step) read all. Business owners read only
+--     through business_reservations() / business_reservation_statement() (security review L1). No writes
+--     from clients.
 --   reservation_diet_lines: as in 3. No writes from clients.
 --   reservation_log: admins read. Nobody updates or deletes.
 --   Functions: security definer, search_path = '', execute only for the roles named.
@@ -65,17 +76,17 @@
 -- Undo (deletes every reservation, diet line and log row):
 --   select cron.unschedule('kwetuly-reservations');
 --   drop function public.place_reservation(uuid, uuid, timestamptz, integer, text, text, boolean, text),
---     public.reservation_action(uuid, text, timestamptz, text, integer), public.reservation_visit_answer(uuid, boolean),
+--     public.reservation_action(uuid, text, timestamptz, text, integer), public.reservation_visit_answer(uuid, boolean, integer),
 --     public.my_reservations(), public.business_reservations(uuid, date, date),
 --     public.business_reservation_statement(uuid, date), public.admin_reservation_commission_month(date),
---     public.admin_set_reservation_commission(uuid, date, text),
+--     public.admin_set_reservation_commission(uuid, date, text), public.admin_reservation_quality_month(date),
 --     public.admin_resolve_reservation_dispute(uuid, text, text), public.reservation_billing_on(),
 --     private.run_reservation_jobs(), private.reservation_compute(), private.reservation_traveller_gone(),
 --     private.reservation_disputed(),
 --     private.reservation_log_add(uuid, text, public.reservation_status, public.reservation_status, text),
 --     private.reservation_notify(uuid, text), private.reservation_time_problem(uuid, uuid, timestamptz),
 --     private.reservation_mask(text), private.reservation_guide_share_pct(), private.reservations_append_only(),
---     private.reservation_diet_visible(uuid), private.guard_service_delete();
+--     private.reservation_diet_visible(uuid), private.guard_service_delete(), private.service_has_reservations(uuid);
 --   drop table public.reservation_log, public.reservation_diet_lines, public.reservations;
 --   drop type public.reservation_status;
 --   delete from public.site_settings where key = 'feature.reservation_commission_billing';
@@ -127,7 +138,8 @@ $$;
 create table if not exists public.reservations (
   id uuid primary key default gen_random_uuid(),
   provider_id uuid references public.providers (id) on delete set null,
-  business_name text not null check (char_length(business_name) <= 160),   -- copied, survives deletion
+  provider_ref uuid not null,   -- the business id, copied, no foreign key: survives deletion (review L2)
+  business_name text not null check (char_length(business_name) <= 160),   -- copied (left 160), survives deletion
   business_type text not null check (business_type in ('restaurant', 'spa', 'salon')),
   traveler_id uuid references public.profiles (id) on delete set null,
   service_id uuid references public.business_services (id) on delete set null,
@@ -141,18 +153,21 @@ create table if not exists public.reservations (
   status public.reservation_status not null default 'requested',
   status_at timestamptz not null default now(),
   cancelled_by text check (cancelled_by in ('traveller', 'business', 'admin')),
+  business_cancelled_late boolean not null default false,   -- business cancelled a confirmed one < 2 h before (M1)
   decline_reason text check (decline_reason in ('business', 'no_answer', 'offer_refused')),
   offered_starts_at timestamptz,
   business_note text check (char_length(business_note) <= 300),
   came_count integer check (came_count between 1 and 50),
   completed_by text check (completed_by in ('business', 'auto', 'admin')),
   traveller_said_happened boolean,
+  traveller_said_people integer check (traveller_said_people between 1 and 50),   -- asked when fewer came than booked (M1)
   traveller_answered_at timestamptz,
   traveller_asked_at timestamptz,
   owner_reminded_at timestamptz,
   disputed_at timestamptz,
   dispute_resolved_at timestamptz,
-  dispute_outcome text check (dispute_outcome in ('completed', 'no_show')),
+  dispute_outcome text check (dispute_outcome in ('completed', 'no_show', 'business_fault')),
+  texts_cleared_at timestamptz,   -- note and business_note cleared 30 days after the date (M4)
   -- Copied at request time (L9): what was disclosed is what is owed.
   commission_kind text not null check (commission_kind in ('per_guest', 'percent', 'per_person')),
   commission_rate_tzs integer check (commission_rate_tzs between 1 and 200000),
@@ -181,6 +196,7 @@ create table if not exists public.reservations (
   constraint reservations_cancel_shape check ((status = 'cancelled') = (cancelled_by is not null))
 );
 create index if not exists reservations_provider_idx on public.reservations (provider_id, starts_at);
+create index if not exists reservations_provider_ref_idx on public.reservations (provider_ref, starts_at);
 create index if not exists reservations_traveler_idx on public.reservations (traveler_id, created_at desc);
 create index if not exists reservations_open_idx on public.reservations (status, starts_at)
   where status in ('requested', 'other_time_offered', 'confirmed');
@@ -255,11 +271,11 @@ begin
     -- Copied facts never change after the request.
     if (new.business_type, new.commission_kind, new.commission_rate_tzs, new.commission_percent,
         new.max_guests_counted, new.price_basis_tzs, new.price_list_id, new.guide_share_pct, new.is_sample,
-        new.party_size, new.created_at)
+        new.party_size, new.created_at, new.provider_ref)
        is distinct from
        (old.business_type, old.commission_kind, old.commission_rate_tzs, old.commission_percent,
         old.max_guests_counted, old.price_basis_tzs, old.price_list_id, old.guide_share_pct, old.is_sample,
-        old.party_size, old.created_at) then
+        old.party_size, old.created_at, old.provider_ref) then
       raise exception 'Reservation facts cannot be changed' using errcode = 'P0001';
     end if;
     if new.status is distinct from old.status then
@@ -272,7 +288,11 @@ begin
   if new.disputed_at is null and new.traveller_said_happened is not null
      and (tg_op = 'INSERT' or old.commission_status not in ('invoiced', 'paid', 'waived'))
      and ((new.status = 'completed' and not new.traveller_said_happened)
-          or (new.status = 'no_show' and new.traveller_said_happened)) then
+          or (new.status = 'no_show' and new.traveller_said_happened)
+          -- Review M1: more people came than the business counted.
+          or (new.status = 'completed' and new.traveller_said_happened
+              and new.traveller_said_people is not null and new.came_count is not null
+              and new.traveller_said_people > new.came_count)) then
     new.disputed_at := now();
   end if;
 
@@ -296,14 +316,18 @@ begin
     v_base := 'none';
   end if;
 
-  if tg_op = 'UPDATE' and old.commission_status in ('invoiced', 'paid') and v_base <> 'owed' then
-    raise exception 'This reservation is already invoiced. Waive it in accounting first.' using errcode = 'P0001';
+  if tg_op = 'UPDATE' and old.commission_status in ('invoiced', 'paid', 'waived') and v_base <> 'owed' then
+    raise exception 'This reservation is already invoiced, paid or waived.' using errcode = 'P0001';
   end if;
-  if tg_op = 'UPDATE' and old.commission_status in ('invoiced', 'paid')
+  if tg_op = 'UPDATE' and old.commission_status in ('invoiced', 'paid', 'waived')
      and new.commission_tzs is distinct from old.commission_tzs then
-    raise exception 'This reservation is already invoiced. Its commission cannot change.' using errcode = 'P0001';
+    raise exception 'This reservation is already invoiced, paid or waived. Its commission cannot change.' using errcode = 'P0001';
   end if;
-  -- invoiced / paid / waived are set only by admin_set_reservation_commission() on owed rows.
+  -- Waiving is final (review L5).
+  if tg_op = 'UPDATE' and old.commission_status = 'waived' and new.commission_status is distinct from 'waived' then
+    raise exception 'Waiving is final.' using errcode = 'P0001';
+  end if;
+  -- invoiced / paid / waived are set only by admin_set_reservation_commission() on owed or invoiced rows.
   if v_base = 'owed' and new.commission_status in ('invoiced', 'paid', 'waived') then
     null;
   else
@@ -366,16 +390,28 @@ create trigger reservations_traveller_gone
 
 -- Owners switch referenced services off; they cannot delete them. A whole business deleted with its
 -- account (server code) still cascades, and reservations keep the copied service name.
+-- Owners have no direct read on reservations (review L1), so the check is a narrow definer helper.
+create or replace function private.service_has_reservations(p_service uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.reservations r where r.service_id = p_service);
+$$;
+revoke execute on function private.service_has_reservations(uuid) from public;
+grant execute on function private.service_has_reservations(uuid) to authenticated;
+
 create or replace function private.guard_service_delete()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  -- Security invoker: current_user is the caller's role. The owner can read his business's
-  -- reservations (RLS), so the check sees them. Server code (account deletion) is not refused.
+  -- Security invoker: current_user is the caller's role. Server code (account deletion) is not refused.
   if current_user in ('anon', 'authenticated')
-     and exists (select 1 from public.reservations r where r.service_id = old.id) then
+     and private.service_has_reservations(old.id) then
     raise exception 'service_in_use' using errcode = 'P0001',
       hint = 'This service has reservations. Switch it off instead of deleting it.';
   end if;
@@ -526,11 +562,21 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('reservations:traveller:' || v_user::text, 0));
 
   -- Traveller no-show pause: 2 no-shows in 90 days, then no reservations for 30 days after the latest.
+  -- Counted from the reservation time; no-shows with an open dispute do not count (review M2).
   if (select count(*) from public.reservations r
-      where r.traveler_id = v_user and r.status = 'no_show' and r.status_at > now() - interval '90 days') >= 2
-     and (select max(r.status_at) from public.reservations r
-          where r.traveler_id = v_user and r.status = 'no_show') > now() - interval '30 days' then
+      where r.traveler_id = v_user and r.status = 'no_show' and r.starts_at > now() - interval '90 days'
+        and not (r.disputed_at is not null and r.dispute_resolved_at is null)) >= 2
+     and (select max(r.starts_at) from public.reservations r
+          where r.traveler_id = v_user and r.status = 'no_show'
+            and not (r.disputed_at is not null and r.dispute_resolved_at is null)) > now() - interval '30 days' then
     raise exception 'reservation_refused: no_show_pause' using errcode = 'P0001';
+  end if;
+  -- Request caps (review M3): 10 a day, 3 a day for accounts younger than 3 days.
+  if (select count(*) from public.reservations r
+      where r.traveler_id = v_user and r.created_at > now() - interval '24 hours')
+     >= case when (select u.created_at from auth.users u where u.id = v_user) > now() - interval '3 days'
+             then 3 else 10 end then
+    raise exception 'reservation_refused: too_many_requests' using errcode = 'P0001';
   end if;
   if (select count(*) from public.reservations r
       where r.traveler_id = v_user and r.status in ('requested', 'other_time_offered')) >= 5 then
@@ -600,11 +646,11 @@ begin
   end if;
 
   insert into public.reservations (
-    provider_id, business_name, business_type, traveler_id, service_id, service_name, guide_id,
+    provider_id, provider_ref, business_name, business_type, traveler_id, service_id, service_name, guide_id,
     starts_at, party_size, note, commission_kind, commission_rate_tzs, commission_percent,
     max_guests_counted, price_basis_tzs, price_list_id, guide_share_pct, is_sample)
   values (
-    p.id, p.business_name, p.business_type, v_user, p_service, s.name, v_guide,
+    p.id, p.id, left(p.business_name, 160), p.business_type, v_user, p_service, s.name, v_guide,
     p_starts_at, p_party_size, v_note, rate.kind,
     case when rate.kind = 'percent' then null else rate.amount_tzs end,
     case when rate.kind = 'percent' then rate.percent end,
@@ -662,7 +708,7 @@ begin
     raise exception 'reservation_action_refused: not_found' using errcode = 'P0001';
   end if;
   v_owner := exists (select 1 from public.providers pr where pr.id = r.provider_id and pr.owner_id = v_user);
-  v_traveller := r.traveler_id = v_user;
+  v_traveller := coalesce(r.traveler_id = v_user, false);   -- traveler_id may be null (review L7)
   if not (v_owner or v_traveller) then
     raise exception 'reservation_action_refused: not_found' using errcode = 'P0001';
   end if;
@@ -718,14 +764,26 @@ begin
     if r.status = 'confirmed' and r.starts_at <= now() then
       raise exception 'reservation_action_refused: too_late' using errcode = 'P0001';
     end if;
+    -- Review M3: at most 5 cancellations by a traveller in 24 hours.
+    if v_traveller and (select count(*) from public.reservations x
+                        where x.traveler_id = v_user and x.status = 'cancelled' and x.cancelled_by = 'traveller'
+                          and x.status_at > now() - interval '24 hours') >= 5 then
+      raise exception 'reservation_action_refused: too_many_cancellations' using errcode = 'P0001';
+    end if;
     update public.reservations
     set status = 'cancelled', offered_starts_at = null,
         cancelled_by = case when v_traveller then 'traveller' else 'business' end,
+        -- Review M1: the business cancelling a confirmed reservation less than 2 hours before.
+        business_cancelled_late = (not v_traveller and r.status = 'confirmed' and r.starts_at < now() + interval '2 hours'),
         business_note = case when v_owner then coalesce(v_note, business_note) else business_note end
     where id = r.id;
     v_to := 'cancelled';
   elsif p_action in ('mark_came', 'mark_no_show') and v_owner and r.status = 'confirmed' then
     if r.starts_at > now() then
+      raise exception 'reservation_action_refused: too_early' using errcode = 'P0001';
+    end if;
+    -- Review M2: "did not come" only from 30 minutes after the time.
+    if p_action = 'mark_no_show' and r.starts_at > now() - interval '30 minutes' then
       raise exception 'reservation_action_refused: too_early' using errcode = 'P0001';
     end if;
     if p_action = 'mark_came' then
@@ -760,8 +818,12 @@ revoke execute on function public.reservation_action(uuid, text, timestamptz, te
 grant execute on function public.reservation_action(uuid, text, timestamptz, text, integer) to authenticated;
 
 -- "Did your visit happen?": the traveller answers once, from the day after the reservation date for
--- 14 days. A mismatch with the business's answer holds the commission for an admin (trigger).
-create or replace function public.reservation_visit_answer(p_reservation uuid, p_happened boolean)
+-- 14 days. With "yes", the traveller may also say how many came (asked when the business counted
+-- fewer than booked; review M1). A mismatch with the business's answer, or more people than the
+-- business counted, holds the commission for an admin (trigger). A late "no" (or a higher count) on a
+-- line already invoiced, paid or waived does not reopen it; admins are alerted (review L4).
+drop function if exists public.reservation_visit_answer(uuid, boolean);
+create or replace function public.reservation_visit_answer(p_reservation uuid, p_happened boolean, p_people integer default null)
 returns void
 language plpgsql
 security definer
@@ -781,15 +843,25 @@ begin
      or private.tz_today() <= v_day or private.tz_today() > v_day + 14 then
     raise exception 'reservation_action_refused: not_allowed' using errcode = 'P0001';
   end if;
+  if p_people is not null and (not p_happened or p_people < 1 or p_people > r.party_size) then
+    raise exception 'reservation_action_refused: came_count' using errcode = 'P0001';
+  end if;
   -- The trigger compares the answer with the outcome (now, or when the business or the job marks it).
-  update public.reservations set traveller_said_happened = p_happened, traveller_answered_at = now()
+  update public.reservations
+  set traveller_said_happened = p_happened, traveller_said_people = p_people, traveller_answered_at = now()
   where id = r.id;
+  if r.commission_status in ('invoiced', 'paid', 'waived') and not r.is_sample
+     and ((r.status = 'completed' and not p_happened)
+          or (r.status = 'completed' and p_people is not null and p_people > coalesce(r.came_count, r.party_size))) then
+    perform private.notify_admins('reservation_late_answer',
+      jsonb_build_object('reservation_id', r.id, 'link', '/admin/commissions#reservation-disputes'));
+  end if;
   perform private.reservation_log_add(r.id, case when p_happened then 'traveller_said_yes' else 'traveller_said_no' end,
                                       r.status, r.status, 'traveller');
 end;
 $$;
-revoke execute on function public.reservation_visit_answer(uuid, boolean) from public, anon;
-grant execute on function public.reservation_visit_answer(uuid, boolean) to authenticated;
+revoke execute on function public.reservation_visit_answer(uuid, boolean, integer) from public, anon;
+grant execute on function public.reservation_visit_answer(uuid, boolean, integer) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 7. Admin: disputes and commission marks (two-step admins only; logged)
@@ -806,8 +878,11 @@ begin
   if not private.is_admin() then
     raise exception 'admins only' using errcode = 'P0001';
   end if;
-  if p_outcome not in ('completed', 'no_show') then
-    raise exception 'outcome must be completed or no_show' using errcode = 'P0001';
+  -- completed: it took place (commission owed, with the higher of the two counts when the traveller
+  --   gave one); no_show: the traveller did not come (counts for the pause);
+  -- business_fault: the business could not receive the guest (review M2): nothing owed, no strike.
+  if p_outcome not in ('completed', 'no_show', 'business_fault') then
+    raise exception 'outcome must be completed, no_show or business_fault' using errcode = 'P0001';
   end if;
   select * into r from public.reservations res where res.id = p_reservation for update;
   if not found or r.disputed_at is null or r.dispute_resolved_at is not null then
@@ -815,12 +890,17 @@ begin
   end if;
   update public.reservations
   set dispute_resolved_at = now(), dispute_outcome = p_outcome,
-      status = p_outcome::public.reservation_status,
-      came_count = case when p_outcome = 'completed' then coalesce(came_count, party_size) end,
+      status = case p_outcome when 'business_fault' then 'cancelled' else p_outcome end::public.reservation_status,
+      cancelled_by = case when p_outcome = 'business_fault' then 'admin' end,
+      came_count = case when p_outcome = 'completed'
+                        then least(party_size, greatest(coalesce(came_count, party_size), coalesce(traveller_said_people, 0))) end,
       completed_by = case when p_outcome = 'completed' then coalesce(completed_by, 'admin') end
   where id = r.id;
-  perform private.reservation_log_add(r.id, 'dispute_resolved', r.status, p_outcome::public.reservation_status,
-                                      left(coalesce(nullif(btrim(p_detail), ''), 'admin'), 120));
+  -- Fixed codes only in the log (review L8).
+  perform private.reservation_log_add(r.id, 'dispute_' || p_outcome, r.status,
+    case p_outcome when 'business_fault' then 'cancelled' else p_outcome end::public.reservation_status,
+    case when p_detail in ('admin_page', 'phoned_both', 'phoned_business', 'phoned_traveller', 'evidence') then p_detail
+         else 'admin' end);
 end;
 $$;
 revoke execute on function public.admin_resolve_reservation_dispute(uuid, text, text) from public, anon;
@@ -855,7 +935,7 @@ begin
     raise exception 'admins only' using errcode = 'P0001';
   end if;
   return query
-    select r.provider_id, max(r.business_name),
+    select r.provider_ref, max(r.business_name),   -- grouped by the copied id (review L2)
            (count(*) filter (where r.status = 'completed'))::integer,
            (count(*) filter (where r.commission_status = 'held'))::integer,
            (count(*) filter (where r.status = 'no_show'))::integer,
@@ -869,7 +949,7 @@ begin
     where not r.is_sample
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date >= v_from
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date < (v_from + interval '1 month')::date
-    group by r.provider_id
+    group by r.provider_ref
     having count(*) filter (where r.status in ('completed', 'no_show')) > 0
     order by max(r.business_name);
 end;
@@ -877,8 +957,57 @@ $$;
 revoke execute on function public.admin_reservation_commission_month(date) from public, anon;
 grant execute on function public.admin_reservation_commission_month(date) to authenticated;
 
--- Marks a business's month: owed -> invoiced, invoiced -> paid, or owed -> waived. Refused while the
--- billing switch is off (statements are for information only) and for the running month.
+-- Signs of under-reporting per business and month (review M1), for operations to look at:
+--   due          reservations whose time came: completed, no-show, or cancelled late by the business
+--   no_show      marked "did not come" (open disputes included)
+--   low_count    completed with fewer people than booked
+--   late_cancel  the business cancelled a confirmed reservation less than 2 hours before
+-- Rates are percent of due, one decimal. Nothing is decided automatically.
+create or replace function public.admin_reservation_quality_month(p_month date)
+returns table (
+  provider_id uuid, business_name text, due integer, no_show integer, low_count integer, late_cancel integer,
+  disputed integer, no_show_rate numeric, low_count_rate numeric, late_cancel_rate numeric)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_from date := date_trunc('month', p_month)::date;
+begin
+  if not private.is_admin() then
+    raise exception 'admins only' using errcode = 'P0001';
+  end if;
+  return query
+    with m as (
+      select r.provider_ref as ref, max(r.business_name) as name,
+             count(*) filter (where r.status in ('completed', 'no_show')
+                                    or (r.status = 'cancelled' and r.business_cancelled_late))::integer as due,
+             count(*) filter (where r.status = 'no_show')::integer as ns,
+             count(*) filter (where r.status = 'completed' and r.came_count < r.party_size)::integer as low,
+             count(*) filter (where r.business_cancelled_late)::integer as late,
+             count(*) filter (where r.disputed_at is not null)::integer as disp
+      from public.reservations r
+      where not r.is_sample
+        and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date >= v_from
+        and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date < (v_from + interval '1 month')::date
+      group by r.provider_ref)
+    select m.ref, m.name, m.due, m.ns, m.low, m.late, m.disp,
+           round(m.ns * 100.0 / nullif(m.due, 0), 1),
+           round(m.low * 100.0 / nullif(m.due, 0), 1),
+           round(m.late * 100.0 / nullif(m.due, 0), 1)
+    from m
+    where m.due > 0
+    order by (m.ns + m.low + m.late) * 1.0 / m.due desc, m.name;
+end;
+$$;
+revoke execute on function public.admin_reservation_quality_month(date) from public, anon;
+grant execute on function public.admin_reservation_quality_month(date) to authenticated;
+
+-- Marks a business's month: owed -> invoiced, invoiced -> paid, or owed / invoiced -> waived (final,
+-- review L5). Invoiced and paid are refused while the billing switch is off (statements are for
+-- information only); every mark is refused for the running month. p_provider is the business id
+-- (provider_ref, so a deleted business can still be marked).
 create or replace function public.admin_set_reservation_commission(p_provider uuid, p_month date, p_to text)
 returns integer
 language plpgsql
@@ -906,8 +1035,9 @@ begin
   v_count := 0;
   for v_id in
     select r.id from public.reservations r
-    where r.provider_id = p_provider and not r.is_sample
-      and r.commission_status = case when p_to = 'paid' then 'invoiced' else 'owed' end
+    where r.provider_ref = p_provider and not r.is_sample
+      and (r.commission_status = case when p_to = 'paid' then 'invoiced' else 'owed' end
+           or (p_to = 'waived' and r.commission_status = 'invoiced'))
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date >= v_from
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date < (v_from + interval '1 month')::date
     for update
@@ -952,7 +1082,8 @@ returns table (
   starts_at timestamptz, party_size integer, note text, status public.reservation_status,
   offered_starts_at timestamptz, business_note text, cancelled_by text, decline_reason text,
   diet_line text, traveller_said_happened boolean, can_answer_visit boolean,
-  commission_kind text, commission_rate_tzs integer, commission_percent numeric, created_at timestamptz)
+  commission_kind text, commission_rate_tzs integer, commission_percent numeric, created_at timestamptz,
+  asks_people_count boolean)
 language sql
 stable
 security definer
@@ -964,7 +1095,9 @@ as $$
          (r.traveller_answered_at is null and r.status in ('confirmed', 'completed', 'no_show')
           and private.tz_today() > (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date
           and private.tz_today() <= (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 14),
-         r.commission_kind, r.commission_rate_tzs, r.commission_percent, r.created_at
+         r.commission_kind, r.commission_rate_tzs, r.commission_percent, r.created_at,
+         -- Review M1: ask "How many of you came?" when the business counted fewer than booked.
+         (r.status = 'completed' and r.came_count < r.party_size)
   from public.reservations r
   left join public.reservation_diet_lines d on d.reservation_id = r.id
   where r.traveler_id = (select auth.uid())
@@ -998,7 +1131,8 @@ begin
   return query
     select r.id, r.starts_at, r.party_size, r.service_name,
            coalesce(nullif(split_part(btrim(pf.full_name), ' ', 1), ''), 'Traveller'),
-           r.note,
+           -- Review M4: the note only until 30 days after the date (it is cleared then anyway).
+           case when private.tz_today() <= (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 30 then r.note end,
            case when private.reservation_diet_visible(r.id) then d.line end,
            r.status, r.offered_starts_at, r.business_note, r.cancelled_by, r.came_count,
            r.disputed_at is not null and r.dispute_resolved_at is null,
@@ -1060,8 +1194,13 @@ declare
   v_completed integer := 0;
   v_reminded integer := 0;
   v_asked integer := 0;
+  v_texts integer := 0;
   v_diet integer := 0;
+  v_failed integer := 0;
 begin
+  -- Each row in its own block (review L3): one bad row never stops the rest. Only the step, the id
+  -- and the error code are logged, never row contents.
+
   -- Unanswered requests and offers whose time has passed: declined, no answer.
   for v_id, v_from in
     select r.id, r.status from public.reservations r
@@ -1069,11 +1208,18 @@ begin
       and coalesce(r.offered_starts_at, r.starts_at) < now()
     for update skip locked
   loop
-    update public.reservations set status = 'declined', decline_reason = 'no_answer', offered_starts_at = null
-    where id = v_id;
-    perform private.reservation_log_add(v_id, 'expired', v_from, 'declined', 'no_answer');
-    perform private.reservation_notify(v_id, 'reservation_expired');
-    v_expired := v_expired + 1;
+    begin
+      update public.reservations set status = 'declined', decline_reason = 'no_answer', offered_starts_at = null
+      where id = v_id;
+      perform private.reservation_log_add(v_id, 'expired', v_from, 'declined', 'no_answer');
+      -- The business did not answer, or the traveller did not answer the business's other time.
+      perform private.reservation_notify(v_id, case when v_from = 'other_time_offered'
+                                                    then 'reservation_offer_expired' else 'reservation_expired' end);
+      v_expired := v_expired + 1;
+    exception when others then
+      raise warning 'run_reservation_jobs: expire failed for reservation % (%)', v_id, sqlstate;
+      v_failed := v_failed + 1;
+    end;
   end loop;
 
   -- Confirmed, not marked by the business 3 days after the time: completed as booked (P3).
@@ -1082,10 +1228,15 @@ begin
     where r.status = 'confirmed' and r.starts_at < now() - interval '3 days'
     for update skip locked
   loop
-    update public.reservations set status = 'completed', came_count = party_size, completed_by = 'auto'
-    where id = v_id;
-    perform private.reservation_log_add(v_id, 'auto_completed', 'confirmed', 'completed', 'auto');
-    v_completed := v_completed + 1;
+    begin
+      update public.reservations set status = 'completed', came_count = party_size, completed_by = 'auto'
+      where id = v_id;
+      perform private.reservation_log_add(v_id, 'auto_completed', 'confirmed', 'completed', 'auto');
+      v_completed := v_completed + 1;
+    exception when others then
+      raise warning 'run_reservation_jobs: auto-complete failed for reservation % (%)', v_id, sqlstate;
+      v_failed := v_failed + 1;
+    end;
   end loop;
 
   -- Reminder to the owner 2 hours after the time: mark came or did not come.
@@ -1095,9 +1246,14 @@ begin
       and r.starts_at < now() - interval '2 hours'
     for update skip locked
   loop
-    update public.reservations set owner_reminded_at = now() where id = v_id;
-    perform private.reservation_notify(v_id, 'reservation_mark_reminder');
-    v_reminded := v_reminded + 1;
+    begin
+      update public.reservations set owner_reminded_at = now() where id = v_id;
+      perform private.reservation_notify(v_id, 'reservation_mark_reminder');
+      v_reminded := v_reminded + 1;
+    exception when others then
+      raise warning 'run_reservation_jobs: reminder failed for reservation % (%)', v_id, sqlstate;
+      v_failed := v_failed + 1;
+    end;
   end loop;
 
   -- "Did your visit happen?" the day after (Tanzania date), once.
@@ -1109,9 +1265,32 @@ begin
       and private.tz_today() <= (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 14
     for update skip locked
   loop
-    update public.reservations set traveller_asked_at = now() where id = v_id;
-    perform private.reservation_notify(v_id, 'reservation_visit_question');
-    v_asked := v_asked + 1;
+    begin
+      update public.reservations set traveller_asked_at = now() where id = v_id;
+      perform private.reservation_notify(v_id, 'reservation_visit_question');
+      v_asked := v_asked + 1;
+    exception when others then
+      raise warning 'run_reservation_jobs: visit question failed for reservation % (%)', v_id, sqlstate;
+      v_failed := v_failed + 1;
+    end;
+  end loop;
+
+  -- Review M4: the traveller's note and the business's note go 30 days after the reservation date,
+  -- like the diet line. Dates, counts and commission stay.
+  for v_id in
+    select r.id from public.reservations r
+    where r.texts_cleared_at is null
+      and (r.note is not null or r.business_note is not null)
+      and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 30 < private.tz_today()
+    for update skip locked
+  loop
+    begin
+      update public.reservations set note = null, business_note = null, texts_cleared_at = now() where id = v_id;
+      v_texts := v_texts + 1;
+    exception when others then
+      raise warning 'run_reservation_jobs: clearing texts failed for reservation % (%)', v_id, sqlstate;
+      v_failed := v_failed + 1;
+    end;
   end loop;
 
   -- Diet lines: deleted 30 days after the reservation date (P5).
@@ -1119,7 +1298,8 @@ begin
   get diagnostics v_diet = row_count;
 
   return jsonb_build_object('expired', v_expired, 'completed', v_completed, 'reminded', v_reminded,
-                            'asked', v_asked, 'diet_lines_deleted', v_diet);
+                            'asked', v_asked, 'texts_cleared', v_texts, 'diet_lines_deleted', v_diet,
+                            'failed', v_failed);
 end;
 $$;
 revoke execute on function private.run_reservation_jobs() from public, anon, authenticated;
@@ -1136,17 +1316,22 @@ alter table public.reservation_log enable row level security;
 revoke all on public.reservations, public.reservation_diet_lines, public.reservation_log from anon, authenticated;
 grant select on public.reservations, public.reservation_diet_lines, public.reservation_log to authenticated;
 
+-- Review L1: travellers read their own rows and admins all rows directly. Business owners have no
+-- direct read: their screens use business_reservations() and business_reservation_statement(), which
+-- return only the columns they need (first name, note within 30 days, diet line in its window).
 drop policy if exists "Travellers, owners and admins read reservations" on public.reservations;
-create policy "Travellers, owners and admins read reservations" on public.reservations
+drop policy if exists "Travellers and admins read reservations" on public.reservations;
+create policy "Travellers and admins read reservations" on public.reservations
   for select to authenticated
-  using (traveler_id = (select auth.uid())
-         or (select private.owns_provider(provider_id))
-         or (select private.is_admin()));
+  using (traveler_id = (select auth.uid()) or (select private.is_admin()));
 
+-- Diet lines: the traveller and admins directly; the business only through business_reservations().
 drop policy if exists "Diet line readers" on public.reservation_diet_lines;
 create policy "Diet line readers" on public.reservation_diet_lines
   for select to authenticated
-  using ((select private.reservation_diet_visible(reservation_id)));
+  using ((select private.is_admin())
+         or exists (select 1 from public.reservations r
+                    where r.id = reservation_id and r.traveler_id = (select auth.uid())));
 
 drop policy if exists "Admins read the reservation log" on public.reservation_log;
 create policy "Admins read the reservation log" on public.reservation_log

@@ -28,13 +28,27 @@ type Dispute = {
   came_count: number | null;
   status: string;
   traveller_said_happened: boolean | null;
+  traveller_said_people: number | null;
   commission_tzs: number | null;
+};
+
+type Quality = {
+  provider_id: string;
+  business_name: string;
+  due: number;
+  no_show: number;
+  low_count: number;
+  late_cancel: number;
+  disputed: number;
+  no_show_rate: number | null;
+  low_count_rate: number | null;
+  late_cancel_rate: number | null;
 };
 
 const OK_TEXT: Record<string, string> = {
   invoiced: 'Marked invoiced.',
   paid: 'Marked paid.',
-  waived: 'Marked waived. Nothing is owed for these reservations.',
+  waived: 'Marked waived. Nothing is owed for these reservations. This is final.',
   resolved: 'Decision saved. The commission follows it.',
 };
 const ERROR_TEXT: Record<string, string> = {
@@ -56,12 +70,13 @@ export async function ReservationCommissions({ locale, month, params }: {
   params: Record<string, string | string[] | undefined>;
 }) {
   const supabase = await createClient();
-  const [monthRows, billing, disputes] = await Promise.all([
+  const [monthRows, billing, quality, disputes] = await Promise.all([
     supabase.rpc('admin_reservation_commission_month', { p_month: `${month}-01` }),
     supabase.rpc('reservation_billing_on'),
+    supabase.rpc('admin_reservation_quality_month', { p_month: `${month}-01` }),
     supabase
       .from('reservations')
-      .select('id, business_name, starts_at, party_size, came_count, status, traveller_said_happened, commission_tzs')
+      .select('id, business_name, starts_at, party_size, came_count, status, traveller_said_happened, traveller_said_people, commission_tzs')
       .not('disputed_at', 'is', null)
       .is('dispute_resolved_at', null)
       .order('starts_at')
@@ -81,6 +96,7 @@ export async function ReservationCommissions({ locale, month, params }: {
   const rows = (monthRows.data ?? []) as MonthRow[];
   const billingOn = billing.data === true;
   const list = (disputes.data ?? []) as Dispute[];
+  const signs = (quality.data ?? []) as Quality[];
   const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam', dateStyle: 'medium', timeStyle: 'short' });
 
   return (
@@ -115,7 +131,7 @@ export async function ReservationCommissions({ locale, month, params }: {
                 <input type="hidden" name="month" value={month} />
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" name="confirm" value="yes" required />
-                  <span>I checked this month for {r.business_name}</span>
+                  <span>I checked this month for {r.business_name}. Waiving is final.</span>
                 </label>
                 <button name="to" value="invoiced" className="btn-outline px-3 py-1.5 text-sm" disabled={!billingOn}>Mark invoiced</button>
                 <button name="to" value="paid" className="btn px-3 py-1.5 text-sm" disabled={!billingOn}>Mark paid</button>
@@ -125,6 +141,47 @@ export async function ReservationCommissions({ locale, month, params }: {
           </li>
         ))}
       </ul>
+
+      <div id="reservation-signs" className="card space-y-3">
+        <h3 className="font-bold">Signs to check this month</h3>
+        <p className="text-sm text-muted">
+          Share of reservations that were due: marked &quot;did not come&quot;, fewer people counted than booked, and confirmed
+          reservations the business cancelled less than 2 hours before. High numbers are a reason to look, not proof.
+        </p>
+        {quality.error ? (
+          <p className="text-sm text-muted">Could not be loaded.</p>
+        ) : signs.length === 0 ? (
+          <p className="text-sm text-muted">No reservations were due this month.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <caption className="sr-only">No-show, low head count and late cancel rates per business</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="p-2 font-semibold">Business</th>
+                  <th scope="col" className="p-2 font-semibold">Due</th>
+                  <th scope="col" className="p-2 font-semibold">Did not come</th>
+                  <th scope="col" className="p-2 font-semibold">Fewer counted</th>
+                  <th scope="col" className="p-2 font-semibold">Late cancels</th>
+                  <th scope="col" className="p-2 font-semibold">Disputed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signs.map((s) => (
+                  <tr key={s.provider_id} className="border-t border-line">
+                    <th scope="row" className="p-2 font-normal">{s.business_name}</th>
+                    <td className="p-2">{s.due}</td>
+                    <td className="p-2">{s.no_show} ({s.no_show_rate ?? 0}%)</td>
+                    <td className="p-2">{s.low_count} ({s.low_count_rate ?? 0}%)</td>
+                    <td className="p-2">{s.late_cancel} ({s.late_cancel_rate ?? 0}%)</td>
+                    <td className="p-2">{s.disputed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <div id="reservation-disputes" className="card space-y-3">
         <h3 className="font-bold">Disputes waiting ({list.length})</h3>
@@ -136,14 +193,15 @@ export async function ReservationCommissions({ locale, month, params }: {
               <li key={d.id} className="space-y-1">
                 <p>
                   {d.business_name} · {when(d.starts_at)} · {d.party_size} booked · business: {d.status === 'completed' ? `came (${d.came_count ?? d.party_size})` : 'did not come'} ·
-                  traveller: {d.traveller_said_happened ? 'it happened' : 'it did not happen'}
+                  traveller: {d.traveller_said_happened ? `it happened${d.traveller_said_people ? `, ${d.traveller_said_people} came` : ''}` : 'it did not happen'}
                 </p>
                 <form action={resolveReservationDispute} className="flex flex-wrap gap-2">
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="month" value={month} />
                   <input type="hidden" name="reservation_id" value={d.id} />
                   <button name="outcome" value="completed" className="btn-outline px-3 py-1.5 text-sm">It took place</button>
-                  <button name="outcome" value="no_show" className="btn-outline px-3 py-1.5 text-sm">It did not take place</button>
+                  <button name="outcome" value="no_show" className="btn-outline px-3 py-1.5 text-sm">The traveller did not come</button>
+                  <button name="outcome" value="business_fault" className="btn-outline px-3 py-1.5 text-sm">The business could not receive them</button>
                 </form>
               </li>
             ))}

@@ -25,6 +25,7 @@ export const reservationRefusals = [
   'not_open',
   'own_business',
   'no_show_pause',
+  'too_many_requests',
   'too_many_open',
   'too_many_today',
   'service_not_found',
@@ -60,6 +61,7 @@ export type ReservationAction = (typeof reservationActions)[number];
 export const reservationActionRefusals = [
   'not_found',
   'note_too_long',
+  'too_many_cancellations',
   'too_late',
   'too_early',
   'came_count',
@@ -97,7 +99,23 @@ export const reservationRules = {
   noShowPauseDays: 30,
   maxOpenRequests: 5,
   maxPerBusinessPerDay: 3,
+  /** Requests a traveller may create in 24 hours; accounts younger than newAccountDays get fewer. */
+  maxRequestsPerDay: 10,
+  newAccountRequestsPerDay: 3,
+  newAccountDays: 3,
+  /** Cancellations a traveller may make in 24 hours. */
+  maxCancellationsPerDay: 5,
+  /** "Did not come" can be marked this many minutes after the time at the earliest. */
+  noShowMarkAfterMin: 30,
+  /** A business cancelling a confirmed reservation less than this many hours before is a late cancel. */
+  lateCancelHours: 2,
+  /** Notes (traveller and business) are cleared this many days after the reservation date. */
+  textsClearDays: 30,
 } as const;
+
+/** Admin decisions on a dispute. business_fault: nothing owed and no strike for the traveller. */
+export const reservationDisputeOutcomes = ['completed', 'no_show', 'business_fault'] as const;
+export type ReservationDisputeOutcome = (typeof reservationDisputeOutcomes)[number];
 
 /** The rate copied onto a reservation at request time. */
 export type ReservationRateSnapshot = {
@@ -142,9 +160,20 @@ export function reservationCommissionBase(input: {
   return 'owed';
 }
 
-/** True when the traveller's answer contradicts the outcome (the commission is then held). */
-export function reservationAnswerMismatch(status: ReservationStatus, travellerSaidHappened: boolean | null): boolean {
+/**
+ * True when the traveller's answer contradicts the outcome (the commission is then held): "no" to a
+ * completed visit, "yes" to a no-show, or more people than the business counted.
+ */
+export function reservationAnswerMismatch(
+  status: ReservationStatus,
+  travellerSaidHappened: boolean | null,
+  travellerSaidPeople: number | null = null,
+  cameCount: number | null = null,
+): boolean {
   if (travellerSaidHappened == null) return false;
+  if (status === 'completed' && travellerSaidHappened && travellerSaidPeople != null && cameCount != null) {
+    return travellerSaidPeople > cameCount;
+  }
   return (status === 'completed' && !travellerSaidHappened) || (status === 'no_show' && travellerSaidHappened);
 }
 

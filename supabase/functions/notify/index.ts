@@ -197,10 +197,18 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Ombi lako halikujibiwa', body: 'Biashara haikujibu ombi lako kwa wakati, kwa hiyo limefungwa. Unaweza kuchagua muda au mahali pengine kwenye Kwetuly.' }
         : { subject: 'Your request was not answered', body: 'The business did not answer your request in time, so it is closed. You can choose another time or place on Kwetuly.' };
+    case 'reservation_offer_expired':
+      // The traveller did not answer the other time the business offered before it passed.
+      return sw
+        ? { subject: 'Muda uliopendekezwa umepita', body: 'Hukujibu muda mwingine uliopendekezwa na biashara kabla haujafika, kwa hiyo ombi limefungwa. Unaweza kuomba tena kwenye Kwetuly.' }
+        : { subject: 'The other time has passed', body: 'You did not answer the other time the business offered before it came, so the request is closed. You are welcome to ask again on Kwetuly.' };
     case 'reservation_visit_question':
       return sw
         ? { subject: 'Je, ulifika?', body: 'Je, ulitembelea biashara uliyohifadhi nafasi jana? Jibu kwa kubofya mara moja kwenye Kwetuly.' }
         : { subject: 'Did your visit happen?', body: 'Did you visit the business you reserved? Answer with one tap on Kwetuly.' };
+    case 'reservation_late_answer':
+      // Admins only: a "no" (or a higher head count) arrived after the line was invoiced, paid or waived.
+      return { subject: 'Late answer on an invoiced reservation', body: 'A traveller answered after the commission line was invoiced, paid or waived, and the answer does not match the business. The line was not reopened. Please look at it on the admin commissions page.' };
     case 'reservation_disputed':
       // Admins only.
       return { subject: 'Reservation to check', body: 'A traveller and a business disagree on whether a reservation took place. Its commission is held until you decide on the admin commissions page.' };

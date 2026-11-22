@@ -71,7 +71,12 @@ insert into auth.users (id, email, aud, role, raw_user_meta_data) values
   ('d1d1d1d1-0000-4000-8000-0000000000d1', 'rv-trav1@example.test', 'authenticated', 'authenticated', '{}'),
   ('d2d2d2d2-0000-4000-8000-0000000000d2', 'rv-trav2@example.test', 'authenticated', 'authenticated', '{}'),
   ('d3d3d3d3-0000-4000-8000-0000000000d3', 'rv-trav3@example.test', 'authenticated', 'authenticated', '{}'),
-  ('f4f4f4f4-0000-4000-8000-0000000000f4', 'rv-guide@example.test', 'authenticated', 'authenticated', '{}');
+  ('f4f4f4f4-0000-4000-8000-0000000000f4', 'rv-guide@example.test', 'authenticated', 'authenticated', '{}'),
+  ('d5d5d5d5-0000-4000-8000-0000000000d5', 'rv-new@example.test', 'authenticated', 'authenticated', '{}');
+-- t1..t3 are older accounts; d5 is brand new (3 requests a day, review M3).
+update auth.users set created_at = now() - interval '10 days'
+where id in ('d1d1d1d1-0000-4000-8000-0000000000d1', 'd2d2d2d2-0000-4000-8000-0000000000d2', 'd3d3d3d3-0000-4000-8000-0000000000d3');
+update public.profiles set onboarded_at = now() where id = 'd5d5d5d5-0000-4000-8000-0000000000d5';
 update public.profiles set onboarded_at = now(), full_name = 'Asha Test'
 where id in ('a1a1a1a1-0000-4000-8000-0000000000a1', 'b2b2b2b2-0000-4000-8000-0000000000b2',
              'c3c3c3c3-0000-4000-8000-0000000000c3', 'd1d1d1d1-0000-4000-8000-0000000000d1',
@@ -179,6 +184,8 @@ select pg_temp.expect_code($q$select public.place_reservation('e1e1e1e1-0000-400
 -- 2. Owner a1 answers ------------------------------------------------------------
 select pg_temp.check((select public.reservation_action((select id from rv), 'confirm', null, 'See you at noon') = 'confirmed'),
                      'owner confirms');
+select pg_temp.check((select count(*) = 0 from public.reservations) and (select count(*) = 0 from public.reservation_diet_lines),
+                     'owner has no direct read of reservations or diet lines (review L1)');
 select pg_temp.check((select diet_line = 'No peanuts (allergy)' and traveller_first_name = 'Asha'
                       from public.business_reservations('e1e1e1e1-0000-4000-8000-0000000000e1', private.tz_today(), private.tz_today() + 2)),
                      'owner sees the first name and the diet line while the reservation is open');
@@ -235,9 +242,12 @@ select pg_temp.check((select count(*) = 0 from public.reservations), 'admin with
 reset role;
 select pg_temp.as_user('c3c3c3c3-0000-4000-8000-0000000000c3', 'aal2');
 set local role authenticated;
-select public.admin_resolve_reservation_dispute((select id from rv), 'completed', 'phoned both');
+select public.admin_resolve_reservation_dispute((select id from rv), 'completed', 'phoned both, traveller said 555 1234');
 select pg_temp.check((select commission_status = 'owed' and commission_tzs = 6000 and dispute_outcome = 'completed'
                       from public.reservations where id = (select id from rv)), 'admin decision releases the commission');
+select pg_temp.check((select detail = 'admin' from public.reservation_log
+                      where reservation_id = (select id from rv) and action = 'dispute_completed'),
+                     'free text never reaches the log (review L8)');
 select pg_temp.check((select count(*) >= 4 from public.reservation_log where reservation_id = (select id from rv)),
                      'history is logged');
 reset role;
@@ -266,9 +276,9 @@ select pg_temp.check((select status = 'completed' and completed_by = 'auto' and 
 select pg_temp.as_user('d2d2d2d2-0000-4000-8000-0000000000d2');
 set local role authenticated;
 create temp table rv3 on commit drop as
-  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000001', pg_temp.at(1, '10:00'), 2) as id
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000001', pg_temp.at(1, '10:00'), 2) as id, 2 as party
   union all
-  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(1, '15:00'), 1);
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(1, '15:00'), 1), 1;
 reset role;
 grant select on rv3 to authenticated;
 select pg_temp.check((select count(*) = 1 from public.reservations
@@ -287,7 +297,7 @@ reset role;
 update public.reservations set starts_at = starts_at - interval '2 days' where id in (select id from rv3);
 select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
 set local role authenticated;
-select public.reservation_action(id, 'mark_came', null, null, party_size) from public.reservations where id in (select id from rv3);
+select public.reservation_action(id, 'mark_came', null, null, party) from rv3;
 reset role;
 select pg_temp.check((select sum(commission_tzs) = 9001 + 3000 from public.reservations where id in (select id from rv3)),
                      'percent of the copied price x 2 people (rounded) plus 3000 per person');
@@ -296,7 +306,7 @@ select pg_temp.check((select sum(commission_tzs) = 9001 + 3000 from public.reser
 select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
 set local role authenticated;
 create temp table rv4 on commit drop as
-  select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(3, '13:00'), 2) as id;
+  select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(3, '13:00'), 2, 'Birthday dinner') as id;
 reset role;
 grant select on rv4 to authenticated;
 select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
@@ -315,6 +325,64 @@ select pg_temp.check((select status = 'cancelled' and cancelled_by = 'traveller'
                       from public.reservations where id = (select id from rv4)), 'cancelled: nothing owed');
 reset role;
 
+-- 7b. Review M1: head counts and late cancels ---------------------------------------
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+create temp table rv7 on commit drop as
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000001', pg_temp.at(2, '10:00'), 2) as id;
+create temp table rv8 on commit drop as
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(2, '16:00'), 1) as id;
+reset role;
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select public.reservation_action((select id from rv7), 'confirm');
+select public.reservation_action((select id from rv8), 'confirm');
+reset role;
+update public.reservations set starts_at = pg_temp.at(-2, '10:00') where id = (select id from rv7);
+update public.reservations set starts_at = now() + interval '1 hour' where id = (select id from rv8);
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select public.reservation_action((select id from rv7), 'mark_came', null, null, 1);
+select public.reservation_action((select id from rv8), 'cancel', null, 'Sorry, power cut');
+reset role;
+select pg_temp.check((select business_cancelled_late and cancelled_by = 'business' from public.reservations where id = (select id from rv8)),
+                     'business cancel less than 2 hours before is late');
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+select pg_temp.check((select asks_people_count from public.my_reservations() where id = (select id from rv7)),
+                     'traveller is asked how many came when fewer were counted');
+select pg_temp.expect_code($q$select public.reservation_visit_answer((select id from rv7), true, 3)$q$, 'came_count', 'more people than booked');
+select public.reservation_visit_answer((select id from rv7), true, 2);
+reset role;
+select pg_temp.check((select disputed_at is not null and commission_status = 'held' and traveller_said_people = 2
+                      from public.reservations where id = (select id from rv7)),
+                     'traveller says 2 came, business said 1: commission held');
+select pg_temp.as_user('c3c3c3c3-0000-4000-8000-0000000000c3', 'aal2');
+set local role authenticated;
+select public.admin_resolve_reservation_dispute((select id from rv7), 'completed', 'phoned_both');
+-- The service price was raised to 90000 in section 6 before rv7 was placed, so 90000 was copied.
+select pg_temp.check((select came_count = 2 and commission_tzs = 18000 and commission_status = 'owed'
+                      from public.reservations where id = (select id from rv7)),
+                     'admin decision counts the higher number');
+select pg_temp.check((select late_cancel >= 1 and low_count >= 1
+                      from public.admin_reservation_quality_month(private.tz_today())
+                      where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2')
+                     or (select late_cancel >= 1
+                         from public.admin_reservation_quality_month(private.tz_today())
+                         where provider_id = 'e2e2e2e2-0000-4000-8000-0000000000e2'),
+                     'quality list shows the late cancel (and the low count when in the same month)');
+reset role;
+
+-- 7c. Review M3: a new account makes at most 3 requests a day -------------------------
+select pg_temp.as_user('d5d5d5d5-0000-4000-8000-0000000000d5');
+set local role authenticated;
+select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(5, '12:00'), 2);
+select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(5, '13:00'), 2);
+select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(5, '12:00'), 1);
+select pg_temp.expect_code($q$select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(5, '14:00'), 1)$q$,
+  'too_many_requests', 'fourth request of a new account in a day');
+reset role;
+
 -- 8. No-shows: 2 in 90 days pause reserving ------------------------------------------
 select pg_temp.as_user('d3d3d3d3-0000-4000-8000-0000000000d3');
 set local role authenticated;
@@ -328,6 +396,13 @@ select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
 set local role authenticated;
 select public.reservation_action(id, 'confirm') from rv5;
 reset role;
+-- Review M2: "did not come" only from 30 minutes after the time.
+update public.reservations set starts_at = now() - interval '10 minutes' where id in (select id from rv5);
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.reservation_action((select min(id::text)::uuid from rv5), 'mark_no_show')$q$,
+  'too_early', 'did not come, 10 minutes after the time');
+reset role;
 update public.reservations set starts_at = starts_at - interval '2 days' where id in (select id from rv5);
 select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
 set local role authenticated;
@@ -339,9 +414,21 @@ select pg_temp.as_user('d3d3d3d3-0000-4000-8000-0000000000d3');
 set local role authenticated;
 select pg_temp.expect_code($q$select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(2, '12:00'), 2)$q$,
   'no_show_pause', 'two no-shows pause reserving');
+-- The traveller says one visit did happen: that no-show is disputed and no longer counts (M2).
+select public.reservation_visit_answer((select min(id::text)::uuid from rv5), true);
+select pg_temp.check((select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(2, '12:00'), 2) is not null),
+                     'a disputed no-show does not count for the pause');
+reset role;
+select pg_temp.as_user('c3c3c3c3-0000-4000-8000-0000000000c3', 'aal2');
+set local role authenticated;
+select public.admin_resolve_reservation_dispute((select min(id::text)::uuid from rv5), 'business_fault', 'phoned_business');
+select pg_temp.check((select status = 'cancelled' and cancelled_by = 'admin' and dispute_outcome = 'business_fault'
+                        and commission_status = 'none'
+                      from public.reservations where id = (select min(id::text)::uuid from rv5)),
+                     'business fault: nothing owed, no strike');
 reset role;
 
--- 9. Hourly job: unanswered requests close; diet lines are deleted after their date ----
+-- 9. Hourly job: unanswered requests close; diet lines and notes go after 30 days ----
 select pg_temp.as_user('d2d2d2d2-0000-4000-8000-0000000000d2');
 set local role authenticated;
 create temp table rv6 on commit drop as
@@ -349,15 +436,19 @@ create temp table rv6 on commit drop as
 reset role;
 update public.reservations set starts_at = now() - interval '1 hour' where id = (select id from rv6);
 update public.reservation_diet_lines set delete_after = private.tz_today() - 1 where reservation_id = (select id from rv6);
+update public.reservations set starts_at = starts_at - interval '31 days' where id = (select id from rv4);
 select private.run_reservation_jobs();
 select pg_temp.check((select status = 'declined' and decline_reason = 'no_answer' from public.reservations where id = (select id from rv6)),
                      'unanswered request closed');
 select pg_temp.check((select count(*) = 0 from public.reservation_diet_lines where reservation_id = (select id from rv6)),
                      'diet line deleted after its date');
+select pg_temp.check((select note is null and business_note is null and texts_cleared_at is not null
+                      from public.reservations where id = (select id from rv4)),
+                     'notes cleared 30 days after the date (review M4)');
 
 -- 10. A deleted traveller: note and diet line go, figures stay ----------------------------
 delete from auth.users where id = 'd3d3d3d3-0000-4000-8000-0000000000d3';
-select pg_temp.check((select bool_and(traveler_id is null and note is null and status = 'no_show')
+select pg_temp.check((select bool_and(traveler_id is null and note is null)
                       from public.reservations where id in (select id from rv5)), 'deleted traveller: rows kept, personal parts cleared');
 select pg_temp.check((select count(*) = 0 from public.reservation_diet_lines where reservation_id in (select id from rv5)),
                      'deleted traveller: diet line removed');
@@ -368,7 +459,7 @@ set local role authenticated;
 -- The visits are 2 and 4 days ago, so they may fall in last month: compare with the table itself.
 select pg_temp.check((select m.commission_owed_tzs = (
                           select coalesce(sum(r.commission_tzs), 0) from public.reservations r
-                          where r.provider_id = 'e1e1e1e1-0000-4000-8000-0000000000e1' and r.commission_status = 'owed'
+                          where r.provider_ref = 'e1e1e1e1-0000-4000-8000-0000000000e1' and r.commission_status = 'owed'
                             and date_trunc('month', (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date) = date_trunc('month', private.tz_today() - 2))
                         and not m.billing_on
                       from public.admin_reservation_commission_month(private.tz_today() - 2) m
@@ -383,9 +474,10 @@ select pg_temp.check((select bool_and(not billing_on) and sum(commission_tzs) > 
                       from public.business_reservation_statement('e1e1e1e1-0000-4000-8000-0000000000e1', private.tz_today() - 2)),
                      'owner statement says for information (billing off)');
 select pg_temp.expect_error($q$select * from public.admin_reservation_commission_month(private.tz_today())$q$, 'owner reads the admin list');
+select pg_temp.expect_error($q$select * from public.admin_reservation_quality_month(private.tz_today())$q$, 'owner reads the quality list');
 reset role;
 
--- With billing on (test only) and last month's visit: owed -> invoiced -> paid.
+-- With billing on (test only) and last month's visit: owed -> invoiced -> waived (final, review L5).
 update public.site_settings set value = '{"on": true}' where key = 'feature.reservation_commission_billing';
 update public.reservations set starts_at = starts_at - interval '40 days' where id = (select id from rv2);
 select pg_temp.as_user('c3c3c3c3-0000-4000-8000-0000000000c3', 'aal2');
@@ -396,12 +488,16 @@ create temp table rv_month on commit drop as
   select (starts_at at time zone 'Africa/Dar_es_Salaam')::date as d from public.reservations where id = (select id from rv2);
 select pg_temp.check((select public.admin_set_reservation_commission('e1e1e1e1-0000-4000-8000-0000000000e1', (select d from rv_month), 'invoiced') = 1),
                      'that month invoiced');
-select pg_temp.check((select public.admin_set_reservation_commission('e1e1e1e1-0000-4000-8000-0000000000e1', (select d from rv_month), 'paid') = 1),
-                     'that month paid');
+select pg_temp.check((select public.admin_set_reservation_commission('e1e1e1e1-0000-4000-8000-0000000000e1', (select d from rv_month), 'waived') = 1),
+                     'an invoiced month can be waived');
+select pg_temp.check((select public.admin_set_reservation_commission('e1e1e1e1-0000-4000-8000-0000000000e1', (select d from rv_month), 'paid') = 0),
+                     'a waived line is not marked paid');
 reset role;
-select pg_temp.check((select commission_status = 'paid' from public.reservations where id = (select id from rv2)), 'marked paid');
+select pg_temp.check((select commission_status = 'waived' from public.reservations where id = (select id from rv2)), 'marked waived');
 select pg_temp.expect_error($q$update public.reservations set came_count = 2 where id = (select id from rv2)$q$,
-  'changing the commission of a paid line');
+  'changing the commission of a waived line');
+select pg_temp.expect_error($q$update public.reservations set commission_status = 'owed' where id = (select id from rv2)$q$,
+  'reopening a waived line');
 
 select 'all passed';
 rollback;

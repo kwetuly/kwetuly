@@ -7,6 +7,7 @@ import {
   reservationAnswerMismatch,
   reservationCommissionBase,
   reservationCommissionStatuses,
+  reservationDisputeOutcomes,
   reservationErrorCode,
   reservationGuideShare,
   reservationRefusals,
@@ -52,10 +53,20 @@ describe('reservations match migration 20261122300000', () => {
     expect(sql).toContain(`now() - interval '${reservationRules.autoCompleteDays} days'`);
     expect(sql).toContain(`now() - interval '${reservationRules.ownerReminderHours} hours'`);
     expect(sql).toContain(`::date + ${reservationRules.visitAnswerDays}`);
-    expect(sql).toContain(`interval '${reservationRules.noShowWindowDays} days') >= ${reservationRules.noShowLimit}`);
+    expect(sql).toContain(`r.starts_at > now() - interval '${reservationRules.noShowWindowDays} days'`);
+    expect(sql).toContain(`r.dispute_resolved_at is null)) >= ${reservationRules.noShowLimit}`);
     expect(sql).toContain(`now() - interval '${reservationRules.noShowPauseDays} days'`);
     expect(sql).toContain(`('requested', 'other_time_offered')) >= ${reservationRules.maxOpenRequests}`);
     expect(sql).toContain(`private.tz_today()) >= ${reservationRules.maxPerBusinessPerDay}`);
+    expect(sql).toContain(`> now() - interval '${reservationRules.newAccountDays} days'\n             then ${reservationRules.newAccountRequestsPerDay} else ${reservationRules.maxRequestsPerDay} end`);
+    expect(sql).toContain(`status_at > now() - interval '24 hours') >= ${reservationRules.maxCancellationsPerDay}`);
+    expect(sql).toContain(`r.starts_at > now() - interval '${reservationRules.noShowMarkAfterMin} minutes'`);
+    expect(sql).toContain(`r.starts_at < now() + interval '${reservationRules.lateCancelHours} hours'`);
+    expect(sql).toContain(`::date + ${reservationRules.textsClearDays} < private.tz_today()`);
+  });
+  it('dispute outcomes', () => {
+    const block = sql.match(/check \(dispute_outcome in \(([^)]*)\)\)/)![1];
+    expect(quoted(block)).toEqual([...reservationDisputeOutcomes]);
   });
   it('the billing switch is seeded off', () => {
     expect(sql).toContain(`('feature.reservation_commission_billing', '{"on": false}')`);
@@ -104,6 +115,9 @@ describe('commission arithmetic (same as the trigger)', () => {
     expect(reservationAnswerMismatch('completed', true)).toBe(false);
     expect(reservationAnswerMismatch('confirmed', false)).toBe(false);
     expect(reservationAnswerMismatch('completed', null)).toBe(false);
+    expect(reservationAnswerMismatch('completed', true, 4, 2)).toBe(true);
+    expect(reservationAnswerMismatch('completed', true, 2, 2)).toBe(false);
+    expect(reservationAnswerMismatch('completed', true, 1, 2)).toBe(false);
   });
   it('error codes', () => {
     expect(reservationErrorCode('reservation_refused: too_soon')).toBe('too_soon');
