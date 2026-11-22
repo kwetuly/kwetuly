@@ -23,3 +23,4 @@ export * from './identifier-formats';
 export * from './person-documents';
 export * from './payment-rules';
 export * from './reservations';
+export * from './reservation-rules';
