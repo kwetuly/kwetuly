@@ -95,7 +95,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
   const ok = typeof params.ok === 'string' ? (OK_TEXT[params.ok] ?? '') : '';
   const error = typeof params.e === 'string' ? (ERROR_TEXT[params.e] ?? '') : '';
   const supabase = await createClient();
-  const [waiting, checks] = await Promise.all([
+  const [waiting, waitingCount, checks] = await Promise.all([
     supabase
       .from('person_documents')
       .select('id, user_id, provider_id, kind, title, stated_valid_until, uploaded_at, profiles(full_name, role), providers(business_name)')
@@ -103,6 +103,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
       .order('uploaded_at')
       .limit(50)
       .returns<WaitingDoc[]>(),
+    // The true number waiting, so the heading never hides documents beyond the first 50 (QA issue 4).
+    supabase.from('person_documents').select('id', { count: 'exact', head: true }).eq('review_state', 'waiting'),
     supabase
       .from('person_document_checks')
       .select('id, user_id, kind, title, method, checked_at, valid_until, profiles(full_name), providers(business_name)')
@@ -148,7 +150,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
       {error && <p role="alert" className="rounded-[5px] bg-red-50 p-3 font-semibold text-red-800">{error}</p>}
 
       <section aria-labelledby="queue-title" className="space-y-4">
-        <h2 id="queue-title" className="text-xl font-bold">Waiting ({docs.length})</h2>
+        <h2 id="queue-title" className="text-xl font-bold">Waiting ({waitingCount.count ?? docs.length})</h2>
+        {(waitingCount.count ?? 0) > docs.length && <p className="text-sm text-muted">Showing the oldest {docs.length}. The rest appear here as these are decided.</p>}
         {docs.length === 0 && <p className="card text-muted">Nothing is waiting. Thank you.</p>}
         {docs.map((d) => {
           const dated = (datedDocumentKinds as readonly string[]).includes(d.kind);
@@ -174,7 +177,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
                 </div>
                 <div>
                   <dt className="inline text-muted">Passport: </dt>
-                  <dd className="inline">{ids?.passport_last3 ? `${maskIdentifier(ids.passport_last3)}, ${ids.passport_country}, until ${ids.passport_valid_until}${ids.passport_duplicate ? ' (also on another account)' : ''}` : 'not saved'}</dd>
+                  <dd className="inline">{ids?.passport_last3 ? `${maskIdentifier(ids.passport_last3)}, ${ids.passport_country}, until ${ids.passport_valid_until ? adminDate(`${ids.passport_valid_until}T12:00:00Z`) : 'not given'}${ids.passport_duplicate ? ' (also on another account)' : ''}` : 'not saved'}</dd>
                 </div>
               </dl>
 

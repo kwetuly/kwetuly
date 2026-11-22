@@ -26,7 +26,6 @@ export default async function VerificationPage() {
     <div className="mx-auto max-w-3xl px-4 py-10">
       <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.nav.dashboard}</Link>
       <h1 className="mt-2 text-3xl font-bold">{v.title}</h1>
-      <p className="mt-2 text-muted">{v.intro}</p>
       <Suspense fallback={<Loading />}>
         <Content locale={locale} v={v} dashboard={t.nav.dashboard} />
       </Suspense>
@@ -87,7 +86,9 @@ async function Content({ locale, v, dashboard }: { locale: Locale; v: Verificati
   const businessTins = Object.fromEntries(((tins.error ? [] : (tins.data ?? [])) as { provider_id: string; tin_last3: string }[]).map((r) => [r.provider_id, r.tin_last3]));
 
   return (
-    <div className="mt-6 space-y-6">
+    <div className="mt-2 space-y-6">
+      {/* Only guides and owners read the intro; travellers get forMembersOnly above (QA issue 1). */}
+      <p className="text-muted">{v.intro}</p>
       <StatusCard summary={summary} v={v} locale={locale} />
       <MemberVerification
         userId={user.id}
