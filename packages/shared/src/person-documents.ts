@@ -48,12 +48,33 @@ export function personDocumentPath(userId: string, documentId: string, ext: stri
   return (documentFileExtensions as readonly string[]).includes(e) ? `${userId}/${documentId}.${e}` : null;
 }
 
+export type DocumentFileType = { contentType: 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf'; ext: 'jpg' | 'png' | 'webp' | 'pdf' };
+
+/**
+ * The real type of a verification file, read from its first bytes (security review L3): JPEG, PNG,
+ * WebP or PDF, otherwise null. The uploader's declared type and the file name are never trusted.
+ */
+export function detectDocumentFileType(bytes: Uint8Array): DocumentFileType | null {
+  const starts = (sig: readonly number[], at = 0) => bytes.length >= at + sig.length && sig.every((b, i) => bytes[at + i] === b);
+  if (starts([0xff, 0xd8, 0xff])) return { contentType: 'image/jpeg', ext: 'jpg' };
+  if (starts([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return { contentType: 'image/png', ext: 'png' };
+  // "RIFF", four size bytes, "WEBP"
+  if (starts([0x52, 0x49, 0x46, 0x46]) && starts([0x57, 0x45, 0x42, 0x50], 8)) return { contentType: 'image/webp', ext: 'webp' };
+  // "%PDF-"
+  if (starts([0x25, 0x50, 0x44, 0x46, 0x2d])) return { contentType: 'application/pdf', ext: 'pdf' };
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Member "Verification" screen (website and app): which papers a role sends, and the status card.
 // ---------------------------------------------------------------------------
 
-/** Version of the short privacy notice a person agrees to before uploading or typing a number. */
-export const VERIFICATION_NOTICE_VERSION = 'privacy-2026-11';
+/**
+ * Version of the short privacy notice a person agrees to before uploading or typing a number. Change it
+ * whenever noticeBody changes, so each upload records the text that was shown.
+ * privacy-2026-11-b: says photos are cleaned of hidden details but PDFs are kept as sent (security review L4).
+ */
+export const VERIFICATION_NOTICE_VERSION = 'privacy-2026-11-b';
 
 /** Days before a check ends when the screen starts saying "ends soon". */
 export const EXPIRING_SOON_DAYS = 30;

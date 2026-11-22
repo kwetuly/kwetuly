@@ -5,9 +5,11 @@ import { documentRejectReasons } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { codeForError as code } from './codes';
 
 // Admin document review (person_documents). Every call runs with the admin's own two-step session; the
 // database functions check private.is_admin() (aal2) again and do the work in one transaction.
+// Files are opened through [id]/file/route.ts, which streams them without a signed link.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -21,36 +23,6 @@ async function adminOnly(formData: FormData) {
 
 function done(back: string, params: Record<string, string>, anchor = ''): never {
   redirect(`${back}?${new URLSearchParams(params)}${anchor}`);
-}
-
-// Only short fixed codes go into the address (security review L1): the page maps each to a fixed text
-// and ignores anything else, so a crafted link cannot show its own message and no database text is logged.
-function code(message: string | undefined): string {
-  const m = message ?? '';
-  if (/already been decided/i.test(m)) return 'decided';
-  if (/another admin/i.test(m)) return 'own_document';
-  if (/missing/i.test(m)) return 'file_missing';
-  if (/already expired/i.test(m)) return 'expired';
-  if (/not found|no file|no current check/i.test(m)) return 'not_found';
-  if (/admins only/i.test(m)) return 'not_admin';
-  return 'failed';
-}
-
-/**
- * Opens one file: records "document opened" FIRST (admin_log_document_opened returns the path), then
- * signs that path for 60 seconds with the admin's own session (the storage policy and its aal2 check
- * decide). The link is never stored or shown on the page; the browser goes straight to it.
- */
-export async function openDocument(formData: FormData) {
-  const { back } = await adminOnly(formData);
-  const id = String(formData.get('document_id') ?? '');
-  if (!UUID.test(id)) done(back, { e: 'not_found' });
-  const supabase = await createClient();
-  const { data: path, error } = await supabase.rpc('admin_log_document_opened', { p_document: id });
-  if (error || typeof path !== 'string') done(back, { e: code(error?.message) });
-  const { data: signed } = await supabase.storage.from('verification').createSignedUrl(path, 60);
-  if (!signed?.signedUrl) done(back, { e: 'file_missing' }, `#doc-${id}`);
-  redirect(signed.signedUrl);
 }
 
 export async function reviewDocument(formData: FormData) {
