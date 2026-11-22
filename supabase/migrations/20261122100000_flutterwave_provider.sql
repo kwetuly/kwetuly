@@ -1,3 +1,6 @@
+-- STATUS 2026-11-22 (slice 0 check, read-only): ON LIVE, pasted by hand by Walter, so it is NOT in the live
+-- migration history. Every function body, table column, constraint, index, policy, trigger and cron job
+-- this file creates was compared with live and matches. Do not paste again. The notes below are as written.
 -- Flutterwave as the deposit provider (payments-engineer, 2026-11-22; Walter chose Flutterwave on
 -- 2026-11-21, Selcom is parked), with the fixes from docs/team/security-review-flutterwave-2026-11-22.md.
 -- Deposits stay switched off until the Edge Function has PAYMENTS_PROVIDER=flutterwave and Flutterwave

@@ -1,3 +1,6 @@
+-- STATUS 2026-11-22 (slice 0 check, read-only): ON LIVE, pasted by hand by Walter, so it is NOT in the live
+-- migration history. Every function body, table column, constraint, index, policy, trigger and cron job
+-- this file creates was compared with live and matches. Do not paste again. The notes below are as written.
 -- NOT APPLIED. Written by frontend-engineer on 2026-11-22 for backend-engineer and security-reviewer to review.
 --
 -- The owner of a business can save its TIN through the `identifiers` Edge Function (field business_tin),

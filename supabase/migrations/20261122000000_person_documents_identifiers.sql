@@ -1,3 +1,6 @@
+-- STATUS 2026-11-22 (slice 0 check, read-only): ON LIVE, pasted by hand by Walter, so it is NOT in the live
+-- migration history. Every function body, table column, constraint, index, policy, trigger and cron job
+-- this file creates was compared with live and matches. Do not paste again. The notes below are as written.
 -- Paid verification, migration A: person documents, checks, audit log and encrypted identifiers.
 -- Design: docs/team/design-crew-and-trip-management-2026-11.md, "Addendum 2026-11-21", A.1 and A.6.
 -- Security review: docs/team/security-review-paid-verification-2026-11-21.md (H2, M1-M5, M11, L1, L5, L6).
