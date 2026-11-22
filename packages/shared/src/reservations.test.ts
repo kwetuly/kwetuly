@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { addDaysIso } from './person-documents';
 import {
   RESERVATION_TERMS_VERSION,
   reservableBusinessTypes,
@@ -9,6 +10,13 @@ import {
   reservationPriceCodes,
   reservationRateKinds,
   validDayPeriods,
+  isNotAppliedError,
+  closedDateRange,
+  hoursByWeekday,
+  hoursPayload,
+  serviceInputError,
+  knownBlockers,
+  closedNoteOk,
 } from './reservations';
 
 const sql = readFileSync(new URL('../../../supabase/migrations/20261122200000_reservation_setup.sql', import.meta.url), 'utf8');
@@ -75,5 +83,33 @@ describe('opening periods', () => {
     expect(validDayPeriods([{ opens: '10:00', closes: '09:00' }])).toBe(false);
     expect(validDayPeriods([{ opens: '24:00', closes: '25:00' }])).toBe(false);
     expect(validDayPeriods(Array.from({ length: 4 }, (_, i) => ({ opens: `0${i}:00`, closes: `0${i}:30` })))).toBe(false);
+  });
+});
+
+describe('owner setup helpers', () => {
+  it('not applied errors', () => {
+    expect(isNotAppliedError({ code: 'PGRST202' })).toBe(true);
+    expect(isNotAppliedError({ code: '42703' })).toBe(true);
+    expect(isNotAppliedError({ code: '23505' })).toBe(false);
+    expect(isNotAppliedError(null)).toBe(false);
+  });
+  it('closed date range and day arithmetic', () => {
+    expect(closedDateRange('2026-11-22')).toEqual({ min: '2026-11-22', max: '2027-11-22' });
+    expect(addDaysIso('2028-02-28', 1)).toBe('2028-02-29');
+  });
+  it('hours round trip', () => {
+    const days = hoursByWeekday([{ weekday: 1, opens: '18:00:00', closes: '22:00:00' }, { weekday: 1, opens: '12:00:00', closes: '15:00:00' }]);
+    expect(days[1]).toEqual([{ opens: '12:00', closes: '15:00' }, { opens: '18:00', closes: '22:00' }]);
+    expect(hoursPayload(days)).toEqual({ ok: true, hours: [{ weekday: 1, opens: '12:00', closes: '15:00' }, { weekday: 1, opens: '18:00', closes: '22:00' }] });
+    expect(hoursPayload({ ...days, 3: [{ opens: '22:00', closes: '02:00' }] })).toEqual({ ok: false, weekday: 3 });
+  });
+  it('service checks and known blockers', () => {
+    expect(serviceInputError({ name: 'Massage', duration_min: 60, price_tzs: 50_000, max_people: 2 })).toBeNull();
+    expect(serviceInputError({ name: 'Call 0712345678', duration_min: 60, price_tzs: null, max_people: 1 })).toBe('name');
+    expect(serviceInputError({ name: 'Massage', duration_min: 10, price_tzs: null, max_people: 1 })).toBe('duration');
+    expect(serviceInputError({ name: 'Massage', duration_min: 60, price_tzs: 50, max_people: 1 })).toBe('price');
+    expect(knownBlockers(['no_service', 'surprise', 'not_approved'])).toEqual(['not_approved', 'no_service']);
+    expect(closedNoteOk('Public holiday')).toBe(true);
+    expect(closedNoteOk('www.example.com')).toBe(false);
   });
 });

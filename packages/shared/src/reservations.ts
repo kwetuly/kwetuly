@@ -2,6 +2,8 @@
 // reservations.test.ts compares the two. The database is the authority: screens use these only for
 // labels, form limits and to read the codes the functions return.
 
+import { addDaysIso } from './person-documents';
+
 /** Current reservation terms for businesses. [legal] placeholder until the advocate's wording. */
 export const RESERVATION_TERMS_VERSION = '2026-11-22-draft';
 
@@ -95,4 +97,97 @@ export function validDayPeriods(periods: { opens: string; closes: string }[]): b
   if (!periods.every((p) => isClockTime(p.opens) && isClockTime(p.closes) && p.closes > p.opens)) return false;
   const sorted = [...periods].sort((a, b) => a.opens.localeCompare(b.opens));
   return sorted.every((p, i) => i === 0 || sorted[i - 1].closes <= p.opens);
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Owner setup screens (website /dashboard/business/reservations-setup and the app's reservations-setup)
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * PostgREST and Postgres codes for "this function, table or column is not on the database yet".
+ * While migration 20261122200000 is not applied, the setup screens show "opens soon" instead of an error.
+ */
+const NOT_APPLIED_CODES = new Set(['PGRST202', 'PGRST204', 'PGRST205', '42P01', '42883', '42703']);
+
+export function isNotAppliedError(error: { code?: string | null } | null | undefined): boolean {
+  return !!error?.code && NOT_APPLIED_CODES.has(error.code);
+}
+
+/** True for restaurant, spa and salon. */
+export function isReservableType(type: string | null | undefined): type is ReservableBusinessType {
+  return (reservableBusinessTypes as readonly string[]).includes(type ?? '');
+}
+
+/** Blocker codes from the database, in the known order; unknown codes are dropped. */
+export function knownBlockers(codes: readonly string[] | null | undefined): ReservationBlocker[] {
+  const set = new Set(codes ?? []);
+  return reservationBlockers.filter((code) => set.has(code));
+}
+
+/** Weekdays in the order the setup screens show them: Monday first, Sunday last. */
+export const weekdaysMondayFirst = [1, 2, 3, 4, 5, 6, 0] as const;
+
+/** Closed dates may be set from today (Tanzania) up to one year ahead. */
+export function closedDateRange(today: string): { min: string; max: string } {
+  return { min: today, max: addDaysIso(today, 365) };
+}
+
+/** "TZS 12,000" */
+export function formatTzs(amount: number): string {
+  return `TZS ${Math.round(amount).toLocaleString('en-US')}`;
+}
+
+export type OpeningPeriod = { opens: string; closes: string };
+export type BusinessHourRow = { weekday: number; opens: string; closes: string };
+
+/** business_hours rows ("08:00:00") grouped per weekday as "HH:MM" periods, sorted by opening time. */
+export function hoursByWeekday(rows: readonly BusinessHourRow[]): Record<number, OpeningPeriod[]> {
+  const days: Record<number, OpeningPeriod[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+  for (const r of rows) days[r.weekday]?.push({ opens: r.opens.slice(0, 5), closes: r.closes.slice(0, 5) });
+  for (const d of weekdays) days[d].sort((a, b) => a.opens.localeCompare(b.opens));
+  return days;
+}
+
+/** The p_hours payload for set_business_hours, or the first weekday whose periods are not valid. */
+export function hoursPayload(days: Record<number, OpeningPeriod[]>): { ok: true; hours: BusinessHourRow[] } | { ok: false; weekday: number } {
+  const hours: BusinessHourRow[] = [];
+  for (const d of weekdaysMondayFirst) {
+    const periods = days[d] ?? [];
+    if (!validDayPeriods(periods)) return { ok: false, weekday: d };
+    for (const p of periods) hours.push({ weekday: d, opens: p.opens, closes: p.closes });
+  }
+  return { ok: true, hours };
+}
+
+export type ServiceInput = { name: string; duration_min: number; price_tzs: number | null; max_people: number };
+
+/** Checks a service form the same way as the table; returns the field that is wrong, or null. */
+export function serviceInputError(s: ServiceInput): 'name' | 'duration' | 'price' | 'people' | null {
+  const name = s.name.trim();
+  const l = reservationLimits;
+  if (name.length < l.serviceNameMin || name.length > l.serviceNameMax || /[0-9]{6,}/.test(name) || /(https?:\/\/|www\.|@)/i.test(name)) return 'name';
+  if (!Number.isInteger(s.duration_min) || s.duration_min < l.durationMin || s.duration_min > l.durationMax) return 'duration';
+  if (s.price_tzs != null && (!Number.isInteger(s.price_tzs) || s.price_tzs < l.priceTzsMin || s.price_tzs > l.priceTzsMax)) return 'price';
+  if (!Number.isInteger(s.max_people) || s.max_people < 1 || s.max_people > l.maxPeopleMax) return 'people';
+  return null;
+}
+
+/** A closed-date note is fine when empty, or up to 80 characters without long numbers or links. */
+export function closedNoteOk(note: string): boolean {
+  const n = note.trim();
+  return n.length <= reservationLimits.closedDateNoteMax && !/[0-9]{6,}/.test(n) && !/(https?:\/\/|www\.)/i.test(n);
+}
+
+export type ReservationSetupError = 'soon' | 'duplicate' | 'range' | 'too_many' | 'terms_outdated' | 'invalid' | 'failed';
+
+/** A database error from the setup writes, as a code the screens turn into a polite line. */
+export function reservationSetupError(error: { code?: string | null; message?: string | null } | null | undefined): ReservationSetupError {
+  if (isNotAppliedError(error)) return 'soon';
+  const message = error?.message ?? '';
+  if (error?.code === '23505') return 'duplicate';
+  if (message.includes('terms_outdated')) return 'terms_outdated';
+  if (message.includes('At most 40')) return 'too_many';
+  if (message.includes('one year ahead')) return 'range';
+  if (error?.code === '23514') return 'invalid';
+  return 'failed';
 }
