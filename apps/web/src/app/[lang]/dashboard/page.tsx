@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, type DocumentStatus } from '@kwetuly/shared';
-import { Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, type DocumentStatus } from '@kwetuly/shared';
+import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireUser, type CurrentUser } from '@/lib/auth';
@@ -55,6 +55,13 @@ export default async function DashboardPage({ searchParams }: PageProps<'/[lang]
       <Suspense fallback={null}>
         <VerificationLink locale={locale} />
       </Suspense>
+      <Link href={`/${locale}/reservations`} className="mt-6 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 hover:border-leaf">
+        <CalendarCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden />
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold">{reserveText(locale).myTitle}</span>
+          <span className="block text-sm text-muted">{reserveText(locale).myHint}</span>
+        </span>
+      </Link>
       <Link href={`/${locale}/security`} className="mt-6 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 text-sm font-semibold hover:border-leaf">
         <ShieldCheck className="size-5 text-leaf-dark" aria-hidden /> {t.ux.securityLink}
       </Link>

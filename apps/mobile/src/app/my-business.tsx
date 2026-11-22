@@ -4,7 +4,7 @@ import { Redirect, Stack, router, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, isReservableType, reservationText, linkTexts, normaliseWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, isReservableType, reservationInboxText, linkTexts, normaliseWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, ListGroup, ListRow, MetaItems, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
@@ -215,7 +215,8 @@ function Editor({
       {/* Restaurants, spas and salons: opening hours, services and the switch for reservations. */}
       {business && isReservableType(business.business_type) && (
         <ListGroup>
-          <ListRow icon={GLYPHS.calendar} title={reservationText(locale).title} subtitle={reservationText(locale).menuHint} onPress={() => router.push('/reservations-setup' as Href)} />
+          <ListRow icon={GLYPHS.calendarAdd} title={reservationInboxText(locale).title} subtitle={reservationInboxText(locale).menuHint} onPress={() => router.push('/business-reservations' as Href)} />
+          <ListRow icon={GLYPHS.calendar} title={reservationInboxText(locale).setupLink} onPress={() => router.push('/reservations-setup' as Href)} />
         </ListGroup>
       )}
 

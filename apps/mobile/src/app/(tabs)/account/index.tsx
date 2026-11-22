@@ -4,7 +4,7 @@ import { Stack, router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { openExternal } from '@/lib/open-external';
 import { useQuery } from '@tanstack/react-query';
-import { CALL_TOPICS, LOCALES, LOCALE_NAMES, isReservableType, reservationText, verificationText } from '@kwetuly/shared';
+import { CALL_TOPICS, LOCALES, LOCALE_NAMES, isReservableType, reservationInboxText, reservationText, reserveText, verificationText } from '@kwetuly/shared';
 import { ConnectedSignIns } from '@/components/connected-sign-ins';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { GLYPHS } from '@/components/glyph';
@@ -89,7 +89,8 @@ export default function AccountScreen() {
             <Section title={t.join.provider.title}>
               <ListGroup>
                 <ListRow icon={GLYPHS.store} title={t.business.dashboardTitle} onPress={() => router.push('/my-business')} />
-                {reservable && <ListRow icon={GLYPHS.calendar} title={reservationText(locale).title} subtitle={reservationText(locale).menuHint} onPress={() => router.push('/reservations-setup' as Href)} />}
+                {reservable && <ListRow icon={GLYPHS.calendarAdd} title={reservationInboxText(locale).title} subtitle={reservationInboxText(locale).menuHint} onPress={() => router.push('/business-reservations' as Href)} />}
+                {reservable && <ListRow icon={GLYPHS.calendar} title={reservationInboxText(locale).setupLink} subtitle={reservationText(locale).menuHint} onPress={() => router.push('/reservations-setup' as Href)} />}
                 <ListRow icon={GLYPHS.briefcase} title={t.jobs.postNew} onPress={() => router.push('/jobs-post')} />
                 <ListRow icon={GLYPHS.people} title={t.jobs.handoverTab} onPress={() => router.push({ pathname: '/jobs-post', params: { kind: 'handover' } })} />
                 <ListRow icon={GLYPHS.calendarAdd} title={t.groups.start} onPress={() => router.push('/group-trip/new')} />
@@ -129,6 +130,7 @@ export default function AccountScreen() {
           <Section title={t.traveler.title}>
             <ListGroup>
               <ListRow icon={GLYPHS.calendar} title={t.groups.mine} onPress={() => router.push('/my-group-trips')} />
+              <ListRow icon={GLYPHS.calendarAdd} title={reserveText(locale).myTitle} subtitle={reserveText(locale).myHint} onPress={() => router.push('/my-reservations' as Href)} />
               <ListRow icon={GLYPHS.video} title={t.traveler.findCall} onPress={() => router.push('/calls')} />
               {!myGuide && role !== 'guide' && (
                 <ListRow

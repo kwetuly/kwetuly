@@ -6,7 +6,7 @@ import type { Locale } from '../locales';
 import type { ReservationBlocker } from '../reservations';
 
 const en = {
-  title: 'Reservations',
+  title: 'Reservations setup',
   menuHint: 'Opening hours, services and the switch for reservations',
   intro: 'Karibu. Here you can prepare your restaurant, spa or salon to take reservations through Kwetuly.',
   loadError: 'Sorry, we could not load your reservation settings. Please try again.',
@@ -163,7 +163,7 @@ const en = {
 export type ReservationText = typeof en;
 
 const sw: ReservationText = {
-  title: 'Kuhifadhi nafasi',
+  title: 'Mipangilio ya uhifadhi',
   menuHint: 'Saa za kazi, huduma na kuwasha uhifadhi wa nafasi',
   intro: 'Karibu. Hapa unaweza kuandaa mgahawa, spa au saluni yako kupokea uhifadhi wa nafasi kupitia Kwetuly.',
   loadError: 'Samahani, hatukuweza kupakia mipangilio yako ya uhifadhi. Tafadhali jaribu tena.',

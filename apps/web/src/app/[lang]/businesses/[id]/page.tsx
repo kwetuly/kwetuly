@@ -14,6 +14,7 @@ import { askBusiness } from './actions';
 import { PrefillContact } from '@/components/prefill-contact';
 import { SubmitButton } from '@/components/submit-button';
 import { PhotoCredits, SampleOffer } from '@/components/sample-offer';
+import { ReserveEntry } from './reserve-entry';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/businesses/[id]'>): Promise<Metadata> {
   const { id } = await params;
@@ -71,6 +72,9 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
           <BusinessBadge business={business} t={t} locale={locale} today={now.toISOString().slice(0, 10)} full />
         </div>
         {business.has_referral_agreement && <p className="mt-3 text-sm text-muted">{bt.commissionNote}</p>}
+        <Suspense fallback={null}>
+          <ReserveEntry providerId={business.id} businessType={business.business_type} locale={locale} />
+        </Suspense>
         {business.story && <p className="mt-6 whitespace-pre-line leading-relaxed">{business.story}</p>}
         {website?.ok && (
           <a href={website.url} target="_blank" rel={USER_LINK_REL} className="mt-4 inline-flex flex-wrap items-center gap-1 font-semibold text-forest underline">
