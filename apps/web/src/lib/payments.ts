@@ -1,8 +1,10 @@
 import 'server-only';
 import { cacheLife, cacheTag } from 'next/cache';
 
-// Deposits run through the `payments` Supabase Edge Function (Selcom). It stays switched off until
-// the Selcom secrets are set there, and then the Pay buttons appear on their own.
+// Deposits run through the `payments` Supabase Edge Function (the processor's hosted checkout; the
+// processor is ACTIVE_PAYMENT_PROVIDER in packages/shared). It stays switched off until PAYMENTS_PROVIDER
+// and that processor's test keys are set there; then the Pay buttons appear on their own.
+// Statuses change only in that function, never from this website.
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/payments`;
 
 export async function callPayments(body: Record<string, string>, accessToken?: string) {
@@ -19,16 +21,20 @@ export async function callPayments(body: Record<string, string>, accessToken?: s
   return (await res.json().catch(() => ({}))) as { enabled?: boolean; url?: string; order_id?: string; status?: string; error?: string };
 }
 
-/** Whether Selcom is set up, and the shillings-per-dollar rate (null until configured). */
-export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null }> {
+/** Whether payments are set up, the shillings-per-dollar rate (display only) and the same rate in whole hundredths. */
+export async function paymentsConfig(): Promise<{ enabled: boolean; rate: number | null; rate100: number | null }> {
   'use cache';
   cacheTag('payments-config');
   cacheLife('minutes');
   try {
-    const result = (await callPayments({ action: 'config' })) as { enabled?: boolean; rate?: number | null };
-    return { enabled: Boolean(result.enabled), rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null };
+    const result = (await callPayments({ action: 'config' })) as { enabled?: boolean; rate?: number | null; rate100?: number | null };
+    return {
+      enabled: Boolean(result.enabled),
+      rate: typeof result.rate === 'number' && result.rate > 0 ? result.rate : null,
+      rate100: Number.isSafeInteger(result.rate100) && (result.rate100 as number) > 0 ? (result.rate100 as number) : null,
+    };
   } catch {
-    return { enabled: false, rate: null };
+    return { enabled: false, rate: null, rate100: null };
   }
 }
 

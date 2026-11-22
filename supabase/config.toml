@@ -1,0 +1,18 @@
+# Supabase CLI settings used by `supabase functions deploy`. One [functions.<name>] section per Edge
+# Function; only the JWT check is pinned (security review LA6), everything else keeps the CLI defaults.
+# notify is not listed on purpose: it keeps the flags it was deployed with. Pin it when devops confirms.
+project_id = "kwetuly"
+
+[functions.identifiers]
+# Called with the signed-in person's token; the gateway checks it, and the function checks it again.
+verify_jwt = true
+
+[functions.verification-sweep]
+# Called by pg_cron with VERIFICATION_SWEEP_SECRET, which is not a JWT. The function checks the secret.
+verify_jwt = false
+
+[functions.payments]
+# Processor webhooks and the pg_cron sweeper send no Supabase JWT, so the gateway must not require one.
+# The function checks every caller itself: webhook signature, sweep secret, or the user's token for
+# check, checkout and status (security-reviewer L4).
+verify_jwt = false

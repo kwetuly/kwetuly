@@ -1,7 +1,8 @@
 import { CreditCard } from 'lucide-react';
+import { depositTzs, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
-import { depositPayable, depositUsd, paymentsEnabled } from '@/lib/payments';
+import { depositPayable, depositUsd, paymentsConfig } from '@/lib/payments';
 import { createClient } from '@/lib/supabase/server';
 import { startPayment } from '@/app/[lang]/payments/actions';
 import { SubmitButton } from './submit-button';
@@ -12,7 +13,7 @@ type Props = {
   totalUsd: number;
   percent: number;
   paid: boolean;
-  /** Selcom reported a payment that Kwetuly is checking by hand: say so, never offer to pay again. */
+  /** The payment provider reported a payment that Kwetuly is checking by hand: say so, never offer to pay again. */
   review?: boolean;
   /** Set when paid: whether Kwetuly still holds the deposit or has paid the guide. */
   paidOut?: boolean;
@@ -39,7 +40,7 @@ function errorText(error: string, p: Dictionary['payments']) {
   }
 }
 
-// Deposit box for an accepted offer or group-trip spot. Hidden until Selcom is set up, and hidden
+// Deposit box for an accepted offer or group-trip spot. Hidden until online payments are set up, and hidden
 // when this deposit cannot be paid online (the Edge Function's own rules decide).
 export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, paidOut, back, error, t, locale, dark }: Props) {
   const p = t.payments;
@@ -59,13 +60,18 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
     </div>
   );
   if (review) return checking;
-  if (!(await paymentsEnabled())) return null;
+  const config = await paymentsConfig();
+  if (!config.enabled) return null;
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getSession();
   const payable = await depositPayable(kind, id, data.session?.access_token);
   if (payable === 'hidden') return null;
   if (payable === 'review') return checking;
+  // The shillings the traveller will be charged, worked out the same way as the server (whole cents,
+  // integer maths). Display only: the server computes and saves the real amount at checkout.
+  const cents = totalUsd * percent;
+  const tzs = config.rate100 && Number.isSafeInteger(cents) && cents > 0 ? depositTzs(cents, config.rate100) : null;
 
   return (
     <form id="pay" action={startPayment} className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
@@ -77,7 +83,8 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
       <p className="text-2xl font-extrabold">
         ${depositUsd(totalUsd, percent).toLocaleString(locale)} <span className="text-sm font-semibold">({percent}%)</span>
       </p>
-      <p className="text-sm opacity-80">{p.body}</p>
+      <p className="text-sm opacity-80">{p.body.replace('{provider}', PAYMENT_PROVIDER_NAME)}</p>
+      {tzs !== null && <p className="text-sm font-semibold">{p.charged.replace('{amount}', tzs.toLocaleString(locale))}</p>}
       {error && <p className="rounded-[5px] bg-red-50 p-2 text-sm text-red-800">{errorText(error, p)}</p>}
       <SubmitButton className="btn w-full">{p.cta}</SubmitButton>
       <p className="text-xs opacity-70">{p.direct}</p>
