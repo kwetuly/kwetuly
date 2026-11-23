@@ -73,7 +73,7 @@ async function Content({ params, locale }: { params: Promise<{ id: string }>; lo
 
   const [rules, services, hours, closed, rate] = await Promise.all([
     supabase.from('providers').select('takes_reservations, reservation_min_notice_min, reservation_max_days').eq('id', id).maybeSingle<{ takes_reservations: boolean; reservation_min_notice_min: number; reservation_max_days: number }>(),
-    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people').eq('provider_id', id).eq('active', true).order('sort').limit(reservationLimits.servicesPerBusiness),
+    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, group_discount_min_people, group_discount_percent').eq('provider_id', id).eq('active', true).order('sort').limit(reservationLimits.servicesPerBusiness),
     supabase.from('business_hours').select('weekday, opens, closes').eq('provider_id', id),
     supabase.from('business_closed_dates').select('day').eq('provider_id', id).gte('day', today).limit(120),
     supabase.rpc('reservation_rate', { p_provider: id }),

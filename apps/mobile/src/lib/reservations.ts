@@ -8,6 +8,7 @@ import {
   type ReserveText,
   closedDateRange,
   closedNoteOk,
+  groupDiscountError,
   hoursByWeekday,
   hoursPayload,
   isNotAppliedError,
@@ -37,7 +38,7 @@ export type SetupStatus = {
   termsCurrentVersion: string | null;
   termsAcceptedAt: string | null;
 };
-export type SetupService = { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; active: boolean; sort: number };
+export type SetupService = { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; group_discount_min_people?: number | null; group_discount_percent?: number | null; active: boolean; sort: number };
 export type SetupData = {
   soon: boolean;
   today: string;
@@ -52,7 +53,7 @@ export type SetupData = {
 
 export type SetupResult =
   | { ok: true }
-  | { ok: false; error: ReservationSetupError | 'note'; field?: 'name' | 'duration' | 'price' | 'people'; weekday?: number; blockers?: ReservationBlocker[] };
+  | { ok: false; error: ReservationSetupError | 'note'; field?: 'name' | 'duration' | 'price' | 'people' | 'discount'; weekday?: number; blockers?: ReservationBlocker[] };
 
 const rateOf = (row: Record<string, unknown> | undefined): ReservationRate | null =>
   row && typeof row.kind === 'string'
@@ -67,7 +68,7 @@ export async function loadReservationSetup(providerId: string, businessType: str
     supabase.from('business_hours').select('weekday, opens, closes').eq('provider_id', providerId),
     // Notes are not readable from the table (security review); the owner reads them through this function.
     supabase.rpc('business_closed_dates_with_notes', { p_provider: providerId }),
-    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, active, sort').eq('provider_id', providerId).order('sort').order('created_at').limit(reservationLimits.servicesPerBusiness),
+    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, group_discount_min_people, group_discount_percent, active, sort').eq('provider_id', providerId).order('sort').order('created_at').limit(reservationLimits.servicesPerBusiness),
     supabase.rpc('reservation_rate', { p_provider: providerId }),
   ]);
   const results = [status, rules, hours, closed, services, rate];
@@ -149,7 +150,10 @@ export async function removeClosedDate(providerId: string, day: string): Promise
 export async function saveService(providerId: string, serviceId: string | null, input: ServiceInput, nextSort: number): Promise<SetupResult> {
   const field = serviceInputError(input);
   if (field) return { ok: false, error: 'invalid', field };
-  const row = { name: input.name.trim(), duration_min: input.duration_min, price_tzs: input.price_tzs, max_people: input.max_people };
+  const min = input.group_discount_min_people ?? null;
+  const pct = input.group_discount_percent ?? null;
+  if (groupDiscountError({ ...input, group_discount_min_people: min, group_discount_percent: pct })) return { ok: false, error: 'invalid', field: 'discount' };
+  const row = { name: input.name.trim(), duration_min: input.duration_min, price_tzs: input.price_tzs, max_people: input.max_people, group_discount_min_people: min, group_discount_percent: pct };
   const { error } = serviceId
     ? await supabase.from('business_services').update(row).eq('id', serviceId).eq('provider_id', providerId)
     : await supabase.from('business_services').insert({ ...row, provider_id: providerId, sort: Math.min(nextSort, 1000) });
@@ -197,7 +201,7 @@ const failAction = (error: { code?: string | null; message?: string | null }): A
   return code ? { ok: false, error: 'refused', code } : { ok: false, error: 'failed' };
 };
 
-export type ReserveService = { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number };
+export type ReserveService = { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; group_discount_min_people?: number | null; group_discount_percent?: number | null };
 export type ReserveData = {
   soon: boolean;
   open: boolean;
@@ -223,7 +227,7 @@ export async function loadReserveData(providerId: string, businessType: string):
   const today = tanzaniaToday();
   const [rules, services, hours, closed, rate] = await Promise.all([
     supabase.from('providers').select('takes_reservations, reservation_min_notice_min, reservation_max_days').eq('id', providerId).maybeSingle<{ takes_reservations: boolean; reservation_min_notice_min: number; reservation_max_days: number }>(),
-    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people').eq('provider_id', providerId).eq('active', true).order('sort').limit(reservationLimits.servicesPerBusiness),
+    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, group_discount_min_people, group_discount_percent').eq('provider_id', providerId).eq('active', true).order('sort').limit(reservationLimits.servicesPerBusiness),
     supabase.from('business_hours').select('weekday, opens, closes').eq('provider_id', providerId),
     supabase.from('business_closed_dates').select('day').eq('provider_id', providerId).gte('day', today).limit(120),
     supabase.rpc('reservation_rate', { p_provider: providerId }),
@@ -325,6 +329,8 @@ export type MyReservation = {
   asks_people_count?: boolean;
   /** Set while requested or other_time_offered. */
   answer_by?: string | null;
+  /** The Kwetuly chat thread with the business; absent before the business chat migration. */
+  chat_id?: string | null;
 };
 
 export async function loadMyReservations(): Promise<{ soon: boolean; rows: MyReservation[] }> {
@@ -352,6 +358,7 @@ export type OwnerReservation = {
   commission_status: ReservationCommissionStatus;
   is_sample: boolean;
   answer_by?: string | null;
+  chat_id?: string | null;
 };
 export type StatementRow = { commission_status: ReservationCommissionStatus; reservation_count: number; guests_counted: number; commission_tzs: number; billing_on: boolean };
 

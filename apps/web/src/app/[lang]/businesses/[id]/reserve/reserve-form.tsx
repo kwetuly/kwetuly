@@ -7,7 +7,10 @@ import { Info, Loader2 } from 'lucide-react';
 import {
   addDaysIso,
   fillText,
+  formatTzs,
   joinSentences,
+  reservationGroupDiscountApplies,
+  reservationPricePerPerson,
   reservationRules,
   reservationSlots,
   reserveText,
@@ -30,7 +33,7 @@ export type ReserveData = {
   maxDays: number;
   hours: Record<number, OpeningPeriod[]>;
   closedDays: string[];
-  services: { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number }[];
+  services: { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; group_discount_min_people?: number | null; group_discount_percent?: number | null }[];
   rate: ReservationRate | null;
   unpricedRate: ReservationRate | null;
 };
@@ -82,6 +85,17 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
     [day, service, data],
   );
   const rate = data.care && service && service.price_tzs == null ? data.unpricedRate : data.rate;
+  // The service's group discount (spa and salon): shown on the service, and the price per person after
+  // it once the party reaches the minimum. The disclosure line stays the same.
+  const discount =
+    service && service.price_tzs != null && service.group_discount_min_people != null && service.group_discount_percent != null
+      ? { group_discount_min_people: service.group_discount_min_people, group_discount_percent: service.group_discount_percent }
+      : null;
+  const partyNumber = Number(party);
+  const discountPrice =
+    discount && service && Number.isInteger(partyNumber) && reservationGroupDiscountApplies(discount, partyNumber)
+      ? reservationPricePerPerson({ commission_kind: 'percent', commission_rate_tzs: null, commission_percent: null, max_guests_counted: null, price_basis_tzs: service.price_tzs, ...discount }, partyNumber)
+      : null;
   // No rate for this choice outside "opens soon": no disclosure, so no Send (security review L-A).
   const rateMissing = !data.soon && data.open && !rate;
   const disabled = data.soon || !data.open || rateMissing;
@@ -150,6 +164,14 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
               ))}
             </select>
           </label>
+        )}
+
+        {service && service.price_tzs != null && (
+          <div className="space-y-1 rounded-[5px] bg-surface p-3 text-sm" aria-live="polite">
+            <p>{fillText(r.pricePerPerson, { price: formatTzs(service.price_tzs) })}</p>
+            {discount && <p>{fillText(r.groupDiscount, { percent: discount.group_discount_percent!, n: discount.group_discount_min_people! })}</p>}
+            {discount && discountPrice != null && <p className="font-semibold text-forest">{fillText(r.priceWithDiscount, { price: formatTzs(discountPrice) })}</p>}
+          </div>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">

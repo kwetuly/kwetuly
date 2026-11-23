@@ -1,3 +1,5 @@
+import { percentCommissionTzs, percentToBasisPoints, roundHalfUpDiv } from './reservations';
+
 // Reservations, slice 2 (requests, statuses, commission). Mirrors
 // supabase/migrations/20261122300000_reservations.sql; reservation-rules.test.ts compares the two.
 // The database decides every status and every commission; screens use these for labels and previews.
@@ -134,19 +136,41 @@ export type ReservationRateSnapshot = {
   commission_rate_tzs: number | null;
   commission_percent: number | null;
   max_guests_counted: number | null;
+  /** Listed price per person. */
   price_basis_tzs: number | null;
+  /** The service's group discount, copied at request time (percent rates only). */
+  group_discount_min_people?: number | null;
+  group_discount_percent?: number | null;
+  /** People booked; the group discount applies when this reaches group_discount_min_people. */
+  party_size?: number | null;
 };
+
+/** True when the booking qualifies for the service's group discount. */
+export function reservationGroupDiscountApplies(rate: Pick<ReservationRateSnapshot, 'group_discount_min_people' | 'group_discount_percent'>, partySize: number): boolean {
+  return rate.group_discount_min_people != null && rate.group_discount_percent != null && partySize >= rate.group_discount_min_people;
+}
+
+/** The price per person used for commission: the listed price, less the group discount when it applies. */
+export function reservationPricePerPerson(rate: ReservationRateSnapshot, partySize: number): number | null {
+  if (rate.price_basis_tzs == null) return null;
+  return reservationGroupDiscountApplies(rate, partySize)
+    ? (rate.price_basis_tzs * (100 - (rate.group_discount_percent as number))) / 100
+    : rate.price_basis_tzs;
+}
 
 /**
  * Commission for a completed reservation, in whole shillings, exactly as the database trigger works
- * it out: per guest x min(came, max counted); per person x came; percent x listed price x came,
- * rounded half up. came = people who came (the business's count, or everyone booked).
+ * it out: per guest x min(came, max counted); per person x came; percent x price per person (less the
+ * group discount when party_size reaches its minimum) x came, rounded half up. came = people who came
+ * (the business's count, or everyone booked); party_size defaults to came.
  */
 export function completedReservationCommission(rate: ReservationRateSnapshot, came: number): number | null {
   if (!Number.isInteger(came) || came < 1) return null;
   if (rate.commission_kind === 'percent') {
     if (rate.commission_percent == null || rate.price_basis_tzs == null) return null;
-    return Math.round((rate.price_basis_tzs * came * rate.commission_percent) / 100);
+    const discount = reservationGroupDiscountApplies(rate, rate.party_size ?? came) ? (rate.group_discount_percent as number) : 0;
+    // One rounding at the end, like the database (numeric arithmetic, then round).
+    return percentCommissionTzs(rate.price_basis_tzs, discount, came, rate.commission_percent);
   }
   if (rate.commission_rate_tzs == null) return null;
   const counted = rate.commission_kind === 'per_guest' ? Math.min(came, rate.max_guests_counted ?? came) : came;
@@ -156,7 +180,7 @@ export function completedReservationCommission(rate: ReservationRateSnapshot, ca
 /** The linked guide's recorded share of Kwetuly's commission (0 when no guide). */
 export function reservationGuideShare(commissionTzs: number, guideLinked: boolean, pct: number = reservationRules.guideSharePct): number {
   if (!guideLinked || pct <= 0) return 0;
-  return Math.round((commissionTzs * pct) / 100);
+  return Number(roundHalfUpDiv(BigInt(commissionTzs) * percentToBasisPoints(pct), BigInt(10_000)));
 }
 
 /** Commission is owed only for completed, non-sample reservations without an open dispute. */

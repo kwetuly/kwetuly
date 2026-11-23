@@ -5,6 +5,7 @@ import {
   RESERVATION_TERMS_VERSION,
   closedDateRange,
   closedNoteOk,
+  groupDiscountError,
   hoursPayload,
   knownBlockers,
   reservationLimits,
@@ -113,7 +114,12 @@ export async function saveService(providerId: string, serviceId: string | null, 
   if (serviceId !== null && !UUID.test(serviceId)) return { ok: false, error: 'bad_request' };
   const field = serviceInputError(input);
   if (field) return { ok: false, error: 'invalid', field };
-  const row = { name: input.name.trim(), duration_min: input.duration_min, price_tzs: input.price_tzs, max_people: input.max_people };
+  const min = input.group_discount_min_people ?? null;
+  const pct = input.group_discount_percent ?? null;
+  if ((min !== null && typeof min !== 'number') || (pct !== null && typeof pct !== 'number') || groupDiscountError({ ...input, group_discount_min_people: min, group_discount_percent: pct })) {
+    return { ok: false, error: 'invalid', field: 'discount' };
+  }
+  const row = { name: input.name.trim(), duration_min: input.duration_min, price_tzs: input.price_tzs, max_people: input.max_people, group_discount_min_people: min, group_discount_percent: pct };
   if (serviceId) {
     const { error } = await c.supabase.from('business_services').update(row).eq('id', serviceId).eq('provider_id', providerId);
     if (error) return fail(error);

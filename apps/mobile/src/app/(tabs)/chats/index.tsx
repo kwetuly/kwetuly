@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { GLYPHS } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, EmptyState, ErrorText, Field, ListGroup, ListRow, ScreenState, Section } from '@/components/ui';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
 import { conversationView, createGroupChat, joinGroupChat, listConversations, listGroupChats } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -13,7 +14,7 @@ import { useType } from '@/lib/use-type';
 import { brand, colors, iconBox, layout, space } from '@/theme';
 
 export default function ChatsScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { type } = useType();
   const { session } = useSession();
   const userId = session?.user.id;
@@ -136,14 +137,15 @@ export default function ChatsScreen() {
         ) : (
           <ListGroup>
             {(conversations.data ?? []).map((c) => {
-              const { otherName, unread } = conversationView(c, userId);
+              const { otherName, unread, isBusiness, isTraveler } = conversationView(c, userId, reservationInboxText(locale).traveller);
               return (
                 <ListRow
                   key={c.id}
                   leading={<Avatar name={otherName} uri={c.guides?.photo_url} size={iconBox.lg} />}
                   title={otherName}
                   strong={unread}
-                  subtitle={c.last_message_preview ?? '…'}
+                  // Business thread, owner side: say it is a traveller and for which business.
+                  subtitle={isBusiness && !isTraveler ? `${reservationInboxText(locale).traveller}${c.providers?.business_name ? ` · ${c.providers.business_name}` : ''}: ${chatBodyText(c.last_message_preview, reserveText(locale).chatRemovedMessage) ?? '…'}` : (chatBodyText(c.last_message_preview, reserveText(locale).chatRemovedMessage) ?? '…')}
                   subtitleLines={1}
                   accessory={unread && c.last_message_preview ? <Badge label={t.messages.newBadge} /> : undefined}
                   accessibilityRole="link"

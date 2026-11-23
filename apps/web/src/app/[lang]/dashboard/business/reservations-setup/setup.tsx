@@ -51,7 +51,7 @@ export type SetupData = {
   rules: { minNotice: number; maxDays: number };
   hours: { weekday: number; opens: string; closes: string }[];
   closed: { day: string; note: string | null }[];
-  services: { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; active: boolean; sort: number }[];
+  services: { id: string; name: string; duration_min: number; price_tzs: number | null; max_people: number; group_discount_min_people?: number | null; group_discount_percent?: number | null; active: boolean; sort: number }[];
   rate: ReservationRate | null;
   unpricedRate: ReservationRate | null;
 };
@@ -445,8 +445,8 @@ function ClosedRow({
   );
 }
 
-type ServiceForm = { name: string; duration: string; price: string; people: string };
-const emptyForm: ServiceForm = { name: '', duration: String(reservationLimits.durationDefault), price: '', people: '2' };
+type ServiceForm = { name: string; duration: string; price: string; people: string; discountMin: string; discountPercent: string };
+const emptyForm: ServiceForm = { name: '', duration: String(reservationLimits.durationDefault), price: '', people: '2', discountMin: '', discountPercent: '' };
 
 function ServicesCard({ r, data }: { r: ReservationText; data: SetupData }) {
   const [editing, setEditing] = useState<string | 'new' | null>(data.services.length === 0 ? 'new' : null);
@@ -477,7 +477,7 @@ function ServicesCard({ r, data }: { r: ReservationText; data: SetupData }) {
         {data.services.map((s, i) =>
           editing === s.id ? (
             <li key={s.id}>
-              <ServiceEditor r={r} data={data} serviceId={s.id} initial={{ name: s.name, duration: String(s.duration_min), price: s.price_tzs == null ? '' : String(s.price_tzs), people: String(s.max_people) }} onDone={(ok) => { if (ok) setMessage({ tone: 'ok', text: r.serviceSaved }); setEditing(null); }} />
+              <ServiceEditor r={r} data={data} serviceId={s.id} initial={{ name: s.name, duration: String(s.duration_min), price: s.price_tzs == null ? '' : String(s.price_tzs), people: String(s.max_people), discountMin: s.group_discount_min_people == null ? '' : String(s.group_discount_min_people), discountPercent: s.group_discount_percent == null ? '' : String(s.group_discount_percent) }} onDone={(ok) => { if (ok) setMessage({ tone: 'ok', text: r.serviceSaved }); setEditing(null); }} />
             </li>
           ) : (
             <li key={s.id} className={`rounded-[5px] border border-line p-3 ${s.active ? 'bg-white' : 'bg-surface'}`}>
@@ -486,7 +486,7 @@ function ServicesCard({ r, data }: { r: ReservationText; data: SetupData }) {
                 {!s.active && <span className="rounded-[5px] bg-line px-2 py-0.5 text-xs font-semibold">{r.serviceIsOff}</span>}
               </div>
               <p className="text-sm text-muted">
-                {[fillText(r.serviceMinutes, { n: s.duration_min }), fillText(r.servicePeople, { n: s.max_people }), s.price_tzs == null ? r.serviceNoPrice : formatTzs(s.price_tzs)].join(' · ')}
+                {[fillText(r.serviceMinutes, { n: s.duration_min }), fillText(r.servicePeople, { n: s.max_people }), s.price_tzs == null ? r.serviceNoPrice : formatTzs(s.price_tzs), s.group_discount_min_people != null && s.group_discount_percent != null ? fillText(r.serviceDiscountLine, { percent: s.group_discount_percent, n: s.group_discount_min_people }) : null].filter(Boolean).join(' · ')}
               </p>
               <div className="mt-2 flex flex-wrap gap-x-4">
                 <button type="button" className="min-h-11 text-sm font-semibold text-forest underline" aria-label={`${r.serviceEdit}: ${s.name}`} disabled={data.soon || pending} onClick={() => setEditing(s.id)}>{r.serviceEdit}</button>
@@ -554,11 +554,14 @@ function ServiceEditor({
       duration_min: Number(f.duration),
       price_tzs: f.price.trim() === '' ? null : Number(f.price.replace(/[ ,]/g, '')),
       max_people: Number(f.people),
+      // Spa and salon only: an optional group discount (both or neither; the database checks again).
+      group_discount_min_people: care && f.discountMin.trim() !== '' ? Number(f.discountMin) : null,
+      group_discount_percent: care && f.discountPercent.trim() !== '' ? Number(f.discountPercent) : null,
     };
     start(async () => {
       const result = await saveService(data.providerId, serviceId, input);
       if (result.ok) return onDone(true);
-      if (result.error === 'invalid' && result.field && result.field in r.serviceErrors) return setError(r.serviceErrors[result.field as keyof ReservationText['serviceErrors']]);
+      if (result.error === 'invalid' && result.field && result.field in r.serviceErrors) return setError(fillText(r.serviceErrors[result.field as keyof ReservationText['serviceErrors']], { max: reservationLimits.groupDiscountPercentMax }));
       if (result.error === 'too_many') return setError(r.serviceErrors.too_many);
       setError(errorText(r, result));
     });
@@ -584,7 +587,23 @@ function ServiceEditor({
           <input id={`${uid}-people`} type="number" inputMode="numeric" min={1} max={l.maxPeopleMax} className="field" value={f.people} onChange={set('people')} />
         </label>
       </div>
-      {care && <p id={`${uid}-price-hint`} className="text-sm text-muted">{r.servicePriceHintCare}</p>}
+      {care && <p id={`${uid}-price-hint`} className="text-sm text-muted">{r.servicePricePerPerson} {r.servicePriceHintCare}</p>}
+      {care && (
+        <fieldset className="space-y-2 rounded-[5px] bg-surface p-3">
+          <legend className="text-sm font-semibold">{r.serviceDiscount}</legend>
+          <p id={`${uid}-disc-hint`} className="text-sm text-muted">{r.serviceDiscountHint}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block" htmlFor={`${uid}-disc-pct`}>
+              <span className="label">{fillText(r.serviceDiscountPercent, { max: reservationLimits.groupDiscountPercentMax })}</span>
+              <input id={`${uid}-disc-pct`} type="number" inputMode="numeric" min={l.groupDiscountPercentMin} max={l.groupDiscountPercentMax} className="field" value={f.discountPercent} onChange={set('discountPercent')} aria-describedby={`${uid}-disc-hint`} />
+            </label>
+            <label className="block" htmlFor={`${uid}-disc-min`}>
+              <span className="label">{r.serviceDiscountMin}</span>
+              <input id={`${uid}-disc-min`} type="number" inputMode="numeric" min={l.groupDiscountMinPeopleMin} max={l.groupDiscountMinPeopleMax} className="field" value={f.discountMin} onChange={set('discountMin')} aria-describedby={`${uid}-disc-hint`} />
+            </label>
+          </div>
+        </fieldset>
+      )}
       {error && <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       <div className="flex flex-wrap gap-3">
         <button type="button" className="btn-outline" disabled={data.soon || pending} onClick={save}>

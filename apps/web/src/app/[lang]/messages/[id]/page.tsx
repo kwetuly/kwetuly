@@ -7,7 +7,8 @@ import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
-import { CONVERSATION_COLUMNS, viewOf, type ConversationRow } from '@/lib/messages';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
+import { chatOpen, getConversation, viewOf } from '@/lib/messages';
 import { LiveRefresh } from '@/components/live-refresh';
 import { reportMessage } from '../actions';
 import { MessageComposer } from '@/components/message-composer';
@@ -44,13 +45,19 @@ async function Thread({
   const status = await searchParams;
 
   const supabase = await createClient();
-  const [{ data: conversation }, { data: messages }] = await Promise.all([
-    supabase.from('conversations').select(CONVERSATION_COLUMNS).eq('id', id).maybeSingle<ConversationRow>(),
+  const [conversation, { data: messages }] = await Promise.all([
+    // Falls back to today's columns while the business chat migration is not applied.
+    getConversation(id),
     supabase.from('messages').select('id, sender_id, body, masked, created_at').eq('conversation_id', id).order('created_at').limit(500).returns<Message[]>(),
   ]);
   if (!conversation) notFound();
 
-  const { isTraveler, otherName } = viewOf(conversation, user);
+  const inbox = reservationInboxText(locale);
+  const { isTraveler, isBusiness, readOnly, otherName } = viewOf(conversation, user, inbox.traveller);
+  const rt = reserveText(locale);
+  // Closed from the start: a deleted business, or 30 days after the last reservation (QA 1, 4).
+  const open = isBusiness && !readOnly ? await chatOpen(id) : true;
+  const closedText = readOnly ? rt.chatBusinessGone : isTraveler ? rt.chatClosed : inbox.chatClosed;
   // Mark as read for this side of the conversation.
   await supabase
     .from('conversations')
@@ -68,7 +75,14 @@ async function Thread({
         </Link>
         <div>
           <h1 className="text-xl font-extrabold">{otherName}</h1>
-          {isTraveler && conversation.guides && (
+          {/* Business threads (reservations): the owner sees "Traveller", there is no guide profile. */}
+          {isBusiness && !isTraveler && <p className="text-xs font-semibold text-muted">{inbox.traveller}{conversation.providers?.business_name ? ` · ${conversation.providers.business_name}` : ''}</p>}
+          {isTraveler && isBusiness && conversation.provider_id && (
+            <Link href={`/${locale}/businesses/${conversation.provider_id}`} className="text-xs font-semibold text-forest underline">
+              {rt.viewBusiness}
+            </Link>
+          )}
+          {isTraveler && !isBusiness && conversation.guides && (
             <Link href={`/${locale}/guides/${conversation.guides.slug}`} className="text-xs font-semibold text-forest underline">
               {t.dashboard.viewProfile}
             </Link>
@@ -76,10 +90,20 @@ async function Thread({
         </div>
       </div>
 
-      <p className={`mt-4 flex gap-2 rounded-[5px] p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-leaf-dark'}`}>
-        {conversation.contact_unlocked ? <ShieldCheck className="size-4 shrink-0" aria-hidden /> : <LockKeyhole className="size-4 shrink-0" aria-hidden />}
-        {conversation.contact_unlocked ? m.unlockedNote : m.hiddenNote}
-      </p>
+      {isBusiness ? (
+        // Business threads are never unlocked: contact details stay hidden both ways.
+        <p className="mt-4 flex gap-2 rounded-[5px] bg-sand p-3 text-xs text-leaf-dark">
+          <LockKeyhole className="size-4 shrink-0" aria-hidden />
+          <span>
+            {isTraveler ? rt.chatHiddenNote : inbox.chatHiddenNote} {isTraveler ? rt.chatRemovedNote : inbox.chatRemovedNote}
+          </span>
+        </p>
+      ) : (
+        <p className={`mt-4 flex gap-2 rounded-[5px] p-3 text-xs ${conversation.contact_unlocked ? 'bg-mint text-forest' : 'bg-sand text-leaf-dark'}`}>
+          {conversation.contact_unlocked ? <ShieldCheck className="size-4 shrink-0" aria-hidden /> : <LockKeyhole className="size-4 shrink-0" aria-hidden />}
+          {conversation.contact_unlocked ? m.unlockedNote : m.hiddenNote}
+        </p>
+      )}
       {status.reported && <p className="mt-3 rounded-[5px] bg-mint p-3 text-sm font-semibold text-forest">{m.reported}</p>}
 
       <ol className="mt-4 flex-1 space-y-3 rounded-[5px] bg-surface p-4" aria-live="polite">
@@ -88,7 +112,7 @@ async function Thread({
           return (
             <li key={msg.id} className={`group flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
               <p className={`max-w-[85%] whitespace-pre-wrap rounded-[5px] px-4 py-2.5 text-sm shadow-sm ${mine ? ' bg-night text-white' : ' bg-white'}`}>
-                {msg.body}
+                {chatBodyText(msg.body, rt.chatRemovedMessage)}
               </p>
               <span className="mt-1 flex items-center gap-2 text-[11px] text-muted">
                 {mine ? m.you : otherName} · {new Date(msg.created_at).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' })}
@@ -109,7 +133,11 @@ async function Thread({
         <li id="end" />
       </ol>
 
-      <MessageComposer conversationId={id} locale={locale} labels={{ placeholder: m.placeholder, send: m.send, notSent: t.alerts.notSent }} />
+      {readOnly || !open ? (
+        <p className="mt-4 rounded-[5px] bg-sand p-3 text-sm font-semibold">{closedText}</p>
+      ) : (
+        <MessageComposer conversationId={id} locale={locale} labels={{ placeholder: m.placeholder, send: m.send, notSent: t.alerts.notSent, closed: isBusiness ? closedText : undefined }} />
+      )}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { missingChatColumns } from '@/lib/messages';
 import { resolveReport, unlockConversation } from './actions';
 
 export const metadata: Metadata = { title: 'Admin: messages', robots: { index: false } };
@@ -21,7 +22,7 @@ type Masked = {
   message_id: string;
   original_body: string;
   created_at: string;
-  messages: { conversation_id: string; conversations: { contact_unlocked: boolean; traveler_name: string | null; guides: { display_name: string } | null } | null } | null;
+  messages: { conversation_id: string; conversations: { contact_unlocked: boolean; traveler_name: string | null; guides: { display_name: string } | null; provider_id?: string | null; was_business?: boolean; providers?: { business_name: string } | null } | null } | null;
 };
 
 export default async function AdminMessagesPage() {
@@ -47,20 +48,24 @@ async function Moderation({ locale }: { locale: Locale }) {
   if (user.role !== 'admin') redirect(`/${locale}`);
   const supabase = await createClient();
 
-  const [{ data: reports }, { data: masked }] = await Promise.all([
+  // Business threads (provider_id) after the business chat migration; today's columns before it.
+  const maskedQuery = (business: boolean) =>
+    supabase
+      .from('message_moderation')
+      .select(`message_id, original_body, created_at, messages(conversation_id, conversations(contact_unlocked, traveler_name, guides(display_name)${business ? ', provider_id, was_business, providers(business_name)' : ''}))`)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .returns<Masked[]>();
+  const [{ data: reports }, maskedFirst] = await Promise.all([
     supabase
       .from('message_reports')
       .select('id, reason, created_at, messages(id, body, conversation_id, message_moderation(original_body))')
       .eq('resolved', false)
       .order('created_at')
       .returns<Report[]>(),
-    supabase
-      .from('message_moderation')
-      .select('message_id, original_body, created_at, messages(conversation_id, conversations(contact_unlocked, traveler_name, guides(display_name)))')
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .returns<Masked[]>(),
+    maskedQuery(true),
   ]);
+  const { data: masked } = missingChatColumns(maskedFirst.error) ? await maskedQuery(false) : maskedFirst;
 
   return (
     <>
@@ -92,11 +97,12 @@ async function Moderation({ locale }: { locale: Locale }) {
               <div key={m.message_id} className="card flex flex-wrap items-start gap-4 text-sm">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-muted">
-                    {c?.traveler_name} ↔ {c?.guides?.display_name} · {new Date(m.created_at).toLocaleString(locale)}
+                    {c?.traveler_name} ↔ {c?.guides?.display_name ?? (c?.providers ? `${c.providers.business_name} (business)` : '')} · {new Date(m.created_at).toLocaleString(locale)}
                   </p>
                   <p className="mt-1 whitespace-pre-wrap">{m.original_body}</p>
                 </div>
-                {c && !c.contact_unlocked && m.messages && (
+                {/* Business threads are never unlocked. */}
+                {c && !c.contact_unlocked && !c.provider_id && !c.was_business && m.messages && (
                   <form action={unlockConversation}>
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="conversation_id" value={m.messages.conversation_id} />

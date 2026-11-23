@@ -5,9 +5,13 @@ import { MessagesSquare } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
 import { listConversations, viewOf } from '@/lib/messages';
 
-export const metadata: Metadata = { title: 'Messages', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.messages.title, robots: { index: false } };
+}
 
 export default async function MessagesPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -51,7 +55,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <ul className="mt-6 divide-y divide-line overflow-hidden rounded-[5px] border border-line bg-white">
       {conversations.map((c) => {
-        const { otherName, unread } = viewOf(c, user);
+        const { otherName, unread, isBusiness, isTraveler } = viewOf(c, user, reservationInboxText(locale).traveller);
         return (
           <li key={c.id}>
             <Link href={`/${locale}/messages/${c.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
@@ -63,7 +67,11 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
                   <span className={`truncate ${unread ? 'font-extrabold' : 'font-semibold'}`}>{otherName}</span>
                   {unread && c.last_message_preview && <span className="badge">{t.messages.newBadge}</span>}
                 </span>
-                <span className="block truncate text-sm text-muted">{c.last_message_preview ?? '…'}</span>
+                {/* Business thread, owner side: whose reservation and for which business. */}
+                <span className={isBusiness && !isTraveler ? 'block truncate text-xs font-semibold text-muted' : 'hidden'}>
+                  {reservationInboxText(locale).traveller}{c.providers?.business_name ? ` · ${c.providers.business_name}` : ''}
+                </span>
+                <span className="block truncate text-sm text-muted">{chatBodyText(c.last_message_preview, reserveText(locale).chatRemovedMessage) ?? '…'}</span>
               </span>
               <span className="shrink-0 text-xs text-muted">{new Date(c.last_message_at).toLocaleDateString(locale)}</span>
             </Link>

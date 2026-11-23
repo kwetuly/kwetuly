@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bubble, Composer, chatListStyle } from '@/components/chat-ui';
-import { ErrorText, ScreenState } from '@/components/ui';
-import { conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
+import { Button, ErrorText, ScreenState } from '@/components/ui';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
+import { conversationChatOpen, conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
@@ -28,10 +29,14 @@ export default function ConversationScreen() {
   useLive('messages', `conversation_id=eq.${id}`, ['messages', id]);
 
   const conversation = conversations.data?.find((c) => c.id === id);
-  const view = conversation ? conversationView(conversation, userId) : null;
+  const view = conversation ? conversationView(conversation, userId, reservationInboxText(locale).traveller) : null;
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [notSent, setNotSent] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const rt = reserveText(locale);
+  // Closed from the start: a deleted business, or 30 days after the last reservation (QA 1, 4).
+  const chatOpen = useQuery({ queryKey: ['chat-open', id], queryFn: () => conversationChatOpen(id), enabled: !!view?.isBusiness && !view.readOnly });
 
   useEffect(() => {
     if (view) markConversationRead(id, view.isTraveler);
@@ -49,9 +54,11 @@ export default function ConversationScreen() {
       await sendMessage(id, userId, text);
       setBody('');
       await queryClient.invalidateQueries({ queryKey: ['messages', id] });
-    } catch {
+    } catch (err) {
       // Keep the text in the box and say so (weak network, or the message was refused).
-      setNotSent(true);
+      // chat_closed: a business thread 30 days after the last reservation.
+      if (err instanceof Error && err.message.includes('chat_closed')) setClosed(true);
+      else setNotSent(true);
     } finally {
       setSending(false);
     }
@@ -70,9 +77,23 @@ export default function ConversationScreen() {
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         contentContainerStyle={chatListStyle}
         ListHeaderComponent={
-          <Text style={{ ...type.caption, backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
-            {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
-          </Text>
+          view?.isBusiness ? (
+            // Business threads (reservations) are never unlocked: contact details stay hidden both ways.
+            <View style={{ gap: space.xs, marginBottom: space.sm }}>
+              {view.isTraveler && conversation?.provider_id ? (
+                <View style={{ alignItems: 'flex-start' }}>
+                  <Button title={rt.viewBusiness} variant="text" size="md" onPress={() => router.push({ pathname: '/business/[id]', params: { id: conversation.provider_id! } })} />
+                </View>
+              ) : null}
+              <Text style={{ ...type.caption, backgroundColor: brand.sand, color: brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden' }}>
+                {view.isTraveler ? `${rt.chatHiddenNote} ${rt.chatRemovedNote}` : `${reservationInboxText(locale).chatHiddenNote} ${reservationInboxText(locale).chatRemovedNote}`}
+              </Text>
+            </View>
+          ) : (
+            <Text style={{ ...type.caption, backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
+              {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
+            </Text>
+          )
         }
         ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} onRetry={() => messages.refetch()} />}
         renderItem={({ item }) => {
@@ -90,16 +111,23 @@ export default function ConversationScreen() {
               style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: space.xxs }}
             >
               <Bubble mine={mine} selectable>
-                {item.body}
+                {chatBodyText(item.body, rt.chatRemovedMessage)}
               </Bubble>
               <Text style={type.caption}>{time.format(new Date(item.created_at))}</Text>
             </Pressable>
           );
         }}
       />
-      <Composer value={body} onChangeText={setBody} placeholder={t.messages.placeholder} maxLength={4000} onSend={send} sendLabel={t.messages.send} canSend={!sending && !!body.trim()}>
-        {notSent ? <ErrorText>{t.alerts.notSent}</ErrorText> : null}
-      </Composer>
+      {view?.readOnly || closed || chatOpen.data === false ? (
+        // A closed business thread (deleted business, or 30 days after the last reservation): read only.
+        <Text accessibilityRole="alert" style={{ ...type.callout, backgroundColor: brand.sand, color: brand.ink, padding: space.md, margin: space.md, borderRadius: radius.media, overflow: 'hidden' }}>
+          {view?.readOnly ? rt.chatBusinessGone : view?.isTraveler ? rt.chatClosed : reservationInboxText(locale).chatClosed}
+        </Text>
+      ) : (
+        <Composer value={body} onChangeText={setBody} placeholder={t.messages.placeholder} maxLength={4000} onSend={send} sendLabel={t.messages.send} canSend={!sending && !!body.trim()}>
+          {notSent ? <ErrorText>{t.alerts.notSent}</ErrorText> : null}
+        </Composer>
+      )}
     </KeyboardAvoidingView>
   );
 }

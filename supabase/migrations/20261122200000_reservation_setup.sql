@@ -173,14 +173,25 @@ create table if not exists public.business_services (
   duration_min integer not null default 90 check (duration_min between 15 and 480),
   price_tzs integer check (price_tzs is null or price_tzs between 100 and 50000000),
   max_people integer not null default 1 check (max_people between 1 and 50),
+  -- Optional group discount, set by the owner (Walter 2026-11-23): from this many people, each
+  -- person's price is lower by this percent. price_tzs stays the price per person.
+  group_discount_min_people integer check (group_discount_min_people between 2 and 20),
+  group_discount_percent integer check (group_discount_percent between 1 and 30),
   active boolean not null default true,
   sort integer not null default 0 check (sort between 0 and 1000),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint business_services_group_discount check (
+    (group_discount_min_people is null) = (group_discount_percent is null)
+    and (group_discount_min_people is null or (price_tzs is not null and group_discount_min_people <= max_people)))
 );
 create index if not exists business_services_provider_idx on public.business_services (provider_id, sort);
 comment on table public.business_services is
-  'What can be reserved at a restaurant, spa or salon. price_tzs is the business''s own listed price (null = price on request). No home visits.';
+  'What can be reserved at a restaurant, spa or salon. price_tzs is the business''s own listed price per person (null = price on request), with an optional group discount. No home visits.';
+-- For a test database that already has the table from an earlier draft of this file.
+alter table public.business_services
+  add column if not exists group_discount_min_people integer check (group_discount_min_people between 2 and 20),
+  add column if not exists group_discount_percent integer check (group_discount_percent between 1 and 30);
 
 drop trigger if exists business_services_updated_at on public.business_services;
 create trigger business_services_updated_at
@@ -236,6 +247,12 @@ begin
     if tg_op = 'INSERT' and (select count(*) from public.business_services s
                              where s.provider_id = new.provider_id) >= 40 then
       raise exception 'At most 40 services per business' using errcode = 'check_violation';
+    end if;
+    -- Group discounts only for spa and salon services (security review L5).
+    if new.group_discount_min_people is not null
+       and coalesce((select pr.business_type from public.providers pr where pr.id = new.provider_id), '')
+           not in ('spa', 'salon') then
+      raise exception 'Group discounts are for spa and salon services only' using errcode = 'check_violation';
     end if;
     new.name := btrim(new.name);
   end if;
@@ -721,8 +738,10 @@ grant select (provider_id, day, created_at) on public.business_closed_dates to a
 grant insert (provider_id, weekday, opens, closes), update (weekday, opens, closes), delete
   on public.business_hours to authenticated;
 grant insert (provider_id, day, note), update (note), delete on public.business_closed_dates to authenticated;
-grant insert (provider_id, name, duration_min, price_tzs, max_people, active, sort),
-  update (name, duration_min, price_tzs, max_people, active, sort), delete
+grant insert (provider_id, name, duration_min, price_tzs, max_people, group_discount_min_people,
+              group_discount_percent, active, sort),
+  update (name, duration_min, price_tzs, max_people, group_discount_min_people, group_discount_percent,
+          active, sort), delete
   on public.business_services to authenticated;
 
 -- price_list: active rows for everyone, without the admin note and author columns.

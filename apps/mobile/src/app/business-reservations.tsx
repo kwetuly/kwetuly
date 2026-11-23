@@ -217,6 +217,11 @@ function Row({ x, locale, row, soon, onChanged }: { x: ReservationInboxText; loc
         <Muted>{x.commissionAfter}</Muted>
       ) : null}
 
+      {row.chat_id ? (
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button title={x.messageGuest} variant="text" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/conversation/${row.chat_id}`)} />
+        </View>
+      ) : null}
       {answering && <Field label={x.note} value={note} onChangeText={setNote} multiline maxLength={reservationRules.noteMax} hint={x.noteHint} />}
       {offering && (
         <View style={{ gap: space.md, padding: space.md, borderRadius: radius.button, borderWidth: 1, borderColor: brand.primary }}>

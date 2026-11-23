@@ -49,6 +49,11 @@ const en = {
     completed: 'Came',
   } satisfies Record<ReservationStatus, string>,
 
+  messageGuest: 'Message the traveller',
+  traveller: 'Traveller',
+  chatClosed: 'This chat closed 30 days after the last reservation.',
+  chatRemovedNote: 'Messages are removed 30 days after the last reservation.',
+  chatHiddenNote: 'Phone numbers and emails stay hidden in this chat, both ways. Please talk about the reservation here.',
   confirm: 'Confirm',
   decline: 'Decline',
   offerTime: 'Offer another time',
@@ -155,6 +160,11 @@ const sw: ReservationInboxText = {
     completed: 'Walifika',
   },
 
+  messageGuest: 'Mtumie msafiri ujumbe',
+  traveller: 'Msafiri',
+  chatClosed: 'Mazungumzo haya yalifungwa siku 30 baada ya uhifadhi wa mwisho.',
+  chatRemovedNote: 'Ujumbe unafutwa siku 30 baada ya uhifadhi wa mwisho.',
+  chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya, pande zote mbili. Tafadhali zungumzeni kuhusu uhifadhi hapa.',
   confirm: 'Thibitisha',
   decline: 'Kataa',
   offerTime: 'Pendekeza muda mwingine',

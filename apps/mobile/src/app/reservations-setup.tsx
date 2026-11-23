@@ -438,7 +438,7 @@ function ClosedRow({ ctx, row, onResult }: { ctx: Ctx; row: { day: string; note:
   );
 }
 
-type ServiceForm = { name: string; duration: string; price: string; people: string };
+type ServiceForm = { name: string; duration: string; price: string; people: string; discountMin: string; discountPercent: string };
 
 function ServicesCard({ ctx }: { ctx: Ctx }) {
   const { r, data } = ctx;
@@ -540,7 +540,7 @@ function ServiceRow({
         {!s.active && <Badge label={r.serviceIsOff} tone="neutral" />}
       </View>
       <Text style={{ ...type.callout, color: colors.secondaryLabel }}>
-        {[fillText(r.serviceMinutes, { n: s.duration_min }), fillText(r.servicePeople, { n: s.max_people }), s.price_tzs == null ? r.serviceNoPrice : formatTzs(s.price_tzs)].join(' · ')}
+        {[fillText(r.serviceMinutes, { n: s.duration_min }), fillText(r.servicePeople, { n: s.max_people }), s.price_tzs == null ? r.serviceNoPrice : formatTzs(s.price_tzs), s.group_discount_min_people != null && s.group_discount_percent != null ? fillText(r.serviceDiscountLine, { percent: s.group_discount_percent, n: s.group_discount_min_people }) : null].filter(Boolean).join(' · ')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap }}>
         {action(r.serviceEdit, onEdit)}
@@ -555,10 +555,18 @@ function ServiceRow({
 
 function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: { ctx: Ctx; service: SetupService | null; nextSort: number; onDone: (saved: boolean) => void; cancellable?: boolean }) {
   const { r } = ctx;
+  const { type } = useType();
   const [f, setF] = useState<ServiceForm>(
     service
-      ? { name: service.name, duration: String(service.duration_min), price: service.price_tzs == null ? '' : String(service.price_tzs), people: String(service.max_people) }
-      : { name: '', duration: String(reservationLimits.durationDefault), price: '', people: ctx.care ? '1' : '2' },
+      ? {
+          name: service.name,
+          duration: String(service.duration_min),
+          price: service.price_tzs == null ? '' : String(service.price_tzs),
+          people: String(service.max_people),
+          discountMin: service.group_discount_min_people == null ? '' : String(service.group_discount_min_people),
+          discountPercent: service.group_discount_percent == null ? '' : String(service.group_discount_percent),
+        }
+      : { name: '', duration: String(reservationLimits.durationDefault), price: '', people: ctx.care ? '1' : '2', discountMin: '', discountPercent: '' },
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -567,11 +575,19 @@ function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: {
   async function save() {
     setBusy(true);
     setError(null);
-    const input = { name: f.name, duration_min: Number(f.duration), price_tzs: f.price.trim() === '' ? null : Number(f.price.replace(/[ ,]/g, '')), max_people: Number(f.people) };
+    const input = {
+      name: f.name,
+      duration_min: Number(f.duration),
+      price_tzs: f.price.trim() === '' ? null : Number(f.price.replace(/[ ,]/g, '')),
+      max_people: Number(f.people),
+      // Spa and salon only: an optional group discount (both or neither; the database checks again).
+      group_discount_min_people: ctx.care && f.discountMin.trim() !== '' ? Number(f.discountMin) : null,
+      group_discount_percent: ctx.care && f.discountPercent.trim() !== '' ? Number(f.discountPercent) : null,
+    };
     const result = await saveService(ctx.providerId, service?.id ?? null, input, nextSort).catch((): SetupResult => ({ ok: false, error: 'failed' }));
     setBusy(false);
     if (result.ok) return onDone(true);
-    if (result.error === 'invalid' && result.field) return setError(r.serviceErrors[result.field]);
+    if (result.error === 'invalid' && result.field) return setError(fillText(r.serviceErrors[result.field], { max: reservationLimits.groupDiscountPercentMax }));
     setError(result.error === 'too_many' ? r.serviceErrors.too_many : errorText(r, result));
   }
 
@@ -579,8 +595,16 @@ function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: {
     <View style={{ gap: space.md, padding: space.md, borderRadius: radius.button, borderWidth: 1, borderColor: brand.primary }}>
       <Field label={r.serviceName} value={f.name} onChangeText={set('name')} maxLength={reservationLimits.serviceNameMax} />
       <Field label={r.serviceDuration} value={f.duration} onChangeText={set('duration')} keyboardType="number-pad" maxLength={3} />
-      <Field label={r.servicePrice} value={f.price} onChangeText={set('price')} keyboardType="number-pad" maxLength={10} hint={ctx.care ? r.servicePriceHintCare : undefined} />
+      <Field label={r.servicePrice} value={f.price} onChangeText={set('price')} keyboardType="number-pad" maxLength={10} hint={ctx.care ? `${r.servicePricePerPerson} ${r.servicePriceHintCare}` : undefined} />
       <Field label={r.serviceMaxPeople} value={f.people} onChangeText={set('people')} keyboardType="number-pad" maxLength={2} />
+      {ctx.care && (
+        <View style={{ gap: space.sm }}>
+          <Text style={type.label}>{r.serviceDiscount}</Text>
+          <Muted>{r.serviceDiscountHint}</Muted>
+          <Field label={fillText(r.serviceDiscountPercent, { max: reservationLimits.groupDiscountPercentMax })} value={f.discountPercent} onChangeText={set('discountPercent')} keyboardType="number-pad" maxLength={2} />
+          <Field label={r.serviceDiscountMin} value={f.discountMin} onChangeText={set('discountMin')} keyboardType="number-pad" maxLength={2} />
+        </View>
+      )}
       <ErrorText>{error}</ErrorText>
       <Button title={service ? r.serviceSave : r.serviceAdd} variant="outline" size="md" onPress={save} loading={busy} disabled={ctx.data.soon} />
       {cancellable && <Button title={r.serviceCancel} variant="text" size="md" onPress={() => onDone(false)} />}

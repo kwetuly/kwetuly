@@ -20,6 +20,9 @@ export type ReserveText = {
   saveError: string;
   service: string;
   table: string;
+  groupDiscount: string;
+  pricePerPerson: string;
+  priceWithDiscount: string;
   date: string;
   time: string;
   pickDay: string;
@@ -60,6 +63,13 @@ export type ReserveText = {
   acceptOffer: string;
   refuseOffer: string;
   cancel: string;
+  messageBusiness: string;
+  chatHiddenNote: string;
+  chatClosed: string;
+  chatRemovedNote: string;
+  chatRemovedMessage: string;
+  chatBusinessGone: string;
+  viewBusiness: string;
   cancelConfirm: string;
   done: string;
   visitQuestion: string;
@@ -85,6 +95,9 @@ const en: ReserveText = {
   saveError: 'Sorry, something went wrong. Please try again.',
   service: 'Service',
   table: 'A table',
+  groupDiscount: '{percent}% off for {n} or more people',
+  pricePerPerson: 'Listed price per person: {price}',
+  priceWithDiscount: 'With the group discount: {price} per person',
   date: 'Day',
   time: 'Time',
   pickDay: 'Please choose a day first.',
@@ -137,6 +150,13 @@ const en: ReserveText = {
   acceptOffer: 'Take the new time',
   refuseOffer: 'No, thank you',
   cancel: 'Cancel the reservation',
+  messageBusiness: 'Message {business}',
+  chatHiddenNote: 'Phone numbers and emails stay hidden in this chat.',
+  chatClosed: 'This chat closed 30 days after your last reservation.',
+  chatRemovedNote: 'Messages are removed 30 days after your last reservation.',
+  chatRemovedMessage: 'This message was removed 30 days after the last reservation.',
+  chatBusinessGone: 'This business is no longer on Kwetuly. The chat is read only.',
+  viewBusiness: 'See the business',
   cancelConfirm: 'Cancel this reservation? There is no fee.',
   done: 'Thank you. Saved.',
   visitQuestion: 'Did your visit happen?',
@@ -197,6 +217,9 @@ const sw: ReserveText = {
   saveError: 'Samahani, kuna tatizo. Tafadhali jaribu tena.',
   service: 'Huduma',
   table: 'Meza',
+  groupDiscount: 'Punguzo la asilimia {percent} kwa watu {n} au zaidi',
+  pricePerPerson: 'Bei iliyoorodheshwa kwa kila mtu: {price}',
+  priceWithDiscount: 'Kwa punguzo la kikundi: {price} kwa kila mtu',
   date: 'Siku',
   time: 'Muda',
   pickDay: 'Tafadhali chagua siku kwanza.',
@@ -249,6 +272,13 @@ const sw: ReserveText = {
   acceptOffer: 'Chukua muda mpya',
   refuseOffer: 'Hapana, asante',
   cancel: 'Ghairi uhifadhi',
+  messageBusiness: 'Mtumie {business} ujumbe',
+  chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya.',
+  chatClosed: 'Mazungumzo haya yalifungwa siku 30 baada ya uhifadhi wako wa mwisho.',
+  chatRemovedNote: 'Ujumbe unafutwa siku 30 baada ya uhifadhi wako wa mwisho.',
+  chatRemovedMessage: 'Ujumbe huu ulifutwa siku 30 baada ya uhifadhi wa mwisho.',
+  chatBusinessGone: 'Biashara hii haipo tena Kwetuly. Mazungumzo haya ni ya kusoma tu.',
+  viewBusiness: 'Angalia biashara',
   cancelConfirm: 'Ungependa kughairi uhifadhi huu? Hakuna ada.',
   done: 'Asante. Imehifadhiwa.',
   visitQuestion: 'Je, ziara yako ilifanyika?',
@@ -309,6 +339,9 @@ const fr: ReserveText = {
   saveError: "Désolés, une erreur s'est produite. Veuillez réessayer.",
   service: 'Prestation',
   table: 'Une table',
+  groupDiscount: '{percent} % de réduction dès {n} personnes',
+  pricePerPerson: 'Prix affiché par personne : {price}',
+  priceWithDiscount: 'Avec la réduction de groupe : {price} par personne',
   date: 'Jour',
   time: 'Heure',
   pickDay: "Veuillez d'abord choisir un jour.",
@@ -361,6 +394,13 @@ const fr: ReserveText = {
   acceptOffer: 'Prendre le nouvel horaire',
   refuseOffer: 'Non, merci',
   cancel: 'Annuler la réservation',
+  messageBusiness: 'Écrire à {business}',
+  chatHiddenNote: 'Les numéros de téléphone et les e-mails restent masqués dans cette discussion.',
+  chatClosed: 'Cette discussion s\'est fermée 30 jours après votre dernière réservation.',
+  chatRemovedNote: 'Les messages sont supprimés 30 jours après votre dernière réservation.',
+  chatRemovedMessage: 'Ce message a été supprimé 30 jours après la dernière réservation.',
+  chatBusinessGone: 'Cet établissement n\'est plus sur Kwetuly. La discussion est en lecture seule.',
+  viewBusiness: 'Voir l\'établissement',
   cancelConfirm: "Annuler cette réservation ? Il n'y a aucuns frais.",
   done: 'Merci. Enregistré.',
   visitQuestion: 'Votre visite a-t-elle eu lieu ?',
@@ -421,6 +461,9 @@ const it: ReserveText = {
   saveError: 'Ci dispiace, qualcosa è andato storto. Riprova.',
   service: 'Servizio',
   table: 'Un tavolo',
+  groupDiscount: '{percent}% di sconto da {n} persone in su',
+  pricePerPerson: 'Prezzo di listino a persona: {price}',
+  priceWithDiscount: 'Con lo sconto di gruppo: {price} a persona',
   date: 'Giorno',
   time: 'Orario',
   pickDay: 'Scegli prima un giorno.',
@@ -473,6 +516,13 @@ const it: ReserveText = {
   acceptOffer: 'Accetta il nuovo orario',
   refuseOffer: 'No, grazie',
   cancel: 'Annulla la prenotazione',
+  messageBusiness: 'Scrivi a {business}',
+  chatHiddenNote: 'Numeri di telefono ed email restano nascosti in questa chat.',
+  chatClosed: 'Questa chat si è chiusa 30 giorni dopo l\'ultima prenotazione.',
+  chatRemovedNote: 'I messaggi vengono rimossi 30 giorni dopo l\'ultima prenotazione.',
+  chatRemovedMessage: 'Questo messaggio è stato rimosso 30 giorni dopo l\'ultima prenotazione.',
+  chatBusinessGone: 'Questa attività non è più su Kwetuly. La chat è di sola lettura.',
+  viewBusiness: 'Vedi l\'attività',
   cancelConfirm: 'Annullare questa prenotazione? Non ci sono costi.',
   done: 'Grazie. Salvato.',
   visitQuestion: 'La tua visita è avvenuta?',
@@ -533,6 +583,9 @@ const de: ReserveText = {
   saveError: 'Leider ist etwas schiefgegangen. Bitte versuchen Sie es erneut.',
   service: 'Leistung',
   table: 'Ein Tisch',
+  groupDiscount: '{percent} % Rabatt ab {n} Personen',
+  pricePerPerson: 'Ausgewiesener Preis pro Person: {price}',
+  priceWithDiscount: 'Mit Gruppenrabatt: {price} pro Person',
   date: 'Tag',
   time: 'Uhrzeit',
   pickDay: 'Bitte wählen Sie zuerst einen Tag.',
@@ -585,6 +638,13 @@ const de: ReserveText = {
   acceptOffer: 'Neue Zeit annehmen',
   refuseOffer: 'Nein, danke',
   cancel: 'Reservierung stornieren',
+  messageBusiness: '{business} schreiben',
+  chatHiddenNote: 'Telefonnummern und E-Mail-Adressen bleiben in diesem Chat verborgen.',
+  chatClosed: 'Dieser Chat wurde 30 Tage nach Ihrer letzten Reservierung geschlossen.',
+  chatRemovedNote: 'Nachrichten werden 30 Tage nach Ihrer letzten Reservierung entfernt.',
+  chatRemovedMessage: 'Diese Nachricht wurde 30 Tage nach der letzten Reservierung entfernt.',
+  chatBusinessGone: 'Dieser Betrieb ist nicht mehr auf Kwetuly. Der Chat kann nur noch gelesen werden.',
+  viewBusiness: 'Zum Betrieb',
   cancelConfirm: 'Diese Reservierung stornieren? Es fallen keine Gebühren an.',
   done: 'Vielen Dank. Gespeichert.',
   visitQuestion: 'Hat Ihr Besuch stattgefunden?',
@@ -645,6 +705,9 @@ const pl: ReserveText = {
   saveError: 'Przepraszamy, coś poszło nie tak. Spróbuj ponownie.',
   service: 'Usługa',
   table: 'Stolik',
+  groupDiscount: '{percent}% zniżki od {n} osób',
+  pricePerPerson: 'Cena z cennika za osobę: {price}',
+  priceWithDiscount: 'Ze zniżką grupową: {price} za osobę',
   date: 'Dzień',
   time: 'Godzina',
   pickDay: 'Najpierw wybierz dzień.',
@@ -697,6 +760,13 @@ const pl: ReserveText = {
   acceptOffer: 'Przyjmij nowy termin',
   refuseOffer: 'Nie, dziękuję',
   cancel: 'Anuluj rezerwację',
+  messageBusiness: 'Napisz do {business}',
+  chatHiddenNote: 'Numery telefonów i adresy e-mail pozostają w tym czacie ukryte.',
+  chatClosed: 'Ten czat zamknięto 30 dni po Twojej ostatniej rezerwacji.',
+  chatRemovedNote: 'Wiadomości są usuwane 30 dni po Twojej ostatniej rezerwacji.',
+  chatRemovedMessage: 'Ta wiadomość została usunięta 30 dni po ostatniej rezerwacji.',
+  chatBusinessGone: 'Tego lokalu nie ma już na Kwetuly. Czat jest tylko do odczytu.',
+  viewBusiness: 'Zobacz lokal',
   cancelConfirm: 'Anulować tę rezerwację? Nie ma żadnej opłaty.',
   done: 'Dziękujemy. Zapisano.',
   visitQuestion: 'Czy Twoja wizyta się odbyła?',
@@ -757,6 +827,9 @@ const zh: ReserveText = {
   saveError: '抱歉，出了点问题，请重试。',
   service: '服务',
   table: '餐桌',
+  groupDiscount: '{n} 人及以上享 {percent}% 折扣',
+  pricePerPerson: '每人标价：{price}',
+  priceWithDiscount: '团体折扣后：每人 {price}',
   date: '日期',
   time: '时间',
   pickDay: '请先选择日期。',
@@ -809,6 +882,13 @@ const zh: ReserveText = {
   acceptOffer: '接受新时间',
   refuseOffer: '不用了，谢谢',
   cancel: '取消预订',
+  messageBusiness: '给{business}发消息',
+  chatHiddenNote: '此聊天中电话号码和电子邮箱保持隐藏。',
+  chatClosed: '此聊天已在您最后一次预订 30 天后关闭。',
+  chatRemovedNote: '消息会在您最后一次预订 30 天后删除。',
+  chatRemovedMessage: '此消息已在最后一次预订 30 天后删除。',
+  chatBusinessGone: '该商家已不在 Kwetuly 上，此聊天仅可阅读。',
+  viewBusiness: '查看商家',
   cancelConfirm: '要取消此预订吗？不收取任何费用。',
   done: '谢谢，已保存。',
   visitQuestion: '您的到访是否已完成？',

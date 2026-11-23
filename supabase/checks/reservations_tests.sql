@@ -406,6 +406,41 @@ select pg_temp.check((select late_cancel >= 1 and low_count >= 1
                      'quality list shows the late cancel (and the low count when in the same month)');
 reset role;
 
+-- 7b2. Group discount (Walter 2026-11-23): price per person, lower from a number of people --------
+insert into public.business_services (id, provider_id, name, duration_min, price_tzs, max_people,
+                                      group_discount_min_people, group_discount_percent)
+values ('5e5e5e5e-0000-4000-8000-000000000003', 'e2e2e2e2-0000-4000-8000-0000000000e2', 'Group massage', 60, 40000, 6, 4, 20);
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select pg_temp.expect_error($q$update public.business_services set group_discount_min_people = 8
+  where id = '5e5e5e5e-0000-4000-8000-000000000003'$q$, 'discount minimum above the service''s maximum');
+select pg_temp.expect_error($q$update public.business_services set group_discount_percent = null
+  where id = '5e5e5e5e-0000-4000-8000-000000000003'$q$, 'discount percent without its minimum');
+reset role;
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+select pg_temp.check((select group_discount_min_people = 4 and group_discount_percent = 20 from public.business_services
+                      where id = '5e5e5e5e-0000-4000-8000-000000000003'),
+                     'traveller form reads the group discount with the service');
+create temp table rv11 on commit drop as
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000003', pg_temp.at(2, '13:00'), 4) as id;
+reset role;
+select pg_temp.check((select price_basis_tzs = 40000 and group_discount_min_people = 4 and group_discount_percent = 20
+                      from public.reservations where id = (select id from rv11)), 'discount copied at request time');
+update public.business_services set group_discount_min_people = null, group_discount_percent = null
+where id = '5e5e5e5e-0000-4000-8000-000000000003';
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select public.reservation_action((select id from rv11), 'confirm');
+reset role;
+update public.reservations set starts_at = pg_temp.at(-2, '13:00') where id = (select id from rv11);
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select public.reservation_action((select id from rv11), 'mark_came', null, null, 3);
+reset role;
+select pg_temp.check((select commission_tzs = 9600 from public.reservations where id = (select id from rv11)),
+                     'booked 4 (discount applies), 3 came: 3 x 32000 x 10% (a later change to the service does not count)');
+
 -- 7c. Review M3: a new account makes at most 3 requests a day -------------------------
 select pg_temp.as_user('d5d5d5d5-0000-4000-8000-0000000000d5');
 set local role authenticated;
