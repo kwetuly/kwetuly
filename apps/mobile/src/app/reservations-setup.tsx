@@ -595,7 +595,7 @@ function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: {
     <View style={{ gap: space.md, padding: space.md, borderRadius: radius.button, borderWidth: 1, borderColor: brand.primary }}>
       <Field label={r.serviceName} value={f.name} onChangeText={set('name')} maxLength={reservationLimits.serviceNameMax} />
       <Field label={r.serviceDuration} value={f.duration} onChangeText={set('duration')} keyboardType="number-pad" maxLength={3} />
-      <Field label={r.servicePrice} value={f.price} onChangeText={set('price')} keyboardType="number-pad" maxLength={10} hint={ctx.care ? r.servicePriceHintCare : undefined} />
+      <Field label={r.servicePrice} value={f.price} onChangeText={set('price')} keyboardType="number-pad" maxLength={10} hint={ctx.care ? `${r.servicePricePerPerson} ${r.servicePriceHintCare}` : undefined} />
       <Field label={r.serviceMaxPeople} value={f.people} onChangeText={set('people')} keyboardType="number-pad" maxLength={2} />
       {ctx.care && (
         <View style={{ gap: space.sm }}>

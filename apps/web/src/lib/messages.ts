@@ -57,6 +57,17 @@ export async function listConversations() {
   return data ?? [];
 }
 
+/**
+ * Whether a business thread still takes messages (conversation_chat_open). While that function is not
+ * on the database the thread counts as open; the database still refuses a closed one with chat_closed.
+ */
+export async function chatOpen(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('conversation_chat_open', { p_conversation: id });
+  if (error) return true;
+  return data !== false;
+}
+
 export async function getConversation(id: string): Promise<ConversationRow | null> {
   const supabase = await createClient();
   const run = (columns: string) => supabase.from('conversations').select(columns).eq('id', id).maybeSingle<ConversationRow>();

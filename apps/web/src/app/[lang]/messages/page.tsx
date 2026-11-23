@@ -5,10 +5,13 @@ import { MessagesSquare } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
-import { reservationInboxText } from '@kwetuly/shared';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
 import { listConversations, viewOf } from '@/lib/messages';
 
-export const metadata: Metadata = { title: 'Messages', robots: { index: false } };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.messages.title, robots: { index: false } };
+}
 
 export default async function MessagesPage() {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -68,7 +71,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
                 <span className={isBusiness && !isTraveler ? 'block truncate text-xs font-semibold text-muted' : 'hidden'}>
                   {reservationInboxText(locale).traveller}{c.providers?.business_name ? ` · ${c.providers.business_name}` : ''}
                 </span>
-                <span className="block truncate text-sm text-muted">{c.last_message_preview ?? '…'}</span>
+                <span className="block truncate text-sm text-muted">{chatBodyText(c.last_message_preview, reserveText(locale).chatRemovedMessage) ?? '…'}</span>
               </span>
               <span className="shrink-0 text-xs text-muted">{new Date(c.last_message_at).toLocaleDateString(locale)}</span>
             </Link>

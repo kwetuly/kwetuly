@@ -66,6 +66,10 @@ export type ReserveText = {
   messageBusiness: string;
   chatHiddenNote: string;
   chatClosed: string;
+  chatRemovedNote: string;
+  chatRemovedMessage: string;
+  chatBusinessGone: string;
+  viewBusiness: string;
   cancelConfirm: string;
   done: string;
   visitQuestion: string;
@@ -149,6 +153,10 @@ const en: ReserveText = {
   messageBusiness: 'Message {business}',
   chatHiddenNote: 'Phone numbers and emails stay hidden in this chat.',
   chatClosed: 'This chat closed 30 days after your last reservation.',
+  chatRemovedNote: 'Messages are removed 30 days after your last reservation.',
+  chatRemovedMessage: 'This message was removed 30 days after the last reservation.',
+  chatBusinessGone: 'This business is no longer on Kwetuly. The chat is read only.',
+  viewBusiness: 'See the business',
   cancelConfirm: 'Cancel this reservation? There is no fee.',
   done: 'Thank you. Saved.',
   visitQuestion: 'Did your visit happen?',
@@ -267,6 +275,10 @@ const sw: ReserveText = {
   messageBusiness: 'Mtumie {business} ujumbe',
   chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya.',
   chatClosed: 'Mazungumzo haya yalifungwa siku 30 baada ya uhifadhi wako wa mwisho.',
+  chatRemovedNote: 'Ujumbe unafutwa siku 30 baada ya uhifadhi wako wa mwisho.',
+  chatRemovedMessage: 'Ujumbe huu ulifutwa siku 30 baada ya uhifadhi wa mwisho.',
+  chatBusinessGone: 'Biashara hii haipo tena Kwetuly. Mazungumzo haya ni ya kusoma tu.',
+  viewBusiness: 'Angalia biashara',
   cancelConfirm: 'Ungependa kughairi uhifadhi huu? Hakuna ada.',
   done: 'Asante. Imehifadhiwa.',
   visitQuestion: 'Je, ziara yako ilifanyika?',
@@ -385,6 +397,10 @@ const fr: ReserveText = {
   messageBusiness: 'Écrire à {business}',
   chatHiddenNote: 'Les numéros de téléphone et les e-mails restent masqués dans cette discussion.',
   chatClosed: 'Cette discussion s\'est fermée 30 jours après votre dernière réservation.',
+  chatRemovedNote: 'Les messages sont supprimés 30 jours après votre dernière réservation.',
+  chatRemovedMessage: 'Ce message a été supprimé 30 jours après la dernière réservation.',
+  chatBusinessGone: 'Cet établissement n\'est plus sur Kwetuly. La discussion est en lecture seule.',
+  viewBusiness: 'Voir l\'établissement',
   cancelConfirm: "Annuler cette réservation ? Il n'y a aucuns frais.",
   done: 'Merci. Enregistré.',
   visitQuestion: 'Votre visite a-t-elle eu lieu ?',
@@ -503,6 +519,10 @@ const it: ReserveText = {
   messageBusiness: 'Scrivi a {business}',
   chatHiddenNote: 'Numeri di telefono ed email restano nascosti in questa chat.',
   chatClosed: 'Questa chat si è chiusa 30 giorni dopo l\'ultima prenotazione.',
+  chatRemovedNote: 'I messaggi vengono rimossi 30 giorni dopo l\'ultima prenotazione.',
+  chatRemovedMessage: 'Questo messaggio è stato rimosso 30 giorni dopo l\'ultima prenotazione.',
+  chatBusinessGone: 'Questa attività non è più su Kwetuly. La chat è di sola lettura.',
+  viewBusiness: 'Vedi l\'attività',
   cancelConfirm: 'Annullare questa prenotazione? Non ci sono costi.',
   done: 'Grazie. Salvato.',
   visitQuestion: 'La tua visita è avvenuta?',
@@ -621,6 +641,10 @@ const de: ReserveText = {
   messageBusiness: '{business} schreiben',
   chatHiddenNote: 'Telefonnummern und E-Mail-Adressen bleiben in diesem Chat verborgen.',
   chatClosed: 'Dieser Chat wurde 30 Tage nach Ihrer letzten Reservierung geschlossen.',
+  chatRemovedNote: 'Nachrichten werden 30 Tage nach Ihrer letzten Reservierung entfernt.',
+  chatRemovedMessage: 'Diese Nachricht wurde 30 Tage nach der letzten Reservierung entfernt.',
+  chatBusinessGone: 'Dieser Betrieb ist nicht mehr auf Kwetuly. Der Chat kann nur noch gelesen werden.',
+  viewBusiness: 'Zum Betrieb',
   cancelConfirm: 'Diese Reservierung stornieren? Es fallen keine Gebühren an.',
   done: 'Vielen Dank. Gespeichert.',
   visitQuestion: 'Hat Ihr Besuch stattgefunden?',
@@ -739,6 +763,10 @@ const pl: ReserveText = {
   messageBusiness: 'Napisz do {business}',
   chatHiddenNote: 'Numery telefonów i adresy e-mail pozostają w tym czacie ukryte.',
   chatClosed: 'Ten czat zamknięto 30 dni po Twojej ostatniej rezerwacji.',
+  chatRemovedNote: 'Wiadomości są usuwane 30 dni po Twojej ostatniej rezerwacji.',
+  chatRemovedMessage: 'Ta wiadomość została usunięta 30 dni po ostatniej rezerwacji.',
+  chatBusinessGone: 'Tego lokalu nie ma już na Kwetuly. Czat jest tylko do odczytu.',
+  viewBusiness: 'Zobacz lokal',
   cancelConfirm: 'Anulować tę rezerwację? Nie ma żadnej opłaty.',
   done: 'Dziękujemy. Zapisano.',
   visitQuestion: 'Czy Twoja wizyta się odbyła?',
@@ -857,6 +885,10 @@ const zh: ReserveText = {
   messageBusiness: '给{business}发消息',
   chatHiddenNote: '此聊天中电话号码和电子邮箱保持隐藏。',
   chatClosed: '此聊天已在您最后一次预订 30 天后关闭。',
+  chatRemovedNote: '消息会在您最后一次预订 30 天后删除。',
+  chatRemovedMessage: '此消息已在最后一次预订 30 天后删除。',
+  chatBusinessGone: '该商家已不在 Kwetuly 上，此聊天仅可阅读。',
+  viewBusiness: '查看商家',
   cancelConfirm: '要取消此预订吗？不收取任何费用。',
   done: '谢谢，已保存。',
   visitQuestion: '您的到访是否已完成？',

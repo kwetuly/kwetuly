@@ -266,6 +266,13 @@ export async function listConversations(): Promise<Conversation[]> {
   return must(result) as unknown as Conversation[];
 }
 
+/** Whether a business thread still takes messages; open while the function is not on the database. */
+export async function conversationChatOpen(conversationId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('conversation_chat_open', { p_conversation: conversationId });
+  if (error) return true;
+  return data !== false;
+}
+
 export function conversationView(c: Conversation, userId: string, travellerLabel = 'Traveller') {
   const isTraveler = c.traveler_id === userId;
   const isBusiness = c.was_business ?? !!c.provider_id;

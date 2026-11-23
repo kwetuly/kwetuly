@@ -152,3 +152,12 @@ export function answerByTime(answerBy: string | null | undefined, locale: string
   if (!answerBy || Number.isNaN(new Date(answerBy).getTime())) return null;
   return formatReservationTime(answerBy, locale);
 }
+
+/** The fixed text the daily job puts in business-thread messages 30 days after the last reservation. */
+export const CHAT_CLEARED_MARKER = '[deleted after 30 days]';
+
+/** A message body or preview for the screen: the marker becomes a translated line. */
+export function chatBodyText(body: string | null | undefined, removedLine: string): string | null {
+  if (body == null) return null;
+  return body.trim() === CHAT_CLEARED_MARKER ? removedLine : body;
+}

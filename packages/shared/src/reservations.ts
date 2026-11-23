@@ -209,7 +209,8 @@ export type ServiceInput = {
 
 /**
  * Checks a group discount the same way as the table: both empty, or both set on a priced service, with
- * the minimum within 2..20 and not above the service's maximum people, and the percent within 1..50.
+ * the minimum within 2..20 and not above the service's maximum people, and the percent within
+ * 1..reservationLimits.groupDiscountPercentMax (30).
  */
 export function groupDiscountError(s: ServiceInput): boolean {
   const min = s.group_discount_min_people ?? null;

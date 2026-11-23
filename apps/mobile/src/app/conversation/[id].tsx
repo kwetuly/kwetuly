@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bubble, Composer, chatListStyle } from '@/components/chat-ui';
-import { ErrorText, ScreenState } from '@/components/ui';
-import { reservationInboxText, reserveText } from '@kwetuly/shared';
-import { conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
+import { Button, ErrorText, ScreenState } from '@/components/ui';
+import { chatBodyText, reservationInboxText, reserveText } from '@kwetuly/shared';
+import { conversationChatOpen, conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
@@ -34,6 +34,9 @@ export default function ConversationScreen() {
   const [sending, setSending] = useState(false);
   const [notSent, setNotSent] = useState(false);
   const [closed, setClosed] = useState(false);
+  const rt = reserveText(locale);
+  // Closed from the start: a deleted business, or 30 days after the last reservation (QA 1, 4).
+  const chatOpen = useQuery({ queryKey: ['chat-open', id], queryFn: () => conversationChatOpen(id), enabled: !!view?.isBusiness && !view.readOnly });
 
   useEffect(() => {
     if (view) markConversationRead(id, view.isTraveler);
@@ -76,9 +79,16 @@ export default function ConversationScreen() {
         ListHeaderComponent={
           view?.isBusiness ? (
             // Business threads (reservations) are never unlocked: contact details stay hidden both ways.
-            <Text style={{ ...type.caption, backgroundColor: brand.sand, color: brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
-              {view.isTraveler ? reserveText(locale).chatHiddenNote : reservationInboxText(locale).chatHiddenNote}
-            </Text>
+            <View style={{ gap: space.xs, marginBottom: space.sm }}>
+              {view.isTraveler && conversation?.provider_id ? (
+                <View style={{ alignItems: 'flex-start' }}>
+                  <Button title={rt.viewBusiness} variant="text" size="md" onPress={() => router.push({ pathname: '/business/[id]', params: { id: conversation.provider_id! } })} />
+                </View>
+              ) : null}
+              <Text style={{ ...type.caption, backgroundColor: brand.sand, color: brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden' }}>
+                {view.isTraveler ? `${rt.chatHiddenNote} ${rt.chatRemovedNote}` : `${reservationInboxText(locale).chatHiddenNote} ${reservationInboxText(locale).chatRemovedNote}`}
+              </Text>
+            </View>
           ) : (
             <Text style={{ ...type.caption, backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
               {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
@@ -101,17 +111,17 @@ export default function ConversationScreen() {
               style={{ alignItems: mine ? 'flex-end' : 'flex-start', gap: space.xxs }}
             >
               <Bubble mine={mine} selectable>
-                {item.body}
+                {chatBodyText(item.body, rt.chatRemovedMessage)}
               </Bubble>
               <Text style={type.caption}>{time.format(new Date(item.created_at))}</Text>
             </Pressable>
           );
         }}
       />
-      {view?.readOnly || closed ? (
+      {view?.readOnly || closed || chatOpen.data === false ? (
         // A closed business thread (deleted business, or 30 days after the last reservation): read only.
         <Text accessibilityRole="alert" style={{ ...type.callout, backgroundColor: brand.sand, color: brand.ink, padding: space.md, margin: space.md, borderRadius: radius.media, overflow: 'hidden' }}>
-          {view?.isTraveler ? reserveText(locale).chatClosed : reservationInboxText(locale).chatClosed}
+          {view?.readOnly ? rt.chatBusinessGone : view?.isTraveler ? rt.chatClosed : reservationInboxText(locale).chatClosed}
         </Text>
       ) : (
         <Composer value={body} onChangeText={setBody} placeholder={t.messages.placeholder} maxLength={4000} onSend={send} sendLabel={t.messages.send} canSend={!sending && !!body.trim()}>
