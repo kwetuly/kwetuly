@@ -298,12 +298,33 @@ select pg_temp.expect_code($q$insert into public.messages (conversation_id, send
 reset role;
 
 -- M2: the texts go 30 days after the latest reservation date; guide threads are untouched.
+-- The traveller has reported the business's message: it is kept until the report is resolved.
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+insert into public.message_reports (message_id, reporter_id, reason)
+select m.id, 'd1d1d1d1-0000-4000-8000-0000000000d1', 'Asked me to pay outside Kwetuly'
+from public.messages m where m.conversation_id = (select chat_id from bc) and m.sender_id = 'a1a1a1a1-0000-4000-8000-0000000000a1';
+reset role;
 select private.run_business_chat_cleanup();
-select pg_temp.check((select bool_and(body = '[deleted after 30 days]') from public.messages where conversation_id = (select chat_id from bc))
+select pg_temp.check((select bool_and(body = '[deleted after 30 days]') from public.messages
+                      where conversation_id = (select chat_id from bc) and sender_id = 'd1d1d1d1-0000-4000-8000-0000000000d1')
                      and (select last_message_preview = '[deleted after 30 days]' from public.conversations where id = (select chat_id from bc))
                      and (select count(*) = 0 from public.message_moderation mm join public.messages m on m.id = mm.message_id
-                          where m.conversation_id = (select chat_id from bc)),
+                          where m.conversation_id = (select chat_id from bc) and m.sender_id = 'd1d1d1d1-0000-4000-8000-0000000000d1'),
                      'B/M2: messages, preview and moderation copies removed');
+select pg_temp.check((select body <> '[deleted after 30 days]' from public.messages
+                      where conversation_id = (select chat_id from bc) and sender_id = 'a1a1a1a1-0000-4000-8000-0000000000a1')
+                     and (select count(*) = 1 from public.message_moderation mm join public.messages m on m.id = mm.message_id
+                          where m.conversation_id = (select chat_id from bc) and m.sender_id = 'a1a1a1a1-0000-4000-8000-0000000000a1')
+                     and (select texts_cleared_at is null from public.conversations where id = (select chat_id from bc)),
+                     'B/M2: a message under an open report keeps its text and moderation copy; the thread stays on the list');
+update public.message_reports set resolved = true
+where message_id in (select id from public.messages where conversation_id = (select chat_id from bc));
+select private.run_business_chat_cleanup();
+select pg_temp.check((select bool_and(body = '[deleted after 30 days]') from public.messages where conversation_id = (select chat_id from bc))
+                     and (select texts_cleared_at is not null from public.conversations where id = (select chat_id from bc)),
+                     'B/M2: once the report is resolved the rest goes and the thread is marked cleared');
+select pg_temp.check((select private.run_business_chat_cleanup() = 0), 'B/M2: a cleared thread is not scanned again');
 select pg_temp.check((select count(*) = 3 and bool_and(body <> '[deleted after 30 days]') from public.messages where conversation_id = (select id from gc)),
                      'B/M2: guide thread messages are untouched');
 
@@ -314,9 +335,15 @@ select 'aaaaaaaa-0000-4000-8000-000000000003', 'e1e1e1e1-0000-4000-8000-00000000
        'BC test kitchen', 'restaurant', 'd1d1d1d1-0000-4000-8000-0000000000d1', now() + interval '5 days', 2, 'per_guest', 2000,
        (select id from public.price_list where service_code = 'reservation_commission' and business_type = 'restaurant' limit 1);
 select pg_temp.check((select chat_id = (select chat_id from bc) from public.reservations where id = 'aaaaaaaa-0000-4000-8000-000000000003')
-                     and private.chat_open((select chat_id from bc)),
-                     'B/L1: a new reservation reuses and reopens the thread');
+                     and private.chat_open((select chat_id from bc))
+                     and (select texts_cleared_at is null from public.conversations where id = (select chat_id from bc)),
+                     'B/L1: a new reservation reuses and reopens the thread (and puts it back on the cleanup list)');
+-- No foreign key to providers is "restrict" (checked on live 2026-11-23: agreements, identifiers,
+-- listings, documents, checks, provider_private, referral_sales cascade; leads and the check log set
+-- null; reservations set null; services, hours and closed dates cascade), so this delete is not blocked.
 delete from public.providers where id = 'e1e1e1e1-0000-4000-8000-0000000000e1';
+select pg_temp.check((select count(*) = 0 from public.providers where id = 'e1e1e1e1-0000-4000-8000-0000000000e1'),
+                     'B/L1: the business delete went through');
 select pg_temp.check((select provider_id is null and was_business from public.conversations where id = (select chat_id from bc)),
                      'B/L1: deleting the business keeps the thread');
 select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');

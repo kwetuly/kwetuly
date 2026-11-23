@@ -61,7 +61,7 @@
 --     policies from 20261012001100, 20261012001200, 20261012001300 and 20261025000100;
 --   drop index conversations_traveler_provider_key, conversations_provider_idx;
 --   alter table public.conversations drop constraint conversations_one_party,
---     drop constraint conversations_business_never_unlocked, drop column provider_id, drop column was_business,
+--     drop constraint conversations_business_never_unlocked, drop column provider_id, drop column was_business, drop column texts_cleared_at,
 --     alter column guide_id set not null;
 
 -- ---------------------------------------------------------------------------
@@ -71,7 +71,10 @@
 -- was_business stays true, so the thread is never mistaken for anything else and nobody can send.
 alter table public.conversations
   add column if not exists provider_id uuid references public.providers (id) on delete set null,
-  add column if not exists was_business boolean not null default false;
+  add column if not exists was_business boolean not null default false,
+  -- Set by the daily cleanup once every text in a closed business thread is removed; cleared when a
+  -- new reservation reopens the thread. Only the server writes it (no client update grant).
+  add column if not exists texts_cleared_at timestamptz;
 alter table public.conversations alter column guide_id drop not null;
 
 alter table public.conversations drop constraint if exists conversations_one_party;
@@ -321,6 +324,9 @@ begin
   select c.id into new.chat_id
   from public.conversations c
   where c.traveler_id = new.traveler_id and c.provider_id = new.provider_id;
+  -- A new reservation reopens the thread, so the daily cleanup looks at it again later.
+  update public.conversations set texts_cleared_at = null
+  where id = new.chat_id and texts_cleared_at is not null;
   return new;
 end;
 $$;
@@ -473,6 +479,10 @@ create policy "Participants send messages" on public.messages
 -- ---------------------------------------------------------------------------
 -- Daily. The message rows stay (who and when) with a fixed marker as the body; the moderation copy of
 -- masked messages and the preview go too. Guide threads: untouched.
+-- A message with an unresolved report keeps its body and moderation copy until an admin resolves the
+-- report (re-review, Medium): the thread stays on the list and is looked at again the next day.
+-- A thread with nothing left to remove gets texts_cleared_at and is not scanned again (re-review, Low)
+-- until a new reservation reopens it.
 create or replace function private.run_business_chat_cleanup()
 returns integer
 language plpgsql
@@ -487,6 +497,7 @@ begin
   select coalesce(array_agg(c.id), '{}') into v_ids
   from public.conversations c
   where c.was_business
+    and c.texts_cleared_at is null
     and not exists (
       select 1 from public.reservations r
       where r.chat_id = c.id
@@ -497,12 +508,18 @@ begin
   end if;
   delete from public.message_moderation mm
   using public.messages m
-  where mm.message_id = m.id and m.conversation_id = any (v_ids);
+  where mm.message_id = m.id and m.conversation_id = any (v_ids)
+    and not exists (select 1 from public.message_reports mr where mr.message_id = m.id and not mr.resolved);
   update public.messages m set body = v_marker
-  where m.conversation_id = any (v_ids) and m.body <> v_marker;
+  where m.conversation_id = any (v_ids) and m.body <> v_marker
+    and not exists (select 1 from public.message_reports mr where mr.message_id = m.id and not mr.resolved);
   get diagnostics v_count = row_count;
   update public.conversations c set last_message_preview = v_marker
   where c.id = any (v_ids) and c.last_message_preview is distinct from v_marker and c.last_message_preview is not null;
+  -- Done when no text is left (messages under an open report keep the thread on the list).
+  update public.conversations c set texts_cleared_at = now()
+  where c.id = any (v_ids)
+    and not exists (select 1 from public.messages m where m.conversation_id = c.id and m.body <> v_marker);
   return v_count;
 end;
 $$;
