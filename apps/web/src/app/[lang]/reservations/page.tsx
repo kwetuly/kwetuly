@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { CheckCircle2, Info } from 'lucide-react';
-import { fillText, isNotAppliedError, reserveText, type ReserveText } from '@kwetuly/shared';
+import { answerByTime, fillText, isNotAppliedError, reserveText, type ReserveText } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -53,12 +53,19 @@ async function Content({ locale, r, searchParams }: { locale: Locale; r: Reserve
     );
   }
   const rows = soon ? [] : ((data ?? []) as MyReservation[]);
-  const sent = typeof params.sent === 'string' ? params.sent.slice(0, 120) : null;
+  // ?sent= is only a flag or the new reservation's id; the business name comes from the database (L-C).
+  const sentRow = typeof params.sent === 'string' ? (rows.find((x) => x.id === params.sent) ?? null) : null;
+  const sent = typeof params.sent === 'string';
+  const answerBy = sentRow ? answerByTime(sentRow.answer_by, locale) : null;
   return (
     <div className="mt-6 space-y-4">
       {sent && (
         <p role="status" className="flex items-start gap-2 rounded-[5px] bg-mint p-4 font-semibold text-forest">
-          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden /> {fillText(r.sent, { business: sent })}
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden />
+          <span>
+            {sentRow ? fillText(r.sent, { business: sentRow.business_name }) : r.done}
+            {answerBy && sentRow ? ` ${fillText(r.answerBy, { business: sentRow.business_name, time: answerBy })}` : ''}
+          </span>
         </p>
       )}
       {soon && (
@@ -69,7 +76,11 @@ async function Content({ locale, r, searchParams }: { locale: Locale; r: Reserve
       {rows.length === 0 ? (
         <div className="card space-y-4">
           <p className="text-muted">{r.myEmpty}</p>
-          <Link href={`/${locale}/local/food`} className="btn-outline">{r.findPlaces}</Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href={`/${locale}/local/food`} className="btn-outline">{r.findFood}</Link>
+            <Link href={`/${locale}/local/massage`} className="btn-outline">{r.findSpa}</Link>
+            <Link href={`/${locale}/local/salons`} className="btn-outline">{r.findSalon}</Link>
+          </div>
         </div>
       ) : (
         <MyReservations locale={locale} rows={rows} />

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { tanzaniaToday } from '@kwetuly/shared';
+import { isNotAppliedError, tanzaniaToday } from '@kwetuly/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -145,7 +145,7 @@ async function ReservationRates({ locale }: { locale: Locale }) {
     return (
       <section aria-labelledby="reservation-rates" role="alert" className="card space-y-3">
         <h2 id="reservation-rates" className="text-xl font-bold">Reservation commission</h2>
-        <p>The rates could not be loaded. If the reservation migration is not on this database yet, this is expected.</p>
+        <p>{isNotAppliedError(rows.error) ? 'Reservation rates open soon: the reservation migration is not on this database yet.' : 'Sorry, the rates could not be loaded. Please try again.'}</p>
         <Link href={`/${locale}/admin/prices`} className="btn-outline">Try again</Link>
       </section>
     );

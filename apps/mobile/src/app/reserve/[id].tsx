@@ -6,6 +6,7 @@ import {
   addDaysIso,
   fillText,
   isReservableType,
+  joinSentences,
   reservationRules,
   reservationSlots,
   reserveText,
@@ -20,7 +21,7 @@ import { useSession } from '@/lib/auth';
 import { getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
-import { loadReserveData, placeReservation, reserveError, type ActionResult } from '@/lib/reservations';
+import { checkGuideCode, loadReserveData, placeReservation, reserveError, type ActionResult } from '@/lib/reservations';
 import { useType } from '@/lib/use-type';
 import { brand, layout, radius, space } from '@/theme';
 
@@ -43,7 +44,7 @@ export default function ReserveScreen() {
   const needsSetup = useNeedsSetup();
   const business = useQuery({ queryKey: ['business', id], queryFn: () => getBusiness(id) });
   const b = business.data;
-  const data = useQuery({ queryKey: ['reserve-data', id], queryFn: () => loadReserveData(id, b!.business_type), enabled: !!b && !!session && isReservableType(b.business_type) });
+  const data = useQuery({ queryKey: ['reserve-data', id], queryFn: () => loadReserveData(id, b!.business_type), enabled: !!b && !!session && !b.is_sample && isReservableType(b.business_type) });
   const title = <Stack.Screen options={{ title: r.reserve }} />;
 
   if (!session) {
@@ -54,7 +55,7 @@ export default function ReserveScreen() {
       </FormScreen>
     );
   }
-  if (!b || (isReservableType(b.business_type) && !data.data)) {
+  if (!b || (isReservableType(b.business_type) && !b.is_sample && !data.data)) {
     return (
       <>
         {title}
@@ -62,7 +63,8 @@ export default function ReserveScreen() {
       </>
     );
   }
-  if (!isReservableType(b.business_type) || !data.data) {
+  // Samples and other business types cannot be reserved (QA 6, 14).
+  if (b.is_sample || !isReservableType(b.business_type) || !data.data) {
     return (
       <FormScreen>
         {title}
@@ -102,16 +104,21 @@ function Form({
   const [guideCode, setGuideCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allDays, setAllDays] = useState(false);
 
   const service = data.services.find((s) => s.id === serviceId) ?? null;
   const maxParty = service ? service.max_people : reservationRules.restaurantMaxParty;
   // No manual useMemo: the React Compiler memoizes these (expo lint, preserve-manual-memoization).
-  const days = Array.from({ length: Math.min(data.maxDays, 20) + 1 }, (_, i) => addDaysIso(data.today, i)).filter((d) => !data.closedDays.includes(d) && (data.hours[weekdayOfDay(d)] ?? []).length > 0);
+  // The first 3 weeks, then "Show later dates" for the whole range the business allows (QA 7).
+  const openDays = Array.from({ length: data.maxDays + 1 }, (_, i) => addDaysIso(data.today, i)).filter((d) => !data.closedDays.includes(d) && (data.hours[weekdayOfDay(d)] ?? []).length > 0);
+  const days = allDays ? openDays : openDays.slice(0, 21);
   const slots = day
     ? reservationSlots({ day, periods: data.hours[weekdayOfDay(day)] ?? [], durationMin: service?.duration_min ?? reservationRules.defaultDurationMin, minNoticeMin: data.minNoticeMin, maxDays: data.maxDays, today: data.today, closedDays: data.closedDays })
     : [];
   const rate = care && service && service.price_tzs == null ? data.unpricedRate : data.rate;
-  const disabled = data.soon || !data.open;
+  // No rate for this choice outside "opens soon": no disclosure, so no Send (security review L-A).
+  const rateMissing = !data.soon && data.open && !rate;
+  const disabled = data.soon || !data.open || rateMissing;
 
   async function send() {
     setError(null);
@@ -122,9 +129,18 @@ function Form({
     if (!Number.isInteger(people) || people < 1 || people > maxParty) return setError(r.refusals.party_size);
     if (diet.trim() && !consent) return setError(r.refusals.diet_consent_needed);
     setBusy(true);
+    // A guide code is checked first; the database takes only a code checked in the last hour.
+    if (guideCode.trim()) {
+      const check = await checkGuideCode(guideCode).catch(() => 'failed' as const);
+      if (check !== 'ok') {
+        setBusy(false);
+        return setError(check === 'unknown' ? r.refusals.guide_code_unknown : check === 'too_many' ? r.guideCodeTooMany : check === 'soon' ? r.soon : r.saveError);
+      }
+    }
     const result = await placeReservation({ providerId, serviceId: service?.id ?? null, startsAt: tanzaniaStartsAt(day, time), partySize: people, note, dietLine: diet, dietConsent: consent, guideCode }).catch((): ActionResult => ({ ok: false, error: 'failed' }));
     setBusy(false);
-    if (result.ok) router.replace({ pathname: '/my-reservations', params: { sent: businessName } } as unknown as Href);
+    // Only the reservation id travels; My reservations reads the business name from the database (L-C).
+    if (result.ok) router.replace({ pathname: '/my-reservations', params: { sent: result.id ?? '1' } } as unknown as Href);
     else setError(reserveError(r, result));
   }
 
@@ -134,6 +150,9 @@ function Form({
     <FormScreen
       bar={
         <>
+          {/* The disclosure sits right above Send (security review L-B; commission doc section 8). */}
+          {rate && <Text style={{ ...type.callout, color: brand.forest }}>{joinSentences(locale, fillText(r.disclosure[rate.kind], business), guideCode.trim() ? r.disclosureGuide : null)}</Text>}
+          {rateMissing && <ErrorText>{r.loadError}</ErrorText>}
           <ErrorText>{error}</ErrorText>
           {/* The screen's one filled button. */}
           <Button title={r.send} onPress={send} loading={busy} disabled={disabled} accessibilityLabel={data.soon ? `${r.send}. ${r.soon}` : undefined} />
@@ -144,7 +163,12 @@ function Form({
       <Text accessibilityRole="header" style={type.title2}>{fillText(r.title, business)}</Text>
       <Muted>{fillText(r.intro, business)}</Muted>
       {data.soon && <Note text={r.soon} />}
-      {!data.soon && !data.open && <Note text={fillText(r.notOpen, business)} />}
+      {!data.soon && !data.open && (
+        <>
+          <Note text={fillText(r.notOpen, business)} />
+          <Button title={fillText(r.askInstead, business)} variant="outline" size="md" onPress={() => router.replace({ pathname: '/business/[id]', params: { id: providerId } })} />
+        </>
+      )}
 
       <Card>
         {(care || data.services.length > 0) && (
@@ -163,21 +187,20 @@ function Form({
         <View style={{ gap: space.sm }}>
           <Text style={type.label}>{r.date}</Text>
           {days.length === 0 ? <Muted>{r.noTimes}</Muted> : chips(days.map((d) => <Chip key={d} label={dayLabel(d, locale)} active={day === d} onPress={() => { setDay(d); setTime(''); }} />))}
+          {!allDays && openDays.length > days.length && <Button title={r.laterDates} variant="text" size="md" onPress={() => setAllDays(true)} />}
         </View>
         <View style={{ gap: space.sm }}>
           <Text style={type.label}>{r.time}</Text>
           {!day ? <Muted>{r.pickDay}</Muted> : slots.length === 0 ? <Muted>{r.noTimes}</Muted> : chips(slots.map((s) => <Chip key={s} label={s} active={time === s} onPress={() => setTime(s)} />))}
         </View>
         <Field label={r.party} value={party} onChangeText={setParty} keyboardType="number-pad" maxLength={2} hint={fillText(r.partyHint, { max: maxParty })} />
-        <Field label={fillText(r.note, business)} value={note} onChangeText={setNote} multiline maxLength={reservationRules.noteMax} hint={`${r.noteHint} ${r.noteHealth}`} />
-        <Field label={r.diet} value={diet} onChangeText={setDiet} maxLength={reservationRules.dietLineMax} hint={fillText(r.dietHint, business)} />
+        <Field label={fillText(r.note, business)} value={note} onChangeText={setNote} multiline maxLength={reservationRules.noteMax} hint={joinSentences(locale, r.noteHint, r.noteHealth)} autoComplete="off" autoCorrect={false} importantForAutofill="no" />
+        <Field label={r.diet} value={diet} onChangeText={setDiet} maxLength={reservationRules.dietLineMax} hint={fillText(r.dietHint, business)} autoComplete="off" autoCorrect={false} importantForAutofill="no" />
         {diet.trim() ? <Toggle label={fillText(r.dietConsent, business)} value={consent} onChange={setConsent} /> : null}
         <Field label={r.guideCode} value={guideCode} onChangeText={setGuideCode} autoCapitalize="characters" maxLength={20} hint={r.guideCodeHint} />
       </Card>
 
-      {/* The disclosure, before Send (docs/team/business-reservation-commission-2026-11-22.md section 8). */}
       <Card style={{ backgroundColor: brand.mint }}>
-        {rate && <Text style={{ ...type.callout, color: brand.forest }}>{fillText(r.disclosure[rate.kind], business)}{guideCode.trim() ? ` ${r.disclosureGuide}` : ''}</Text>}
         <Text style={{ ...type.callout, ...font.bold, color: brand.forest }}>{r.noCharge}</Text>
       </Card>
     </FormScreen>

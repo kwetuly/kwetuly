@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Alert, Platform, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams, type Href } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fillText, formatReservationTime, reserveText, travellerReservationActions, type ReserveText } from '@kwetuly/shared';
+import { answerByTime, findMenuItem, fillText, formatReservationTime, reserveText, travellerReservationActions, type ReserveText } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Badge, Button, Card, EmptyState, Field, FormMessage, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { appHref } from '@/lib/menu';
 import { actOnReservation, answerVisit, loadMyReservations, reserveError, type ActionResult, type MyReservation } from '@/lib/reservations';
 import { useType } from '@/lib/use-type';
 import { brand, layout, radius, space } from '@/theme';
@@ -42,13 +43,28 @@ export default function MyReservationsScreen() {
     );
   }
   const reload = () => queryClient.invalidateQueries({ queryKey: ['my-reservations'] });
+  // ?sent= is a flag or the new reservation's id; the business name comes from the database (L-C).
+  const sentRow = sent ? (list.data.rows.find((x) => x.id === sent) ?? null) : null;
+  const sentAnswerBy = sentRow ? answerByTime(sentRow.answer_by, locale) : null;
+  const sentText = sentRow ? [fillText(r.sent, { business: sentRow.business_name }), sentAnswerBy ? fillText(r.answerBy, { business: sentRow.business_name, time: sentAnswerBy }) : ''].filter(Boolean).join(' ') : r.done;
   return (
     <FormScreen>
       {title}
-      {sent ? <FormMessage message={{ tone: 'ok', text: fillText(r.sent, { business: String(sent).slice(0, 120) }) }} /> : null}
+      {sent ? <FormMessage message={{ tone: 'ok', text: sentText }} /> : null}
       {list.data.soon && <Note text={r.soon} />}
       {list.data.rows.length === 0 ? (
-        <EmptyState glyph={GLYPHS.calendar} text={r.myEmpty} action={{ label: r.findPlaces, onPress: () => router.push({ pathname: '/section/[slug]', params: { slug: 'local' } } as unknown as Href) }} />
+        <>
+          <EmptyState glyph={GLYPHS.calendar} text={r.myEmpty} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: layout.inlineGap, justifyContent: 'center' }}>
+            {([
+              [r.findFood, 'food'],
+              [r.findSpa, 'massage'],
+              [r.findSalon, 'salons'],
+            ] as const).map(([label, item]) => (
+              <Button key={item} title={label} variant="outline" size="md" onPress={() => { const found = findMenuItem('local', item); if (found) router.push(appHref(found.section, found.item)); }} />
+            ))}
+          </View>
+        </>
       ) : (
         list.data.rows.map((row) => <Row key={row.id} r={r} locale={locale} row={row} onChanged={reload} />)
       )}
@@ -110,6 +126,7 @@ function Row({ r, locale, row, onChanged }: { r: ReserveText; locale: string; ro
       </View>
       <Muted>{[row.service_name, formatReservationTime(row.starts_at, locale), fillText(r.people, { n: row.party_size })].filter(Boolean).join(' · ')}</Muted>
       {reason && <Text style={type.callout}>{reason}</Text>}
+      {row.status === 'requested' && answerByTime(row.answer_by, locale) ? <Muted>{fillText(r.answerBy, { ...b, time: answerByTime(row.answer_by, locale)! })}</Muted> : null}
       {row.status === 'other_time_offered' && row.offered_starts_at && <Note text={fillText(r.offered, { ...b, time: formatReservationTime(row.offered_starts_at, locale) })} />}
       {row.business_note ? <Text selectable style={type.callout}><Text style={font.bold}>{fillText(r.messageFrom, b)}: </Text>{row.business_note}</Text> : null}
       {row.note ? <Text selectable style={type.callout}><Text style={font.bold}>{r.noteLabel}: </Text>{row.note}</Text> : null}

@@ -52,6 +52,7 @@ export async function resolveReservationDispute(formData: FormData) {
   const id = String(formData.get('reservation_id') ?? '');
   const outcome = String(formData.get('outcome') ?? '');
   if (!UUID.test(id) || !['completed', 'no_show', 'business_fault'].includes(outcome)) done(back, month, { rerr: 'failed' }, '#reservation-disputes');
+  if (formData.get('confirm') !== 'yes') done(back, month, { rerr: 'failed' }, '#reservation-disputes');
   const supabase = await createClient();
   // p_detail is a fixed code (security review L8); the database keeps only codes from its own list.
   const { error } = await supabase.rpc('admin_resolve_reservation_dispute', { p_reservation: id, p_outcome: outcome, p_detail: 'admin_page' });

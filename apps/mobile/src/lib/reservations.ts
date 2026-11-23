@@ -189,7 +189,7 @@ export async function saveRules(providerId: string, minNotice: number, maxDays: 
 // the website. Refusals come back as fixed codes (reservationErrorCode) the screens turn into texts.
 // ---------------------------------------------------------------------------------------------------
 
-export type ActionResult = { ok: true } | { ok: false; error: 'soon' | 'refused' | 'failed'; code?: string };
+export type ActionResult = { ok: true; id?: string } | { ok: false; error: 'soon' | 'refused' | 'failed'; code?: string };
 
 const failAction = (error: { code?: string | null; message?: string | null }): ActionResult => {
   if (isNotAppliedError(error)) return { ok: false, error: 'soon' };
@@ -238,17 +238,22 @@ export async function loadReserveData(providerId: string, businessType: string):
   const unpriced = businessType !== 'restaurant' ? serviceRows.find((s) => s.price_tzs == null) : undefined;
   const unpricedRate = unpriced && !soon ? await supabase.rpc('reservation_rate', { p_provider: providerId, p_service: unpriced.id }) : null;
   const hourRows = soon ? [] : ((hours.data ?? []) as { weekday: number; opens: string; closes: string }[]);
+  const open = !soon && Boolean(rules.data?.takes_reservations) && hourRows.length > 0;
+  const generalRate = soon ? null : rateOf(((rate.data ?? []) as Record<string, unknown>[])[0]);
+  // A failed second rate call, or an open business without a rate, is a load error (security review L-A).
+  if (unpricedRate?.error) throw new Error(unpricedRate.error.message);
+  if (open && !generalRate) throw new Error('reservation rate missing');
   return {
     soon,
-    open: !soon && Boolean(rules.data?.takes_reservations) && hourRows.length > 0,
+    open,
     today,
     minNoticeMin: rules.data?.reservation_min_notice_min ?? reservationLimits.minNoticeDefault,
     maxDays: rules.data?.reservation_max_days ?? reservationLimits.maxDaysDefault,
     hours: hoursByWeekday(hourRows),
     closedDays: soon ? [] : ((closed.data ?? []) as { day: string }[]).map((c) => c.day),
     services: serviceRows,
-    rate: soon ? null : rateOf(((rate.data ?? []) as Record<string, unknown>[])[0]),
-    unpricedRate: unpricedRate && !unpricedRate.error ? rateOf(((unpricedRate.data ?? []) as Record<string, unknown>[])[0]) : null,
+    rate: generalRate,
+    unpricedRate: unpricedRate ? rateOf(((unpricedRate.data ?? []) as Record<string, unknown>[])[0]) : null,
   };
 }
 
@@ -262,7 +267,7 @@ export async function placeReservation(input: {
   dietConsent: boolean;
   guideCode: string;
 }): Promise<ActionResult> {
-  const { error } = await supabase.rpc('place_reservation', {
+  const { data, error } = await supabase.rpc('place_reservation', {
     p_provider: input.providerId,
     p_service: input.serviceId,
     p_starts_at: input.startsAt,
@@ -272,7 +277,14 @@ export async function placeReservation(input: {
     p_diet_consent: input.dietConsent,
     p_guide_code: input.guideCode.trim() || null,
   });
-  return error ? failAction(error) : { ok: true };
+  return error ? failAction(error) : { ok: true, id: typeof data === 'string' ? data : undefined };
+}
+
+/** Checks a guide code before Send; place_reservation accepts only codes checked in the last hour. */
+export async function checkGuideCode(code: string): Promise<'ok' | 'unknown' | 'too_many' | 'soon' | 'failed'> {
+  const { data, error } = await supabase.rpc('guide_code_status', { p_code: code.trim().slice(0, 40) });
+  if (error) return isNotAppliedError(error) ? 'soon' : 'failed';
+  return data === 'ok' || data === 'unknown' || data === 'too_many' ? data : 'failed';
 }
 
 export async function actOnReservation(
@@ -311,6 +323,8 @@ export type MyReservation = {
   can_answer_visit: boolean;
   /** Ask "How many of you came?" with the yes answer. */
   asks_people_count?: boolean;
+  /** Set while requested or other_time_offered. */
+  answer_by?: string | null;
 };
 
 export async function loadMyReservations(): Promise<{ soon: boolean; rows: MyReservation[] }> {
@@ -337,6 +351,7 @@ export type OwnerReservation = {
   commission_tzs: number | null;
   commission_status: ReservationCommissionStatus;
   is_sample: boolean;
+  answer_by?: string | null;
 };
 export type StatementRow = { commission_status: ReservationCommissionStatus; reservation_count: number; guests_counted: number; commission_tzs: number; billing_on: boolean };
 

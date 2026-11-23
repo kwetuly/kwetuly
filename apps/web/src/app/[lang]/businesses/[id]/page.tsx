@@ -73,7 +73,7 @@ async function Content({ params, searchParams, t, locale }: PageProps<'/[lang]/b
         </div>
         {business.has_referral_agreement && <p className="mt-3 text-sm text-muted">{bt.commissionNote}</p>}
         <Suspense fallback={null}>
-          <ReserveEntry providerId={business.id} businessType={business.business_type} locale={locale} />
+          <ReserveEntry providerId={business.id} businessType={business.business_type} isSample={business.is_sample} locale={locale} />
         </Suspense>
         {business.story && <p className="mt-6 whitespace-pre-line leading-relaxed">{business.story}</p>}
         {website?.ok && (

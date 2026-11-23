@@ -73,6 +73,7 @@ const en = {
     'How it is worked out. Restaurants: a fixed amount for each guest who came, up to a set number of guests per reservation. Spas and salons: a percent of the listed price of the service. A service with no listed price: a fixed amount for each person who came.',
     'For now, commission statements are for information only, and there is no charge. Kwetuly will tell you at least 30 days before any charge starts.',
     'No commission is recorded for guests who do not come, or for cancelled reservations.',
+    'If you do not mark a confirmed reservation within 3 days, Kwetuly counts everyone booked as came. "Did not come" can be marked from 30 minutes after the time. The guest is asked too.',
     'Reservations are only for visits at your place of business. Kwetuly does not take reservations for home visits, including spa and massage services.',
     'You do not add the commission to the guest\'s price.',
     'Kwetuly may update these terms. If they change, we will ask you to read and accept them again.',
@@ -163,7 +164,7 @@ const en = {
 export type ReservationText = typeof en;
 
 const sw: ReservationText = {
-  title: 'Mipangilio ya uhifadhi',
+  title: 'Mipangilio ya uhifadhi wa nafasi',
   menuHint: 'Saa za kazi, huduma na kuwasha uhifadhi wa nafasi',
   intro: 'Karibu. Hapa unaweza kuandaa mgahawa, spa au saluni yako kupokea uhifadhi wa nafasi kupitia Kwetuly.',
   loadError: 'Samahani, hatukuweza kupakia mipangilio yako ya uhifadhi. Tafadhali jaribu tena.',
@@ -228,7 +229,8 @@ const sw: ReservationText = {
     'Kwetuly inaandika kamisheni kwa kila uhifadhi uliokamilika, yaani uhifadhi ambao mgeni alifika.',
     'Inavyohesabiwa. Migahawa: kiasi maalum kwa kila mgeni aliyefika, hadi idadi fulani ya wageni kwa kila uhifadhi. Spa na saluni: asilimia ya bei ya huduma iliyoorodheshwa. Huduma isiyo na bei iliyoorodheshwa: kiasi maalum kwa kila mtu aliyefika.',
     'Kwa sasa, taarifa za kamisheni ni kwa taarifa tu, na hakuna malipo. Kwetuly itakujulisha angalau siku 30 kabla malipo yoyote hayajaanza.',
-    'Hakuna kamisheni kwa wageni wasiofika, wala kwa uhifadhi uliofutwa.',
+    'Hakuna kamisheni kwa wageni wasiofika, wala kwa uhifadhi ulioghairiwa.',
+    'Usipoandika uhifadhi uliothibitishwa ndani ya siku 3, Kwetuly itahesabu kuwa wote waliohifadhiwa walifika. "Hawakufika" kinaweza kuandikwa kuanzia dakika 30 baada ya muda. Mgeni naye anaulizwa.',
     'Uhifadhi ni kwa ajili ya kutembelea mahali pa biashara yako tu. Kwetuly haipokei uhifadhi wa huduma za nyumbani, zikiwemo huduma za spa na masaji.',
     'Usiongeze kamisheni kwenye bei ya mgeni.',
     'Kwetuly inaweza kubadilisha masharti haya. Yakibadilika, tutakuomba uyasome na uyakubali tena.',

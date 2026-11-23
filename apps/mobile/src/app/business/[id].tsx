@@ -36,7 +36,8 @@ export default function BusinessScreen() {
 
   const b = business.data;
   // Restaurants, spas and salons that take reservations (slice 2); 'soon' while the database part is missing.
-  const reservable = !!b && isReservableType(b.business_type);
+  // Samples have not joined, so no Reserve (QA 6).
+  const reservable = !!b && !b.is_sample && isReservableType(b.business_type);
   const entry = useQuery({ queryKey: ['reservation-entry', id], queryFn: () => reservationEntry(id), enabled: reservable });
   const needsSetup = useNeedsSetup();
   if (!b) return <ScreenState screen loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;

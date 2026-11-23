@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/server';
 // "Reserve" on restaurant, spa and salon pages (slice 2): shown when the business takes reservations.
 // While the reservation columns are not on the database, the button is shown switched off with
 // "opens soon". The form and the database check every other rule.
-export async function ReserveEntry({ providerId, businessType, locale }: { providerId: string; businessType: string; locale: string }) {
-  if (!isReservableType(businessType)) return null;
+export async function ReserveEntry({ providerId, businessType, isSample, locale }: { providerId: string; businessType: string; isSample: boolean; locale: string }) {
+  // Sample businesses have not joined: no Reserve (QA 6).
+  if (isSample || !isReservableType(businessType)) return null;
   const r = reserveText(locale);
   const supabase = await createClient();
   const { data, error } = await supabase.from('providers').select('takes_reservations').eq('id', providerId).maybeSingle<{ takes_reservations: boolean }>();

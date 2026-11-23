@@ -1,4 +1,5 @@
 import type { Locale } from '@/i18n/config';
+import { isNotAppliedError } from '@kwetuly/shared';
 import { createClient } from '@/lib/supabase/server';
 import { markReservationCommission, resolveReservationDispute } from './reservation-actions';
 
@@ -89,7 +90,11 @@ export async function ReservationCommissions({ locale, month, params }: {
     return (
       <section id="reservation-commission" className="mt-12 card space-y-2">
         <h2 className="text-2xl font-bold">Reservations</h2>
-        <p className="text-muted">Reservation commission could not be loaded. If the reservations migration is not on this database yet, this is expected.</p>
+        {isNotAppliedError(monthRows.error) ? (
+          <p className="rounded-[5px] bg-sand p-3 font-semibold">Reservations open soon: the reservations migration is not on this database yet.</p>
+        ) : (
+          <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-red-800">Sorry, reservation commission could not be loaded. Please reload the page.</p>
+        )}
       </section>
     );
   }
@@ -199,6 +204,11 @@ export async function ReservationCommissions({ locale, month, params }: {
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="month" value={month} />
                   <input type="hidden" name="reservation_id" value={d.id} />
+                  {/* A tick first: the outcome decides the commission and the traveller's record (QA 13). */}
+                  <label className="flex w-full items-center gap-2 text-sm font-semibold">
+                    <input type="checkbox" name="confirm" value="yes" required className="size-5 accent-[#1D951A]" />
+                    I have checked both answers and choose the outcome below.
+                  </label>
                   <button name="outcome" value="completed" className="btn-outline px-3 py-1.5 text-sm">It took place</button>
                   <button name="outcome" value="no_show" className="btn-outline px-3 py-1.5 text-sm">The traveller did not come</button>
                   <button name="outcome" value="business_fault" className="btn-outline px-3 py-1.5 text-sm">The business could not receive them</button>

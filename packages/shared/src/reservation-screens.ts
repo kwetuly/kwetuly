@@ -89,7 +89,11 @@ export function travellerReservationActions(r: Row, now: Date = new Date()): ('c
 export function ownerReservationActions(r: Row, now: Date = new Date()): ReservationAction[] {
   const future = new Date(r.starts_at).getTime() > now.getTime();
   if (r.status === 'requested') return future ? ['confirm', 'decline', 'offer_time'] : [];
-  if (r.status === 'confirmed') return future ? ['cancel'] : ['mark_came', 'mark_no_show'];
+  if (r.status !== 'confirmed') return [];
+  if (future) return ['cancel'];
+  // "Did not come" only from 30 minutes after the time (the database refuses it earlier).
+  const noShowFrom = new Date(r.starts_at).getTime() + 30 * 60_000;
+  return now.getTime() >= noShowFrom ? ['mark_came', 'mark_no_show'] : ['mark_came'];
   return [];
 }
 
@@ -112,4 +116,39 @@ export function recentMonths(today: string, count = 12): string[] {
 export function refusalText<T extends Record<string, string>>(texts: T, message: string | null | undefined): string | null {
   const m = /reservation(?:_action)?_refused: ([a-z_]+)/.exec(message ?? '');
   return m && m[1] in texts ? texts[m[1] as keyof T] : null;
+}
+
+/** Two short sentences as one line: no space between them in Chinese. */
+export function joinSentences(locale: string, ...parts: (string | null | undefined | false)[]): string {
+  return parts.filter(Boolean).join(locale === 'zh' ? '' : ' ');
+}
+
+/** A day and a quarter-hour time the owner typed for "offer another time". */
+export function offerTimeOk(day: string, time: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(`${day}T00:00:00Z`))) return false;
+  const m = /^([01]\d|2[0-3]):(00|15|30|45)$/.exec(time);
+  return !!m;
+}
+
+/**
+ * Statement totals: only owed, invoiced and paid add up to what the business owes Kwetuly; held
+ * (disputed, waiting for Kwetuly) and waived are shown on their own lines (security review L-F).
+ */
+export function statementTotals(rows: readonly { commission_status: string; commission_tzs: number | string }[]): { total: number; held: number; waived: number } {
+  let total = 0;
+  let held = 0;
+  let waived = 0;
+  for (const r of rows) {
+    const v = Number(r.commission_tzs) || 0;
+    if (r.commission_status === 'held') held += v;
+    else if (r.commission_status === 'waived') waived += v;
+    else if (r.commission_status === 'owed' || r.commission_status === 'invoiced' || r.commission_status === 'paid') total += v;
+  }
+  return { total, held, waived };
+}
+
+/** answer_by (when the database sends it) as "HH:MM", Tanzania time; null when absent. */
+export function answerByTime(answerBy: string | null | undefined, locale: string): string | null {
+  if (!answerBy || Number.isNaN(new Date(answerBy).getTime())) return null;
+  return formatReservationTime(answerBy, locale);
 }

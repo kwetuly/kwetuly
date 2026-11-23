@@ -27,6 +27,10 @@ export async function generateMetadata(): Promise<Metadata> {
 // needs an account). While the reservation migrations are not on the database the form is still shown,
 // with "opens soon" and Send switched off.
 export default async function ReservePage(props: { params: Promise<{ lang: string; id: string }> }) {
+  // Checked before the Suspense boundary so other businesses and samples return HTTP 404 (QA 14).
+  const { id } = await props.params;
+  const business = await getBusiness(id);
+  if (!business || business.is_sample || !isReservableType(business.business_type)) notFound();
   const locale = await getLocale();
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -54,7 +58,7 @@ const rateOf = (row: Record<string, unknown> | undefined): ReservationRate | nul
 async function Content({ params, locale }: { params: Promise<{ id: string }>; locale: Locale }) {
   const { id } = await params;
   const business = await getBusiness(id);
-  if (!business || !isReservableType(business.business_type)) notFound();
+  if (!business || business.is_sample || !isReservableType(business.business_type)) notFound();
   await requireUser(locale, `/${locale}/businesses/${id}/reserve`);
   const r = reserveText(locale);
   const supabase = await createClient();
@@ -81,11 +85,23 @@ async function Content({ params, locale }: { params: Promise<{ id: string }>; lo
   const care = business.business_type !== 'restaurant';
   const unpriced = care ? serviceRows.find((s) => s.price_tzs == null) : undefined;
   const unpricedRate = unpriced && !soon ? await supabase.rpc('reservation_rate', { p_provider: id, p_service: unpriced.id }) : null;
+  const generalRate = soon ? null : rateOf(((rate.data ?? []) as Record<string, unknown>[])[0]);
+  const open = !soon && Boolean(rules.data?.takes_reservations) && ((hours.data ?? []) as unknown[]).length > 0;
+  // An open business always has a rate (the database checks it). A missing rate, or a failed second
+  // call, is a load error, never a form without the disclosure (security review L-A).
+  if (unpricedRate?.error || (open && !generalRate)) {
+    return (
+      <div role="alert" className="card space-y-4">
+        <p>{r.loadError}</p>
+        <Link href={`/${locale}/businesses/${id}/reserve`} className="btn-outline">{r.retry}</Link>
+      </div>
+    );
+  }
   const hourRows = soon ? [] : ((hours.data ?? []) as { weekday: number; opens: string; closes: string }[]);
 
   const data: ReserveData = {
     soon,
-    open: !soon && Boolean(rules.data?.takes_reservations) && hourRows.length > 0,
+    open,
     providerId: id,
     businessName: business.business_name,
     care,
@@ -95,8 +111,8 @@ async function Content({ params, locale }: { params: Promise<{ id: string }>; lo
     hours: hoursByWeekday(hourRows),
     closedDays: soon ? [] : ((closed.data ?? []) as { day: string }[]).map((c) => c.day),
     services: serviceRows,
-    rate: soon ? null : rateOf(((rate.data ?? []) as Record<string, unknown>[])[0]),
-    unpricedRate: unpricedRate && !unpricedRate.error ? rateOf(((unpricedRate.data ?? []) as Record<string, unknown>[])[0]) : null,
+    rate: generalRate,
+    unpricedRate: unpricedRate ? rateOf(((unpricedRate.data ?? []) as Record<string, unknown>[])[0]) : null,
   };
 
   return (

@@ -636,6 +636,7 @@ export function Field({
   code,
   returnKeyType,
   onSubmitEditing,
+  importantForAutofill,
 }: {
   label: string;
   value: string;
@@ -659,6 +660,8 @@ export function Field({
   /** The keyboard's Enter key, e.g. "go" on the last field of a form that `onSubmitEditing` submits. */
   returnKeyType?: TextInputProps['returnKeyType'];
   onSubmitEditing?: () => void;
+  /** Android: 'no' keeps private lines (diet, notes) out of autofill. */
+  importantForAutofill?: TextInputProps['importantForAutofill'];
 }) {
   const { type, font } = useType();
   const [focused, setFocused] = useState(false);
@@ -680,6 +683,7 @@ export function Field({
         secureTextEntry={secureTextEntry}
         autoFocus={autoFocus}
         returnKeyType={returnKeyType}
+        importantForAutofill={importantForAutofill}
         onSubmitEditing={onSubmitEditing ? () => onSubmitEditing() : undefined}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={hint}

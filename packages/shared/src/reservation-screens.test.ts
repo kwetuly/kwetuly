@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  joinSentences,
+  offerTimeOk,
+  statementTotals,
   monthStart,
   ownerReservationActions,
   recentMonths,
@@ -41,11 +44,30 @@ describe('buttons', () => {
   it('owner', () => {
     expect(ownerReservationActions({ status: 'requested', starts_at: '2026-11-23T10:00:00Z' }, now)).toEqual(['confirm', 'decline', 'offer_time']);
     expect(ownerReservationActions({ status: 'confirmed', starts_at: '2026-11-21T10:00:00Z' }, now)).toEqual(['mark_came', 'mark_no_show']);
+    expect(ownerReservationActions({ status: 'confirmed', starts_at: '2026-11-22T11:45:00Z' }, now)).toEqual(['mark_came']);
     expect(ownerReservationActions({ status: 'completed', starts_at: '2026-11-21T10:00:00Z' }, now)).toEqual([]);
   });
   it('months', () => {
     expect(monthStart('2026-10', '2026-11-22')).toBe('2026-10-01');
     expect(monthStart('bad', '2026-11-22')).toBe('2026-11-01');
     expect(recentMonths('2026-01-15', 3)).toEqual(['2026-01', '2025-12', '2025-11']);
+  });
+});
+
+describe('owner helpers', () => {
+  it('statement total leaves out held and waived', () => {
+    expect(statementTotals([
+      { commission_status: 'owed', commission_tzs: 4000 },
+      { commission_status: 'paid', commission_tzs: '1000' },
+      { commission_status: 'held', commission_tzs: 2000 },
+      { commission_status: 'waived', commission_tzs: 500 },
+    ])).toEqual({ total: 5000, held: 2000, waived: 500 });
+  });
+  it('offer time and sentence joining', () => {
+    expect(offerTimeOk('2026-12-01', '19:30')).toBe(true);
+    expect(offerTimeOk('2026-12-01', '19:20')).toBe(false);
+    expect(offerTimeOk('1/12/2026', '19:30')).toBe(false);
+    expect(joinSentences('zh', '甲。', '乙。')).toBe('甲。乙。');
+    expect(joinSentences('en', 'A.', 'B.')).toBe('A. B.');
   });
 });

@@ -7,6 +7,7 @@ import { Info, Loader2 } from 'lucide-react';
 import {
   addDaysIso,
   fillText,
+  joinSentences,
   reservationRules,
   reservationSlots,
   reserveText,
@@ -16,7 +17,7 @@ import {
   type ReservationRate,
   type ReserveText,
 } from '@kwetuly/shared';
-import { placeReservation, type ReservationResult } from '../../../reservations/actions';
+import { checkGuideCode, placeReservation, type ReservationResult } from '../../../reservations/actions';
 
 export type ReserveData = {
   soon: boolean;
@@ -81,7 +82,9 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
     [day, service, data],
   );
   const rate = data.care && service && service.price_tzs == null ? data.unpricedRate : data.rate;
-  const disabled = data.soon || !data.open;
+  // No rate for this choice outside "opens soon": no disclosure, so no Send (security review L-A).
+  const rateMissing = !data.soon && data.open && !rate;
+  const disabled = data.soon || !data.open || rateMissing;
 
   function send() {
     setError(null);
@@ -91,8 +94,17 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
     if (!Number.isInteger(people) || people < 1 || people > maxParty) return setError(r.refusals.party_size);
     if (diet.trim() && !consent) return setError(r.refusals.diet_consent_needed);
     start(async () => {
+      // A guide code is checked first; the database takes only a code checked in the last hour.
+      if (guideCode.trim()) {
+        const check = await checkGuideCode(guideCode);
+        if (check !== 'ok') {
+          setError(check === 'unknown' ? r.refusals.guide_code_unknown : check === 'too_many' ? r.guideCodeTooMany : check === 'soon' ? r.soon : r.saveError);
+          return;
+        }
+      }
       const result = await placeReservation({ providerId: data.providerId, serviceId: service?.id ?? null, startsAt: tanzaniaStartsAt(day, time), partySize: people, note, dietLine: diet, dietConsent: consent, guideCode });
-      if (result.ok) router.push(`/${locale}/reservations?sent=${encodeURIComponent(data.businessName)}`);
+      // Only the reservation id goes in the address; the page reads the business name from the database (L-C).
+      if (result.ok) router.push(`/${locale}/reservations?sent=${result.id ?? '1'}`);
       else setError(reserveError(r, result));
     });
   }
@@ -108,6 +120,7 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
       {!data.soon && !data.open && (
         <div role="status" className="space-y-3 rounded-[5px] bg-sand p-4">
           <p className="font-semibold">{fillText(r.notOpen, business)}</p>
+          <Link href={`/${locale}/businesses/${data.providerId}#ask`} className="btn-outline">{fillText(r.askInstead, business)}</Link>
         </div>
       )}
 
@@ -175,14 +188,14 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
 
         <label className="block" htmlFor={`${uid}-note`}>
           <span className="label">{fillText(r.note, business)}</span>
-          <textarea id={`${uid}-note`} className="field min-h-24" maxLength={reservationRules.noteMax} value={note} onChange={(e) => setNote(e.target.value)} aria-describedby={`${uid}-note-hint`} />
-          <span id={`${uid}-note-hint`} className="mt-1 block text-sm text-muted">{r.noteHint} {r.noteHealth}</span>
+          <textarea id={`${uid}-note`} className="field min-h-24" autoComplete="off" maxLength={reservationRules.noteMax} value={note} onChange={(e) => setNote(e.target.value)} aria-describedby={`${uid}-note-hint`} />
+          <span id={`${uid}-note-hint`} className="mt-1 block text-sm text-muted">{joinSentences(locale, r.noteHint, r.noteHealth)}</span>
         </label>
 
         <div className="space-y-2">
           <label className="block" htmlFor={`${uid}-diet`}>
             <span className="label">{r.diet}</span>
-            <input id={`${uid}-diet`} className="field" maxLength={reservationRules.dietLineMax} value={diet} onChange={(e) => setDiet(e.target.value)} aria-describedby={`${uid}-diet-hint`} />
+            <input id={`${uid}-diet`} className="field" autoComplete="off" maxLength={reservationRules.dietLineMax} value={diet} onChange={(e) => setDiet(e.target.value)} aria-describedby={`${uid}-diet-hint`} />
             <span id={`${uid}-diet-hint`} className="mt-1 block text-sm text-muted">{fillText(r.dietHint, business)}</span>
           </label>
           {diet.trim() && (
@@ -205,6 +218,7 @@ export function ReserveForm({ locale, data }: { locale: string; data: ReserveDat
           <p className="font-semibold">{r.noCharge}</p>
         </div>
 
+        {rateMissing && <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{r.loadError}</p>}
         {error && <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-sm text-red-800">{error}</p>}
         <button type="submit" className="btn w-full sm:w-auto" disabled={disabled || pending}>
           {pending && <Loader2 className="size-4 animate-spin" aria-hidden />}

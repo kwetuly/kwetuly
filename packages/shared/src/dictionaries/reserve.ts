@@ -13,6 +13,8 @@ export type ReserveText = {
   intro: string;
   soon: string;
   notOpen: string;
+  askInstead: string;
+  answerBy: string;
   loadError: string;
   retry: string;
   saveError: string;
@@ -21,6 +23,7 @@ export type ReserveText = {
   date: string;
   time: string;
   pickDay: string;
+  laterDates: string;
   noTimes: string;
   party: string;
   partyHint: string;
@@ -32,6 +35,7 @@ export type ReserveText = {
   dietConsent: string;
   guideCode: string;
   guideCodeHint: string;
+  guideCodeTooMany: string;
   disclosure: { per_guest: string; percent: string; per_person: string };
   disclosureGuide: string;
   noCharge: string;
@@ -41,6 +45,9 @@ export type ReserveText = {
   myHint: string;
   myEmpty: string;
   findPlaces: string;
+  findFood: string;
+  findSpa: string;
+  findSalon: string;
   people: string;
   statuses: Record<ReservationStatus, string>;
   offered: string;
@@ -71,6 +78,8 @@ const en: ReserveText = {
   intro: 'Karibu. Please choose a day and a time. {business} will confirm, or offer another time.',
   soon: 'Reservations open soon. Thank you for your patience.',
   notOpen: 'Sorry, {business} is not taking reservations through Kwetuly at the moment. You are welcome to send a message instead.',
+  askInstead: 'Send {business} a message',
+  answerBy: 'If {business} has not answered by {time}, we will tell you.',
   loadError: 'Sorry, we could not load this. Please try again.',
   retry: 'Try again',
   saveError: 'Sorry, something went wrong. Please try again.',
@@ -79,6 +88,7 @@ const en: ReserveText = {
   date: 'Day',
   time: 'Time',
   pickDay: 'Please choose a day first.',
+  laterDates: 'Show later dates',
   noTimes: 'No free times on this day. Please choose another day.',
   party: 'Number of people',
   partyHint: 'From 1 to {max}.',
@@ -86,10 +96,11 @@ const en: ReserveText = {
   noteHint: 'Up to 300 characters. Please do not add phone numbers or links.',
   noteHealth: 'Health or allergy details go in the diet line.',
   diet: 'Diet or allergy (optional)',
-  dietHint: 'Only {business} sees this, for this reservation. Deleted 30 days after.',
+  dietHint: 'Only {business} sees this, for this reservation. Deleted 30 days after the reservation date.',
   dietConsent: 'I agree that {business} sees this line for this reservation.',
   guideCode: 'Guide code (optional)',
   guideCodeHint: 'If a guide gave you a code, please type it here.',
+  guideCodeTooMany: 'Please try the guide code again in an hour.',
   disclosure: {
     per_guest: 'Kwetuly receives a small fixed amount from {business} for each guest who comes through this reservation. You pay {business} the same price as every other guest.',
     percent: 'Kwetuly receives a share of the listed price from {business} for this reservation. You pay {business} the listed price, nothing extra.',
@@ -103,6 +114,9 @@ const en: ReserveText = {
   myHint: 'Tables and visits you asked for',
   myEmpty: 'No reservations yet. Restaurants, spas and salons that take reservations show a Reserve button.',
   findPlaces: 'Find a place',
+  findFood: 'Restaurants',
+  findSpa: 'Spas and massage',
+  findSalon: 'Salons',
   people: '{n} people',
   statuses: {
     requested: 'Waiting for an answer',
@@ -176,6 +190,8 @@ const sw: ReserveText = {
   intro: 'Karibu. Tafadhali chagua siku na muda. {business} itathibitisha, au itapendekeza muda mwingine.',
   soon: 'Uhifadhi wa nafasi utafunguliwa hivi karibuni. Asante kwa uvumilivu wako.',
   notOpen: 'Samahani, {business} haipokei uhifadhi kupitia Kwetuly kwa sasa. Unakaribishwa kutuma ujumbe badala yake.',
+  askInstead: 'Tuma ujumbe kwa {business}',
+  answerBy: 'Ikiwa {business} haijajibu kufikia {time}, tutakujulisha.',
   loadError: 'Samahani, hatukuweza kupakia hili. Tafadhali jaribu tena.',
   retry: 'Jaribu tena',
   saveError: 'Samahani, kuna tatizo. Tafadhali jaribu tena.',
@@ -184,6 +200,7 @@ const sw: ReserveText = {
   date: 'Siku',
   time: 'Muda',
   pickDay: 'Tafadhali chagua siku kwanza.',
+  laterDates: 'Onyesha tarehe za baadaye',
   noTimes: 'Hakuna muda uliowazi siku hii. Tafadhali chagua siku nyingine.',
   party: 'Idadi ya watu',
   partyHint: 'Kuanzia 1 hadi {max}.',
@@ -191,10 +208,11 @@ const sw: ReserveText = {
   noteHint: 'Hadi herufi 300. Tafadhali usiweke namba za simu wala viungo.',
   noteHealth: 'Maelezo ya afya au mzio yaandikwe kwenye mstari wa chakula.',
   diet: 'Chakula maalum au mzio (si lazima)',
-  dietHint: 'Ni {business} tu wanaoona hili, kwa uhifadhi huu. Linafutwa siku 30 baadaye.',
+  dietHint: 'Ni {business} tu wanaoona hili, kwa uhifadhi huu. Linafutwa siku 30 baada ya tarehe ya uhifadhi.',
   dietConsent: 'Ninakubali {business} waone mstari huu kwa uhifadhi huu.',
   guideCode: 'Msimbo wa mwongozaji (si lazima)',
   guideCodeHint: 'Ikiwa mwongozaji amekupa msimbo, tafadhali uandike hapa.',
+  guideCodeTooMany: 'Tafadhali jaribu msimbo wa mwongozaji tena baada ya saa moja.',
   disclosure: {
     per_guest: 'Kwetuly inapokea kiasi kidogo maalum kutoka kwa {business} kwa kila mgeni anayefika kupitia uhifadhi huu. Unalipa {business} bei ileile kama kila mgeni mwingine.',
     percent: 'Kwetuly inapokea sehemu ya bei iliyoorodheshwa kutoka kwa {business} kwa uhifadhi huu. Unalipa {business} bei iliyoorodheshwa, bila nyongeza.',
@@ -208,13 +226,16 @@ const sw: ReserveText = {
   myHint: 'Meza na ziara ulizoomba',
   myEmpty: 'Bado hakuna uhifadhi. Migahawa, spa na saluni zinazopokea uhifadhi zinaonyesha kitufe cha Hifadhi nafasi.',
   findPlaces: 'Tafuta mahali',
+  findFood: 'Migahawa',
+  findSpa: 'Spa na masaji',
+  findSalon: 'Saluni',
   people: 'watu {n}',
   statuses: {
     requested: 'Inasubiri jibu',
     confirmed: 'Imethibitishwa',
     declined: 'Haiwezekani',
     other_time_offered: 'Muda mwingine umependekezwa',
-    cancelled: 'Imefutwa',
+    cancelled: 'Imeghairiwa',
     no_show: 'Imeandikwa hukufika',
     completed: 'Ziara ilifanyika',
   },
@@ -224,11 +245,11 @@ const sw: ReserveText = {
   noteLabel: 'Ujumbe wako',
   declinedNoAnswer: 'Jibu halikufika kwa wakati. Samahani.',
   declinedOfferRefused: 'Hukuchukua muda mwingine.',
-  cancelledByBusiness: 'Imefutwa na {business}. Samahani.',
+  cancelledByBusiness: 'Imeghairiwa na {business}. Samahani.',
   acceptOffer: 'Chukua muda mpya',
   refuseOffer: 'Hapana, asante',
-  cancel: 'Futa uhifadhi',
-  cancelConfirm: 'Ungependa kufuta uhifadhi huu? Hakuna ada.',
+  cancel: 'Ghairi uhifadhi',
+  cancelConfirm: 'Ungependa kughairi uhifadhi huu? Hakuna ada.',
   done: 'Asante. Imehifadhiwa.',
   visitQuestion: 'Je, ziara yako ilifanyika?',
   visitYes: 'Ndiyo, nilienda',
@@ -242,7 +263,7 @@ const sw: ReserveText = {
     own_business: 'Hii ni biashara yako mwenyewe, kwa hiyo huwezi kuhifadhi hapa.',
     no_show_pause: 'Samahani, kuhifadhi kumesimamishwa kwa siku 30 baada ya ziara mbili ambazo hazikufanyika. Asante kwa kuelewa.',
     too_many_requests: 'Umetuma maombi mengi katika saa 24 zilizopita. Tafadhali jaribu tena baadaye.',
-    too_many_open: 'Una maombi 5 yanayosubiri jibu. Tafadhali subiri jibu, au futa moja kwanza.',
+    too_many_open: 'Una maombi 5 yanayosubiri jibu. Tafadhali subiri jibu, au ghairi moja kwanza.',
     too_many_today: 'Umetuma maombi 3 kwa biashara hii leo. Tafadhali jaribu tena kesho.',
     service_not_found: 'Samahani, huduma hii haitolewi tena. Tafadhali chagua nyingine.',
     service_required: 'Tafadhali chagua huduma.',
@@ -261,7 +282,7 @@ const sw: ReserveText = {
   actionRefusals: {
     not_found: 'Samahani, hatukuweza kupata uhifadhi huu. Tafadhali pakia ukurasa upya.',
     note_too_long: 'Tafadhali ujumbe usizidi herufi 300.',
-    too_many_cancellations: 'Umefuta uhifadhi kadhaa katika saa 24 zilizopita. Tafadhali jaribu tena baadaye.',
+    too_many_cancellations: 'Umeghairi uhifadhi kadhaa katika saa 24 zilizopita. Tafadhali jaribu tena baadaye.',
     too_late: 'Samahani, muda huu umeshapita.',
     too_early: 'Hili linaweza kuandikwa baada ya muda wa uhifadhi.',
     came_count: 'Tafadhali weka namba kuanzia 1 hadi idadi ya watu waliohifadhiwa.',
@@ -281,6 +302,8 @@ const fr: ReserveText = {
   intro: 'Karibu. Veuillez choisir un jour et une heure. {business} confirmera ou proposera un autre horaire.',
   soon: 'Les réservations ouvrent bientôt. Merci de votre patience.',
   notOpen: "Désolés, {business} ne prend pas de réservations via Kwetuly pour le moment. Vous pouvez envoyer un message à la place.",
+  askInstead: 'Envoyer un message à {business}',
+  answerBy: 'Si {business} n\'a pas répondu avant {time}, nous vous le dirons.',
   loadError: "Désolés, le chargement n'a pas abouti. Veuillez réessayer.",
   retry: 'Réessayer',
   saveError: "Désolés, une erreur s'est produite. Veuillez réessayer.",
@@ -289,6 +312,7 @@ const fr: ReserveText = {
   date: 'Jour',
   time: 'Heure',
   pickDay: "Veuillez d'abord choisir un jour.",
+  laterDates: 'Voir les dates suivantes',
   noTimes: "Aucun horaire libre ce jour-là. Veuillez choisir un autre jour.",
   party: 'Nombre de personnes',
   partyHint: 'De 1 à {max}.',
@@ -296,10 +320,11 @@ const fr: ReserveText = {
   noteHint: "300 caractères au maximum. Merci de ne pas ajouter de numéro de téléphone ni de lien.",
   noteHealth: "Les informations de santé ou d'allergie vont dans la ligne régime.",
   diet: 'Régime ou allergie (facultatif)',
-  dietHint: 'Seul {business} voit ceci, pour cette réservation. Supprimé 30 jours après.',
+  dietHint: 'Seul {business} voit ceci, pour cette réservation. Supprimé 30 jours après la date de la réservation.',
   dietConsent: "J'accepte que {business} voie cette ligne pour cette réservation.",
   guideCode: 'Code de guide (facultatif)',
   guideCodeHint: 'Si un guide vous a donné un code, veuillez le saisir ici.',
+  guideCodeTooMany: 'Veuillez réessayer le code de guide dans une heure.',
   disclosure: {
     per_guest: "Kwetuly reçoit de {business} un petit montant fixe pour chaque client venu grâce à cette réservation. Vous payez à {business} le même prix que tout autre client.",
     percent: "Kwetuly reçoit de {business} une part du prix affiché pour cette réservation. Vous payez à {business} le prix affiché, sans supplément.",
@@ -313,6 +338,9 @@ const fr: ReserveText = {
   myHint: 'Les tables et visites que vous avez demandées',
   myEmpty: "Aucune réservation pour l'instant. Les restaurants, spas et salons qui acceptent les réservations affichent un bouton Réserver.",
   findPlaces: 'Trouver un lieu',
+  findFood: 'Restaurants',
+  findSpa: 'Spas et massages',
+  findSalon: 'Salons',
   people: '{n} personnes',
   statuses: {
     requested: 'En attente de réponse',
@@ -386,6 +414,8 @@ const it: ReserveText = {
   intro: 'Karibu. Scegli un giorno e un orario. {business} confermerà o proporrà un altro orario.',
   soon: 'Le prenotazioni apriranno presto. Grazie per la pazienza.',
   notOpen: 'Ci dispiace, {business} al momento non accetta prenotazioni tramite Kwetuly. Puoi inviare un messaggio.',
+  askInstead: 'Invia un messaggio a {business}',
+  answerBy: 'Se {business} non ha risposto entro {time}, te lo diremo.',
   loadError: 'Ci dispiace, non è stato possibile caricare. Riprova.',
   retry: 'Riprova',
   saveError: 'Ci dispiace, qualcosa è andato storto. Riprova.',
@@ -394,6 +424,7 @@ const it: ReserveText = {
   date: 'Giorno',
   time: 'Orario',
   pickDay: 'Scegli prima un giorno.',
+  laterDates: 'Mostra date successive',
   noTimes: 'Nessun orario libero in questo giorno. Scegli un altro giorno.',
   party: 'Numero di persone',
   partyHint: 'Da 1 a {max}.',
@@ -401,10 +432,11 @@ const it: ReserveText = {
   noteHint: 'Fino a 300 caratteri. Non aggiungere numeri di telefono o link.',
   noteHealth: 'Le informazioni su salute o allergie vanno nella riga sulla dieta.',
   diet: 'Dieta o allergia (facoltativo)',
-  dietHint: 'Solo {business} lo vede, per questa prenotazione. Cancellato 30 giorni dopo.',
+  dietHint: 'Solo {business} lo vede, per questa prenotazione. Cancellato 30 giorni dopo la data della prenotazione.',
   dietConsent: 'Accetto che {business} veda questa riga per questa prenotazione.',
   guideCode: 'Codice guida (facoltativo)',
   guideCodeHint: 'Se una guida ti ha dato un codice, scrivilo qui.',
+  guideCodeTooMany: 'Riprova il codice guida tra un’ora.',
   disclosure: {
     per_guest: "Kwetuly riceve da {business} un piccolo importo fisso per ogni ospite che arriva con questa prenotazione. Paghi a {business} lo stesso prezzo di ogni altro ospite.",
     percent: 'Kwetuly riceve da {business} una parte del prezzo di listino per questa prenotazione. Paghi a {business} il prezzo di listino, nulla in più.',
@@ -418,6 +450,9 @@ const it: ReserveText = {
   myHint: 'Tavoli e visite che hai chiesto',
   myEmpty: 'Nessuna prenotazione per ora. Ristoranti, spa e saloni che accettano prenotazioni mostrano il pulsante Prenota.',
   findPlaces: 'Trova un posto',
+  findFood: 'Ristoranti',
+  findSpa: 'Spa e massaggi',
+  findSalon: 'Saloni',
   people: '{n} persone',
   statuses: {
     requested: 'In attesa di risposta',
@@ -491,6 +526,8 @@ const de: ReserveText = {
   intro: 'Karibu. Bitte wählen Sie einen Tag und eine Uhrzeit. {business} bestätigt oder schlägt eine andere Zeit vor.',
   soon: 'Reservierungen öffnen bald. Vielen Dank für Ihre Geduld.',
   notOpen: 'Leider nimmt {business} derzeit keine Reservierungen über Kwetuly an. Gerne können Sie stattdessen eine Nachricht senden.',
+  askInstead: 'Nachricht an {business} senden',
+  answerBy: 'Wenn {business} bis {time} nicht geantwortet hat, sagen wir es Ihnen.',
   loadError: 'Leider konnten wir dies nicht laden. Bitte versuchen Sie es erneut.',
   retry: 'Erneut versuchen',
   saveError: 'Leider ist etwas schiefgegangen. Bitte versuchen Sie es erneut.',
@@ -499,6 +536,7 @@ const de: ReserveText = {
   date: 'Tag',
   time: 'Uhrzeit',
   pickDay: 'Bitte wählen Sie zuerst einen Tag.',
+  laterDates: 'Spätere Tage zeigen',
   noTimes: 'An diesem Tag sind keine Zeiten frei. Bitte wählen Sie einen anderen Tag.',
   party: 'Anzahl der Personen',
   partyHint: 'Von 1 bis {max}.',
@@ -506,10 +544,11 @@ const de: ReserveText = {
   noteHint: 'Bis zu 300 Zeichen. Bitte keine Telefonnummern oder Links.',
   noteHealth: 'Gesundheits- oder Allergieangaben gehören in die Ernährungszeile.',
   diet: 'Ernährung oder Allergie (optional)',
-  dietHint: 'Nur {business} sieht dies, für diese Reservierung. Wird 30 Tage danach gelöscht.',
+  dietHint: 'Nur {business} sieht dies, für diese Reservierung. Wird 30 Tage nach dem Reservierungsdatum gelöscht.',
   dietConsent: 'Ich bin einverstanden, dass {business} diese Zeile für diese Reservierung sieht.',
   guideCode: 'Guide-Code (optional)',
   guideCodeHint: 'Wenn Ihnen ein Guide einen Code gegeben hat, tragen Sie ihn bitte hier ein.',
+  guideCodeTooMany: 'Bitte versuchen Sie den Guide-Code in einer Stunde erneut.',
   disclosure: {
     per_guest: 'Kwetuly erhält von {business} einen kleinen festen Betrag für jeden Gast, der über diese Reservierung kommt. Sie zahlen {business} denselben Preis wie jeder andere Gast.',
     percent: 'Kwetuly erhält von {business} einen Anteil am ausgewiesenen Preis für diese Reservierung. Sie zahlen {business} den ausgewiesenen Preis, nichts extra.',
@@ -523,6 +562,9 @@ const de: ReserveText = {
   myHint: 'Tische und Besuche, die Sie angefragt haben',
   myEmpty: 'Noch keine Reservierungen. Restaurants, Spas und Salons, die Reservierungen annehmen, zeigen einen Button Reservieren.',
   findPlaces: 'Einen Ort finden',
+  findFood: 'Restaurants',
+  findSpa: 'Spas und Massage',
+  findSalon: 'Salons',
   people: '{n} Personen',
   statuses: {
     requested: 'Wartet auf Antwort',
@@ -596,6 +638,8 @@ const pl: ReserveText = {
   intro: 'Karibu. Wybierz dzień i godzinę. {business} potwierdzi lub zaproponuje inny termin.',
   soon: 'Rezerwacje wkrótce. Dziękujemy za cierpliwość.',
   notOpen: 'Przepraszamy, {business} nie przyjmuje obecnie rezerwacji przez Kwetuly. Możesz zamiast tego wysłać wiadomość.',
+  askInstead: 'Wyślij wiadomość do {business}',
+  answerBy: 'Jeśli {business} nie odpowie do {time}, damy Ci znać.',
   loadError: 'Przepraszamy, nie udało się wczytać. Spróbuj ponownie.',
   retry: 'Spróbuj ponownie',
   saveError: 'Przepraszamy, coś poszło nie tak. Spróbuj ponownie.',
@@ -604,6 +648,7 @@ const pl: ReserveText = {
   date: 'Dzień',
   time: 'Godzina',
   pickDay: 'Najpierw wybierz dzień.',
+  laterDates: 'Pokaż późniejsze daty',
   noTimes: 'Brak wolnych godzin tego dnia. Wybierz inny dzień.',
   party: 'Liczba osób',
   partyHint: 'Od 1 do {max}.',
@@ -611,10 +656,11 @@ const pl: ReserveText = {
   noteHint: 'Do 300 znaków. Prosimy nie dodawać numerów telefonów ani linków.',
   noteHealth: 'Informacje o zdrowiu lub alergii wpisz w linii o diecie.',
   diet: 'Dieta lub alergia (opcjonalnie)',
-  dietHint: 'Widzi to tylko {business}, dla tej rezerwacji. Usuwane 30 dni później.',
+  dietHint: 'Widzi to tylko {business}, dla tej rezerwacji. Usuwane 30 dni po dacie rezerwacji.',
   dietConsent: 'Zgadzam się, aby {business} widział(a) tę linię dla tej rezerwacji.',
   guideCode: 'Kod przewodnika (opcjonalnie)',
   guideCodeHint: 'Jeśli przewodnik dał Ci kod, wpisz go tutaj.',
+  guideCodeTooMany: 'Spróbuj ponownie wpisać kod przewodnika za godzinę.',
   disclosure: {
     per_guest: 'Kwetuly otrzymuje od {business} niewielką stałą kwotę za każdego gościa, który przyjdzie dzięki tej rezerwacji. Płacisz {business} tę samą cenę co każdy inny gość.',
     percent: 'Kwetuly otrzymuje od {business} część ceny z cennika za tę rezerwację. Płacisz {business} cenę z cennika, bez dopłat.',
@@ -628,6 +674,9 @@ const pl: ReserveText = {
   myHint: 'Stoliki i wizyty, o które prosisz',
   myEmpty: 'Brak rezerwacji. Restauracje, spa i salony przyjmujące rezerwacje mają przycisk Zarezerwuj.',
   findPlaces: 'Znajdź miejsce',
+  findFood: 'Restauracje',
+  findSpa: 'Spa i masaż',
+  findSalon: 'Salony',
   people: 'osoby: {n}',
   statuses: {
     requested: 'Czeka na odpowiedź',
@@ -701,6 +750,8 @@ const zh: ReserveText = {
   intro: 'Karibu。请选择日期和时间。{business}会确认，或提出其他时间。',
   soon: '预订功能即将开放，感谢您的耐心。',
   notOpen: '抱歉，{business}目前不通过 Kwetuly 接受预订。欢迎改为发送留言。',
+  askInstead: '给{business}发留言',
+  answerBy: '如果{business}在 {time} 前未回复，我们会通知您。',
   loadError: '抱歉，无法加载，请重试。',
   retry: '重试',
   saveError: '抱歉，出了点问题，请重试。',
@@ -709,6 +760,7 @@ const zh: ReserveText = {
   date: '日期',
   time: '时间',
   pickDay: '请先选择日期。',
+  laterDates: '显示更晚的日期',
   noTimes: '当天没有空闲时段，请选择其他日期。',
   party: '人数',
   partyHint: '1 至 {max} 人。',
@@ -716,10 +768,11 @@ const zh: ReserveText = {
   noteHint: '最多 300 个字符。请勿填写电话号码或链接。',
   noteHealth: '健康或过敏信息请填写在饮食要求一栏。',
   diet: '饮食要求或过敏（选填）',
-  dietHint: '仅{business}可见，仅用于本次预订。30 天后删除。',
+  dietHint: '仅{business}可见，仅用于本次预订。预订日期 30 天后删除。',
   dietConsent: '我同意{business}为本次预订查看此信息。',
   guideCode: '导游代码（选填）',
   guideCodeHint: '如果导游给了您代码，请在此填写。',
+  guideCodeTooMany: '请一小时后再试导游代码。',
   disclosure: {
     per_guest: '每位通过本次预订到店的客人，Kwetuly 会从{business}收取一笔小额固定费用。您向{business}支付与其他客人相同的价格。',
     percent: '本次预订，Kwetuly 会从{business}收取标价的一部分。您向{business}支付标价，无任何额外费用。',
@@ -733,6 +786,9 @@ const zh: ReserveText = {
   myHint: '您申请的餐桌和到访',
   myEmpty: '还没有预订。接受预订的餐厅、水疗和美发店会显示“预订”按钮。',
   findPlaces: '寻找地点',
+  findFood: '餐厅',
+  findSpa: '水疗与按摩',
+  findSalon: '美发店',
   people: '{n} 人',
   statuses: {
     requested: '等待回复',

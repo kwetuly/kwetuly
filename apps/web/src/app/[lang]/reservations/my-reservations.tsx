@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import {
+  answerByTime,
   fillText,
   formatReservationTime,
   reserveText,
@@ -31,6 +32,8 @@ export type MyReservation = {
   traveller_said_happened: boolean | null;
   can_answer_visit: boolean;
   asks_people_count?: boolean;
+  /** Being added by backend; absent until then. */
+  answer_by?: string | null;
 };
 
 const tone: Record<ReservationStatus, string> = {
@@ -87,6 +90,7 @@ function Row({ r, locale, row }: { r: ReserveText; locale: string; row: MyReserv
         <span className={`rounded-[5px] px-2 py-1 text-sm font-semibold ${tone[row.status]}`}>{r.statuses[row.status]}</span>
       </div>
       {reason && <p className="text-sm">{reason}</p>}
+      {row.status === 'requested' && answerByTime(row.answer_by, locale) && <p className="text-sm text-muted">{fillText(r.answerBy, { ...b, time: answerByTime(row.answer_by, locale)! })}</p>}
       {row.status === 'other_time_offered' && row.offered_starts_at && (
         <p className="rounded-[5px] bg-sand p-3 font-semibold">{fillText(r.offered, { ...b, time: formatReservationTime(row.offered_starts_at, locale) })}</p>
       )}

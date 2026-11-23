@@ -3,8 +3,12 @@ import { Alert, Platform, Text, View } from 'react-native';
 import { Stack, router, type Href } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  addDaysIso,
+  answerByTime,
   fillText,
   formatReservationTime,
+  offerTimeOk,
+  statementTotals,
   formatTzs,
   isReservableType,
   monthStart,
@@ -108,6 +112,7 @@ export default function BusinessReservationsScreen() {
         <Button title={x.setupLink} variant="text" size="md" onPress={() => router.push('/reservations-setup' as Href)} />
       </View>
       <Muted>{x.range}</Muted>
+      <Muted>{x.markRule}</Muted>
       {rows.length === 0 && <EmptyState glyph={GLYPHS.calendar} text={x.empty} />}
       {(['waiting', 'toMark', 'upcoming', 'earlier'] as const).map((key) =>
         groups[key].length === 0 ? null : (
@@ -123,6 +128,14 @@ export default function BusinessReservationsScreen() {
     </FormScreen>
   );
 }
+
+const dayChip = (day: string, locale: string) => {
+  try {
+    return new Date(`${day}T00:00:00Z`).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  } catch {
+    return day;
+  }
+};
 
 function GroupTitle({ text }: { text: string }) {
   const { type } = useType();
@@ -142,6 +155,7 @@ function Row({ x, locale, row, soon, onChanged }: { x: ReservationInboxText; loc
   const { type, font } = useType();
   const { t } = useI18n();
   const own = tanzaniaParts(row.starts_at);
+  const today = tanzaniaToday();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const [note, setNote] = useState('');
@@ -189,6 +203,7 @@ function Row({ x, locale, row, soon, onChanged }: { x: ReservationInboxText; loc
         </View>
       </View>
       <Muted>{[row.traveller_first_name, row.service_name ?? x.table, fillText(x.people, { n: row.party_size })].join(' · ')}</Muted>
+      {answering && answerByTime(row.answer_by, locale) ? <Text style={{ ...type.callout, ...font.semibold }}>{fillText(x.answerBy, { time: answerByTime(row.answer_by, locale)! })}</Text> : null}
       {row.note ? <Text selectable style={type.callout}><Text style={font.bold}>{x.guestNote}: </Text>{row.note}</Text> : null}
       {row.diet_line ? <Note text={`${x.diet}: ${row.diet_line}`} /> : null}
       {row.offered_starts_at ? <Text style={{ ...type.callout, ...font.semibold }}>{fillText(x.offered, { time: formatReservationTime(row.offered_starts_at, locale) })}</Text> : null}
@@ -205,9 +220,15 @@ function Row({ x, locale, row, soon, onChanged }: { x: ReservationInboxText; loc
       {answering && <Field label={x.note} value={note} onChangeText={setNote} multiline maxLength={reservationRules.noteMax} hint={x.noteHint} />}
       {offering && (
         <View style={{ gap: space.md, padding: space.md, borderRadius: radius.button, borderWidth: 1, borderColor: brand.primary }}>
-          <Field label={x.offerDay} value={offerDay} onChangeText={setOfferDay} keyboardType="numbers-and-punctuation" maxLength={10} placeholder="YYYY-MM-DD" />
+          {/* Day chips for the next 4 weeks (QA 8); the time is checked before sending. */}
+          <Text style={type.label}>{x.offerDay}</Text>
+          <ChipRow bleed>
+            {Array.from({ length: 28 }, (_, i) => addDaysIso(today, i)).map((d) => (
+              <Chip key={d} label={dayChip(d, locale)} active={offerDay === d} onPress={() => setOfferDay(d)} />
+            ))}
+          </ChipRow>
           <Field label={x.offerAt} value={offerAt} onChangeText={setOfferAt} keyboardType="numbers-and-punctuation" maxLength={5} placeholder="19:30" />
-          <Button title={x.sendOffer} variant="outline" size="md" disabled={off} onPress={() => run('offer_time', { offeredStartsAt: tanzaniaStartsAt(offerDay.trim(), offerAt.trim()), note })} />
+          <Button title={x.sendOffer} variant="outline" size="md" disabled={off} onPress={() => (offerTimeOk(offerDay.trim(), offerAt.trim()) ? run('offer_time', { offeredStartsAt: tanzaniaStartsAt(offerDay.trim(), offerAt.trim()), note }) : setMessage({ tone: 'error', text: x.offerInvalid }))} />
         </View>
       )}
       {actions.includes('mark_came') && <Field label={x.cameCount} value={came} onChangeText={setCame} keyboardType="number-pad" maxLength={3} />}
@@ -241,7 +262,8 @@ function Row({ x, locale, row, soon, onChanged }: { x: ReservationInboxText; loc
 
 function Statement({ x, locale, month, months, onMonth, rows, billingOn }: { x: ReservationInboxText; locale: string; month: string; months: string[]; onMonth: (m: string) => void; rows: StatementRow[]; billingOn: boolean }) {
   const { type, font } = useType();
-  const total = rows.reduce((sum, r) => sum + Number(r.commission_tzs), 0);
+  // Only owed, invoiced and paid count; held and waived are their own lines (security review L-F).
+  const { total, held, waived } = statementTotals(rows);
   const label = (m: string) => {
     try {
       return new Date(`${m}-01T00:00:00Z`).toLocaleDateString(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' });
@@ -266,7 +288,7 @@ function Statement({ x, locale, month, months, onMonth, rows, billingOn }: { x: 
         <Muted>{x.statementEmpty}</Muted>
       ) : (
         <>
-          {rows.map((r) => (
+          {rows.filter((r) => r.commission_status !== 'held' && r.commission_status !== 'waived').map((r) => (
             <View key={r.commission_status} style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ ...type.callout, ...font.bold }}>{x.commissionStatuses[r.commission_status]}</Text>
@@ -279,6 +301,18 @@ function Statement({ x, locale, month, months, onMonth, rows, billingOn }: { x: 
             <Text style={{ ...type.body, ...font.bold }}>{x.statementTotal}</Text>
             <Text style={{ ...type.body, ...font.bold }}>{formatTzs(total)}</Text>
           </View>
+          {held > 0 && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
+              <Text style={type.callout}>{x.commissionStatuses.held}</Text>
+              <Text style={type.callout}>{formatTzs(held)}</Text>
+            </View>
+          )}
+          {waived > 0 && (
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
+              <Text style={type.callout}>{x.commissionStatuses.waived}</Text>
+              <Text style={type.callout}>{formatTzs(waived)}</Text>
+            </View>
+          )}
         </>
       )}
     </Card>

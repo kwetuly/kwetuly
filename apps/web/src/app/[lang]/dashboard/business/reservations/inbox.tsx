@@ -3,8 +3,11 @@
 import { useId, useState, useTransition } from 'react';
 import { CalendarCheck, CheckCircle2, Loader2, ReceiptText } from 'lucide-react';
 import {
+  answerByTime,
   fillText,
   formatReservationTime,
+  offerTimeOk,
+  statementTotals,
   formatTzs,
   ownerReservationActions,
   reservationInboxText,
@@ -35,6 +38,8 @@ export type OwnerReservation = {
   commission_tzs: number | null;
   commission_status: ReservationCommissionStatus;
   is_sample: boolean;
+  /** Being added by backend; absent until then. */
+  answer_by?: string | null;
 };
 
 export type StatementRow = { commission_status: ReservationCommissionStatus; reservation_count: number; guests_counted: number; commission_tzs: number; billing_on: boolean };
@@ -86,6 +91,7 @@ export function Inbox({ locale, rows, soon }: { locale: string; rows: OwnerReser
         <CalendarCheck className="size-6 text-leaf-dark" aria-hidden /> {x.title}
       </h2>
       <p className="text-sm text-muted">{x.range}</p>
+      <p className="rounded-[5px] bg-surface p-3 text-sm">{x.markRule}</p>
       {rows.length === 0 && <p className="card text-muted">{x.empty}</p>}
       {(['waiting', 'toMark', 'upcoming', 'earlier'] as const).map((key) =>
         groups[key].length === 0 ? null : (
@@ -146,6 +152,7 @@ function Row({ x, locale, row, soon }: { x: ReservationInboxText; locale: string
         </div>
       </div>
 
+      {answering && answerByTime(row.answer_by, locale) && <p className="text-sm font-semibold">{fillText(x.answerBy, { time: answerByTime(row.answer_by, locale)! })}</p>}
       {row.note && <p className="text-sm"><span className="font-semibold">{x.guestNote}: </span>{row.note}</p>}
       {row.diet_line && <p className="rounded-[5px] bg-sand p-3 text-sm"><span className="font-semibold">{x.diet}: </span>{row.diet_line}</p>}
       {row.offered_starts_at && <p className="text-sm font-semibold">{fillText(x.offered, { time: formatReservationTime(row.offered_starts_at, locale) })}</p>}
@@ -177,7 +184,7 @@ function Row({ x, locale, row, soon }: { x: ReservationInboxText; locale: string
             <span className="label">{x.offerAt}</span>
             <input id={`${uid}-ot`} type="time" step={900} className="field" value={offerAt} onChange={(e) => setOfferAt(e.target.value)} />
           </label>
-          <button type="button" className="btn-outline" disabled={soon || pending} onClick={() => run('offer_time', { offeredStartsAt: tanzaniaStartsAt(offerDay, offerAt.slice(0, 5)), note })}>
+          <button type="button" className="btn-outline" disabled={soon || pending} onClick={() => (offerTimeOk(offerDay, offerAt.slice(0, 5)) ? run('offer_time', { offeredStartsAt: tanzaniaStartsAt(offerDay, offerAt.slice(0, 5)), note }) : setMessage({ tone: 'error', text: x.offerInvalid }))}>
             {x.sendOffer}
           </button>
         </div>
@@ -238,7 +245,8 @@ export function Statement({
 }) {
   const x = reservationInboxText(locale);
   const uid = useId();
-  const total = rows.reduce((sum, r) => sum + Number(r.commission_tzs), 0);
+  // Only owed, invoiced and paid count; held and waived are their own lines (security review L-F).
+  const { total, held, waived } = statementTotals(rows);
   const label = (m: string) => {
     try {
       return new Date(`${m}-01T00:00:00Z`).toLocaleDateString(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -268,7 +276,7 @@ export function Statement({
         <p className="text-sm text-muted">{x.statementEmpty}</p>
       ) : (
         <dl className="divide-y divide-line">
-          {rows.map((r) => (
+          {rows.filter((r) => r.commission_status !== 'held' && r.commission_status !== 'waived').map((r) => (
             <div key={r.commission_status} className="flex flex-wrap justify-between gap-2 py-2 text-sm">
               <dt>
                 <span className="font-semibold">{x.commissionStatuses[r.commission_status]}</span>
@@ -281,6 +289,18 @@ export function Statement({
             <dt>{x.statementTotal}</dt>
             <dd>{formatTzs(total)}</dd>
           </div>
+          {held > 0 && (
+            <div className="flex justify-between gap-2 py-2 text-sm">
+              <dt>{x.commissionStatuses.held}</dt>
+              <dd>{formatTzs(held)}</dd>
+            </div>
+          )}
+          {waived > 0 && (
+            <div className="flex justify-between gap-2 py-2 text-sm">
+              <dt>{x.commissionStatuses.waived}</dt>
+              <dd>{formatTzs(waived)}</dd>
+            </div>
+          )}
         </dl>
       )}
     </section>
