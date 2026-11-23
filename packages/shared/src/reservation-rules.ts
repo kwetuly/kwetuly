@@ -120,6 +120,8 @@ export const reservationRules = {
   jobEveryMinutes: 15,
   /** guide_code_status() stops checking after this many wrong codes in an hour. */
   guideCodeFailuresPerHour: 10,
+  /** guide_code_status() stops checking after this many checks of any kind in an hour. */
+  guideCodeChecksPerHour: 30,
 } as const;
 
 /** Admin decisions on a dispute. business_fault: nothing owed and no strike for the traveller. */

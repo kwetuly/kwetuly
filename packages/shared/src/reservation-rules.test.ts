@@ -66,7 +66,10 @@ describe('reservations match migration 20261122300000', () => {
     expect(sql).toContain(`least(now() + interval '${reservationRules.answerWithinHours} hours', p_starts_at - make_interval`);
     expect(sql).toContain(`answer_by = least(now() + interval '${reservationRules.answerWithinHours} hours',`);
     expect(sql).toContain(`'*/${reservationRules.jobEveryMinutes} * * * *'`);
-    expect(sql).toContain(`interval '1 hour') >= ${reservationRules.guideCodeFailuresPerHour} then\n    return 'too_many';`);
+    expect(sql).toContain(`not k.ok and k.created_at > now() - interval '1 hour') >= ${reservationRules.guideCodeFailuresPerHour}\n`);
+    expect(sql).toContain(`k.created_at > now() - interval '1 hour') >= ${reservationRules.guideCodeChecksPerHour} then\n    return 'too_many';`);
+    // No code is stored in any form (final review N2).
+    expect(fn('public.guide_code_status')).not.toMatch(/md5|code_hash/);
   });
   it('dispute outcomes', () => {
     const block = sql.match(/check \(dispute_outcome in \(([^)]*)\)\)/)![1];

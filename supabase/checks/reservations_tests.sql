@@ -191,9 +191,22 @@ select pg_temp.check((select public.guide_code_status('RSGUIDE1') = 'too_many'),
 select pg_temp.expect_code($q$select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(1, '12:00'), 2, null, null, false, 'RSGUIDE1')$q$,
   'guide_code_unknown', 'the right code is not accepted without an ok check');
 reset role;
-select pg_temp.check((select count(*) = 10 and bool_and(code_hash <> 'RSGUIDE1') from private.guide_code_checks
+select pg_temp.check((select count(*) = 10 and bool_and(not ok and guide_id is null) from private.guide_code_checks
                       where user_id = 'd2d2d2d2-0000-4000-8000-0000000000d2'),
-                     'attempts recorded as hashes (the stopped one is not checked)');
+                     'wrong codes leave only who and when, no code in any form (the stopped one writes nothing)');
+select pg_temp.check((select count(*) = 1 and bool_and(ok and guide_id = '97979797-0000-4000-8000-000000000097')
+                      from private.guide_code_checks where user_id = 'd1d1d1d1-0000-4000-8000-0000000000d1'),
+                     'an ok check keeps only the guide it matched');
+
+-- Final review N1: at most 30 checks of any kind an hour; over that nothing is checked or written.
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+select pg_temp.check((select count(*) = 29 from generate_series(1, 29) g where public.guide_code_status('rsguide1') = 'ok'),
+                     '29 more ok checks');
+select pg_temp.check((select public.guide_code_status('rsguide1') = 'too_many'), 'the 31st check in an hour is stopped');
+reset role;
+select pg_temp.check((select count(*) = 30 from private.guide_code_checks where user_id = 'd1d1d1d1-0000-4000-8000-0000000000d1'),
+                     'the stopped check writes no row');
 
 -- Own business: the owner cannot reserve at it.
 select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');

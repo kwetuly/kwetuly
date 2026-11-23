@@ -434,20 +434,24 @@ create trigger business_services_delete_guard
 -- ---------------------------------------------------------------------------
 -- 2b. Guide codes: every check is recorded; 10 wrong codes an hour stop further checks (QA L-G)
 -- ---------------------------------------------------------------------------
+-- No code is stored in any form (final review N2): an ok check keeps only the guide it matched; a
+-- wrong code keeps only who and when, for the counter.
 create table if not exists private.guide_code_checks (
   id bigint generated always as identity primary key,
   user_id uuid not null,
-  code_hash text not null,          -- md5 of the upper-case code, never the code itself
+  guide_id uuid,                    -- set for ok checks only
   ok boolean not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint guide_code_checks_shape check (ok = (guide_id is not null))
 );
 create index if not exists guide_code_checks_user_idx on private.guide_code_checks (user_id, created_at desc);
 alter table private.guide_code_checks enable row level security;
 revoke all on private.guide_code_checks from anon, authenticated;
 
--- 'ok' (an approved guide who is not the caller), 'unknown', or 'too_many' (10 wrong codes in the last
--- hour; nothing is checked then). The reservation form calls this before place_reservation(), which
--- accepts a code only after an 'ok' check by the same person in the last hour.
+-- 'ok' (an approved guide who is not the caller), 'unknown', or 'too_many' (10 wrong codes, or 30
+-- checks of any kind, in the last hour; nothing is checked or written then, final review N1). The
+-- reservation form calls this before place_reservation(), which accepts a code only when it resolves to
+-- a guide the same person had an 'ok' check for in the last hour.
 create or replace function public.guide_code_status(p_code text)
 returns text
 language plpgsql
@@ -457,26 +461,27 @@ as $$
 declare
   v_user uuid := (select auth.uid());
   v_code text := upper(btrim(coalesce(p_code, '')));
-  v_ok boolean;
+  v_guide uuid;
 begin
   if v_user is null then
     raise exception 'reservation_refused: not_signed_in' using errcode = 'P0001';
   end if;
   perform pg_advisory_xact_lock(hashtextextended('guide_code_checks:' || v_user::text, 0));
   if (select count(*) from private.guide_code_checks k
-      where k.user_id = v_user and not k.ok and k.created_at > now() - interval '1 hour') >= 10 then
+      where k.user_id = v_user and not k.ok and k.created_at > now() - interval '1 hour') >= 10
+     or (select count(*) from private.guide_code_checks k
+         where k.user_id = v_user and k.created_at > now() - interval '1 hour') >= 30 then
     return 'too_many';
   end if;
-  if v_code = '' or char_length(v_code) > 40 then
-    v_ok := false;
-  else
-    v_ok := exists (select 1 from public.referral_codes rc
-                    join public.guides g on g.id = rc.guide_id
-                    where upper(rc.code) = v_code and g.verification_status = 'approved'
-                      and g.owner_id <> v_user);
+  if v_code <> '' and char_length(v_code) <= 40 then
+    select g.id into v_guide
+    from public.referral_codes rc
+    join public.guides g on g.id = rc.guide_id
+    where upper(rc.code) = v_code and g.verification_status = 'approved' and g.owner_id <> v_user
+    limit 1;
   end if;
-  insert into private.guide_code_checks (user_id, code_hash, ok) values (v_user, md5(v_code), v_ok);
-  return case when v_ok then 'ok' else 'unknown' end;
+  insert into private.guide_code_checks (user_id, guide_id, ok) values (v_user, v_guide, v_guide is not null);
+  return case when v_guide is not null then 'ok' else 'unknown' end;
 end;
 $$;
 revoke execute on function public.guide_code_status(text) from public, anon;
@@ -692,21 +697,20 @@ begin
   end if;
 
   -- Guide code (referral_codes): an approved guide who is neither the traveller nor the business owner.
-  -- The code must have been checked by this person with public.guide_code_status() in the last hour
-  -- (QA L-G): that function records every attempt and stops after 10 wrong codes in an hour, so codes
-  -- cannot be guessed in a loop here (a refused reservation rolls back and could not record anything).
+  -- The code must resolve to a guide this person had an 'ok' check for with public.guide_code_status()
+  -- in the last hour (QA L-G, final review N2): that function counts every attempt and stops after 10
+  -- wrong codes or 30 checks an hour, so codes cannot be guessed in a loop here (a refused reservation
+  -- rolls back and could not record anything).
   if nullif(btrim(coalesce(p_guide_code, '')), '') is not null then
-    if not exists (select 1 from private.guide_code_checks k
-                   where k.user_id = v_user and k.ok
-                     and k.code_hash = md5(upper(btrim(p_guide_code)))
-                     and k.created_at > now() - interval '1 hour') then
-      raise exception 'reservation_refused: guide_code_unknown' using errcode = 'P0001';
-    end if;
     select g.id into v_guide
     from public.referral_codes rc
     join public.guides g on g.id = rc.guide_id
     where upper(rc.code) = upper(btrim(p_guide_code)) and g.verification_status = 'approved'
-      and g.owner_id <> v_user and g.owner_id <> p.owner_id;
+      and g.owner_id <> v_user and g.owner_id <> p.owner_id
+      and exists (select 1 from private.guide_code_checks k
+                  where k.user_id = v_user and k.ok and k.guide_id = g.id
+                    and k.created_at > now() - interval '1 hour')
+    limit 1;
     if v_guide is null then
       raise exception 'reservation_refused: guide_code_unknown' using errcode = 'P0001';
     end if;
