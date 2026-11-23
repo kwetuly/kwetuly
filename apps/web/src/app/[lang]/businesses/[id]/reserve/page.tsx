@@ -15,9 +15,16 @@ import {
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
-import { getBusiness } from '@/lib/businesses';
+import { getBusiness, listBusinesses } from '@/lib/businesses';
 import { createClient } from '@/lib/supabase/server';
 import { ReserveForm, type ReserveData } from './reserve-form';
+
+// Cache Components needs at least one id to check this page at build time (same as the business page).
+// Unknown ids are rendered on request; the check below answers them with a real 404.
+export async function generateStaticParams() {
+  const [first] = await listBusinesses(['restaurant', 'spa', 'salon']);
+  return [{ id: first?.id ?? '00000000-0000-0000-0000-000000000000' }];
+}
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: reserveText(await getLocale()).reserve, robots: { index: false } };
