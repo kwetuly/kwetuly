@@ -20,6 +20,9 @@ export type ReserveText = {
   saveError: string;
   service: string;
   table: string;
+  groupDiscount: string;
+  pricePerPerson: string;
+  priceWithDiscount: string;
   date: string;
   time: string;
   pickDay: string;
@@ -85,6 +88,9 @@ const en: ReserveText = {
   saveError: 'Sorry, something went wrong. Please try again.',
   service: 'Service',
   table: 'A table',
+  groupDiscount: '{percent}% off for {n} or more people',
+  pricePerPerson: 'Listed price per person: {price}',
+  priceWithDiscount: 'With the group discount: {price} per person',
   date: 'Day',
   time: 'Time',
   pickDay: 'Please choose a day first.',
@@ -197,6 +203,9 @@ const sw: ReserveText = {
   saveError: 'Samahani, kuna tatizo. Tafadhali jaribu tena.',
   service: 'Huduma',
   table: 'Meza',
+  groupDiscount: 'Punguzo la asilimia {percent} kwa watu {n} au zaidi',
+  pricePerPerson: 'Bei iliyoorodheshwa kwa kila mtu: {price}',
+  priceWithDiscount: 'Kwa punguzo la kikundi: {price} kwa kila mtu',
   date: 'Siku',
   time: 'Muda',
   pickDay: 'Tafadhali chagua siku kwanza.',
@@ -309,6 +318,9 @@ const fr: ReserveText = {
   saveError: "Désolés, une erreur s'est produite. Veuillez réessayer.",
   service: 'Prestation',
   table: 'Une table',
+  groupDiscount: '{percent} % de réduction dès {n} personnes',
+  pricePerPerson: 'Prix affiché par personne : {price}',
+  priceWithDiscount: 'Avec la réduction de groupe : {price} par personne',
   date: 'Jour',
   time: 'Heure',
   pickDay: "Veuillez d'abord choisir un jour.",
@@ -421,6 +433,9 @@ const it: ReserveText = {
   saveError: 'Ci dispiace, qualcosa è andato storto. Riprova.',
   service: 'Servizio',
   table: 'Un tavolo',
+  groupDiscount: '{percent}% di sconto da {n} persone in su',
+  pricePerPerson: 'Prezzo di listino a persona: {price}',
+  priceWithDiscount: 'Con lo sconto di gruppo: {price} a persona',
   date: 'Giorno',
   time: 'Orario',
   pickDay: 'Scegli prima un giorno.',
@@ -533,6 +548,9 @@ const de: ReserveText = {
   saveError: 'Leider ist etwas schiefgegangen. Bitte versuchen Sie es erneut.',
   service: 'Leistung',
   table: 'Ein Tisch',
+  groupDiscount: '{percent} % Rabatt ab {n} Personen',
+  pricePerPerson: 'Ausgewiesener Preis pro Person: {price}',
+  priceWithDiscount: 'Mit Gruppenrabatt: {price} pro Person',
   date: 'Tag',
   time: 'Uhrzeit',
   pickDay: 'Bitte wählen Sie zuerst einen Tag.',
@@ -645,6 +663,9 @@ const pl: ReserveText = {
   saveError: 'Przepraszamy, coś poszło nie tak. Spróbuj ponownie.',
   service: 'Usługa',
   table: 'Stolik',
+  groupDiscount: '{percent}% zniżki od {n} osób',
+  pricePerPerson: 'Cena z cennika za osobę: {price}',
+  priceWithDiscount: 'Ze zniżką grupową: {price} za osobę',
   date: 'Dzień',
   time: 'Godzina',
   pickDay: 'Najpierw wybierz dzień.',
@@ -757,6 +778,9 @@ const zh: ReserveText = {
   saveError: '抱歉，出了点问题，请重试。',
   service: '服务',
   table: '餐桌',
+  groupDiscount: '{n} 人及以上享 {percent}% 折扣',
+  pricePerPerson: '每人标价：{price}',
+  priceWithDiscount: '团体折扣后：每人 {price}',
   date: '日期',
   time: '时间',
   pickDay: '请先选择日期。',

@@ -92,7 +92,7 @@ async function Content({ locale, r, searchParams }: { locale: Locale; r: Reserva
     supabase.from('business_hours').select('weekday, opens, closes').eq('provider_id', business.id),
     // Notes are not readable from the table (security review); the owner reads them through this function.
     supabase.rpc('business_closed_dates_with_notes', { p_provider: business.id }),
-    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, active, sort').eq('provider_id', business.id).order('sort').order('created_at').limit(reservationLimits.servicesPerBusiness),
+    supabase.from('business_services').select('id, name, duration_min, price_tzs, max_people, group_discount_min_people, group_discount_percent, active, sort').eq('provider_id', business.id).order('sort').order('created_at').limit(reservationLimits.servicesPerBusiness),
     supabase.rpc('reservation_rate', { p_provider: business.id }),
   ]);
   const results = [status, rules, hours, closed, services, rate];

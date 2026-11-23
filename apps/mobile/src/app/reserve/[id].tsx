@@ -5,7 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import {
   addDaysIso,
   fillText,
+  formatTzs,
   isReservableType,
+  reservationGroupDiscountApplies,
+  reservationPricePerPerson,
   joinSentences,
   reservationRules,
   reservationSlots,
@@ -116,6 +119,17 @@ function Form({
     ? reservationSlots({ day, periods: data.hours[weekdayOfDay(day)] ?? [], durationMin: service?.duration_min ?? reservationRules.defaultDurationMin, minNoticeMin: data.minNoticeMin, maxDays: data.maxDays, today: data.today, closedDays: data.closedDays })
     : [];
   const rate = care && service && service.price_tzs == null ? data.unpricedRate : data.rate;
+  // The service's group discount (spa and salon): shown on the service, and the price per person after
+  // it once the party reaches the minimum. The disclosure line stays the same.
+  const discount =
+    service && service.price_tzs != null && service.group_discount_min_people != null && service.group_discount_percent != null
+      ? { group_discount_min_people: service.group_discount_min_people, group_discount_percent: service.group_discount_percent }
+      : null;
+  const partyNumber = Number(party);
+  const discountPrice =
+    discount && service && Number.isInteger(partyNumber) && reservationGroupDiscountApplies(discount, partyNumber)
+      ? reservationPricePerPerson({ commission_kind: 'percent', commission_rate_tzs: null, commission_percent: null, max_guests_counted: null, price_basis_tzs: service.price_tzs, ...discount }, partyNumber)
+      : null;
   // No rate for this choice outside "opens soon": no disclosure, so no Send (security review L-A).
   const rateMissing = !data.soon && data.open && !rate;
   const disabled = data.soon || !data.open || rateMissing;
@@ -193,6 +207,13 @@ function Form({
           <Text style={type.label}>{r.time}</Text>
           {!day ? <Muted>{r.pickDay}</Muted> : slots.length === 0 ? <Muted>{r.noTimes}</Muted> : chips(slots.map((s) => <Chip key={s} label={s} active={time === s} onPress={() => setTime(s)} />))}
         </View>
+        {service && service.price_tzs != null ? (
+          <View style={{ gap: space.xxs }} accessibilityLiveRegion="polite">
+            <Muted>{fillText(r.pricePerPerson, { price: formatTzs(service.price_tzs) })}</Muted>
+            {discount ? <Muted>{fillText(r.groupDiscount, { percent: discount.group_discount_percent, n: discount.group_discount_min_people })}</Muted> : null}
+            {discountPrice != null ? <Text style={{ ...type.callout, ...font.bold, color: brand.forest }}>{fillText(r.priceWithDiscount, { price: formatTzs(discountPrice) })}</Text> : null}
+          </View>
+        ) : null}
         <Field label={r.party} value={party} onChangeText={setParty} keyboardType="number-pad" maxLength={2} hint={fillText(r.partyHint, { max: maxParty })} />
         <Field label={fillText(r.note, business)} value={note} onChangeText={setNote} multiline maxLength={reservationRules.noteMax} hint={joinSentences(locale, r.noteHint, r.noteHealth)} autoComplete="off" autoCorrect={false} importantForAutofill="no" />
         <Field label={r.diet} value={diet} onChangeText={setDiet} maxLength={reservationRules.dietLineMax} hint={fillText(r.dietHint, business)} autoComplete="off" autoCorrect={false} importantForAutofill="no" />
