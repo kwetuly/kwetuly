@@ -132,6 +132,11 @@ function Row({ r, locale, row, onChanged }: { r: ReserveText; locale: string; ro
       {row.note ? <Text selectable style={type.callout}><Text style={font.bold}>{r.noteLabel}: </Text>{row.note}</Text> : null}
       {row.diet_line ? <Text selectable style={type.callout}><Text style={font.bold}>{r.dietLabel}: </Text>{row.diet_line}</Text> : null}
 
+      {row.chat_id ? (
+        <View style={{ alignItems: 'flex-start' }}>
+          <Button title={fillText(r.messageBusiness, b)} variant="text" size="md" icon={GLYPHS.chat} onPress={() => router.push(`/conversation/${row.chat_id}`)} />
+        </View>
+      ) : null}
       {row.can_answer_visit && (
         <View style={{ gap: space.sm }}>
           <Text style={{ ...type.body, ...font.bold }}>{r.visitQuestion}</Text>

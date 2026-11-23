@@ -49,6 +49,9 @@ const en = {
     completed: 'Came',
   } satisfies Record<ReservationStatus, string>,
 
+  messageGuest: 'Message the guest',
+  traveller: 'Traveller',
+  chatHiddenNote: 'Phone numbers and emails stay hidden in this chat, both ways. Please talk about the reservation here.',
   confirm: 'Confirm',
   decline: 'Decline',
   offerTime: 'Offer another time',
@@ -155,6 +158,9 @@ const sw: ReservationInboxText = {
     completed: 'Walifika',
   },
 
+  messageGuest: 'Mtumie mgeni ujumbe',
+  traveller: 'Msafiri',
+  chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya, pande zote mbili. Tafadhali zungumzeni kuhusu uhifadhi hapa.',
   confirm: 'Thibitisha',
   decline: 'Kataa',
   offerTime: 'Pendekeza muda mwingine',

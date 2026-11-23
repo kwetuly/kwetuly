@@ -63,6 +63,8 @@ export type ReserveText = {
   acceptOffer: string;
   refuseOffer: string;
   cancel: string;
+  messageBusiness: string;
+  chatHiddenNote: string;
   cancelConfirm: string;
   done: string;
   visitQuestion: string;
@@ -143,6 +145,8 @@ const en: ReserveText = {
   acceptOffer: 'Take the new time',
   refuseOffer: 'No, thank you',
   cancel: 'Cancel the reservation',
+  messageBusiness: 'Message {business}',
+  chatHiddenNote: 'Phone numbers and emails stay hidden in this chat.',
   cancelConfirm: 'Cancel this reservation? There is no fee.',
   done: 'Thank you. Saved.',
   visitQuestion: 'Did your visit happen?',
@@ -258,6 +262,8 @@ const sw: ReserveText = {
   acceptOffer: 'Chukua muda mpya',
   refuseOffer: 'Hapana, asante',
   cancel: 'Ghairi uhifadhi',
+  messageBusiness: 'Mtumie {business} ujumbe',
+  chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya.',
   cancelConfirm: 'Ungependa kughairi uhifadhi huu? Hakuna ada.',
   done: 'Asante. Imehifadhiwa.',
   visitQuestion: 'Je, ziara yako ilifanyika?',
@@ -373,6 +379,8 @@ const fr: ReserveText = {
   acceptOffer: 'Prendre le nouvel horaire',
   refuseOffer: 'Non, merci',
   cancel: 'Annuler la réservation',
+  messageBusiness: 'Écrire à {business}',
+  chatHiddenNote: 'Les numéros de téléphone et les e-mails restent masqués dans cette discussion.',
   cancelConfirm: "Annuler cette réservation ? Il n'y a aucuns frais.",
   done: 'Merci. Enregistré.',
   visitQuestion: 'Votre visite a-t-elle eu lieu ?',
@@ -488,6 +496,8 @@ const it: ReserveText = {
   acceptOffer: 'Accetta il nuovo orario',
   refuseOffer: 'No, grazie',
   cancel: 'Annulla la prenotazione',
+  messageBusiness: 'Scrivi a {business}',
+  chatHiddenNote: 'Numeri di telefono ed email restano nascosti in questa chat.',
   cancelConfirm: 'Annullare questa prenotazione? Non ci sono costi.',
   done: 'Grazie. Salvato.',
   visitQuestion: 'La tua visita è avvenuta?',
@@ -603,6 +613,8 @@ const de: ReserveText = {
   acceptOffer: 'Neue Zeit annehmen',
   refuseOffer: 'Nein, danke',
   cancel: 'Reservierung stornieren',
+  messageBusiness: '{business} schreiben',
+  chatHiddenNote: 'Telefonnummern und E-Mail-Adressen bleiben in diesem Chat verborgen.',
   cancelConfirm: 'Diese Reservierung stornieren? Es fallen keine Gebühren an.',
   done: 'Vielen Dank. Gespeichert.',
   visitQuestion: 'Hat Ihr Besuch stattgefunden?',
@@ -718,6 +730,8 @@ const pl: ReserveText = {
   acceptOffer: 'Przyjmij nowy termin',
   refuseOffer: 'Nie, dziękuję',
   cancel: 'Anuluj rezerwację',
+  messageBusiness: 'Napisz do {business}',
+  chatHiddenNote: 'Numery telefonów i adresy e-mail pozostają w tym czacie ukryte.',
   cancelConfirm: 'Anulować tę rezerwację? Nie ma żadnej opłaty.',
   done: 'Dziękujemy. Zapisano.',
   visitQuestion: 'Czy Twoja wizyta się odbyła?',
@@ -833,6 +847,8 @@ const zh: ReserveText = {
   acceptOffer: '接受新时间',
   refuseOffer: '不用了，谢谢',
   cancel: '取消预订',
+  messageBusiness: '给{business}发消息',
+  chatHiddenNote: '此聊天中电话号码和电子邮箱保持隐藏。',
   cancelConfirm: '要取消此预订吗？不收取任何费用。',
   done: '谢谢，已保存。',
   visitQuestion: '您的到访是否已完成？',

@@ -244,25 +244,32 @@ export type Conversation = {
   last_message_at: string;
   last_message_preview: string | null;
   traveler_last_read_at: string | null;
+  /** The guide's or, in a business thread, the business owner's read time. */
   guide_last_read_at: string | null;
   guides: { display_name: string; slug: string; photo_url: string | null } | null;
+  /** Business thread (reservations); absent while the business chat migration is not applied. */
+  provider_id?: string | null;
+  providers?: { business_name: string } | null;
 };
 
+const LEGACY_CONVERSATION_COLUMNS =
+  'id, traveler_id, traveler_name, contact_unlocked, last_message_at, last_message_preview, traveler_last_read_at, guide_last_read_at, guides(display_name, slug, photo_url)';
+
 export async function listConversations(): Promise<Conversation[]> {
-  return must(
-    await supabase
-      .from('conversations')
-      .select('id, traveler_id, traveler_name, contact_unlocked, last_message_at, last_message_preview, traveler_last_read_at, guide_last_read_at, guides(display_name, slug, photo_url)')
-      .order('last_message_at', { ascending: false })
-      .limit(100),
-  ) as unknown as Conversation[];
+  const run = (columns: string) => supabase.from('conversations').select(columns).order('last_message_at', { ascending: false }).limit(100);
+  let result = await run(`${LEGACY_CONVERSATION_COLUMNS}, provider_id, providers(business_name)`);
+  // Missing column or relationship: the business chat migration is not applied yet, so today's
+  // columns are used. The live chat must keep working before it is applied.
+  if (result.error && ['42703', 'PGRST204', 'PGRST200'].includes(result.error.code ?? '')) result = await run(LEGACY_CONVERSATION_COLUMNS);
+  return must(result) as unknown as Conversation[];
 }
 
-export function conversationView(c: Conversation, userId: string) {
+export function conversationView(c: Conversation, userId: string, travellerLabel = 'Traveller') {
   const isTraveler = c.traveler_id === userId;
-  const otherName = isTraveler ? (c.guides?.display_name ?? 'Guide') : (c.traveler_name ?? 'Traveller');
+  const isBusiness = !!c.provider_id;
+  const otherName = isTraveler ? (c.guides?.display_name ?? c.providers?.business_name ?? 'Guide') : (c.traveler_name ?? travellerLabel);
   const lastRead = isTraveler ? c.traveler_last_read_at : c.guide_last_read_at;
-  return { isTraveler, otherName, unread: !lastRead || c.last_message_at > lastRead };
+  return { isTraveler, isBusiness, otherName, unread: !lastRead || c.last_message_at > lastRead };
 }
 
 /** Opens the traveller's conversation with a guide, creating it the first time. */

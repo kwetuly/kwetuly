@@ -329,6 +329,8 @@ export type MyReservation = {
   asks_people_count?: boolean;
   /** Set while requested or other_time_offered. */
   answer_by?: string | null;
+  /** The Kwetuly chat thread with the business; absent before the business chat migration. */
+  chat_id?: string | null;
 };
 
 export async function loadMyReservations(): Promise<{ soon: boolean; rows: MyReservation[] }> {
@@ -356,6 +358,7 @@ export type OwnerReservation = {
   commission_status: ReservationCommissionStatus;
   is_sample: boolean;
   answer_by?: string | null;
+  chat_id?: string | null;
 };
 export type StatementRow = { commission_status: ReservationCommissionStatus; reservation_count: number; guests_counted: number; commission_tzs: number; billing_on: boolean };
 

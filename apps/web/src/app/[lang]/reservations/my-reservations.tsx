@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
 import {
   answerByTime,
   fillText,
@@ -34,6 +35,8 @@ export type MyReservation = {
   asks_people_count?: boolean;
   /** Being added by backend; absent until then. */
   answer_by?: string | null;
+  /** The Kwetuly chat thread with the business (business chat migration); absent before it. */
+  chat_id?: string | null;
 };
 
 const tone: Record<ReservationStatus, string> = {
@@ -113,6 +116,11 @@ function Row({ r, locale, row }: { r: ReserveText; locale: string; row: MyReserv
         </p>
       )}
 
+      {row.chat_id && (
+        <Link href={`/${locale}/messages/${row.chat_id}`} className="inline-flex min-h-12 items-center gap-2 font-semibold text-forest underline">
+          <MessageSquare className="size-5" aria-hidden /> {fillText(r.messageBusiness, b)}
+        </Link>
+      )}
       {row.can_answer_visit && (
         <fieldset className="space-y-2 rounded-[5px] bg-surface p-3">
           <legend className="font-semibold">{r.visitQuestion}</legend>

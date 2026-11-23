@@ -4,6 +4,7 @@ import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bubble, Composer, chatListStyle } from '@/components/chat-ui';
 import { ErrorText, ScreenState } from '@/components/ui';
+import { reservationInboxText, reserveText } from '@kwetuly/shared';
 import { conversationView, listConversations, listMessages, markConversationRead, sendMessage } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
@@ -28,7 +29,7 @@ export default function ConversationScreen() {
   useLive('messages', `conversation_id=eq.${id}`, ['messages', id]);
 
   const conversation = conversations.data?.find((c) => c.id === id);
-  const view = conversation ? conversationView(conversation, userId) : null;
+  const view = conversation ? conversationView(conversation, userId, reservationInboxText(locale).traveller) : null;
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [notSent, setNotSent] = useState(false);
@@ -70,9 +71,16 @@ export default function ConversationScreen() {
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
         contentContainerStyle={chatListStyle}
         ListHeaderComponent={
-          <Text style={{ ...type.caption, backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
-            {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
-          </Text>
+          view?.isBusiness ? (
+            // Business threads (reservations) are never unlocked: contact details stay hidden both ways.
+            <Text style={{ ...type.caption, backgroundColor: brand.sand, color: brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
+              {view.isTraveler ? reserveText(locale).chatHiddenNote : reservationInboxText(locale).chatHiddenNote}
+            </Text>
+          ) : (
+            <Text style={{ ...type.caption, backgroundColor: conversation?.contact_unlocked ? brand.mint : brand.sand, color: conversation?.contact_unlocked ? brand.forest : brand.leafDark, padding: space.md, borderRadius: radius.media, overflow: 'hidden', marginBottom: space.sm }}>
+              {conversation?.contact_unlocked ? t.messages.unlockedNote : t.messages.hiddenNote}
+            </Text>
+          )
         }
         ListEmptyComponent={<ScreenState loading={messages.isLoading} error={messages.error} onRetry={() => messages.refetch()} />}
         renderItem={({ item }) => {

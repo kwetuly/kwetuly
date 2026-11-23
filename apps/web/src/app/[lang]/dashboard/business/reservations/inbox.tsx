@@ -1,7 +1,8 @@
 'use client';
 
 import { useId, useState, useTransition } from 'react';
-import { CalendarCheck, CheckCircle2, Loader2, ReceiptText } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarCheck, CheckCircle2, Loader2, MessageSquare, ReceiptText } from 'lucide-react';
 import {
   answerByTime,
   fillText,
@@ -40,6 +41,8 @@ export type OwnerReservation = {
   is_sample: boolean;
   /** Being added by backend; absent until then. */
   answer_by?: string | null;
+  /** The Kwetuly chat thread with the guest (business chat migration); absent before it. */
+  chat_id?: string | null;
 };
 
 export type StatementRow = { commission_status: ReservationCommissionStatus; reservation_count: number; guests_counted: number; commission_tzs: number; billing_on: boolean };
@@ -166,6 +169,11 @@ function Row({ x, locale, row, soon }: { x: ReservationInboxText; locale: string
         (row.status === 'confirmed' || row.status === 'requested') && <p className="text-sm text-muted">{x.commissionAfter}</p>
       )}
 
+      {row.chat_id && (
+        <Link href={`/${locale}/messages/${row.chat_id}`} className="inline-flex min-h-12 items-center gap-2 font-semibold text-forest underline">
+          <MessageSquare className="size-5" aria-hidden /> {x.messageGuest}
+        </Link>
+      )}
       {answering && (
         <label className="block" htmlFor={`${uid}-note`}>
           <span className="label">{x.note}</span>

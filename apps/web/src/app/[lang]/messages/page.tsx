@@ -5,6 +5,7 @@ import { MessagesSquare } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
+import { reservationInboxText } from '@kwetuly/shared';
 import { listConversations, viewOf } from '@/lib/messages';
 
 export const metadata: Metadata = { title: 'Messages', robots: { index: false } };
@@ -51,7 +52,7 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
   return (
     <ul className="mt-6 divide-y divide-line overflow-hidden rounded-[5px] border border-line bg-white">
       {conversations.map((c) => {
-        const { otherName, unread } = viewOf(c, user);
+        const { otherName, unread, isBusiness, isTraveler } = viewOf(c, user, reservationInboxText(locale).traveller);
         return (
           <li key={c.id}>
             <Link href={`/${locale}/messages/${c.id}`} className="flex items-center gap-4 p-4 transition hover:bg-sand">
@@ -62,6 +63,10 @@ async function Inbox({ t, locale }: { t: Dictionary; locale: Locale }) {
                 <span className="flex items-center gap-2">
                   <span className={`truncate ${unread ? 'font-extrabold' : 'font-semibold'}`}>{otherName}</span>
                   {unread && c.last_message_preview && <span className="badge">{t.messages.newBadge}</span>}
+                </span>
+                {/* Business thread, owner side: whose reservation and for which business. */}
+                <span className={isBusiness && !isTraveler ? 'block truncate text-xs font-semibold text-muted' : 'hidden'}>
+                  {reservationInboxText(locale).traveller}{c.providers?.business_name ? ` · ${c.providers.business_name}` : ''}
                 </span>
                 <span className="block truncate text-sm text-muted">{c.last_message_preview ?? '…'}</span>
               </span>

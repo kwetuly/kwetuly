@@ -23,6 +23,10 @@ export async function resolveReport(formData: FormData) {
 export async function unlockConversation(formData: FormData) {
   const locale = await adminLocale(formData);
   const supabase = await createClient();
-  await supabase.from('conversations').update({ contact_unlocked: true }).eq('id', String(formData.get('conversation_id') ?? ''));
+  // Business threads are never unlocked (the database refuses it too); guide threads only.
+  const id = String(formData.get('conversation_id') ?? '');
+  const { data: business, error } = await supabase.from('conversations').select('provider_id').eq('id', id).maybeSingle<{ provider_id: string | null }>();
+  if (!error && business?.provider_id) redirect(`/${locale}/admin/messages`);
+  await supabase.from('conversations').update({ contact_unlocked: true }).eq('id', id);
   redirect(`/${locale}/admin/messages`);
 }
