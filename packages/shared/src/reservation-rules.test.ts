@@ -9,6 +9,8 @@ import {
   reservationCommissionStatuses,
   reservationDisputeOutcomes,
   reservationErrorCode,
+  reservationGroupDiscountApplies,
+  reservationPricePerPerson,
   reservationGuideShare,
   reservationRefusals,
   reservationRules,
@@ -71,6 +73,11 @@ describe('reservations match migration 20261122300000', () => {
     // No code is stored in any form (final review N2).
     expect(fn('public.guide_code_status')).not.toMatch(/md5|code_hash/);
   });
+  it('group discount in the trigger and copied at request time', () => {
+    expect(fn('private.reservation_compute')).toContain('and new.party_size >= new.group_discount_min_people');
+    expect(fn('private.reservation_compute')).toContain('then (100 - new.group_discount_percent)::numeric / 100 else 1 end');
+    expect(fn('public.place_reservation')).toContain("case when rate.kind = 'percent' then s.group_discount_percent end");
+  });
   it('dispute outcomes', () => {
     const block = sql.match(/check \(dispute_outcome in \(([^)]*)\)\)/)![1];
     expect(quoted(block)).toEqual([...reservationDisputeOutcomes]);
@@ -95,6 +102,17 @@ describe('commission arithmetic (same as the trigger)', () => {
     expect(completedReservationCommission(percent, 1)).toBe(4501); // 4500.5 rounds up
     expect(completedReservationCommission(percent, 2)).toBe(9001);
     expect(completedReservationCommission({ ...percent, price_basis_tzs: null }, 1)).toBeNull();
+  });
+  it('group discount: percent of the discounted price per person once the booking reaches the minimum', () => {
+    const spa = { commission_kind: 'percent', commission_rate_tzs: null, commission_percent: 10, max_guests_counted: null,
+      price_basis_tzs: 40000, group_discount_min_people: 4, group_discount_percent: 20 } as const;
+    expect(completedReservationCommission({ ...spa, party_size: 3 }, 3)).toBe(12000);
+    expect(completedReservationCommission({ ...spa, party_size: 4 }, 4)).toBe(12800);
+    // Booked 4 (discount applies), 3 came: 3 x 32000 x 10%.
+    expect(completedReservationCommission({ ...spa, party_size: 4 }, 3)).toBe(9600);
+    expect(reservationPricePerPerson({ ...spa }, 4)).toBe(32000);
+    expect(reservationPricePerPerson({ ...spa }, 3)).toBe(40000);
+    expect(reservationGroupDiscountApplies(spa, 4)).toBe(true);
   });
   it('unpriced service: fee per person who came', () => {
     expect(completedReservationCommission(perPerson, 3)).toBe(9000);

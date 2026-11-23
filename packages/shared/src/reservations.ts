@@ -58,7 +58,15 @@ export const reservationLimits = {
   percentMax: 50,
   reservationAmountTzsMax: 200_000,
   maxGuestsCountedMax: 100,
+  /** Optional group discount on a priced service: from this many people, this percent off per person. */
+  groupDiscountMinPeopleMin: 2,
+  groupDiscountMinPeopleMax: 20,
+  groupDiscountPercentMin: 1,
+  groupDiscountPercentMax: 50,
 } as const;
+
+/** A service's group discount (both set or both null). */
+export type ServiceGroupDiscount = { group_discount_min_people: number | null; group_discount_percent: number | null };
 
 export type ReservationRate = {
   kind: ReservationRateKind;
@@ -69,14 +77,22 @@ export type ReservationRate = {
 
 /**
  * What the business owes Kwetuly for one completed reservation, in whole shillings (slice 2 records
- * this; nobody is charged by Kwetuly). people = guests who came; priceTzs = the service's listed price.
+ * this; nobody is charged by Kwetuly). people = guests who came; priceTzs = the service's listed price
+ * per person; discount = the service's group discount, applied when people reaches its minimum.
  * Returns null when the rate cannot be applied.
  */
-export function reservationCommissionTzs(rate: ReservationRate, people: number, priceTzs: number | null): number | null {
+export function reservationCommissionTzs(
+  rate: ReservationRate,
+  people: number,
+  priceTzs: number | null,
+  discount: ServiceGroupDiscount | null = null,
+): number | null {
   if (!Number.isInteger(people) || people < 1) return null;
   if (rate.kind === 'percent') {
     if (rate.percent == null || priceTzs == null) return null;
-    return Math.round((priceTzs * people * rate.percent) / 100);
+    const off = discount?.group_discount_min_people != null && discount.group_discount_percent != null
+      && people >= discount.group_discount_min_people ? discount.group_discount_percent : 0;
+    return Math.round((priceTzs * (100 - off) * people * rate.percent) / 10000);
   }
   if (rate.amount_tzs == null) return null;
   const counted = rate.kind === 'per_guest' && rate.max_guests_counted != null ? Math.min(people, rate.max_guests_counted) : people;
@@ -159,9 +175,33 @@ export function hoursPayload(days: Record<number, OpeningPeriod[]>): { ok: true;
   return { ok: true, hours };
 }
 
-export type ServiceInput = { name: string; duration_min: number; price_tzs: number | null; max_people: number };
+export type ServiceInput = {
+  name: string;
+  duration_min: number;
+  price_tzs: number | null;
+  max_people: number;
+  group_discount_min_people?: number | null;
+  group_discount_percent?: number | null;
+};
 
-/** Checks a service form the same way as the table; returns the field that is wrong, or null. */
+/**
+ * Checks a group discount the same way as the table: both empty, or both set on a priced service, with
+ * the minimum within 2..20 and not above the service's maximum people, and the percent within 1..50.
+ */
+export function groupDiscountError(s: ServiceInput): boolean {
+  const min = s.group_discount_min_people ?? null;
+  const pct = s.group_discount_percent ?? null;
+  if (min == null && pct == null) return false;
+  const l = reservationLimits;
+  if (min == null || pct == null || s.price_tzs == null) return true;
+  if (!Number.isInteger(min) || min < l.groupDiscountMinPeopleMin || min > l.groupDiscountMinPeopleMax || min > s.max_people) return true;
+  return !Number.isInteger(pct) || pct < l.groupDiscountPercentMin || pct > l.groupDiscountPercentMax;
+}
+
+/**
+ * Checks a service form the same way as the table; returns the field that is wrong, or null.
+ * The group discount is checked separately with groupDiscountError().
+ */
 export function serviceInputError(s: ServiceInput): 'name' | 'duration' | 'price' | 'people' | null {
   const name = s.name.trim();
   const l = reservationLimits;

@@ -15,6 +15,7 @@ import {
   hoursByWeekday,
   hoursPayload,
   serviceInputError,
+  groupDiscountError,
   knownBlockers,
   closedNoteOk,
 } from './reservations';
@@ -50,6 +51,19 @@ describe('reservations match migration 20261122200000', () => {
     expect(sql).toContain(`percent <= ${reservationLimits.percentMax}`);
     expect(sql).toContain(`amount_tzs <= ${reservationLimits.reservationAmountTzsMax}`);
     expect(sql).toContain(`max_guests_counted between 1 and ${reservationLimits.maxGuestsCountedMax}`);
+    expect(sql).toContain(`group_discount_min_people between ${reservationLimits.groupDiscountMinPeopleMin} and ${reservationLimits.groupDiscountMinPeopleMax}`);
+    expect(sql).toContain(`group_discount_percent between ${reservationLimits.groupDiscountPercentMin} and ${reservationLimits.groupDiscountPercentMax}`);
+    expect(sql).toContain('group_discount_min_people <= max_people');
+  });
+  it('group discount form check', () => {
+    const base = { name: 'Massage', duration_min: 60, price_tzs: 40000, max_people: 6 };
+    expect(groupDiscountError(base)).toBe(false);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: 10 })).toBe(false);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: null })).toBe(true);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 8, group_discount_percent: 10 })).toBe(true);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 1, group_discount_percent: 10 })).toBe(true);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: 60 })).toBe(true);
+    expect(groupDiscountError({ ...base, price_tzs: null, group_discount_min_people: 4, group_discount_percent: 10 })).toBe(true);
   });
   it('seeds no amount', () => {
     const seed = sql.match(/insert into public\.price_list \(account_type, business_type, service_code, period, note\)[\s\S]*?;\n/)![0];
@@ -69,6 +83,12 @@ describe('commission arithmetic', () => {
     const rate = { kind: 'percent', amount_tzs: null, percent: 10, max_guests_counted: null } as const;
     expect(reservationCommissionTzs(rate, 2, 45_005)).toBe(9001);
     expect(reservationCommissionTzs(rate, 1, null)).toBeNull();
+  });
+  it('group discount: from the minimum, the price per person is lower', () => {
+    const rate = { kind: 'percent', amount_tzs: null, percent: 10, max_guests_counted: null } as const;
+    const discount = { group_discount_min_people: 4, group_discount_percent: 20 };
+    expect(reservationCommissionTzs(rate, 3, 40_000, discount)).toBe(12000); // 3 x 40000 x 10%
+    expect(reservationCommissionTzs(rate, 4, 40_000, discount)).toBe(12800); // 4 x 32000 x 10%
   });
   it('per person for unpriced services', () => {
     const rate = { kind: 'per_person', amount_tzs: 3000, percent: null, max_guests_counted: null } as const;

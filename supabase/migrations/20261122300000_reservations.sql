@@ -178,7 +178,11 @@ create table if not exists public.reservations (
   commission_rate_tzs integer check (commission_rate_tzs between 1 and 200000),
   commission_percent numeric(5, 2) check (commission_percent > 0 and commission_percent <= 50),
   max_guests_counted integer check (max_guests_counted between 1 and 100),
-  price_basis_tzs integer check (price_basis_tzs between 100 and 50000000),
+  price_basis_tzs integer check (price_basis_tzs between 100 and 50000000),   -- listed price per person
+  -- The service's group discount, copied at request time (Walter 2026-11-23). It applies when
+  -- party_size >= group_discount_min_people: commission uses price x (1 - percent / 100) per person.
+  group_discount_min_people integer check (group_discount_min_people between 2 and 20),
+  group_discount_percent integer check (group_discount_percent between 1 and 50),
   price_list_id uuid not null references public.price_list (id),
   guide_share_pct numeric(5, 2) not null default 0 check (guide_share_pct between 0 and 100),
   -- Set by the trigger only.
@@ -196,6 +200,9 @@ create table if not exists public.reservations (
     or (commission_kind in ('per_guest', 'per_person') and commission_rate_tzs is not null
         and commission_percent is null)),
   constraint reservations_max_only_per_guest check (max_guests_counted is null or commission_kind = 'per_guest'),
+  constraint reservations_group_discount_shape check (
+    (group_discount_min_people is null) = (group_discount_percent is null)
+    and (group_discount_min_people is null or commission_kind = 'percent')),
   constraint reservations_offer_shape check ((status = 'other_time_offered') = (offered_starts_at is not null)),
   constraint reservations_came_le_party check (came_count is null or came_count <= party_size),
   constraint reservations_cancel_shape check ((status = 'cancelled') = (cancelled_by is not null))
@@ -278,11 +285,11 @@ begin
     -- Copied facts never change after the request.
     if (new.business_type, new.commission_kind, new.commission_rate_tzs, new.commission_percent,
         new.max_guests_counted, new.price_basis_tzs, new.price_list_id, new.guide_share_pct, new.is_sample,
-        new.party_size, new.created_at, new.provider_ref)
+        new.party_size, new.created_at, new.provider_ref, new.group_discount_min_people, new.group_discount_percent)
        is distinct from
        (old.business_type, old.commission_kind, old.commission_rate_tzs, old.commission_percent,
         old.max_guests_counted, old.price_basis_tzs, old.price_list_id, old.guide_share_pct, old.is_sample,
-        old.party_size, old.created_at, old.provider_ref) then
+        old.party_size, old.created_at, old.provider_ref, old.group_discount_min_people, old.group_discount_percent) then
       raise exception 'Reservation facts cannot be changed' using errcode = 'P0001';
     end if;
     if new.status is distinct from old.status then
@@ -309,7 +316,12 @@ begin
     new.commission_tzs := case new.commission_kind
       when 'per_guest' then new.commission_rate_tzs * least(v_came, coalesce(new.max_guests_counted, v_came))
       when 'per_person' then new.commission_rate_tzs * v_came
-      else round(new.price_basis_tzs::numeric * v_came * new.commission_percent / 100)::integer
+      -- Percent of the listed price per person, less the group discount when the booking qualifies.
+      else round(new.price_basis_tzs::numeric
+                 * case when new.group_discount_min_people is not null
+                             and new.party_size >= new.group_discount_min_people
+                        then (100 - new.group_discount_percent)::numeric / 100 else 1 end
+                 * v_came * new.commission_percent / 100)::integer
     end;
     new.guide_share_tzs := case when new.guide_id is null or new.guide_share_pct = 0 then 0
                                 else round(new.commission_tzs::numeric * new.guide_share_pct / 100)::integer end;
@@ -719,7 +731,8 @@ begin
   insert into public.reservations (
     provider_id, provider_ref, business_name, business_type, traveler_id, service_id, service_name, guide_id,
     starts_at, answer_by, party_size, note, commission_kind, commission_rate_tzs, commission_percent,
-    max_guests_counted, price_basis_tzs, price_list_id, guide_share_pct, is_sample)
+    max_guests_counted, price_basis_tzs, group_discount_min_people, group_discount_percent,
+    price_list_id, guide_share_pct, is_sample)
   values (
     p.id, p.id, left(p.business_name, 160), p.business_type, v_user, p_service, s.name, v_guide,
     p_starts_at,
@@ -729,6 +742,8 @@ begin
     case when rate.kind = 'percent' then rate.percent end,
     case when rate.kind = 'per_guest' then rate.max_guests_counted end,
     case when rate.kind = 'percent' then s.price_tzs end,
+    case when rate.kind = 'percent' then s.group_discount_min_people end,
+    case when rate.kind = 'percent' then s.group_discount_percent end,
     rate.price_list_id,
     case when v_guide is null then 0 else private.reservation_guide_share_pct() end,
     p.is_sample)
