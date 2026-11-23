@@ -176,7 +176,7 @@ create table if not exists public.business_services (
   -- Optional group discount, set by the owner (Walter 2026-11-23): from this many people, each
   -- person's price is lower by this percent. price_tzs stays the price per person.
   group_discount_min_people integer check (group_discount_min_people between 2 and 20),
-  group_discount_percent integer check (group_discount_percent between 1 and 50),
+  group_discount_percent integer check (group_discount_percent between 1 and 30),
   active boolean not null default true,
   sort integer not null default 0 check (sort between 0 and 1000),
   created_at timestamptz not null default now(),
@@ -191,7 +191,7 @@ comment on table public.business_services is
 -- For a test database that already has the table from an earlier draft of this file.
 alter table public.business_services
   add column if not exists group_discount_min_people integer check (group_discount_min_people between 2 and 20),
-  add column if not exists group_discount_percent integer check (group_discount_percent between 1 and 50);
+  add column if not exists group_discount_percent integer check (group_discount_percent between 1 and 30);
 
 drop trigger if exists business_services_updated_at on public.business_services;
 create trigger business_services_updated_at
@@ -247,6 +247,12 @@ begin
     if tg_op = 'INSERT' and (select count(*) from public.business_services s
                              where s.provider_id = new.provider_id) >= 40 then
       raise exception 'At most 40 services per business' using errcode = 'check_violation';
+    end if;
+    -- Group discounts only for spa and salon services (security review L5).
+    if new.group_discount_min_people is not null
+       and coalesce((select pr.business_type from public.providers pr where pr.id = new.provider_id), '')
+           not in ('spa', 'salon') then
+      raise exception 'Group discounts are for spa and salon services only' using errcode = 'check_violation';
     end if;
     new.name := btrim(new.name);
   end if;

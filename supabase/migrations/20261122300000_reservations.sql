@@ -182,7 +182,7 @@ create table if not exists public.reservations (
   -- The service's group discount, copied at request time (Walter 2026-11-23). It applies when
   -- party_size >= group_discount_min_people: commission uses price x (1 - percent / 100) per person.
   group_discount_min_people integer check (group_discount_min_people between 2 and 20),
-  group_discount_percent integer check (group_discount_percent between 1 and 50),
+  group_discount_percent integer check (group_discount_percent between 1 and 30),
   price_list_id uuid not null references public.price_list (id),
   guide_share_pct numeric(5, 2) not null default 0 check (guide_share_pct between 0 and 100),
   -- Set by the trigger only.

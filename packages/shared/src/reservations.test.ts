@@ -63,6 +63,8 @@ describe('reservations match migration 20261122200000', () => {
     expect(groupDiscountError({ ...base, group_discount_min_people: 8, group_discount_percent: 10 })).toBe(true);
     expect(groupDiscountError({ ...base, group_discount_min_people: 1, group_discount_percent: 10 })).toBe(true);
     expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: 60 })).toBe(true);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: 31 })).toBe(true);
+    expect(groupDiscountError({ ...base, group_discount_min_people: 4, group_discount_percent: 30 })).toBe(false);
     expect(groupDiscountError({ ...base, price_tzs: null, group_discount_min_people: 4, group_discount_percent: 10 })).toBe(true);
   });
   it('seeds no amount', () => {

@@ -27,13 +27,33 @@
 --   6. conversations.traveler_name for a business thread is the traveller's first name only.
 --   7. my_reservations() and business_reservations() return chat_id as a new last column.
 --
+-- Security review of d4c8f1c / 48a87f5, fixed here:
+--   H1 (live guide threads too) clients may insert only traveler_id, guide_id, trip_id and update only
+--      the read times and contact_unlocked (column grants); the guard also keeps the preview, the
+--      traveller's name and the creation time.
+--   M1 traveler_id, guide_id, provider_id and was_business never change, for any caller.
+--   M2 business-thread messages and preview are replaced by a fixed marker 30 days after the latest
+--      reservation date (daily job kwetuly-business-chat-cleanup).
+--   M3 sending in a business thread needs an open reservation, or the latest reservation date less
+--      than 30 days ago (trigger with the fixed code chat_closed, and the insert policy).
+--   L1 a deleted business leaves its threads read-only (provider_id null, was_business true).
+--   L3 not done: hiding conversations.traveler_id from the business owner needs column-level rules per
+--      row, which grants cannot do; the chat screens compare traveler_id with the signed-in user. It is
+--      an account id only (profiles do not show phone or email to others). A safe view for the business
+--      side can replace direct reads later.
+--
 -- Access rules after this file:
 --   conversations: read and mark read: the traveller, the guide's owner (guide thread), the business
 --     owner (business thread), admins. Insert: travellers, guide threads only (unchanged).
 --   messages: read and send: participants as above (via private.in_conversation), admins read.
 --
 -- Undo (before any business thread exists; deleting business threads deletes their messages):
---   delete from public.conversations where provider_id is not null;
+--   select cron.unschedule('kwetuly-business-chat-cleanup');
+--   drop trigger messages_chat_open on public.messages; drop function private.guard_message_chat_open(),
+--     private.run_business_chat_cleanup(); re-create "Participants send messages" from 20261016001800;
+--     drop function private.chat_open(uuid);
+--   grant insert, update on public.conversations to authenticated;   -- the old table-wide grants
+--   delete from public.conversations where was_business;
 --   alter table public.reservations drop column chat_id;   -- then re-run the two functions from 20261122300000
 --   drop trigger reservations_link_chat on public.reservations; drop function private.reservation_link_chat();
 --   re-create private.in_conversation(), public.guard_conversation_update(),
@@ -41,22 +61,34 @@
 --     policies from 20261012001100, 20261012001200, 20261012001300 and 20261025000100;
 --   drop index conversations_traveler_provider_key, conversations_provider_idx;
 --   alter table public.conversations drop constraint conversations_one_party,
---     drop constraint conversations_business_never_unlocked, drop column provider_id,
+--     drop constraint conversations_business_never_unlocked, drop column provider_id, drop column was_business,
 --     alter column guide_id set not null;
 
 -- ---------------------------------------------------------------------------
 -- 1. Table
 -- ---------------------------------------------------------------------------
+-- A deleted business keeps its threads, read-only (review L1): provider_id becomes null and
+-- was_business stays true, so the thread is never mistaken for anything else and nobody can send.
 alter table public.conversations
-  add column if not exists provider_id uuid references public.providers (id) on delete cascade;
+  add column if not exists provider_id uuid references public.providers (id) on delete set null,
+  add column if not exists was_business boolean not null default false;
 alter table public.conversations alter column guide_id drop not null;
 
 alter table public.conversations drop constraint if exists conversations_one_party;
 alter table public.conversations add constraint conversations_one_party
-  check (num_nonnulls(guide_id, provider_id) = 1);
+  check (case when was_business then guide_id is null
+              else num_nonnulls(guide_id, provider_id) = 1 and provider_id is null end);
 alter table public.conversations drop constraint if exists conversations_business_never_unlocked;
 alter table public.conversations add constraint conversations_business_never_unlocked
-  check (provider_id is null or not contact_unlocked);
+  check (not was_business or not contact_unlocked);
+
+-- Review H1 (guide threads too): clients may only create a guide thread with these columns and only
+-- update the read times (and contact_unlocked, which the guard keeps for admins and the server).
+-- Checked against the frontend: inserts send traveler_id and guide_id; updates send
+-- traveler_last_read_at / guide_last_read_at, and the admin page contact_unlocked.
+revoke insert, update on public.conversations from anon, authenticated;
+grant insert (traveler_id, guide_id, trip_id) on public.conversations to authenticated;
+grant update (traveler_last_read_at, guide_last_read_at, contact_unlocked) on public.conversations to authenticated;
 
 create unique index if not exists conversations_traveler_provider_key
   on public.conversations (traveler_id, provider_id) where provider_id is not null;
@@ -111,7 +143,11 @@ create policy "Participants mark conversations read" on public.conversations
 -- The insert policy "Travellers start conversations with approved guides" (20261016001800) is kept as
 -- it is: it needs an approved guide_id, so no client can create a business thread.
 
--- From 20261012001100; provider_id is frozen too. Guide threads: unchanged.
+-- From 20261012001100, with the security review fixes:
+--   M1 who the thread is between never changes, for ANY caller (admins and server code included).
+--      The only exception: the foreign key clearing provider_id when a business is deleted (L1).
+--   H1 clients cannot change the preview, the traveller's name or the creation time.
+-- Read markers and unlocking: unchanged.
 create or replace function public.guard_conversation_update()
 returns trigger
 language plpgsql
@@ -120,15 +156,23 @@ as $$
 declare
   is_traveler boolean := old.traveler_id = (select auth.uid());
 begin
+  if new.traveler_id is distinct from old.traveler_id
+     or new.guide_id is distinct from old.guide_id
+     or new.was_business is distinct from old.was_business
+     or (new.provider_id is distinct from old.provider_id
+         and not (new.provider_id is null and pg_trigger_depth() > 1)) then
+    raise exception 'conversation_parties_fixed' using errcode = 'P0001',
+      hint = 'Who a conversation is between cannot be changed.';
+  end if;
   if private.is_trusted() then
     return new;
   end if;
-  new.traveler_id := old.traveler_id;
-  new.guide_id := old.guide_id;
-  new.provider_id := old.provider_id;
   new.trip_id := old.trip_id;
   new.contact_unlocked := old.contact_unlocked;
   new.last_message_at := old.last_message_at;
+  new.last_message_preview := old.last_message_preview;
+  new.traveler_name := old.traveler_name;
+  new.created_at := old.created_at;
   if is_traveler then
     new.guide_last_read_at := old.guide_last_read_at;
   else
@@ -146,7 +190,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if new.provider_id is not null then
+  if new.was_business then
     select coalesce(nullif(split_part(btrim(full_name), ' ', 1), ''), 'Traveller') into new.traveler_name
     from public.profiles where id = new.traveler_id;
     new.traveler_name := coalesce(new.traveler_name, 'Traveller');
@@ -191,7 +235,7 @@ begin
 
   update public.conversations set last_message_at = new.created_at where id = c.id;
 
-  if c.provider_id is not null then
+  if c.was_business then
     -- Business thread: the business owner and the business's WhatsApp number.
     select pr.owner_id, pr.business_name into v_business_owner, v_business_name
     from public.providers pr where pr.id = c.provider_id;
@@ -271,8 +315,8 @@ begin
   if new.is_sample or new.traveler_id is null or new.provider_id is null then
     return new;
   end if;
-  insert into public.conversations (traveler_id, provider_id)
-  values (new.traveler_id, new.provider_id)
+  insert into public.conversations (traveler_id, provider_id, was_business)
+  values (new.traveler_id, new.provider_id, true)
   on conflict (traveler_id, provider_id) where provider_id is not null do nothing;
   select c.id into new.chat_id
   from public.conversations c
@@ -365,3 +409,105 @@ end;
 $$;
 revoke execute on function public.business_reservations(uuid, date, date) from public, anon;
 grant execute on function public.business_reservations(uuid, date, date) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 5. Business threads close (security review M3, L1)
+-- ---------------------------------------------------------------------------
+-- A business thread is open while one of its reservations is open (requested, other time offered,
+-- confirmed) or until 30 days after the latest reservation date, and only while the business exists.
+-- Guide threads: always open, as before.
+create or replace function private.chat_open(p_conversation uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((
+    select case
+      when not c.was_business then true
+      when c.provider_id is null then false
+      else exists (
+        select 1 from public.reservations r
+        where r.chat_id = c.id
+          and (r.status in ('requested', 'other_time_offered', 'confirmed')
+               or (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 30 >= private.tz_today()))
+    end
+    from public.conversations c where c.id = p_conversation), false);
+$$;
+revoke execute on function private.chat_open(uuid) from public;
+grant execute on function private.chat_open(uuid) to authenticated;
+
+-- Before insert (runs before the masking trigger and before the policy check): a fixed code.
+create or replace function private.guard_message_chat_open()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if not private.chat_open(new.conversation_id) then
+    raise exception 'chat_closed' using errcode = 'P0001',
+      hint = 'This chat is closed: no open reservation and more than 30 days after the last one.';
+  end if;
+  return new;
+end;
+$$;
+revoke execute on function private.guard_message_chat_open() from public;
+drop trigger if exists messages_chat_open on public.messages;
+create trigger messages_chat_open
+  before insert on public.messages
+  for each row execute function private.guard_message_chat_open();
+
+-- The same rule in the policy, so it holds even if the trigger were ever dropped.
+-- From 20261016001800 "Participants send messages", plus private.chat_open().
+drop policy if exists "Participants send messages" on public.messages;
+create policy "Participants send messages" on public.messages
+  for insert to authenticated
+  with check (sender_id = (select auth.uid())
+              and (select private.is_onboarded())
+              and private.in_conversation(conversation_id)
+              and private.chat_open(conversation_id));
+
+-- ---------------------------------------------------------------------------
+-- 6. Business thread texts are removed 30 days after the latest reservation date (review M2)
+-- ---------------------------------------------------------------------------
+-- Daily. The message rows stay (who and when) with a fixed marker as the body; the moderation copy of
+-- masked messages and the preview go too. Guide threads: untouched.
+create or replace function private.run_business_chat_cleanup()
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_marker constant text := '[deleted after 30 days]';
+  v_ids uuid[];
+  v_count integer := 0;
+begin
+  select coalesce(array_agg(c.id), '{}') into v_ids
+  from public.conversations c
+  where c.was_business
+    and not exists (
+      select 1 from public.reservations r
+      where r.chat_id = c.id
+        and (r.status in ('requested', 'other_time_offered', 'confirmed')
+             or (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 30 >= private.tz_today()));
+  if cardinality(v_ids) = 0 then
+    return 0;
+  end if;
+  delete from public.message_moderation mm
+  using public.messages m
+  where mm.message_id = m.id and m.conversation_id = any (v_ids);
+  update public.messages m set body = v_marker
+  where m.conversation_id = any (v_ids) and m.body <> v_marker;
+  get diagnostics v_count = row_count;
+  update public.conversations c set last_message_preview = v_marker
+  where c.id = any (v_ids) and c.last_message_preview is distinct from v_marker and c.last_message_preview is not null;
+  return v_count;
+end;
+$$;
+revoke execute on function private.run_business_chat_cleanup() from public, anon, authenticated;
+
+-- Daily at 02:40 UTC (05:40 in Dar es Salaam). Its own job, so the reservations job does not depend
+-- on this migration.
+select cron.schedule('kwetuly-business-chat-cleanup', '40 2 * * *', 'select private.run_business_chat_cleanup()');

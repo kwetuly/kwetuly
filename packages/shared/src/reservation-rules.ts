@@ -1,3 +1,5 @@
+import { percentCommissionTzs, percentToBasisPoints, roundHalfUpDiv } from './reservations';
+
 // Reservations, slice 2 (requests, statuses, commission). Mirrors
 // supabase/migrations/20261122300000_reservations.sql; reservation-rules.test.ts compares the two.
 // The database decides every status and every commission; screens use these for labels and previews.
@@ -168,7 +170,7 @@ export function completedReservationCommission(rate: ReservationRateSnapshot, ca
     if (rate.commission_percent == null || rate.price_basis_tzs == null) return null;
     const discount = reservationGroupDiscountApplies(rate, rate.party_size ?? came) ? (rate.group_discount_percent as number) : 0;
     // One rounding at the end, like the database (numeric arithmetic, then round).
-    return Math.round((rate.price_basis_tzs * (100 - discount) * came * rate.commission_percent) / 10000);
+    return percentCommissionTzs(rate.price_basis_tzs, discount, came, rate.commission_percent);
   }
   if (rate.commission_rate_tzs == null) return null;
   const counted = rate.commission_kind === 'per_guest' ? Math.min(came, rate.max_guests_counted ?? came) : came;
@@ -178,7 +180,7 @@ export function completedReservationCommission(rate: ReservationRateSnapshot, ca
 /** The linked guide's recorded share of Kwetuly's commission (0 when no guide). */
 export function reservationGuideShare(commissionTzs: number, guideLinked: boolean, pct: number = reservationRules.guideSharePct): number {
   if (!guideLinked || pct <= 0) return 0;
-  return Math.round((commissionTzs * pct) / 100);
+  return Number(roundHalfUpDiv(BigInt(commissionTzs) * percentToBasisPoints(pct), BigInt(10_000)));
 }
 
 /** Commission is owed only for completed, non-sample reservations without an open dispute. */

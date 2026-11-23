@@ -4,6 +4,29 @@
 
 import { addDaysIso } from './person-documents';
 
+// ---------------------------------------------------------------------------------------------------
+// Exact money arithmetic (security review L6): the same result as Postgres numeric, never a float.
+// ---------------------------------------------------------------------------------------------------
+
+/** A percent with up to 2 decimals (numeric(5,2)) as whole basis points, e.g. 12.5 -> 1250. */
+export function percentToBasisPoints(percent: number): bigint {
+  return BigInt(Math.round(percent * 100));
+}
+
+/** num / den rounded half away from zero, like Postgres round(numeric). Both non-negative here. */
+export function roundHalfUpDiv(num: bigint, den: bigint): bigint {
+  return (num * BigInt(2) + den) / (den * BigInt(2));
+}
+
+/**
+ * Percent commission in whole shillings, exactly like the database: price per person x (100 - group
+ * discount %) / 100 x people x rate % / 100, one rounding at the end.
+ */
+export function percentCommissionTzs(pricePerPersonTzs: number, discountPercent: number, people: number, ratePercent: number): number {
+  const num = BigInt(pricePerPersonTzs) * BigInt(100 - discountPercent) * BigInt(people) * percentToBasisPoints(ratePercent);
+  return Number(roundHalfUpDiv(num, BigInt(1_000_000)));   // 100 (discount) x 10000 (basis points)
+}
+
 /** Current reservation terms for businesses. [legal] placeholder until the advocate's wording. */
 export const RESERVATION_TERMS_VERSION = '2026-11-22-draft';
 
@@ -62,7 +85,7 @@ export const reservationLimits = {
   groupDiscountMinPeopleMin: 2,
   groupDiscountMinPeopleMax: 20,
   groupDiscountPercentMin: 1,
-  groupDiscountPercentMax: 50,
+  groupDiscountPercentMax: 30,
 } as const;
 
 /** A service's group discount (both set or both null). */
@@ -92,7 +115,7 @@ export function reservationCommissionTzs(
     if (rate.percent == null || priceTzs == null) return null;
     const off = discount?.group_discount_min_people != null && discount.group_discount_percent != null
       && people >= discount.group_discount_min_people ? discount.group_discount_percent : 0;
-    return Math.round((priceTzs * (100 - off) * people * rate.percent) / 10000);
+    return percentCommissionTzs(priceTzs, off, people, rate.percent);
   }
   if (rate.amount_tzs == null) return null;
   const counted = rate.kind === 'per_guest' && rate.max_guests_counted != null ? Math.min(people, rate.max_guests_counted) : people;

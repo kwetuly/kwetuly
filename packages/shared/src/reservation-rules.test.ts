@@ -16,6 +16,7 @@ import {
   reservationRules,
   reservationStatuses,
 } from './reservation-rules';
+import { percentCommissionTzs, roundHalfUpDiv } from './reservations';
 
 const sql = readFileSync(new URL('../../../supabase/migrations/20261122300000_reservations.sql', import.meta.url), 'utf8');
 const quoted = (block: string) => [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
@@ -113,6 +114,16 @@ describe('commission arithmetic (same as the trigger)', () => {
     expect(reservationPricePerPerson({ ...spa }, 4)).toBe(32000);
     expect(reservationPricePerPerson({ ...spa }, 3)).toBe(40000);
     expect(reservationGroupDiscountApplies(spa, 4)).toBe(true);
+  });
+  it('integer-exact like Postgres numeric (review L6)', () => {
+    // 45005 x 0.9 x 3 x 12.5% = 15189.1875 -> 15189; a float path can land on the wrong side of .5.
+    const spa = { commission_kind: 'percent', commission_rate_tzs: null, commission_percent: 12.5, max_guests_counted: null,
+      price_basis_tzs: 45005, group_discount_min_people: 2, group_discount_percent: 10, party_size: 3 } as const;
+    expect(completedReservationCommission(spa, 3)).toBe(15189);
+    expect(percentCommissionTzs(1, 0, 1, 50)).toBe(1); // 0.5 rounds up
+    expect(percentCommissionTzs(33333, 0, 3, 33.33)).toBe(33330); // 99999 x 33.33% = 33329.6667
+    expect(reservationGuideShare(4501, true)).toBe(2251); // 2250.5 rounds up
+    expect(roundHalfUpDiv(BigInt(5), BigInt(2))).toBe(BigInt(3));
   });
   it('unpriced service: fee per person who came', () => {
     expect(completedReservationCommission(perPerson, 3)).toBe(9000);
