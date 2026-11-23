@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router, type Href } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { BUSINESS_TYPES, ORDER_TYPES, orderMessage, type OrderMode } from '@kwetuly/shared';
+import { BUSINESS_TYPES, ORDER_TYPES, isReservableType, orderMessage, reserveText, type OrderMode } from '@kwetuly/shared';
 import { BusinessBadge } from '@/components/business-card';
 import { GLYPHS } from '@/components/glyph';
 import { PhotoCredits, SampleOffer } from '@/components/sample-offer';
@@ -13,6 +13,7 @@ import { askBusiness, getBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { openExternal } from '@/lib/open-external';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
+import { reservationEntry } from '@/lib/reservations';
 import { useType } from '@/lib/use-type';
 import { brand, colors, layout, media, radius, space } from '@/theme';
 
@@ -34,6 +35,10 @@ export default function BusinessScreen() {
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   const b = business.data;
+  // Restaurants, spas and salons that take reservations (slice 2); 'soon' while the database part is missing.
+  // Samples have not joined, so no Reserve (QA 6).
+  const reservable = !!b && !b.is_sample && isReservableType(b.business_type);
+  const entry = useQuery({ queryKey: ['reservation-entry', id], queryFn: () => reservationEntry(id), enabled: reservable });
   const needsSetup = useNeedsSetup();
   if (!b) return <ScreenState screen loading={business.isLoading} error={business.error} onRetry={() => business.refetch()} empty emptyText={t.ux.notFoundTitle} />;
   const isShop = ORDER_TYPES.includes(b.business_type);
@@ -74,6 +79,22 @@ export default function BusinessScreen() {
       {b.is_sample && <PhotoCredits urls={photos} />}
       <BusinessBadge business={b} full />
       {b.has_referral_agreement && <Muted>{bt.commissionNote}</Muted>}
+      {reservable && (entry.data === 'open' || entry.data === 'soon') && (
+        <Card>
+          <SectionTitle>{reserveText(locale).reserve}</SectionTitle>
+          <Muted>{reserveText(locale).reserveHint}</Muted>
+          {/* Outline: Send in the question form is this screen's one filled button. */}
+          <Button
+            title={reserveText(locale).reserve}
+            variant="outline"
+            icon={GLYPHS.calendar}
+            disabled={entry.data === 'soon'}
+            accessibilityLabel={entry.data === 'soon' ? `${reserveText(locale).reserve}. ${reserveText(locale).soon}` : undefined}
+            onPress={() => router.push({ pathname: '/reserve/[id]', params: { id: b.id } } as unknown as Href)}
+          />
+          {entry.data === 'soon' && <Muted>{reserveText(locale).soon}</Muted>}
+        </Card>
+      )}
       {b.story && <Text selectable style={type.callout}>{b.story}</Text>}
       {b.website && <Button title={bt.website} variant="outline" size="md" icon={GLYPHS.globe} onPress={() => openExternal(b.website, { inApp: true })} />}
       {/* Sample businesses only (security finding F1). */}

@@ -155,6 +155,63 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Ufutaji wa nyaraka umesimamishwa', body: 'Ufutaji wa kila saa wa nyaraka za utambulisho ulitaka kufuta faili nyingi kuliko kawaida, kwa hiyo haukufuta chochote. Tafadhali endesha "verification-sweep" kwa dry_run na uangalie kabla ya kuendelea.' }
         : { subject: 'Document sweep stopped', body: 'The hourly sweep of identity documents wanted to delete more files than usual, so it deleted nothing. Please run "verification-sweep" with dry_run and check before it continues.' };
+    // Reservations (migration 20261122300000). Payloads carry ids only: no name, note, diet line or
+    // phone number. The texts say what to do; details are on Kwetuly. Kiswahili to be checked by Walter.
+    case 'reservation_requested':
+      return sw
+        ? { subject: 'Ombi jipya la kuhifadhi nafasi', body: 'Msafiri ameomba kuhifadhi nafasi kwenye biashara yako. Tafadhali kubali, kataa au pendekeza muda mwingine kwenye Kwetuly.' }
+        : { subject: 'New reservation request', body: 'A traveller asked to reserve at your business. Please confirm, decline or offer another time on Kwetuly.' };
+    case 'reservation_cancelled_by_traveller':
+      return sw
+        ? { subject: 'Nafasi imeghairiwa', body: 'Msafiri ameghairi nafasi aliyohifadhi. Hakuna kinachodaiwa. Tazama maelezo kwenye Kwetuly.' }
+        : { subject: 'Reservation cancelled', body: 'A traveller cancelled a reservation. Nothing is owed. See the details on Kwetuly.' };
+    case 'reservation_offer_accepted':
+      return sw
+        ? { subject: 'Muda mpya umekubaliwa', body: 'Msafiri amekubali muda uliopendekeza. Nafasi imethibitishwa kwenye Kwetuly.' }
+        : { subject: 'New time accepted', body: 'The traveller accepted the time you offered. The reservation is confirmed on Kwetuly.' };
+    case 'reservation_offer_refused':
+      return sw
+        ? { subject: 'Muda mpya haukukubaliwa', body: 'Msafiri hakuweza kuja kwa muda uliopendekeza. Ombi limefungwa.' }
+        : { subject: 'Other time not accepted', body: 'The traveller could not come at the time you offered. The request is closed.' };
+    case 'reservation_mark_reminder':
+      return sw
+        ? { subject: 'Je, mgeni alifika?', body: 'Tafadhali weka kwenye Kwetuly kama mgeni alifika (na watu wangapi) au hakufika.' }
+        : { subject: 'Did your guest come?', body: 'Please mark on Kwetuly whether your guest came (and how many people) or did not come.' };
+    case 'reservation_confirmed':
+      return sw
+        ? { subject: 'Nafasi yako imethibitishwa', body: 'Biashara imethibitisha nafasi yako. Utalipa biashara bei yake ya kawaida siku hiyo. Tazama maelezo kwenye Kwetuly.' }
+        : { subject: 'Your reservation is confirmed', body: 'The business confirmed your reservation. You pay the business its normal price on the day. See the details on Kwetuly.' };
+    case 'reservation_declined':
+      return sw
+        ? { subject: 'Nafasi haikupatikana', body: 'Samahani, biashara haikuweza kukupokea kwa muda huo. Unaweza kuchagua muda au mahali pengine kwenye Kwetuly.' }
+        : { subject: 'Reservation not available', body: 'Sorry, the business could not take you at that time. You can choose another time or place on Kwetuly.' };
+    case 'reservation_other_time':
+      return sw
+        ? { subject: 'Muda mwingine umependekezwa', body: 'Biashara imependekeza muda mwingine. Tafadhali kubali au kataa kwenye Kwetuly.' }
+        : { subject: 'Another time offered', body: 'The business offered another time. Please accept or decline it on Kwetuly.' };
+    case 'reservation_cancelled_by_business':
+      return sw
+        ? { subject: 'Nafasi yako imeghairiwa', body: 'Samahani, biashara imeghairi nafasi yako. Hakuna malipo yoyote. Tazama maelezo kwenye Kwetuly.' }
+        : { subject: 'Your reservation was cancelled', body: 'Sorry, the business cancelled your reservation. You pay nothing. See the details on Kwetuly.' };
+    case 'reservation_expired':
+      return sw
+        ? { subject: 'Ombi lako halikujibiwa', body: 'Biashara haikujibu ombi lako kwa wakati, kwa hiyo limefungwa. Unaweza kuchagua muda au mahali pengine kwenye Kwetuly.' }
+        : { subject: 'Your request was not answered', body: 'The business did not answer your request in time, so it is closed. You can choose another time or place on Kwetuly.' };
+    case 'reservation_offer_expired':
+      // The traveller did not answer the other time the business offered before it passed.
+      return sw
+        ? { subject: 'Muda uliopendekezwa umepita', body: 'Hukujibu muda mwingine uliopendekezwa na biashara kabla haujafika, kwa hiyo ombi limefungwa. Unaweza kuomba tena kwenye Kwetuly.' }
+        : { subject: 'The other time has passed', body: 'You did not answer the other time the business offered before it came, so the request is closed. You are welcome to ask again on Kwetuly.' };
+    case 'reservation_visit_question':
+      return sw
+        ? { subject: 'Je, ulifika?', body: 'Je, ulitembelea biashara uliyohifadhi nafasi jana? Jibu kwa kubofya mara moja kwenye Kwetuly.' }
+        : { subject: 'Did your visit happen?', body: 'Did you visit the business you reserved? Answer with one tap on Kwetuly.' };
+    case 'reservation_late_answer':
+      // Admins only: a "no" (or a higher head count) arrived after the line was invoiced, paid or waived.
+      return { subject: 'Late answer on an invoiced reservation', body: 'A traveller answered after the commission line was invoiced, paid or waived, and the answer does not match the business. The line was not reopened. Please look at it on the admin commissions page.' };
+    case 'reservation_disputed':
+      // Admins only.
+      return { subject: 'Reservation to check', body: 'A traveller and a business disagree on whether a reservation took place. Its commission is held until you decide on the admin commissions page.' };
     default:
       return { subject: 'Kwetuly update', body: v('message') };
   }

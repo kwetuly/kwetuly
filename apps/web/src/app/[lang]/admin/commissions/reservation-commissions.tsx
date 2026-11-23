@@ -1,0 +1,223 @@
+import type { Locale } from '@/i18n/config';
+import { isNotAppliedError } from '@kwetuly/shared';
+import { createClient } from '@/lib/supabase/server';
+import { markReservationCommission, resolveReservationDispute } from './reservation-actions';
+
+// Admin only (the page calls requireAdmin first). Reservation commission per business for one month,
+// and the disputes waiting for a decision. Kwetuly charges nobody from this page; while the billing
+// switch is off every statement is "for information, no charge" and the database refuses
+// "invoiced" and "paid". Admin texts are English only.
+
+type MonthRow = {
+  provider_id: string | null;
+  business_name: string;
+  completed: number;
+  held: number;
+  no_show: number;
+  commission_owed_tzs: number;
+  commission_invoiced_tzs: number;
+  commission_paid_tzs: number;
+  commission_waived_tzs: number;
+  guide_share_tzs: number;
+  billing_on: boolean;
+};
+type Dispute = {
+  id: string;
+  business_name: string;
+  starts_at: string;
+  party_size: number;
+  came_count: number | null;
+  status: string;
+  traveller_said_happened: boolean | null;
+  traveller_said_people: number | null;
+  commission_tzs: number | null;
+};
+
+type Quality = {
+  provider_id: string;
+  business_name: string;
+  due: number;
+  no_show: number;
+  low_count: number;
+  late_cancel: number;
+  disputed: number;
+  no_show_rate: number | null;
+  low_count_rate: number | null;
+  late_cancel_rate: number | null;
+};
+
+const OK_TEXT: Record<string, string> = {
+  invoiced: 'Marked invoiced.',
+  paid: 'Marked paid.',
+  waived: 'Marked waived. Nothing is owed for these reservations. This is final.',
+  resolved: 'Decision saved. The commission follows it.',
+};
+const ERROR_TEXT: Record<string, string> = {
+  billing_off: 'Billing is off: statements are for information only, so nothing can be marked invoiced or paid.',
+  month_open: 'This month is not finished yet.',
+  no_dispute: 'This dispute was already decided.',
+  not_admin: 'Only admins with two-step sign-in can do this.',
+  confirm: 'Tick the box to confirm first.',
+  failed: 'That did not work. Please try again.',
+};
+
+const tzs = (n: number) => `TSh ${Math.round(n).toLocaleString('en-US')}`;
+const pick = (table: Record<string, string>, key: unknown) =>
+  typeof key === 'string' && Object.hasOwn(table, key) ? table[key] : '';
+
+export async function ReservationCommissions({ locale, month, params }: {
+  locale: Locale;
+  month: string;
+  params: Record<string, string | string[] | undefined>;
+}) {
+  const supabase = await createClient();
+  const [monthRows, billing, quality, disputes] = await Promise.all([
+    supabase.rpc('admin_reservation_commission_month', { p_month: `${month}-01` }),
+    supabase.rpc('reservation_billing_on'),
+    supabase.rpc('admin_reservation_quality_month', { p_month: `${month}-01` }),
+    supabase
+      .from('reservations')
+      .select('id, business_name, starts_at, party_size, came_count, status, traveller_said_happened, traveller_said_people, commission_tzs')
+      .not('disputed_at', 'is', null)
+      .is('dispute_resolved_at', null)
+      .order('starts_at')
+      .limit(50),
+  ]);
+  const ok = pick(OK_TEXT, params.rok);
+  const error = pick(ERROR_TEXT, params.rerr);
+
+  if (monthRows.error) {
+    return (
+      <section id="reservation-commission" className="mt-12 card space-y-2">
+        <h2 className="text-2xl font-bold">Reservations</h2>
+        {isNotAppliedError(monthRows.error) ? (
+          <p className="rounded-[5px] bg-sand p-3 font-semibold">Reservations open soon: the reservations migration is not on this database yet.</p>
+        ) : (
+          <p role="alert" className="rounded-[5px] bg-red-50 p-3 text-red-800">Sorry, reservation commission could not be loaded. Please reload the page.</p>
+        )}
+      </section>
+    );
+  }
+  const rows = (monthRows.data ?? []) as MonthRow[];
+  const billingOn = billing.data === true;
+  const list = (disputes.data ?? []) as Dispute[];
+  const signs = (quality.data ?? []) as Quality[];
+  const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam', dateStyle: 'medium', timeStyle: 'short' });
+
+  return (
+    <section id="reservation-commission" className="mt-12 space-y-4">
+      <h2 className="text-2xl font-bold">Reservations</h2>
+      {!billingOn && (
+        <p className="rounded-[5px] bg-sand p-3 font-semibold">For information, no charge. Billing is off: businesses are not invoiced for reservations.</p>
+      )}
+      <p className="text-sm text-muted">
+        Commission is counted only for reservations that took place. Declined, cancelled, no-show and disputed reservations owe nothing.
+        Guides&apos; shares are recorded only. Kwetuly never charges travellers.
+      </p>
+      {ok && <p role="status" className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{ok}</p>}
+      {error && <p role="alert" className="rounded-[5px] bg-red-50 p-3 font-semibold text-red-800">{error}</p>}
+
+      {rows.length === 0 && <p className="text-muted">No reservations took place this month.</p>}
+      <ul className="space-y-3">
+        {rows.map((r) => (
+          <li key={r.provider_id ?? r.business_name} className="card space-y-2">
+            <h3 className="text-lg font-bold">{r.business_name}</h3>
+            <p className="text-sm">
+              {r.completed} took place · {r.no_show} did not come{r.held > 0 ? ` · ${r.held} held (disputed)` : ''}
+            </p>
+            <p className="text-sm">
+              Owed {tzs(r.commission_owed_tzs)} · invoiced {tzs(r.commission_invoiced_tzs)} · paid {tzs(r.commission_paid_tzs)}
+              {r.commission_waived_tzs > 0 ? ` · waived ${tzs(r.commission_waived_tzs)}` : ''} · guides&apos; shares {tzs(r.guide_share_tzs)}
+            </p>
+            {r.provider_id && (
+              <form action={markReservationCommission} className="flex flex-wrap items-center gap-2 pt-1">
+                <input type="hidden" name="locale" value={locale} />
+                <input type="hidden" name="provider_id" value={r.provider_id} />
+                <input type="hidden" name="month" value={month} />
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="confirm" value="yes" required />
+                  <span>I checked this month for {r.business_name}. Waiving is final.</span>
+                </label>
+                <button name="to" value="invoiced" className="btn-outline px-3 py-1.5 text-sm" disabled={!billingOn}>Mark invoiced</button>
+                <button name="to" value="paid" className="btn px-3 py-1.5 text-sm" disabled={!billingOn}>Mark paid</button>
+                <button name="to" value="waived" className="btn-outline px-3 py-1.5 text-sm">Waive</button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <div id="reservation-signs" className="card space-y-3">
+        <h3 className="font-bold">Signs to check this month</h3>
+        <p className="text-sm text-muted">
+          Share of reservations that were due: marked &quot;did not come&quot;, fewer people counted than booked, and confirmed
+          reservations the business cancelled less than 2 hours before. High numbers are a reason to look, not proof.
+        </p>
+        {quality.error ? (
+          <p className="text-sm text-muted">Could not be loaded.</p>
+        ) : signs.length === 0 ? (
+          <p className="text-sm text-muted">No reservations were due this month.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-left text-sm">
+              <caption className="sr-only">No-show, low head count and late cancel rates per business</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="p-2 font-semibold">Business</th>
+                  <th scope="col" className="p-2 font-semibold">Due</th>
+                  <th scope="col" className="p-2 font-semibold">Did not come</th>
+                  <th scope="col" className="p-2 font-semibold">Fewer counted</th>
+                  <th scope="col" className="p-2 font-semibold">Late cancels</th>
+                  <th scope="col" className="p-2 font-semibold">Disputed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signs.map((s) => (
+                  <tr key={s.provider_id} className="border-t border-line">
+                    <th scope="row" className="p-2 font-normal">{s.business_name}</th>
+                    <td className="p-2">{s.due}</td>
+                    <td className="p-2">{s.no_show} ({s.no_show_rate ?? 0}%)</td>
+                    <td className="p-2">{s.low_count} ({s.low_count_rate ?? 0}%)</td>
+                    <td className="p-2">{s.late_cancel} ({s.late_cancel_rate ?? 0}%)</td>
+                    <td className="p-2">{s.disputed}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div id="reservation-disputes" className="card space-y-3">
+        <h3 className="font-bold">Disputes waiting ({list.length})</h3>
+        {list.length === 0 ? (
+          <p className="text-sm text-muted">No disputes.</p>
+        ) : (
+          <ul className="space-y-3 text-sm">
+            {list.map((d) => (
+              <li key={d.id} className="space-y-1">
+                <p>
+                  {d.business_name} · {when(d.starts_at)} · {d.party_size} booked · business: {d.status === 'completed' ? `came (${d.came_count ?? d.party_size})` : 'did not come'} ·
+                  traveller: {d.traveller_said_happened ? `it happened${d.traveller_said_people ? `, ${d.traveller_said_people} came` : ''}` : 'it did not happen'}
+                </p>
+                <form action={resolveReservationDispute} className="flex flex-wrap gap-2">
+                  <input type="hidden" name="locale" value={locale} />
+                  <input type="hidden" name="month" value={month} />
+                  <input type="hidden" name="reservation_id" value={d.id} />
+                  {/* A tick first: the outcome decides the commission and the traveller's record (QA 13). */}
+                  <label className="flex w-full items-center gap-2 text-sm font-semibold">
+                    <input type="checkbox" name="confirm" value="yes" required className="size-5 accent-[#1D951A]" />
+                    I have checked both answers and choose the outcome below.
+                  </label>
+                  <button name="outcome" value="completed" className="btn-outline px-3 py-1.5 text-sm">It took place</button>
+                  <button name="outcome" value="no_show" className="btn-outline px-3 py-1.5 text-sm">The traveller did not come</button>
+                  <button name="outcome" value="business_fault" className="btn-outline px-3 py-1.5 text-sm">The business could not receive them</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}

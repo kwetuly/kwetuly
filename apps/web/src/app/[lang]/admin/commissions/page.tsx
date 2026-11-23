@@ -7,6 +7,7 @@ import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { saveAgreement, setSalesStatus } from '../actions';
+import { ReservationCommissions } from './reservation-commissions';
 
 export const metadata: Metadata = { title: 'Commissions', robots: { index: false } };
 
@@ -133,6 +134,8 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
           </div>
         )}
       </section>
+
+      <ReservationCommissions locale={locale} month={month} params={params} />
 
       <section className="mt-12">
         <h2 className="text-2xl font-bold">Agreements</h2>

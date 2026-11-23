@@ -68,7 +68,8 @@ export function welcomePath(locale: string, next?: string): string {
 /** `next`: the page to come back to after the welcome step. */
 export async function requireUser(locale: string, next?: string): Promise<CurrentUser> {
   const user = await getCurrentUser();
-  if (!user) redirect(`/${locale}/login`);
+  // `next` comes back through the login form, which checks it again with safeNext (QA 3).
+  if (!user) redirect(`/${locale}/login${next ? `?next=${encodeURIComponent(next)}` : ''}`);
   if (await needsSecondStep()) redirect(`/${locale}/login/verify`);
   if (!user.onboarded) redirect(welcomePath(locale, next));
   return user;

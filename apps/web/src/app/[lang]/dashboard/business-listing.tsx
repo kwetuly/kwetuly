@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, formatUsd, linkErrorMessage } from '@kwetuly/shared';
+import { CalendarCheck, CalendarClock } from 'lucide-react';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, formatUsd, isReservableType, linkErrorMessage, reservationInboxText, reservationText } from '@kwetuly/shared';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import type { CurrentUser } from '@/lib/auth';
@@ -81,6 +82,25 @@ export async function BusinessListing({
             <Link href={`/${locale}/businesses/${business.id}`} className="font-semibold underline">{bt.viewListing}</Link>
           )}
         </div>
+      )}
+      {/* Restaurants, spas and salons: the way to the reservations setup (slice 1). */}
+      {business && isReservableType(business.business_type) && (
+        <Link href={`/${locale}/dashboard/business/reservations-setup`} className="mt-4 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 hover:border-leaf">
+          <CalendarClock className="size-5 shrink-0 text-leaf-dark" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{reservationInboxText(locale).setupLink}</span>
+            <span className="block text-sm text-muted">{reservationText(locale).menuHint}</span>
+          </span>
+        </Link>
+      )}
+      {business && isReservableType(business.business_type) && (
+        <Link href={`/${locale}/dashboard/business/reservations`} className="mt-3 flex items-center gap-3 rounded-[5px] border border-line bg-white p-4 hover:border-leaf">
+          <CalendarCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{reservationInboxText(locale).title}</span>
+            <span className="block text-sm text-muted">{reservationInboxText(locale).menuHint}</span>
+          </span>
+        </Link>
       )}
       {/* Business saves use their own params, so a guide who also owns a listing sees one banner. */}
       {(status.business === 'saved' || status.business_error === 'link_website') && <SavedNote className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</SavedNote>}
