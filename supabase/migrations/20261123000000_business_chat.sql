@@ -528,3 +528,21 @@ revoke execute on function private.run_business_chat_cleanup() from public, anon
 -- Daily at 02:40 UTC (05:40 in Dar es Salaam). Its own job, so the reservations job does not depend
 -- on this migration.
 select cron.schedule('kwetuly-business-chat-cleanup', '40 2 * * *', 'select private.run_business_chat_cleanup()');
+
+-- ---------------------------------------------------------------------------
+-- 7. Can this chat still take messages? (QA 2026-11-23, for the chat screens)
+-- ---------------------------------------------------------------------------
+-- True or false for a participant (traveller, guide owner, business owner) or an admin; null for
+-- anyone else, the same as for a thread that does not exist, so nothing leaks.
+create or replace function public.conversation_chat_open(p_conversation uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case when private.in_conversation(p_conversation) or private.is_admin()
+              then private.chat_open(p_conversation) end;
+$$;
+revoke execute on function public.conversation_chat_open(uuid) from public, anon;
+grant execute on function public.conversation_chat_open(uuid) to authenticated;

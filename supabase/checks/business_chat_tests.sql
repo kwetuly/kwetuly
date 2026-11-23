@@ -260,6 +260,11 @@ set local role authenticated;
 select pg_temp.check((select chat_id = (select chat_id from bc) from public.my_reservations()
                       where id = 'aaaaaaaa-0000-4000-8000-000000000001'),
                      'B: my_reservations returns the thread');
+select pg_temp.check((select public.conversation_chat_open((select chat_id from bc)))
+                     and (select public.conversation_chat_open((select id from gc))),
+                     'B: the traveller sees both threads as open');
+select pg_temp.check((select public.conversation_chat_open(gen_random_uuid()) is null),
+                     'B: an unknown thread gives null');
 reset role;
 
 -- Another business owner sees nothing.
@@ -269,6 +274,8 @@ select pg_temp.check((select count(*) = 0 from public.conversations) and (select
                      'B: another business owner sees no thread');
 select pg_temp.expect_error($q$insert into public.messages (conversation_id, sender_id, body)
   select chat_id, 'b2b2b2b2-0000-4000-8000-0000000000b2', 'Hi' from bc$q$, 'B: another business owner cannot write');
+select pg_temp.check((select public.conversation_chat_open((select chat_id from bc)) is null),
+                     'B: an outsider gets null, the same as for a thread that does not exist');
 reset role;
 
 -- M3: the thread closes 30 days after the latest reservation when none is open.
@@ -295,6 +302,14 @@ select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
 set local role authenticated;
 select pg_temp.expect_code($q$insert into public.messages (conversation_id, sender_id, body)
   select chat_id, 'a1a1a1a1-0000-4000-8000-0000000000a1', 'Come back soon' from bc$q$, 'chat_closed', 'B/M3: business after 30 days');
+select pg_temp.check((select public.conversation_chat_open((select chat_id from bc)) = false),
+                     'B/M3: the business owner sees the thread as closed before sending');
+reset role;
+select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
+set local role authenticated;
+select pg_temp.check((select public.conversation_chat_open((select chat_id from bc)) = false)
+                     and (select public.conversation_chat_open((select id from gc))),
+                     'B/M3: the traveller sees the business thread closed and the guide thread open');
 reset role;
 
 -- M2: the texts go 30 days after the latest reservation date; guide threads are untouched.
