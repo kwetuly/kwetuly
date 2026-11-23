@@ -63,6 +63,10 @@ describe('reservations match migration 20261122300000', () => {
     expect(sql).toContain(`r.starts_at > now() - interval '${reservationRules.noShowMarkAfterMin} minutes'`);
     expect(sql).toContain(`r.starts_at < now() + interval '${reservationRules.lateCancelHours} hours'`);
     expect(sql).toContain(`::date + ${reservationRules.textsClearDays} < private.tz_today()`);
+    expect(sql).toContain(`least(now() + interval '${reservationRules.answerWithinHours} hours', p_starts_at - make_interval`);
+    expect(sql).toContain(`answer_by = least(now() + interval '${reservationRules.answerWithinHours} hours',`);
+    expect(sql).toContain(`'*/${reservationRules.jobEveryMinutes} * * * *'`);
+    expect(sql).toContain(`interval '1 hour') >= ${reservationRules.guideCodeFailuresPerHour} then\n    return 'too_many';`);
   });
   it('dispute outcomes', () => {
     const block = sql.match(/check \(dispute_outcome in \(([^)]*)\)\)/)![1];

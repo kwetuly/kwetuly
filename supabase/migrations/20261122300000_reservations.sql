@@ -87,6 +87,7 @@
 --     private.reservation_notify(uuid, text), private.reservation_time_problem(uuid, uuid, timestamptz),
 --     private.reservation_mask(text), private.reservation_guide_share_pct(), private.reservations_append_only(),
 --     private.reservation_diet_visible(uuid), private.guard_service_delete(), private.service_has_reservations(uuid);
+--   drop function public.guide_code_status(text); drop table private.guide_code_checks;
 --   drop table public.reservation_log, public.reservation_diet_lines, public.reservations;
 --   drop type public.reservation_status;
 --   delete from public.site_settings where key = 'feature.reservation_commission_billing';
@@ -168,6 +169,10 @@ create table if not exists public.reservations (
   dispute_resolved_at timestamptz,
   dispute_outcome text check (dispute_outcome in ('completed', 'no_show', 'business_fault')),
   texts_cleared_at timestamptz,   -- note and business_note cleared 30 days after the date (M4)
+  -- QA 2026-11-23: who must answer by when. Requests: the business, by least(created + 4 h, time -
+  -- minimum notice). Other-time offers: the traveller, by least(offered + 4 h, new time - minimum
+  -- notice). The job closes it after that and tells the traveller.
+  answer_by timestamptz,
   -- Copied at request time (L9): what was disclosed is what is owed.
   commission_kind text not null check (commission_kind in ('per_guest', 'percent', 'per_person')),
   commission_rate_tzs integer check (commission_rate_tzs between 1 and 200000),
@@ -198,6 +203,8 @@ create table if not exists public.reservations (
 create index if not exists reservations_provider_idx on public.reservations (provider_id, starts_at);
 create index if not exists reservations_provider_ref_idx on public.reservations (provider_ref, starts_at);
 create index if not exists reservations_traveler_idx on public.reservations (traveler_id, created_at desc);
+create index if not exists reservations_answer_by_idx on public.reservations (answer_by)
+  where status in ('requested', 'other_time_offered');
 create index if not exists reservations_open_idx on public.reservations (status, starts_at)
   where status in ('requested', 'other_time_offered', 'confirmed');
 create index if not exists reservations_guide_idx on public.reservations (guide_id) where guide_id is not null;
@@ -425,6 +432,57 @@ create trigger business_services_delete_guard
   for each row execute function private.guard_service_delete();
 
 -- ---------------------------------------------------------------------------
+-- 2b. Guide codes: every check is recorded; 10 wrong codes an hour stop further checks (QA L-G)
+-- ---------------------------------------------------------------------------
+create table if not exists private.guide_code_checks (
+  id bigint generated always as identity primary key,
+  user_id uuid not null,
+  code_hash text not null,          -- md5 of the upper-case code, never the code itself
+  ok boolean not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists guide_code_checks_user_idx on private.guide_code_checks (user_id, created_at desc);
+alter table private.guide_code_checks enable row level security;
+revoke all on private.guide_code_checks from anon, authenticated;
+
+-- 'ok' (an approved guide who is not the caller), 'unknown', or 'too_many' (10 wrong codes in the last
+-- hour; nothing is checked then). The reservation form calls this before place_reservation(), which
+-- accepts a code only after an 'ok' check by the same person in the last hour.
+create or replace function public.guide_code_status(p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user uuid := (select auth.uid());
+  v_code text := upper(btrim(coalesce(p_code, '')));
+  v_ok boolean;
+begin
+  if v_user is null then
+    raise exception 'reservation_refused: not_signed_in' using errcode = 'P0001';
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('guide_code_checks:' || v_user::text, 0));
+  if (select count(*) from private.guide_code_checks k
+      where k.user_id = v_user and not k.ok and k.created_at > now() - interval '1 hour') >= 10 then
+    return 'too_many';
+  end if;
+  if v_code = '' or char_length(v_code) > 40 then
+    v_ok := false;
+  else
+    v_ok := exists (select 1 from public.referral_codes rc
+                    join public.guides g on g.id = rc.guide_id
+                    where upper(rc.code) = v_code and g.verification_status = 'approved'
+                      and g.owner_id <> v_user);
+  end if;
+  insert into private.guide_code_checks (user_id, code_hash, ok) values (v_user, md5(v_code), v_ok);
+  return case when v_ok then 'ok' else 'unknown' end;
+end;
+$$;
+revoke execute on function public.guide_code_status(text) from public, anon;
+grant execute on function public.guide_code_status(text) to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- 3. Time rules
 -- ---------------------------------------------------------------------------
 -- Null when p_starts is a time this business takes reservations at; otherwise a fixed code.
@@ -634,7 +692,16 @@ begin
   end if;
 
   -- Guide code (referral_codes): an approved guide who is neither the traveller nor the business owner.
+  -- The code must have been checked by this person with public.guide_code_status() in the last hour
+  -- (QA L-G): that function records every attempt and stops after 10 wrong codes in an hour, so codes
+  -- cannot be guessed in a loop here (a refused reservation rolls back and could not record anything).
   if nullif(btrim(coalesce(p_guide_code, '')), '') is not null then
+    if not exists (select 1 from private.guide_code_checks k
+                   where k.user_id = v_user and k.ok
+                     and k.code_hash = md5(upper(btrim(p_guide_code)))
+                     and k.created_at > now() - interval '1 hour') then
+      raise exception 'reservation_refused: guide_code_unknown' using errcode = 'P0001';
+    end if;
     select g.id into v_guide
     from public.referral_codes rc
     join public.guides g on g.id = rc.guide_id
@@ -647,11 +714,13 @@ begin
 
   insert into public.reservations (
     provider_id, provider_ref, business_name, business_type, traveler_id, service_id, service_name, guide_id,
-    starts_at, party_size, note, commission_kind, commission_rate_tzs, commission_percent,
+    starts_at, answer_by, party_size, note, commission_kind, commission_rate_tzs, commission_percent,
     max_guests_counted, price_basis_tzs, price_list_id, guide_share_pct, is_sample)
   values (
     p.id, p.id, left(p.business_name, 160), p.business_type, v_user, p_service, s.name, v_guide,
-    p_starts_at, p_party_size, v_note, rate.kind,
+    p_starts_at,
+    least(now() + interval '4 hours', p_starts_at - make_interval(mins => p.reservation_min_notice_min)),
+    p_party_size, v_note, rate.kind,
     case when rate.kind = 'percent' then null else rate.amount_tzs end,
     case when rate.kind = 'percent' then rate.percent end,
     case when rate.kind = 'per_guest' then rate.max_guests_counted end,
@@ -718,7 +787,7 @@ begin
   v_note := left(private.reservation_mask(p_note), 300);
 
   if p_action in ('confirm', 'decline', 'offer_time') and v_owner and r.status = 'requested' then
-    if r.starts_at <= now() then
+    if r.starts_at <= now() or r.answer_by < now() then
       raise exception 'reservation_action_refused: too_late' using errcode = 'P0001';
     end if;
     if p_action = 'confirm' then
@@ -738,13 +807,16 @@ begin
         raise exception 'reservation_action_refused: %', v_problem using errcode = 'P0001';
       end if;
       update public.reservations set status = 'other_time_offered', offered_starts_at = p_offered_starts_at,
+        answer_by = least(now() + interval '4 hours',
+                          p_offered_starts_at - make_interval(mins => (select pr.reservation_min_notice_min
+                                                                       from public.providers pr where pr.id = r.provider_id))),
         business_note = v_note
       where id = r.id;
       v_to := 'other_time_offered';
     end if;
   elsif p_action in ('accept_offer', 'refuse_offer') and v_traveller and r.status = 'other_time_offered' then
     if p_action = 'accept_offer' then
-      if r.offered_starts_at <= now() then
+      if r.offered_starts_at <= now() or r.answer_by < now() then
         raise exception 'reservation_action_refused: too_late' using errcode = 'P0001';
       end if;
       update public.reservations set status = 'confirmed', starts_at = offered_starts_at, offered_starts_at = null
@@ -1076,6 +1148,8 @@ revoke execute on function private.reservation_diet_visible(uuid) from public;
 grant execute on function private.reservation_diet_visible(uuid) to authenticated;
 
 -- The traveller's own reservations, newest first.
+-- Returned columns changed while unapplied (answer_by); drop first in case a test project has the older one.
+drop function if exists public.my_reservations();
 create or replace function public.my_reservations()
 returns table (
   id uuid, provider_id uuid, business_name text, business_type text, service_name text,
@@ -1083,7 +1157,7 @@ returns table (
   offered_starts_at timestamptz, business_note text, cancelled_by text, decline_reason text,
   diet_line text, traveller_said_happened boolean, can_answer_visit boolean,
   commission_kind text, commission_rate_tzs integer, commission_percent numeric, created_at timestamptz,
-  asks_people_count boolean)
+  asks_people_count boolean, answer_by timestamptz)
 language sql
 stable
 security definer
@@ -1097,7 +1171,8 @@ as $$
           and private.tz_today() <= (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date + 14),
          r.commission_kind, r.commission_rate_tzs, r.commission_percent, r.created_at,
          -- Review M1: ask "How many of you came?" when the business counted fewer than booked.
-         (r.status = 'completed' and r.came_count < r.party_size)
+         (r.status = 'completed' and r.came_count < r.party_size),
+         case when r.status in ('requested', 'other_time_offered') then r.answer_by end
   from public.reservations r
   left join public.reservation_diet_lines d on d.reservation_id = r.id
   where r.traveler_id = (select auth.uid())
@@ -1109,13 +1184,15 @@ grant execute on function public.my_reservations() to authenticated;
 
 -- A business's reservations between two Tanzania dates (owner or admin). The traveller is shown by
 -- first name only; the diet line only while the business may see it.
+drop function if exists public.business_reservations(uuid, date, date);
 create or replace function public.business_reservations(p_provider uuid, p_from date, p_to date)
 returns table (
   id uuid, starts_at timestamptz, party_size integer, service_name text, traveller_first_name text,
   note text, diet_line text, status public.reservation_status, offered_starts_at timestamptz,
   business_note text, cancelled_by text, came_count integer, disputed boolean,
   commission_kind text, commission_rate_tzs integer, commission_percent numeric, max_guests_counted integer,
-  price_basis_tzs integer, commission_tzs integer, commission_status text, is_sample boolean)
+  price_basis_tzs integer, commission_tzs integer, commission_status text, is_sample boolean,
+  answer_by timestamptz)
 language plpgsql
 stable
 security definer
@@ -1137,7 +1214,8 @@ begin
            r.status, r.offered_starts_at, r.business_note, r.cancelled_by, r.came_count,
            r.disputed_at is not null and r.dispute_resolved_at is null,
            r.commission_kind, r.commission_rate_tzs, r.commission_percent, r.max_guests_counted,
-           r.price_basis_tzs, r.commission_tzs, r.commission_status, r.is_sample
+           r.price_basis_tzs, r.commission_tzs, r.commission_status, r.is_sample,
+           case when r.status in ('requested', 'other_time_offered') then r.answer_by end
     from public.reservations r
     left join public.profiles pf on pf.id = r.traveler_id
     left join public.reservation_diet_lines d on d.reservation_id = r.id
@@ -1205,7 +1283,7 @@ begin
   for v_id, v_from in
     select r.id, r.status from public.reservations r
     where r.status in ('requested', 'other_time_offered')
-      and coalesce(r.offered_starts_at, r.starts_at) < now()
+      and (r.answer_by < now() or coalesce(r.offered_starts_at, r.starts_at) < now())
     for update skip locked
   loop
     begin
@@ -1297,6 +1375,9 @@ begin
   delete from public.reservation_diet_lines d where d.delete_after < private.tz_today();
   get diagnostics v_diet = row_count;
 
+  -- Guide code checks are only needed for the last hour; keep one day.
+  delete from private.guide_code_checks k where k.created_at < now() - interval '1 day';
+
   return jsonb_build_object('expired', v_expired, 'completed', v_completed, 'reminded', v_reminded,
                             'asked', v_asked, 'texts_cleared', v_texts, 'diet_lines_deleted', v_diet,
                             'failed', v_failed);
@@ -1304,7 +1385,9 @@ end;
 $$;
 revoke execute on function private.run_reservation_jobs() from public, anon, authenticated;
 
-select cron.schedule('kwetuly-reservations', '23 * * * *', 'select private.run_reservation_jobs()');
+-- Every 15 minutes, so unanswered requests close soon after their answer-by time (QA 2026-11-23).
+-- Each step reads only open rows through partial indexes, so a run is cheap.
+select cron.schedule('kwetuly-reservations', '*/15 * * * *', 'select private.run_reservation_jobs()');
 
 -- ---------------------------------------------------------------------------
 -- 10. RLS and grants

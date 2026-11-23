@@ -120,6 +120,7 @@ select pg_temp.check(not (select (value -> 'on')::boolean from public.site_setti
 -- 1. Traveller t1 reserves ------------------------------------------------------
 select pg_temp.as_user('d1d1d1d1-0000-4000-8000-0000000000d1');
 set local role authenticated;
+select pg_temp.check((select public.guide_code_status('rsguide1') = 'ok'), 'guide code checked first (QA L-G)');
 create temp table rv on commit drop as
   select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(1, '12:00'), 4,
            'Window table please, call 0712 345 678', 'No peanuts (allergy)', true, 'rsguide1') as id;
@@ -131,6 +132,10 @@ select pg_temp.check((select r.status = 'requested' and r.commission_kind = 'per
                         and r.note not like '%345%' and r.note like '%[number hidden]%'
                       from public.reservations r where r.id = (select id from rv)),
                      'reservation stored with the rate copied, guide linked, note masked');
+select pg_temp.check((select r.answer_by is not null and r.answer_by <= now() + interval '4 hours'
+                        and r.answer_by <= r.starts_at - interval '120 minutes'
+                      from public.reservations r where r.id = (select id from rv)),
+                     'answer-by time: 4 hours, never later than the time minus the notice');
 select pg_temp.check((select d.line = 'No peanuts (allergy)' and d.delete_after = private.tz_today() + 1 + 30
                       from public.reservation_diet_lines d where d.reservation_id = (select id from rv)),
                      'diet line stored with its deletion date');
@@ -174,6 +179,21 @@ select pg_temp.expect_code($q$select public.reservation_action((select id from r
   'not_allowed', 'traveller confirms');
 select pg_temp.check((select count(*) = 1 from public.reservations), 'traveller sees own reservation');
 reset role;
+
+-- Guide codes cannot be guessed in a loop (QA L-G).
+select pg_temp.as_user('d2d2d2d2-0000-4000-8000-0000000000d2');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(1, '12:00'), 2, null, null, false, 'RSGUIDE1')$q$,
+  'guide_code_unknown', 'a code that was not checked first');
+select pg_temp.check((select bool_and(public.guide_code_status('GUESS' || g) = 'unknown') from generate_series(1, 10) g),
+                     'ten wrong codes are answered "unknown"');
+select pg_temp.check((select public.guide_code_status('RSGUIDE1') = 'too_many'), 'after ten wrong codes, checking stops for an hour');
+select pg_temp.expect_code($q$select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(1, '12:00'), 2, null, null, false, 'RSGUIDE1')$q$,
+  'guide_code_unknown', 'the right code is not accepted without an ok check');
+reset role;
+select pg_temp.check((select count(*) = 10 and bool_and(code_hash <> 'RSGUIDE1') from private.guide_code_checks
+                      where user_id = 'd2d2d2d2-0000-4000-8000-0000000000d2'),
+                     'attempts recorded as hashes (the stopped one is not checked)');
 
 -- Own business: the owner cannot reserve at it.
 select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
@@ -437,7 +457,43 @@ reset role;
 update public.reservations set starts_at = now() - interval '1 hour' where id = (select id from rv6);
 update public.reservation_diet_lines set delete_after = private.tz_today() - 1 where reservation_id = (select id from rv6);
 update public.reservations set starts_at = starts_at - interval '31 days' where id = (select id from rv4);
+
+-- QA 2026-11-23: answer-by times. A request the business did not answer and an offer the traveller
+-- did not answer both close at their answer-by time, long before the reservation time.
+select pg_temp.as_user('d2d2d2d2-0000-4000-8000-0000000000d2');
+set local role authenticated;
+create temp table rv9 on commit drop as
+  select public.place_reservation('e1e1e1e1-0000-4000-8000-0000000000e1', null, pg_temp.at(3, '12:00'), 2) as id;
+create temp table rv10 on commit drop as
+  select public.place_reservation('e2e2e2e2-0000-4000-8000-0000000000e2', '5e5e5e5e-0000-4000-8000-000000000002', pg_temp.at(3, '11:00'), 1) as id;
+select pg_temp.check((select answer_by is not null from public.my_reservations() where id = (select id from rv9)),
+                     'traveller sees the answer-by time');
+reset role;
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select public.reservation_action((select id from rv10), 'offer_time', pg_temp.at(3, '15:00'));
+select pg_temp.check((select answer_by is not null from public.business_reservations('e2e2e2e2-0000-4000-8000-0000000000e2', private.tz_today(), private.tz_today() + 4)
+                      where id = (select id from rv10)),
+                     'owner sees the answer-by time of the offer');
+reset role;
+update public.reservations set answer_by = now() - interval '1 minute' where id in ((select id from rv9), (select id from rv10));
+select pg_temp.as_user('a1a1a1a1-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.reservation_action((select id from rv9), 'confirm')$q$, 'too_late', 'confirming after the answer-by time');
+reset role;
+select pg_temp.as_user('d2d2d2d2-0000-4000-8000-0000000000d2');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.reservation_action((select id from rv10), 'accept_offer')$q$, 'too_late', 'accepting an offer after its answer-by time');
+reset role;
 select private.run_reservation_jobs();
+select pg_temp.check((select bool_and(status = 'declined' and decline_reason = 'no_answer')
+                      from public.reservations where id in ((select id from rv9), (select id from rv10))),
+                     'both closed by the job at their answer-by time');
+select pg_temp.check((select count(*) = 1 from public.notification_outbox
+                      where event = 'reservation_expired' and payload ->> 'reservation_id' = (select id from rv9)::text)
+                     and (select count(*) = 1 from public.notification_outbox
+                          where event = 'reservation_offer_expired' and payload ->> 'reservation_id' = (select id from rv10)::text),
+                     'traveller told: no answer from the business / you did not answer the other time');
 select pg_temp.check((select status = 'declined' and decline_reason = 'no_answer' from public.reservations where id = (select id from rv6)),
                      'unanswered request closed');
 select pg_temp.check((select count(*) = 0 from public.reservation_diet_lines where reservation_id = (select id from rv6)),

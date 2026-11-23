@@ -111,6 +111,15 @@ export const reservationRules = {
   lateCancelHours: 2,
   /** Notes (traveller and business) are cleared this many days after the reservation date. */
   textsClearDays: 30,
+  /**
+   * Who must answer (the business for a request, the traveller for an other-time offer) answers within
+   * this many hours, and never later than the time minus the business's minimum notice (answer_by).
+   */
+  answerWithinHours: 4,
+  /** The reservation job runs this often, so a missed answer-by time closes within this many minutes. */
+  jobEveryMinutes: 15,
+  /** guide_code_status() stops checking after this many wrong codes in an hour. */
+  guideCodeFailuresPerHour: 10,
 } as const;
 
 /** Admin decisions on a dispute. business_fault: nothing owed and no strike for the traveller. */
