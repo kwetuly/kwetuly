@@ -33,6 +33,7 @@ export default function ConversationScreen() {
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [notSent, setNotSent] = useState(false);
+  const [closed, setClosed] = useState(false);
 
   useEffect(() => {
     if (view) markConversationRead(id, view.isTraveler);
@@ -50,9 +51,11 @@ export default function ConversationScreen() {
       await sendMessage(id, userId, text);
       setBody('');
       await queryClient.invalidateQueries({ queryKey: ['messages', id] });
-    } catch {
+    } catch (err) {
       // Keep the text in the box and say so (weak network, or the message was refused).
-      setNotSent(true);
+      // chat_closed: a business thread 30 days after the last reservation.
+      if (err instanceof Error && err.message.includes('chat_closed')) setClosed(true);
+      else setNotSent(true);
     } finally {
       setSending(false);
     }
@@ -105,9 +108,16 @@ export default function ConversationScreen() {
           );
         }}
       />
-      <Composer value={body} onChangeText={setBody} placeholder={t.messages.placeholder} maxLength={4000} onSend={send} sendLabel={t.messages.send} canSend={!sending && !!body.trim()}>
-        {notSent ? <ErrorText>{t.alerts.notSent}</ErrorText> : null}
-      </Composer>
+      {view?.readOnly || closed ? (
+        // A closed business thread (deleted business, or 30 days after the last reservation): read only.
+        <Text accessibilityRole="alert" style={{ ...type.callout, backgroundColor: brand.sand, color: brand.ink, padding: space.md, margin: space.md, borderRadius: radius.media, overflow: 'hidden' }}>
+          {view?.isTraveler ? reserveText(locale).chatClosed : reservationInboxText(locale).chatClosed}
+        </Text>
+      ) : (
+        <Composer value={body} onChangeText={setBody} placeholder={t.messages.placeholder} maxLength={4000} onSend={send} sendLabel={t.messages.send} canSend={!sending && !!body.trim()}>
+          {notSent ? <ErrorText>{t.alerts.notSent}</ErrorText> : null}
+        </Composer>
+      )}
     </KeyboardAvoidingView>
   );
 }

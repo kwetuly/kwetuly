@@ -10,6 +10,8 @@ export type ConversationRow = {
   guide_id: string | null;
   /** Set for a business thread; absent while that migration is not on the database. */
   provider_id?: string | null;
+  /** True for every business thread, also after the business is deleted (then provider_id is null). */
+  was_business?: boolean;
   contact_unlocked: boolean;
   last_message_at: string;
   last_message_preview: string | null;
@@ -24,7 +26,7 @@ export type ConversationRow = {
 export const LEGACY_CONVERSATION_COLUMNS =
   'id, traveler_id, traveler_name, guide_id, contact_unlocked, last_message_at, last_message_preview, traveler_last_read_at, guide_last_read_at, guides(display_name, slug, photo_url, owner_id)';
 
-export const CONVERSATION_COLUMNS = `${LEGACY_CONVERSATION_COLUMNS}, provider_id, providers(business_name, owner_id)`;
+export const CONVERSATION_COLUMNS = `${LEGACY_CONVERSATION_COLUMNS}, provider_id, was_business, providers(business_name, owner_id)`;
 
 /**
  * Missing column (42703 / PGRST204) or missing relationship (PGRST200): the business chat migration is
@@ -37,11 +39,13 @@ export function missingChatColumns(error: { code?: string | null } | null | unde
 // Who is on the other side, and whether there's something unread, from this user's point of view.
 export function viewOf(c: ConversationRow, user: CurrentUser, travellerLabel = 'Traveller') {
   const isTraveler = c.traveler_id === user.id;
-  const isBusiness = !!c.provider_id;
+  const isBusiness = c.was_business ?? !!c.provider_id;
+  // A deleted business: the thread stays readable, nobody can send.
+  const readOnly = isBusiness && !c.provider_id;
   const otherName = isTraveler ? (c.guides?.display_name ?? c.providers?.business_name ?? 'Guide') : (c.traveler_name ?? travellerLabel);
   const lastRead = isTraveler ? c.traveler_last_read_at : c.guide_last_read_at;
   const unread = !lastRead || new Date(c.last_message_at) > new Date(lastRead);
-  return { isTraveler, isBusiness, otherName, unread };
+  return { isTraveler, isBusiness, readOnly, otherName, unread };
 }
 
 export async function listConversations() {

@@ -39,7 +39,7 @@ export async function startConversation(formData: FormData) {
 }
 
 // Returns { ok: false } when the message could not be saved, so the composer keeps the text.
-export async function sendMessage(formData: FormData): Promise<{ ok: false } | void> {
+export async function sendMessage(formData: FormData): Promise<{ ok: false; closed?: boolean } | void> {
   const locale = localeFrom(formData);
   const conversationId = String(formData.get('conversation_id') ?? '');
   const body = String(formData.get('body') ?? '').trim().slice(0, 4000);
@@ -55,7 +55,8 @@ export async function sendMessage(formData: FormData): Promise<{ ok: false } | v
 
   // The database hides contact details and alerts the other person.
   const { error } = await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, body });
-  if (error) return { ok: false };
+  // chat_closed: a business thread 30 days after the last reservation (business chat migration).
+  if (error) return { ok: false, closed: (error.message ?? '').includes('chat_closed') };
   redirect(`${back}#end`);
 }
 

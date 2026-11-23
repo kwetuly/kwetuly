@@ -587,7 +587,7 @@ function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: {
     const result = await saveService(ctx.providerId, service?.id ?? null, input, nextSort).catch((): SetupResult => ({ ok: false, error: 'failed' }));
     setBusy(false);
     if (result.ok) return onDone(true);
-    if (result.error === 'invalid' && result.field) return setError(r.serviceErrors[result.field]);
+    if (result.error === 'invalid' && result.field) return setError(fillText(r.serviceErrors[result.field], { max: reservationLimits.groupDiscountPercentMax }));
     setError(result.error === 'too_many' ? r.serviceErrors.too_many : errorText(r, result));
   }
 
@@ -601,7 +601,7 @@ function ServiceEditor({ ctx, service, nextSort, onDone, cancellable = true }: {
         <View style={{ gap: space.sm }}>
           <Text style={type.label}>{r.serviceDiscount}</Text>
           <Muted>{r.serviceDiscountHint}</Muted>
-          <Field label={r.serviceDiscountPercent} value={f.discountPercent} onChangeText={set('discountPercent')} keyboardType="number-pad" maxLength={2} />
+          <Field label={fillText(r.serviceDiscountPercent, { max: reservationLimits.groupDiscountPercentMax })} value={f.discountPercent} onChangeText={set('discountPercent')} keyboardType="number-pad" maxLength={2} />
           <Field label={r.serviceDiscountMin} value={f.discountMin} onChangeText={set('discountMin')} keyboardType="number-pad" maxLength={2} />
         </View>
       )}

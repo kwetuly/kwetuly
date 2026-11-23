@@ -51,6 +51,7 @@ const en = {
 
   messageGuest: 'Message the guest',
   traveller: 'Traveller',
+  chatClosed: 'This chat closed 30 days after the last reservation.',
   chatHiddenNote: 'Phone numbers and emails stay hidden in this chat, both ways. Please talk about the reservation here.',
   confirm: 'Confirm',
   decline: 'Decline',
@@ -160,6 +161,7 @@ const sw: ReservationInboxText = {
 
   messageGuest: 'Mtumie mgeni ujumbe',
   traveller: 'Msafiri',
+  chatClosed: 'Mazungumzo haya yalifungwa siku 30 baada ya uhifadhi wa mwisho.',
   chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya, pande zote mbili. Tafadhali zungumzeni kuhusu uhifadhi hapa.',
   confirm: 'Thibitisha',
   decline: 'Kataa',

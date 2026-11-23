@@ -53,7 +53,8 @@ async function Thread({
   if (!conversation) notFound();
 
   const inbox = reservationInboxText(locale);
-  const { isTraveler, isBusiness, otherName } = viewOf(conversation, user, inbox.traveller);
+  const { isTraveler, isBusiness, readOnly, otherName } = viewOf(conversation, user, inbox.traveller);
+  const closedText = isTraveler ? reserveText(locale).chatClosed : inbox.chatClosed;
   // Mark as read for this side of the conversation.
   await supabase
     .from('conversations')
@@ -122,7 +123,11 @@ async function Thread({
         <li id="end" />
       </ol>
 
-      <MessageComposer conversationId={id} locale={locale} labels={{ placeholder: m.placeholder, send: m.send, notSent: t.alerts.notSent }} />
+      {readOnly ? (
+        <p className="mt-4 rounded-[5px] bg-sand p-3 text-sm font-semibold">{closedText}</p>
+      ) : (
+        <MessageComposer conversationId={id} locale={locale} labels={{ placeholder: m.placeholder, send: m.send, notSent: t.alerts.notSent, closed: isBusiness ? closedText : undefined }} />
+      )}
     </>
   );
 }

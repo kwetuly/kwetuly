@@ -6,7 +6,7 @@ import { sendMessage } from '@/app/[lang]/messages/actions';
 import { isRedirect } from './chat-composer';
 
 // Message box for a traveller–guide conversation. A failed send keeps the text and says so.
-export function MessageComposer({ conversationId, locale, labels }: { conversationId: string; locale: string; labels: { placeholder: string; send: string; notSent: string } }) {
+export function MessageComposer({ conversationId, locale, labels }: { conversationId: string; locale: string; labels: { placeholder: string; send: string; notSent: string; closed?: string } }) {
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -20,13 +20,13 @@ export function MessageComposer({ conversationId, locale, labels }: { conversati
     setError('');
     startTransition(async () => {
       formRef.current?.reset();
-      const keep = () => {
+      const keep = (closed = false) => {
         if (bodyRef.current) bodyRef.current.value = text;
-        setError(labels.notSent);
+        setError(closed && labels.closed ? labels.closed : labels.notSent);
       };
       try {
         const result = await sendMessage(form);
-        if (result && result.ok === false) keep();
+        if (result && result.ok === false) keep(result.closed);
       } catch (err) {
         if (isRedirect(err)) throw err;
         keep();

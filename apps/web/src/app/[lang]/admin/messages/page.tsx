@@ -22,7 +22,7 @@ type Masked = {
   message_id: string;
   original_body: string;
   created_at: string;
-  messages: { conversation_id: string; conversations: { contact_unlocked: boolean; traveler_name: string | null; guides: { display_name: string } | null; provider_id?: string | null; providers?: { business_name: string } | null } | null } | null;
+  messages: { conversation_id: string; conversations: { contact_unlocked: boolean; traveler_name: string | null; guides: { display_name: string } | null; provider_id?: string | null; was_business?: boolean; providers?: { business_name: string } | null } | null } | null;
 };
 
 export default async function AdminMessagesPage() {
@@ -52,7 +52,7 @@ async function Moderation({ locale }: { locale: Locale }) {
   const maskedQuery = (business: boolean) =>
     supabase
       .from('message_moderation')
-      .select(`message_id, original_body, created_at, messages(conversation_id, conversations(contact_unlocked, traveler_name, guides(display_name)${business ? ', provider_id, providers(business_name)' : ''}))`)
+      .select(`message_id, original_body, created_at, messages(conversation_id, conversations(contact_unlocked, traveler_name, guides(display_name)${business ? ', provider_id, was_business, providers(business_name)' : ''}))`)
       .order('created_at', { ascending: false })
       .limit(50)
       .returns<Masked[]>();
@@ -102,7 +102,7 @@ async function Moderation({ locale }: { locale: Locale }) {
                   <p className="mt-1 whitespace-pre-wrap">{m.original_body}</p>
                 </div>
                 {/* Business threads are never unlocked. */}
-                {c && !c.contact_unlocked && !c.provider_id && m.messages && (
+                {c && !c.contact_unlocked && !c.provider_id && !c.was_business && m.messages && (
                   <form action={unlockConversation}>
                     <input type="hidden" name="locale" value={locale} />
                     <input type="hidden" name="conversation_id" value={m.messages.conversation_id} />

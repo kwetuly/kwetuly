@@ -249,6 +249,8 @@ export type Conversation = {
   guides: { display_name: string; slug: string; photo_url: string | null } | null;
   /** Business thread (reservations); absent while the business chat migration is not applied. */
   provider_id?: string | null;
+  /** True for every business thread, also after the business is deleted (then read-only). */
+  was_business?: boolean;
   providers?: { business_name: string } | null;
 };
 
@@ -257,7 +259,7 @@ const LEGACY_CONVERSATION_COLUMNS =
 
 export async function listConversations(): Promise<Conversation[]> {
   const run = (columns: string) => supabase.from('conversations').select(columns).order('last_message_at', { ascending: false }).limit(100);
-  let result = await run(`${LEGACY_CONVERSATION_COLUMNS}, provider_id, providers(business_name)`);
+  let result = await run(`${LEGACY_CONVERSATION_COLUMNS}, provider_id, was_business, providers(business_name)`);
   // Missing column or relationship: the business chat migration is not applied yet, so today's
   // columns are used. The live chat must keep working before it is applied.
   if (result.error && ['42703', 'PGRST204', 'PGRST200'].includes(result.error.code ?? '')) result = await run(LEGACY_CONVERSATION_COLUMNS);
@@ -266,10 +268,11 @@ export async function listConversations(): Promise<Conversation[]> {
 
 export function conversationView(c: Conversation, userId: string, travellerLabel = 'Traveller') {
   const isTraveler = c.traveler_id === userId;
-  const isBusiness = !!c.provider_id;
+  const isBusiness = c.was_business ?? !!c.provider_id;
+  const readOnly = isBusiness && !c.provider_id;
   const otherName = isTraveler ? (c.guides?.display_name ?? c.providers?.business_name ?? 'Guide') : (c.traveler_name ?? travellerLabel);
   const lastRead = isTraveler ? c.traveler_last_read_at : c.guide_last_read_at;
-  return { isTraveler, isBusiness, otherName, unread: !lastRead || c.last_message_at > lastRead };
+  return { isTraveler, isBusiness, readOnly, otherName, unread: !lastRead || c.last_message_at > lastRead };
 }
 
 /** Opens the traveller's conversation with a guide, creating it the first time. */

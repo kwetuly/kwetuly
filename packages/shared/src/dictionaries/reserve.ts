@@ -65,6 +65,7 @@ export type ReserveText = {
   cancel: string;
   messageBusiness: string;
   chatHiddenNote: string;
+  chatClosed: string;
   cancelConfirm: string;
   done: string;
   visitQuestion: string;
@@ -147,6 +148,7 @@ const en: ReserveText = {
   cancel: 'Cancel the reservation',
   messageBusiness: 'Message {business}',
   chatHiddenNote: 'Phone numbers and emails stay hidden in this chat.',
+  chatClosed: 'This chat closed 30 days after your last reservation.',
   cancelConfirm: 'Cancel this reservation? There is no fee.',
   done: 'Thank you. Saved.',
   visitQuestion: 'Did your visit happen?',
@@ -264,6 +266,7 @@ const sw: ReserveText = {
   cancel: 'Ghairi uhifadhi',
   messageBusiness: 'Mtumie {business} ujumbe',
   chatHiddenNote: 'Namba za simu na barua pepe zinabaki zimefichwa katika mazungumzo haya.',
+  chatClosed: 'Mazungumzo haya yalifungwa siku 30 baada ya uhifadhi wako wa mwisho.',
   cancelConfirm: 'Ungependa kughairi uhifadhi huu? Hakuna ada.',
   done: 'Asante. Imehifadhiwa.',
   visitQuestion: 'Je, ziara yako ilifanyika?',
@@ -381,6 +384,7 @@ const fr: ReserveText = {
   cancel: 'Annuler la réservation',
   messageBusiness: 'Écrire à {business}',
   chatHiddenNote: 'Les numéros de téléphone et les e-mails restent masqués dans cette discussion.',
+  chatClosed: 'Cette discussion s\'est fermée 30 jours après votre dernière réservation.',
   cancelConfirm: "Annuler cette réservation ? Il n'y a aucuns frais.",
   done: 'Merci. Enregistré.',
   visitQuestion: 'Votre visite a-t-elle eu lieu ?',
@@ -498,6 +502,7 @@ const it: ReserveText = {
   cancel: 'Annulla la prenotazione',
   messageBusiness: 'Scrivi a {business}',
   chatHiddenNote: 'Numeri di telefono ed email restano nascosti in questa chat.',
+  chatClosed: 'Questa chat si è chiusa 30 giorni dopo l\'ultima prenotazione.',
   cancelConfirm: 'Annullare questa prenotazione? Non ci sono costi.',
   done: 'Grazie. Salvato.',
   visitQuestion: 'La tua visita è avvenuta?',
@@ -615,6 +620,7 @@ const de: ReserveText = {
   cancel: 'Reservierung stornieren',
   messageBusiness: '{business} schreiben',
   chatHiddenNote: 'Telefonnummern und E-Mail-Adressen bleiben in diesem Chat verborgen.',
+  chatClosed: 'Dieser Chat wurde 30 Tage nach Ihrer letzten Reservierung geschlossen.',
   cancelConfirm: 'Diese Reservierung stornieren? Es fallen keine Gebühren an.',
   done: 'Vielen Dank. Gespeichert.',
   visitQuestion: 'Hat Ihr Besuch stattgefunden?',
@@ -732,6 +738,7 @@ const pl: ReserveText = {
   cancel: 'Anuluj rezerwację',
   messageBusiness: 'Napisz do {business}',
   chatHiddenNote: 'Numery telefonów i adresy e-mail pozostają w tym czacie ukryte.',
+  chatClosed: 'Ten czat zamknięto 30 dni po Twojej ostatniej rezerwacji.',
   cancelConfirm: 'Anulować tę rezerwację? Nie ma żadnej opłaty.',
   done: 'Dziękujemy. Zapisano.',
   visitQuestion: 'Czy Twoja wizyta się odbyła?',
@@ -849,6 +856,7 @@ const zh: ReserveText = {
   cancel: '取消预订',
   messageBusiness: '给{business}发消息',
   chatHiddenNote: '此聊天中电话号码和电子邮箱保持隐藏。',
+  chatClosed: '此聊天已在您最后一次预订 30 天后关闭。',
   cancelConfirm: '要取消此预订吗？不收取任何费用。',
   done: '谢谢，已保存。',
   visitQuestion: '您的到访是否已完成？',

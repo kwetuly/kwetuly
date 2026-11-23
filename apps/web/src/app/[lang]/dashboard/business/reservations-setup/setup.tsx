@@ -561,7 +561,7 @@ function ServiceEditor({
     start(async () => {
       const result = await saveService(data.providerId, serviceId, input);
       if (result.ok) return onDone(true);
-      if (result.error === 'invalid' && result.field && result.field in r.serviceErrors) return setError(r.serviceErrors[result.field as keyof ReservationText['serviceErrors']]);
+      if (result.error === 'invalid' && result.field && result.field in r.serviceErrors) return setError(fillText(r.serviceErrors[result.field as keyof ReservationText['serviceErrors']], { max: reservationLimits.groupDiscountPercentMax }));
       if (result.error === 'too_many') return setError(r.serviceErrors.too_many);
       setError(errorText(r, result));
     });
@@ -594,7 +594,7 @@ function ServiceEditor({
           <p id={`${uid}-disc-hint`} className="text-sm text-muted">{r.serviceDiscountHint}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block" htmlFor={`${uid}-disc-pct`}>
-              <span className="label">{r.serviceDiscountPercent}</span>
+              <span className="label">{fillText(r.serviceDiscountPercent, { max: reservationLimits.groupDiscountPercentMax })}</span>
               <input id={`${uid}-disc-pct`} type="number" inputMode="numeric" min={l.groupDiscountPercentMin} max={l.groupDiscountPercentMax} className="field" value={f.discountPercent} onChange={set('discountPercent')} aria-describedby={`${uid}-disc-hint`} />
             </label>
             <label className="block" htmlFor={`${uid}-disc-min`}>
