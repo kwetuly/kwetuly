@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   ShoppingBag,
   Tags,
+  ToggleRight,
   Star,
   Users,
   Wallet,
@@ -62,6 +63,12 @@ export function AdminMenu({ locale, current }: { locale: string; current?: strin
         { href: `${a}/places`, label: 'Places', icon: MapPin },
         { href: `${a}/media`, label: 'Shared media', icon: ImageIcon },
         { href: `${a}/shop`, label: 'Merchandise', icon: ShoppingBag },
+      ],
+    },
+    {
+      title: 'Site',
+      rows: [
+        { href: `${a}/features`, label: 'Feature switches', hint: 'On, off and legal checks', icon: ToggleRight },
       ],
     },
     {
