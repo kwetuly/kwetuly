@@ -75,7 +75,7 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
                 </p>
               )}
               <div className="flex gap-3 pt-1">
-                <Link href={`/${locale}/dashboard/packages?edit=${p.id}`} className="btn-outline px-4 py-2 text-sm">{t.dashboard.edit}</Link>
+                <Link href={`/${locale}/dashboard/packages?edit=${p.id}${next ? `&next=${next}` : ''}`} className="btn-outline px-4 py-2 text-sm">{t.dashboard.edit}</Link>
                 <form action={deletePackage}>
                   <input type="hidden" name="locale" value={locale} />
                   <input type="hidden" name="id" value={p.id} />

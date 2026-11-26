@@ -63,6 +63,7 @@ const en = {
   qrAlt: 'QR code that opens your booking link',
   qrHint: 'Guests can point their phone camera at this code to open your page. You are welcome to print it.',
   qrSave: 'Save QR code',
+  qrSoon: 'Your QR code will be ready when Kwetuly opens. Thank you for your patience.',
   print: 'Print',
   back: 'Back to my profile',
 };
@@ -122,6 +123,7 @@ const sw: GuideProgressText = {
   qrAlt: 'Msimbo wa QR unaofungua kiungo chako cha kuweka nafasi',
   qrHint: 'Wageni wanaweza kuelekeza kamera ya simu yao kwenye msimbo huu ili kufungua ukurasa wako. Unakaribishwa kuuchapisha.',
   qrSave: 'Hifadhi msimbo wa QR',
+  qrSoon: 'Msimbo wako wa QR utakuwa tayari Kwetuly itakapofunguliwa. Asante kwa uvumilivu wako.',
   print: 'Chapisha',
   back: 'Rudi kwenye wasifu wangu',
 };

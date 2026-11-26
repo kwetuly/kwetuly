@@ -39,7 +39,7 @@ export default function BookingLinkScreen() {
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const on = useBookingLinkOn();
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
-  const [qrFailed, setQrFailed] = useState(false);
+  const [qrFailed, setQrFailed] = useState<false | 'closed' | 'error'>(false);
   const needsSetup = useNeedsSetup();
 
   if (needsSetup) return <Redirect href={welcomeHref('/booking-link')} />;
@@ -103,7 +103,7 @@ export default function BookingLinkScreen() {
           <Card>
             <SectionTitle>{g.qrTitle}</SectionTitle>
             {qrFailed ? (
-              <Muted>{g.linkError}</Muted>
+              <Muted>{qrFailed === 'closed' ? g.qrSoon : g.linkError}</Muted>
             ) : (
               <Image
                 source={{ uri: `${SITE_URL}${path}/qr.svg` }}
@@ -111,7 +111,17 @@ export default function BookingLinkScreen() {
                 contentFit="contain"
                 accessibilityLabel={g.qrAlt}
                 accessible
-                onError={() => setQrFailed(true)}
+                onError={async () => {
+                  // The image is only asked for when the switch is on and the guide is approved, so a
+                  // 404 here means the site is still closed (the QR is for the team only until launch).
+                  // Anything else (offline, server error) is a real error.
+                  try {
+                    const response = await fetch(`${SITE_URL}${path}/qr.svg`);
+                    setQrFailed(response.status === 404 ? 'closed' : 'error');
+                  } catch {
+                    setQrFailed('error');
+                  }
+                }}
                 style={{ width: media.detailPhoto, height: media.detailPhoto, alignSelf: 'center', backgroundColor: colors.card }}
               />
             )}
