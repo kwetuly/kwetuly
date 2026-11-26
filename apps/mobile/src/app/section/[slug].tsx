@@ -1,10 +1,11 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
-import { ALL_SECTIONS, MENU } from '@kwetuly/shared';
+import { ALL_SECTIONS, MENU, visibleItems } from '@kwetuly/shared';
 import { Glyph } from '@/components/glyph';
 import { Muted, ScreenState } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
+import { useFeatures } from '@/lib/feature-switches';
 import { menuIcon } from '@/lib/menu-icons';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -12,6 +13,7 @@ import { brand, colors, radius, space, textSize } from '@/theme';
 export default function SectionScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { t, locale } = useI18n();
+  const features = useFeatures();
   // The main menu may rename a section (Experiences is "Trips" there), so look there first.
   const section = MENU.find((s) => s.slug === slug) ?? ALL_SECTIONS.find((s) => s.slug === slug);
   // An old or mistyped link: say so and offer the way back to Explore.
@@ -22,7 +24,7 @@ export default function SectionScreen() {
       <Stack.Title>{section.label[locale]}</Stack.Title>
       <Muted>{section.tagline[locale]}</Muted>
       <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, overflow: 'hidden' }}>
-        {section.items.filter((item) => !item.webOnly).map((item, i) => (
+        {visibleItems(section.items, features.on).filter((item) => !item.webOnly).map((item, i) => (
           <Link key={item.slug} href={appHref(section, item)} asChild>
             <Pressable accessibilityRole="link" style={{ borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg }}>

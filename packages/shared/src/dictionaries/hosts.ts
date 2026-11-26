@@ -11,7 +11,8 @@ export type HostsText = {
   title: string;
   intro: string;
   kindsTitle: string;
-  kinds: { name: string; body: string }[];
+  /** concierge = personal trip (VIP) host, investment = investment visit host; anchors on /hosts. */
+  kinds: { id: 'concierge' | 'investment'; name: string; body: string }[];
   notOfferedTitle: string;
   notOffered: string[];
   howTitle: string;
@@ -34,10 +35,12 @@ const en: HostsText = {
   kindsTitle: 'Two kinds of host',
   kinds: [
     {
+      id: 'concierge',
       name: 'Personal trip host',
       body: 'You plan and go along on private, quiet trips. You plan each day, introduce visitors to guides on Kwetuly and keep their personal details private.',
     },
     {
+      id: 'investment',
       name: 'Investment visit host',
       body: 'You help visitors who come to look at business in Tanzania with schedules, getting around, language and introductions. You point them to official government websites only. You do not give investment, legal or tax advice, and you never promise permits, approvals or speed.',
     },
@@ -84,10 +87,12 @@ const sw: HostsText = {
   kindsTitle: 'Aina mbili za wenyeji',
   kinds: [
     {
+      id: 'concierge',
       name: 'Mwenyeji wa safari binafsi',
       body: 'Unapanga na kuongozana na wageni katika safari za faragha na tulivu. Unapanga kila siku, unawatambulisha kwa waongozaji walio kwenye Kwetuly na unatunza siri ya taarifa zao binafsi.',
     },
     {
+      id: 'investment',
       name: 'Mwenyeji wa ziara za uwekezaji',
       body: 'Unawasaidia wageni wanaokuja kuangalia biashara Tanzania kwa ratiba, kuzunguka, lugha na kuwatambulisha. Unawaelekeza kwenye tovuti rasmi za serikali tu. Hutoi ushauri wa uwekezaji, sheria wala kodi, na huahidi kamwe vibali, idhini wala kasi.',
     },

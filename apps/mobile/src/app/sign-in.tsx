@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { EVENTS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
-import { Button, Card, Chip, Field, FormMessage, FormScreen, Muted } from '@/components/ui';
+import { EVENTS, HOST_FEATURES, HOSTS_ENTRY_LINKS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
+import { Button, Card, Chip, Field, FormMessage, FormScreen, ListGroup, ListRow, Muted } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { useI18n } from '@/lib/i18n';
 import { getInviteOnly } from '@/lib/api-more';
@@ -11,6 +11,8 @@ import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { enabledProviders, PROVIDER_NAMES, signInWithProvider, type SocialProvider } from '@/lib/social';
 import { useType } from '@/lib/use-type';
+import { useFeatures } from '@/lib/feature-switches';
+import { menuIcon } from '@/lib/menu-icons';
 import { layout } from '@/theme';
 
 const ROLES = ['traveler', 'guide', 'provider'] as const;
@@ -19,9 +21,12 @@ const ROLES = ['traveler', 'guide', 'provider'] as const;
 export default function SignInScreen() {
   const { t, locale } = useI18n();
   const { type } = useType();
-  const params = useLocalSearchParams<{ mode?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; role?: string }>();
   const [mode, setMode] = useState<'signIn' | 'join'>(params.mode === 'join' ? 'join' : 'signIn');
-  const [role, setRole] = useState<(typeof ROLES)[number]>('traveler');
+  const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES.find((r) => r === params.role) ?? 'traveler');
+  // "Become a concierge or VIP host" while a host switch is on; it opens the hosts screen first.
+  const features = useFeatures();
+  const hostsOpen = features.on.includes(HOST_FEATURES.concierge) || features.on.includes(HOST_FEATURES.investment);
   const [fullName, setFullName] = useState('');
   // Country from the phone's region setting (Tanzania otherwise); the number as the person types it.
   const [phone, setPhone] = useState(() => initialPhone(null));
@@ -196,6 +201,17 @@ export default function SignInScreen() {
               ))}
             </View>
             <Muted>{t.join[role].body}</Muted>
+            {hostsOpen && (
+              <ListGroup>
+                <ListRow
+                  icon={menuIcon('crown')}
+                  title={HOSTS_ENTRY_LINKS.join.title[locale]}
+                  subtitle={HOSTS_ENTRY_LINKS.join.body[locale]}
+                  accessibilityRole="link"
+                  onPress={() => router.push('/hosts')}
+                />
+              </ListGroup>
+            )}
             <Field label={t.auth.fullName} value={fullName} onChangeText={setFullName} autoComplete="name" textContentType="name" />
             <PhoneField
               label={t.auth.phone}

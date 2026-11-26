@@ -5,6 +5,7 @@
 import { GUIDE_EXPERTISE } from './expertise';
 import { CALL_TOPICS } from './guides';
 import { L, type Label } from './locales';
+import { HOSTS_ENTRY_LINKS } from './dictionaries/hosts-entry';
 
 /**
  * Kwetuly merchandise shop: the menu item, the website's /merch page and order action, and the
@@ -21,7 +22,35 @@ export type MenuItem = {
   href?: string; // set when the item lives at a dedicated page instead of /[section]/[item]
   status?: 'live' | 'soon';
   webOnly?: true; // a website page with no app screen yet; the app leaves the item out
+  /** Shown only while the admin switch site_settings "feature.<id>" is on (missing row = off). */
+  feature?: FeatureSwitch;
 };
+
+/**
+ * Admin switches (site_settings rows "feature.<id>", read like private.feature_on: a missing row is
+ * off) that hide menu items. Host sign-up is a legal-check item (docs/legal/vip-and-investment-hosts.md).
+ */
+export const HOST_FEATURES = { concierge: 'vip_hosts', investment: 'investment_hosts' } as const;
+export type FeatureSwitch = (typeof HOST_FEATURES)[keyof typeof HOST_FEATURES];
+
+/** The ids of the switched-on features, from site_settings rows like {key: "feature.x", value: {on: true}}. */
+export function featuresFromSettings(rows: { key: string; value: unknown }[] | null | undefined): string[] {
+  return (rows ?? [])
+    .filter((r) => r.key.startsWith('feature.') && (r.value as { on?: unknown } | null)?.on === true)
+    .map((r) => r.key.slice('feature.'.length));
+}
+
+/** The items of a section that may be shown with these features on. */
+export function visibleItems(items: MenuItem[], on: readonly string[]): MenuItem[] {
+  return items.filter((item) => !item.feature || on.includes(item.feature));
+}
+
+/** Sections with switched-off items left out (and sections left empty by that dropped). */
+export function menuFor(sections: MenuSection[], on: readonly string[]): MenuSection[] {
+  return sections
+    .map((section) => ({ ...section, items: visibleItems(section.items, on) }))
+    .filter((section) => section.items.length > 0);
+}
 
 export type MenuSection = {
   slug: string;
@@ -471,10 +500,16 @@ const PARTNERS: MenuSection = {
       label: L('List your business', 'Weka biashara yako', 'Inscrire votre entreprise', 'Inserisci la tua attività', 'Unternehmen eintragen', 'Dodaj swoją firmę', '入驻 Kwetuly'),
       blurb: L('Hotels, drivers, shops and tour companies', 'Hoteli, madereva, maduka na kampuni za utalii', 'Hôtels, chauffeurs, boutiques et agences', 'Hotel, autisti, negozi e tour operator', 'Hotels, Fahrer, Shops und Veranstalter', 'Hotele, kierowcy, sklepy i biura', '酒店、司机、商店和旅行社'),
     },
+    // Host sign-up (/hosts explains the work and leads to a guide account). Behind admin switches.
     {
-      slug: 'become-host', icon: 'crown', href: '/hosts', status: 'live', webOnly: true,
-      label: L('Become a host', 'Kuwa mwenyeji', 'Devenir hôte', 'Diventa host', 'Gastgeber werden', 'Zostań gospodarzem', '成为行程陪同'),
-      blurb: L('Personal trip and investment visit hosts, approved one by one', 'Wenyeji wa safari binafsi na ziara za uwekezaji, wanaidhinishwa mmoja mmoja', 'Hôtes de voyages privés et de visites d’investissement, approuvés un par un', 'Host per viaggi privati e visite d’investimento, approvati uno a uno', 'Begleitung für Privatreisen und Investitionsbesuche, einzeln geprüft', 'Opiekunowie podróży prywatnych i wizyt inwestycyjnych, zatwierdzani pojedynczo', '私人行程与投资考察陪同，逐一审核'),
+      slug: 'become-host', icon: 'crown', href: '/hosts#concierge', status: 'live', feature: HOST_FEATURES.concierge,
+      label: HOSTS_ENTRY_LINKS.concierge.label,
+      blurb: HOSTS_ENTRY_LINKS.concierge.blurb,
+    },
+    {
+      slug: 'investment-host', icon: 'trending-up', href: '/hosts#investment', status: 'live', feature: HOST_FEATURES.investment,
+      label: HOSTS_ENTRY_LINKS.investment.label,
+      blurb: HOSTS_ENTRY_LINKS.investment.blurb,
     },
   ],
 };

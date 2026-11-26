@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import '../globals.css';
-import { MENU } from '@kwetuly/shared';
+import { MENU, menuFor } from '@kwetuly/shared';
 import { LOCALE_TAGS, locales, ogLocales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { AuthLinks, MenuAccount } from '@/components/auth-links';
@@ -16,6 +16,7 @@ import { Analytics } from '@/components/analytics';
 import { INDEXING_ON, SITE_URL } from '@/lib/site';
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo';
 import { itemHref } from '@/lib/menu';
+import { featuresOn } from '@/lib/feature-switches';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'latin-ext'] });
 
@@ -48,6 +49,8 @@ export const viewport: Viewport = { themeColor: '#1D951A' };
 export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const locale = await getLocale();
   const t = await getDictionary();
+  // Menu items behind an admin switch (host sign-up) show only while it is on.
+  const features = await featuresOn();
 
   return (
     <html lang={LOCALE_TAGS[locale]} className={`${jakarta.variable} h-full antialiased`}>
@@ -70,6 +73,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               <div className="lg:hidden">
                 <SiteNav
                   locale={locale}
+                  features={features}
                   account={
                     <Suspense fallback={null}>
                       <MenuAccount />
@@ -82,7 +86,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
           {/* Desktop: the section menu gets its own row so it never collides with the account buttons. */}
           <div className="hidden border-t border-line/60 lg:block">
             <div className="mx-auto max-w-7xl px-2 py-1">
-              <DesktopNav locale={locale} soonLabel={t.nav.soon} />
+              <DesktopNav locale={locale} soonLabel={t.nav.soon} features={features} />
             </div>
           </div>
         </header>
@@ -98,7 +102,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
               <Logo tone="light" className="text-3xl" />
               <p className="mt-2 text-sm text-white/90">{t.footer.tagline}</p>
             </div>
-            {MENU.map((section) => (
+            {menuFor(MENU, features).map((section) => (
               <div key={section.slug}>
                 <p className="flex items-center gap-2 text-sm font-bold text-white">
                   <span className="flex size-6 items-center justify-center rounded-[5px] bg-leaf">

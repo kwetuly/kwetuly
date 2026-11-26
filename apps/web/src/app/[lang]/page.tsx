@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { Fragment } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MENU } from '@kwetuly/shared';
+import { MENU, menuFor } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { GuideSearch } from '@/components/guide-search';
 import { RecentlyViewed } from '@/components/recently-viewed';
 import { siteStats } from '@/lib/guides';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
+import { featuresOn } from '@/lib/feature-switches';
 import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
 import { pageMeta } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site';
@@ -27,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [t, locale, stats] = await Promise.all([getDictionary(), getLocale(), siteStats()]);
+  const [t, locale, stats, features] = await Promise.all([getDictionary(), getLocale(), siteStats(), featuresOn()]);
   const hero = PHOTOS.kiliCampMawenzi;
 
   return (
@@ -88,7 +89,7 @@ export default async function HomePage() {
         <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{t.explore.title}</h2>
         <p className="mt-2 text-lg text-muted">{t.explore.subtitle}</p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {MENU.map((section, index) => {
+          {menuFor(MENU, features).map((section, index) => {
             const photo = PHOTOS[SECTION_PHOTOS[section.slug] ?? 'safariSunset'];
             return (
               <div

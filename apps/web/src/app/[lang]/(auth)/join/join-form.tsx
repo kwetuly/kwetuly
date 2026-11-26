@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { Briefcase, Compass, Plane } from 'lucide-react';
+import Link from 'next/link';
+import { Briefcase, Compass, Crown, Plane } from 'lucide-react';
 import type { Dictionary } from '@/i18n/dictionaries';
 import { InviteCodeField } from '@/components/invite-code-field';
 import { SubmitButton } from '@/components/submit-button';
@@ -32,6 +33,7 @@ export function JoinForm({
   invite,
   initialError,
   phoneCountry,
+  hostOption,
   t,
 }: {
   locale: string;
@@ -40,6 +42,8 @@ export function JoinForm({
   selected: string;
   invite: boolean;
   initialError: string | null;
+  /** "Become a concierge or VIP host": a link to /hosts under the account types, or null when host sign-up is off. */
+  hostOption?: { href: string; title: string; body: string } | null;
   t: JoinLabels;
 }) {
   const [state, action] = useActionState(signUp, null);
@@ -76,6 +80,19 @@ export function JoinForm({
             </label>
           ))}
         </div>
+        {hostOption && (
+          <Link
+            href={hostOption.href}
+            data-track="join_hosts"
+            className="mt-3 flex items-start gap-3 rounded-[5px] border-2 border-line p-4 transition hover:border-leaf focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-forest"
+          >
+            <Crown className="mt-0.5 size-6 shrink-0 text-leaf-dark" aria-hidden />
+            <span className="flex flex-col gap-1">
+              <span className="font-bold text-forest underline-offset-2 hover:underline">{hostOption.title}</span>
+              <span className="text-xs text-muted">{hostOption.body}</span>
+            </span>
+          </Link>
+        )}
       </fieldset>
       <div>
         <label className="label" htmlFor="full_name">{t.auth.fullName}</label>

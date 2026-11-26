@@ -23,6 +23,7 @@ export { guideStatusText, type GuideStatusText } from './guide-status';
 export { SIGN_INS_TEXT } from './sign-ins';
 export { CATALOGUE_TEXT, catalogueText, type CatalogueText } from './catalogue';
 export { HOSTS_TEXT, hostsText, type HostsText } from './hosts';
+export { HOSTS_ENTRY_LINKS, HOSTS_ENTRY_TEXT, hostsEntryText, type HostsEntryText } from './hosts-entry';
 export { verificationText, fillText, type VerificationText } from './verification';
 export { reservationText, type ReservationText } from './reservations';
 export { RESERVE_TEXT, reserveText, type ReserveText } from './reserve';
