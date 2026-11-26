@@ -1,38 +1,47 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { cleanImageBytes, sniffImageBytes } from './image-bytes';
+import { MAX_ICC_BYTES, cleanImageBytes, sniffImageBytes } from './image-bytes';
 
-const bytes = (...parts: (number[] | string)[]) =>
-  new Uint8Array(parts.flatMap((p) => (typeof p === 'string' ? [...p].map((c) => c.charCodeAt(0)) : p)));
-const has = (b: Uint8Array, text: string) => new TextDecoder('latin1').decode(b).includes(text);
+const bytes = (...parts: (number[] | string | Uint8Array)[]) =>
+  new Uint8Array(parts.flatMap((p) => (typeof p === 'string' ? [...p].map((c) => c.charCodeAt(0)) : [...p])));
+const text = (b: Uint8Array) => new TextDecoder('latin1').decode(b);
+const has = (b: Uint8Array, s: string) => text(b).includes(s);
+const count = (b: Uint8Array, s: string) => text(b).split(s).length - 1;
 const le32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>> 24) & 0xff];
+const seg = (marker: number, body: number[] | string | Uint8Array) => {
+  const data = bytes(body);
+  return bytes([0xff, marker, (data.length + 2) >> 8, (data.length + 2) & 0xff], data);
+};
+
+const SOI = [0xff, 0xd8];
+const EOI = [0xff, 0xd9];
+const JFIF = seg(0xe0, bytes('JFIF\0', [1, 1, 0, 0, 1, 0, 1, 0, 0]));
+const EXIF = seg(0xe1, 'Exif\0\0GPS 3.3869S 37.3466E');
+const SOF0 = seg(0xc0, [0x08, 0x00, 0x10, 0x00, 0x20, 0x03, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1]);
+const SOF2 = seg(0xc2, [0x08, 0x00, 0x10, 0x00, 0x20, 0x03, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1]);
+const SOS = seg(0xda, [0x01, 0x01, 0x00, 0x00, 0x3f, 0x00]);
+// Compressed data with a stuffed byte (FF 00) and a restart marker (FF D0) inside.
+const SCAN = [0x12, 0x34, 0xff, 0x00, 0x56, 0xff, 0xd0, 0x78];
 
 // A tiny JPEG shape: SOI, APP0 JFIF, APP1 EXIF with a fake GPS text, COM, SOF0 (32 x 16), SOS, data, EOI.
-function jpeg() {
-  const exifBody = bytes('Exif', [0, 0], 'GPS 3.3869S 37.3466E');
-  const com = bytes('made by a phone');
-  return bytes(
-    [0xff, 0xd8],
-    [0xff, 0xe0, 0x00, 0x10], 'JFIF', [0, 1, 1, 0, 0, 1, 0, 1, 0, 0],
-    [0xff, 0xe1, 0x00, exifBody.length + 2], [...exifBody],
-    [0xff, 0xfe, 0x00, com.length + 2], [...com],
-    [0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x10, 0x00, 0x20, 0x03, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1],
-    [0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00],
-    [0x12, 0x34, 0x56, 0xff, 0x00, 0x78],
-    [0xff, 0xd9],
-  );
-}
+const jpeg = () => bytes(SOI, JFIF, EXIF, seg(0xfe, 'made by a phone'), SOF0, SOS, SCAN, EOI);
 
-// A tiny WebP shape: VP8X (EXIF flag set) 100 x 50, VP8L 100 x 50, EXIF chunk.
-function webp({ animated = false } = {}) {
+// A tiny WebP shape: VP8X (EXIF flag set) 100 x 50, VP8L 100 x 50, EXIF chunk, optional extra chunks.
+function webp({ animated = false, extra = [] as Uint8Array[] } = {}) {
   const vp8x = bytes('VP8X', le32(10), [animated ? 0x02 : 0x08, 0, 0, 0, 99, 0, 0, 49, 0, 0]);
   const vp8l = bytes('VP8L', le32(5), [0x2f, 0x63, 0x40, 0x0c, 0x00], [0]);
   const exif = bytes('EXIF', le32(12), 'GPS 3.3869S ');
-  const body = new Uint8Array([...vp8x, ...vp8l, ...exif]);
-  return bytes('RIFF', le32(4 + body.length), 'WEBP', [...body]);
+  const body = bytes(vp8x, vp8l, exif, ...extra);
+  return bytes('RIFF', le32(4 + body.length), 'WEBP', body);
 }
 
-describe('image bytes', () => {
+function cleaned(b: Uint8Array) {
+  const result = cleanImageBytes(b);
+  if (!result.ok) throw new Error(result.problem);
+  return result;
+}
+
+describe('image bytes: type', () => {
   it('reads the real type from the first bytes', () => {
     expect(sniffImageBytes(jpeg())).toBe('image/jpeg');
     expect(sniffImageBytes(webp())).toBe('image/webp');
@@ -40,40 +49,98 @@ describe('image bytes', () => {
     expect(sniffImageBytes(bytes([0x89], 'PNG'))).toBeNull();
     expect(cleanImageBytes(bytes('GIF89a')).ok).toBe(false);
   });
+});
 
-  it('JPEG: removes EXIF and comments, keeps the picture, reads the size', () => {
-    const result = cleanImageBytes(jpeg());
-    if (!result.ok) throw new Error(result.problem);
+describe('image bytes: JPEG', () => {
+  it('removes EXIF and comments, keeps the picture and its data, reads the size', () => {
+    const result = cleaned(jpeg());
     expect([result.width, result.height]).toEqual([32, 16]);
     expect(has(result.bytes, 'Exif')).toBe(false);
     expect(has(result.bytes, 'GPS')).toBe(false);
     expect(has(result.bytes, 'made by a phone')).toBe(false);
     expect(has(result.bytes, 'JFIF')).toBe(true);
-    expect([...result.bytes.slice(-8)]).toEqual([0x12, 0x34, 0x56, 0xff, 0x00, 0x78, 0xff, 0xd9]);
+    expect([...result.bytes.slice(-10)]).toEqual([...SCAN, ...EOI]);
     expect(result.removedBytes).toBeGreaterThan(0);
   });
 
-  it('JPEG: refuses a file without a frame header or with a broken length', () => {
-    expect(cleanImageBytes(bytes([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 1, 1, 0, 0, 0x3f, 0, 0xff, 0xd9]))).toEqual({ ok: false, problem: 'corrupt' });
-    expect(cleanImageBytes(bytes([0xff, 0xd8, 0xff, 0xe1, 0x7f, 0xff, 0x00]))).toEqual({ ok: false, problem: 'corrupt' });
+  it('cuts everything after the end of the image (a ZIP appended to the picture)', () => {
+    const result = cleaned(bytes(jpeg(), 'PK\u0003\u0004secret.txt', [0, 1, 2, 3]));
+    expect(has(result.bytes, 'PK')).toBe(false);
+    expect([...result.bytes.slice(-2)]).toEqual(EOI);
   });
 
-  it('WebP: removes EXIF, clears the flag, fixes the size field, reads the size', () => {
-    const result = cleanImageBytes(webp());
-    if (!result.ok) throw new Error(result.problem);
+  it('removes an APP1 hidden between progressive scans', () => {
+    const result = cleaned(bytes(SOI, JFIF, SOF2, SOS, SCAN, EXIF, SOS, SCAN, EOI));
+    expect(has(result.bytes, 'Exif')).toBe(false);
+    expect(count(result.bytes, 'ÿÚ')).toBe(2);
+  });
+
+  it('removes MPF and the extra picture after the end', () => {
+    const mpf = seg(0xe2, 'MPF\0II*\0extra');
+    const result = cleaned(bytes(SOI, JFIF, mpf, SOF0, SOS, SCAN, EOI, SOI, EXIF, SOF0, SOS, SCAN, EOI));
+    expect(has(result.bytes, 'MPF')).toBe(false);
+    expect(has(result.bytes, 'Exif')).toBe(false);
+    expect(count(result.bytes, 'ÿØ')).toBe(1);
+  });
+
+  it('keeps APP0, APP2 and APP14 only with the right start; drops JFXX', () => {
+    const jfxx = seg(0xe0, bytes('JFXX\0', [0x10], 'thumbnail'));
+    const icc = seg(0xe2, bytes('ICC_PROFILE\0', [1, 1], 'colours'));
+    const adobe = seg(0xee, bytes('Adobe', [0, 100, 0, 0, 0, 0, 1]));
+    const fakeAdobe = seg(0xee, 'NotAdobe');
+    const result = cleaned(bytes(SOI, JFIF, jfxx, icc, adobe, fakeAdobe, SOF0, SOS, SCAN, EOI));
+    expect(has(result.bytes, 'JFXX')).toBe(false);
+    expect(has(result.bytes, 'thumbnail')).toBe(false);
+    expect(has(result.bytes, 'ICC_PROFILE')).toBe(true);
+    expect(count(result.bytes, 'Adobe')).toBe(1);
+    expect(has(result.bytes, 'NotAdobe')).toBe(false);
+  });
+
+  it('caps the colour profile at 256 KB', () => {
+    const big = seg(0xe2, bytes('ICC_PROFILE\0', new Uint8Array(65533 - 12)));
+    const result = cleaned(bytes(SOI, JFIF, big, big, big, big, big, SOF0, SOS, SCAN, EOI));
+    expect(count(result.bytes, 'ICC_PROFILE')).toBe(Math.floor(MAX_ICC_BYTES / 65535));
+  });
+
+  it('refuses files without a frame, a broken length, or no end', () => {
+    expect(cleanImageBytes(bytes(SOI, SOS, SCAN, EOI))).toEqual({ ok: false, problem: 'corrupt' });
+    expect(cleanImageBytes(bytes(SOI, [0xff, 0xe1, 0x7f, 0xff, 0x00]))).toEqual({ ok: false, problem: 'corrupt' });
+    expect(cleanImageBytes(bytes(SOI, JFIF, SOF0, SOS, SCAN))).toEqual({ ok: false, problem: 'corrupt' });
+  });
+});
+
+describe('image bytes: WebP', () => {
+  it('removes EXIF, sets the flags to what is left, fixes the size field, reads the size', () => {
+    const result = cleaned(webp());
     expect([result.width, result.height]).toEqual([100, 50]);
     expect(has(result.bytes, 'EXIF')).toBe(false);
     expect(has(result.bytes, 'GPS')).toBe(false);
-    expect(result.bytes[20] & 0x0c).toBe(0);
+    expect(result.bytes[20]).toBe(0);
     const riff = result.bytes[4] | (result.bytes[5] << 8) | (result.bytes[6] << 16) | (result.bytes[7] << 24);
     expect(riff).toBe(result.bytes.length - 8);
   });
 
-  it('WebP: refuses animation and files without a picture', () => {
+  it('drops unknown chunks, keeps ICCP and sets its flag, cuts data after the RIFF end', () => {
+    const unknown = bytes('ABCD', le32(4), 'hide');
+    const xmp = bytes('XMP ', le32(4), 'xmpd');
+    const iccp = bytes('ICCP', le32(4), 'icc!');
+    const file = bytes(webp({ extra: [unknown, xmp, iccp] }), 'PK trailing');
+    const result = cleaned(file);
+    expect(has(result.bytes, 'ABCD')).toBe(false);
+    expect(has(result.bytes, 'hide')).toBe(false);
+    expect(has(result.bytes, 'XMP')).toBe(false);
+    expect(has(result.bytes, 'PK')).toBe(false);
+    expect(has(result.bytes, 'ICCP')).toBe(true);
+    expect(result.bytes[20]).toBe(0x20);
+  });
+
+  it('refuses animation and files without a picture', () => {
     expect(cleanImageBytes(webp({ animated: true }))).toEqual({ ok: false, problem: 'animated' });
     expect(cleanImageBytes(bytes('RIFF', le32(14), 'WEBP', 'EXIF', le32(2), 'ab'))).toEqual({ ok: false, problem: 'corrupt' });
   });
+});
 
+describe('image bytes: copy', () => {
   it('supabase/functions/_shared/image-bytes.ts is identical to this file', () => {
     const here = readFileSync(new URL('./image-bytes.ts', import.meta.url), 'utf8');
     const copy = readFileSync(new URL('../../../supabase/functions/_shared/image-bytes.ts', import.meta.url), 'utf8');

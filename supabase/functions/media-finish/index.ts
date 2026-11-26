@@ -3,7 +3,8 @@
 //
 //   POST { "id": "<media id>", "placeholder": "#rrggbb" | null }
 //
-// 1. The row must be the caller's and still uploading.
+// 1. Claims the row (public.svc_claim_media): it must be the caller's, still uploading, and not
+//    claimed by another call in the last 5 minutes. Every failure after this ends the claim.
 // 2. Downloads the photo and its thumbnail from the private `media-staging` bucket.
 // 3. Reads the files' own bytes (_shared/image-bytes.ts): only still JPEG (FF D8 FF) or WebP
 //    (RIFF....WEBP) of the type the name says; removes metadata blocks (EXIF, XMP, IPTC, comments)
@@ -24,6 +25,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STAGING = 'media-staging';
 const MAX_BYTES: Record<string, number> = { avatar: 1048576, cover: 2097152, gallery: 2097152, product: 2097152 };
 const THUMB_MAX = 307200;
+// Longest side of the thumbnail per field (packages/shared/src/uploads.ts, thumbSide).
+const THUMB_SIDE: Record<string, number> = { avatar: 200, cover: 800, gallery: 400, product: 400 };
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -47,13 +50,21 @@ Deno.serve(async (req) => {
   const placeholder = typeof body.placeholder === 'string' && /^#[0-9a-f]{6}$/.test(body.placeholder) ? body.placeholder : null;
   if (!id) return json({ error: 'not_yours' }, 400);
 
-  const { data: row, error: rowError } = await db.from('media').select('id, owner_id, field, path, thumb_path, state').eq('id', id).maybeSingle();
-  if (rowError) return json({ error: 'generic' }, 500);
-  if (!row || row.owner_id !== user.id) return json({ error: 'not_yours' }, 403);
-  if (row.state !== 'uploading') return json({ ok: true, state: row.state });
+  // N3: claim the row first (owner, still uploading, no other claim in the last 5 minutes). Only the
+  // claimant writes; while the claim is open the staging files cannot be deleted or replaced.
+  const { data: claim, error: claimError } = await db
+    .rpc('svc_claim_media', { p_id: id, p_user: user.id })
+    .single<{ claimed: boolean; state: string; field: string; path: string; thumb_path: string }>();
+  if (claimError || !claim) {
+    const code = /media:(\w+)/.exec(claimError?.message ?? '')?.[1] ?? 'generic';
+    return json({ error: code }, code === 'not_yours' ? 403 : 409);
+  }
+  if (!claim.claimed) return claim.state === 'removed' ? json({ error: 'file_missing' }, 409) : json({ ok: true, state: claim.state });
+  const row = claim;
 
   const staging = db.storage.from(STAGING);
   const dropStaging = () => staging.remove([row.path, row.thumb_path]).catch(() => undefined);
+  const release = () => db.rpc('svc_release_media', { p_id: id, p_user: user.id });
   const refuse = async (code: string) => {
     await db.rpc('svc_refuse_media', { p_id: id, p_user: user.id });
     await dropStaging();
@@ -62,7 +73,10 @@ Deno.serve(async (req) => {
   };
 
   const [main, thumb] = await Promise.all([staging.download(row.path), staging.download(row.thumb_path)]);
-  if (main.error || thumb.error || !main.data || !thumb.data) return json({ error: 'file_missing' }, 409);
+  if (main.error || thumb.error || !main.data || !thumb.data) {
+    await release();
+    return json({ error: 'file_missing' }, 409);
+  }
   const mainBytes = new Uint8Array(await main.data.arrayBuffer());
   const thumbBytes = new Uint8Array(await thumb.data.arrayBuffer());
   if (mainBytes.length > (MAX_BYTES[row.field] ?? 0) || thumbBytes.length > THUMB_MAX) return refuse('file_too_big');
@@ -73,13 +87,20 @@ Deno.serve(async (req) => {
   if (!cleanMain.ok || !cleanThumb.ok) return refuse('file_type');
   if (cleanMain.mime !== expected || cleanThumb.mime !== expected) return refuse('file_type');
   if (cleanMain.width > 4000 || cleanMain.height > 4000) return refuse('bad_size');
+  // N2: the thumbnail is small (the field's thumbnail size, at most 800 px) and the same shape as the photo.
+  if (Math.max(cleanThumb.width, cleanThumb.height) > (THUMB_SIDE[row.field] ?? 400)) return refuse('bad_size');
+  const ratio = cleanMain.width / cleanMain.height;
+  if (Math.abs(cleanThumb.width / cleanThumb.height - ratio) / ratio > 0.02) return refuse('bad_size');
 
   const bucket = row.field === 'product' ? 'media-pending' : 'media';
   const target = db.storage.from(bucket);
-  // upsert: a retry after a lost answer may find the files already written.
+  // upsert: an earlier claim that failed halfway may have left a file (it was removed again, N4).
   const options = { contentType: expected, cacheControl: '3600', upsert: true };
   const [putMain, putThumb] = await Promise.all([target.upload(row.path, cleanMain.bytes, options), target.upload(row.thumb_path, cleanThumb.bytes, options)]);
   if (putMain.error || putThumb.error) {
+    // N4: never leave one of the two in the public bucket.
+    await target.remove([row.path, row.thumb_path]).catch(() => undefined);
+    await release();
     console.error('media-finish: write failed');
     return json({ error: 'network' }, 502);
   }
@@ -90,6 +111,7 @@ Deno.serve(async (req) => {
   if (finishError || !done) {
     // Not shown: take the copies out of the field's bucket again.
     await target.remove([row.path, row.thumb_path]).catch(() => undefined);
+    await release();
     const code = /media:(\w+)/.exec(finishError?.message ?? '')?.[1] ?? 'generic';
     console.error('media-finish: finish failed', code);
     return json({ error: code }, 409);

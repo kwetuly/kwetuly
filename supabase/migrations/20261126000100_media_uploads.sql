@@ -36,9 +36,10 @@
 --     private.media_sweep(), public.admin_media_list(public.media_state, int), public.admin_check_media(uuid, text, text),
 --     public.remove_all_my_media(), public.remove_my_media(uuid),
 --     public.reorder_media(public.media_subject_kind, uuid, public.media_field, uuid[]),
---     public.svc_refuse_media(uuid, text), public.svc_finish_media(uuid, int, int, text),
+--     public.my_media(public.media_subject_kind, uuid), public.svc_claim_media(uuid, uuid), public.svc_release_media(uuid, uuid),
+--     public.svc_refuse_media(uuid, uuid), public.svc_finish_media(uuid, uuid, int, int, text),
 --     public.start_media_upload(public.media_field, public.media_subject_kind, uuid, text, text),
---     private.guard_media(), private.media_upload_slot(text, text), private.media_path_deletable(text, text),
+--     private.media_recent_starts(uuid), private.media_is_mine(uuid), private.guard_media(), private.media_upload_slot(text, text), private.media_path_deletable(text, text),
 --     private.media_object_ok(uuid), private.media_object_check(uuid), private.media_subject_public(public.media_subject_kind, uuid),
 --     private.media_subject_owner(public.media_subject_kind, uuid), private.media_finish_state(public.media_field),
 --     private.media_field_bucket(public.media_field), private.media_thumb_max_bytes(),
@@ -153,6 +154,8 @@ create table public.media (
   checked_by uuid references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   finished_at timestamptz,
+  -- N3: the media-finish function claims a row before writing; a second claim is refused until then.
+  finishing_until timestamptz,
   constraint media_path_shape check (
     path ~ ('^' || owner_id::text || '/' || id::text || '\.(webp|jpg)$')),
   constraint media_thumb_shape check (
@@ -239,14 +242,13 @@ create policy "Owners change their media" on public.media
   with check (owner_id = (select auth.uid()));
 
 -- No delete for anyone: a removed photo keeps its row (audit trail); rows go with the account.
--- L1: the public sees only what pages need. Signed-in people also read the columns the owner
--- functions and the guard use. Admin columns (who checked, why removed) only through admin functions.
+-- L1, N6: everyone (anon and signed-in) reads only what pages need. Owners get consent and times
+-- through public.my_media(); admin columns (who checked, why removed) only through admin functions.
+-- Owner functions below therefore never read owner_id themselves: row level security and the small
+-- security definer helpers (media_is_mine, media_recent_starts) do.
 revoke all on public.media from public, anon, authenticated;
 grant select (id, subject_kind, subject_id, field, path, thumb_path, mime, width, height, placeholder, sort, is_main, state)
-  on public.media to anon;
-grant select (id, subject_kind, subject_id, field, path, thumb_path, mime, width, height, placeholder, sort, is_main, state,
-              owner_id, consent_version, consented_at, created_at, finished_at)
-  on public.media to authenticated;
+  on public.media to anon, authenticated;
 grant insert (id, owner_id, subject_kind, subject_id, field, path, thumb_path, consent_version) on public.media to authenticated;
 grant update (state, sort, is_main, removed_reason) on public.media to authenticated;
 
@@ -316,6 +318,34 @@ revoke execute on function private.media_object_ok(uuid) from public, anon;
 grant execute on function private.media_object_check(uuid) to authenticated;
 grant execute on function private.media_object_ok(uuid) to authenticated;
 
+-- N6 helpers: clients cannot read owner_id or created_at, so these answer the two questions the
+-- owner functions and the guard need. Security definer; yes or no, or two counts, about the caller only.
+create or replace function private.media_is_mine(p_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (select 1 from public.media m where m.id = p_id and m.owner_id = (select auth.uid()));
+$$;
+
+create or replace function private.media_recent_starts(p_owner uuid, out last_hour int, out last_day int)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select (count(*) filter (where m.created_at > now() - interval '1 hour'))::int, count(*)::int
+  from public.media m
+  where m.owner_id = p_owner and m.created_at > now() - interval '24 hours';
+$$;
+
+revoke execute on function private.media_is_mine(uuid) from public, anon;
+revoke execute on function private.media_recent_starts(uuid) from public, anon;
+grant execute on function private.media_is_mine(uuid) to authenticated;
+grant execute on function private.media_recent_starts(uuid) to authenticated;
+
 -- Guard. NOT security definer. Like private.guard_person_document (MA1) it tests the database role:
 -- an admin writing from the website or app gets every client rule; only security definer functions
 -- (role postgres) and service_role pass. Errors carry 'media:<code>' for the screens.
@@ -352,13 +382,11 @@ begin
       new.checked_at := null;
       new.checked_by := null;
       new.finished_at := null;
+      new.finishing_until := null;
       new.created_at := now();
       new.consented_at := case when new.consent_version is null then null else now() end;
       -- Rate limits: 60 uploads started per hour and 200 per day per person.
-      select count(*) filter (where m.created_at > now() - interval '1 hour'), count(*)
-        into v_count, v_day
-      from public.media m
-      where m.owner_id = new.owner_id and m.created_at > now() - interval '24 hours';
+      select s.last_hour, s.last_day into v_count, v_day from private.media_recent_starts(new.owner_id) s;
       if v_count >= 60 or v_day >= 200 then
         raise exception 'media:rate_limited' using errcode = '23514';
       end if;
@@ -421,7 +449,8 @@ begin
        or new.checked_at is distinct from old.checked_at or new.checked_by is distinct from old.checked_by
        or new.width is distinct from old.width or new.height is distinct from old.height
        or new.placeholder is distinct from old.placeholder or new.mime is distinct from old.mime
-       or new.bytes is distinct from old.bytes or new.finished_at is distinct from old.finished_at then
+       or new.bytes is distinct from old.bytes or new.finished_at is distinct from old.finished_at
+       or new.finishing_until is distinct from old.finishing_until then
       raise exception 'media:not_yours' using errcode = '42501';
     end if;
     if old.state = 'uploading' and (new.sort <> old.sort or new.is_main <> old.is_main) then
@@ -444,6 +473,7 @@ begin
     new.mime := v_check.mime;
     new.bytes := v_check.bytes;
     new.finished_at := now();
+    new.finishing_until := null;
   end if;
   return new;
 end;
@@ -485,12 +515,16 @@ begin
   if v_ext not in ('webp', 'jpg') then
     raise exception 'media:file_type' using errcode = '22023';
   end if;
-  -- A cover or avatar upload that never finished is given up when a new one starts.
+  if private.media_subject_owner(p_subject_kind, p_subject_id) is distinct from v_uid then
+    raise exception 'media:not_yours' using errcode = '42501';
+  end if;
+  -- A cover or avatar upload that never finished is given up when a new one starts (row level
+  -- security limits the update to the caller's own rows).
   if private.media_field_max(p_field) = 1 then
     update public.media m
     set state = 'removed', removed_reason = 'replaced'
     where m.subject_kind = p_subject_kind and m.subject_id = p_subject_id and m.field = p_field
-      and m.state = 'uploading' and m.owner_id = v_uid;
+      and m.state = 'uploading';
   end if;
   insert into public.media (id, owner_id, subject_kind, subject_id, field, path, thumb_path, consent_version)
   values (v_id, v_uid, p_subject_kind, p_subject_id, p_field,
@@ -518,9 +552,12 @@ as $$
 declare
   v_have uuid[];
 begin
+  if private.media_subject_owner(p_subject_kind, p_subject_id) is distinct from (select auth.uid()) then
+    raise exception 'media:not_yours' using errcode = '42501';
+  end if;
   select coalesce(array_agg(m.id order by m.id), '{}') into v_have from public.media m
   where m.subject_kind = p_subject_kind and m.subject_id = p_subject_id and m.field = p_field
-    and m.state not in ('uploading', 'removed') and m.owner_id = (select auth.uid());
+    and m.state not in ('uploading', 'removed');
   if cardinality(v_have) = 0 or coalesce(cardinality(p_ids), 0) <> cardinality(v_have)
      or (select array_agg(x order by x) from unnest(p_ids) x) <> v_have then
     raise exception 'media:not_yours' using errcode = '22023';
@@ -551,9 +588,12 @@ declare
   v_path text;
   v_thumb text;
 begin
+  if not private.media_is_mine(p_id) then
+    raise exception 'media:not_yours' using errcode = '42501';
+  end if;
   select m.subject_kind, m.subject_id, m.field, m.state, m.is_main, m.path, m.thumb_path
     into v_kind, v_subject, v_field, v_state, v_main, v_path, v_thumb
-  from public.media m where m.id = p_id and m.owner_id = (select auth.uid());
+  from public.media m where m.id = p_id;
   if not found then
     raise exception 'media:not_yours' using errcode = '42501';
   end if;
@@ -585,12 +625,31 @@ begin
   if (select auth.uid()) is null then
     raise exception 'media:not_yours' using errcode = '42501';
   end if;
+  -- Row level security ("Owners change their media") limits this to the caller's own rows.
   update public.media m set state = 'removed', removed_reason = 'owner'
-  where m.owner_id = (select auth.uid()) and m.state <> 'removed';
+  where m.state <> 'removed';
   get diagnostics v_count = row_count;
   return v_count;
 end;
 $$;
+
+-- N6: the owner's own photos with the consent and time columns other people never see.
+create or replace function public.my_media(p_subject_kind public.media_subject_kind, p_subject_id uuid)
+returns table (id uuid, field public.media_field, state public.media_state, consent_version text, consented_at timestamptz,
+               created_at timestamptz, finished_at timestamptz)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select m.id, m.field, m.state, m.consent_version, m.consented_at, m.created_at, m.finished_at
+  from public.media m
+  where m.owner_id = (select auth.uid()) and m.subject_kind = p_subject_kind and m.subject_id = p_subject_id
+  order by m.field, m.sort;
+$$;
+
+revoke all on function public.my_media(public.media_subject_kind, uuid) from public, anon;
+grant execute on function public.my_media(public.media_subject_kind, uuid) to authenticated;
 
 revoke all on function public.start_media_upload(public.media_field, public.media_subject_kind, uuid, text, text) from public, anon;
 revoke all on function public.reorder_media(public.media_subject_kind, uuid, public.media_field, uuid[]) from public, anon;
@@ -604,9 +663,36 @@ grant execute on function public.remove_all_my_media() to authenticated;
 -- ---------------------------------------------------------------------------
 -- 5. Service functions for the media-finish Edge Function (service role only)
 -- ---------------------------------------------------------------------------
--- Called after the function wrote the cleaned files to the field's bucket. p_user is the person whose
--- token the function verified; the row must be theirs and still uploading. The guard runs the object
--- check. A new cover or avatar replaces the old one; the old file names come back for deletion. The
+-- N3: the function claims the row before it writes anything. The row must be p_user's (whose token
+-- the function verified) and still uploading; a second claim is refused for 5 minutes, so two calls
+-- never write the same files. 'claimed' false with a finished state means "already done".
+create or replace function public.svc_claim_media(p_id uuid, p_user uuid)
+returns table (claimed boolean, state public.media_state, field public.media_field, path text, thumb_path text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r public.media;
+begin
+  select * into r from public.media m where m.id = p_id for update;
+  if not found or r.owner_id <> p_user then
+    raise exception 'media:not_yours' using errcode = '42501';
+  end if;
+  if r.state <> 'uploading' then
+    return query select false, r.state, r.field, r.path, r.thumb_path;
+    return;
+  end if;
+  if r.finishing_until > now() then
+    raise exception 'media:busy' using errcode = '23514';
+  end if;
+  update public.media m set finishing_until = now() + interval '5 minutes' where m.id = p_id;
+  return query select true, r.state, r.field, r.path, r.thumb_path;
+end;
+$$;
+
+-- Called after the function wrote the cleaned files to the field's bucket. The row must be p_user's,
+-- still uploading and claimed (svc_claim_media). The guard runs the object check. A new cover or avatar replaces the old one; the old file names come back for deletion. The
 -- first photo of a field becomes the main photo.
 create or replace function public.svc_finish_media(p_id uuid, p_user uuid, p_width int, p_height int, p_placeholder text default null)
 returns table (state public.media_state, replaced_bucket text, replaced_paths text[])
@@ -625,6 +711,9 @@ begin
   if r.state <> 'uploading' then
     return query select r.state, private.media_field_bucket(r.field), v_paths;
     return;
+  end if;
+  if r.finishing_until is null or r.finishing_until <= now() then
+    raise exception 'media:busy' using errcode = '23514';
   end if;
   if coalesce(p_width, 0) not between 1 and 4000 or coalesce(p_height, 0) not between 1 and 4000 then
     raise exception 'media:bad_size' using errcode = '23514';
@@ -660,14 +749,29 @@ language sql
 security definer
 set search_path = ''
 as $$
-  update public.media m set state = 'removed', removed_reason = 'refused'
+  update public.media m set state = 'removed', removed_reason = 'refused', finishing_until = null
   where m.id = p_id and m.owner_id = p_user and m.state = 'uploading';
 $$;
 
+-- A write failed: end the claim so "Try again" can claim the row again.
+create or replace function public.svc_release_media(p_id uuid, p_user uuid)
+returns void
+language sql
+security definer
+set search_path = ''
+as $$
+  update public.media m set finishing_until = null
+  where m.id = p_id and m.owner_id = p_user and m.state = 'uploading';
+$$;
+
+revoke all on function public.svc_claim_media(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.svc_finish_media(uuid, uuid, int, int, text) from public, anon, authenticated;
 revoke all on function public.svc_refuse_media(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.svc_release_media(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.svc_claim_media(uuid, uuid) to service_role;
 grant execute on function public.svc_finish_media(uuid, uuid, int, int, text) to service_role;
 grant execute on function public.svc_refuse_media(uuid, uuid) to service_role;
+grant execute on function public.svc_release_media(uuid, uuid) to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 6. Admin functions (two-step sign-in)
@@ -753,11 +857,12 @@ as $$
     where (m.path = p_name or m.thumb_path = p_name)
       and m.owner_id = (select auth.uid())
       and m.state = 'uploading'
+      and (m.finishing_until is null or m.finishing_until <= now())
       and m.created_at > now() - interval '24 hours');
 $$;
 
 -- A file may be deleted when no shown or waiting row uses it in that bucket. Staging copies are
--- always deletable (the finished files live in the field's bucket).
+-- deletable except while the media-finish function holds a claim on their row (N3).
 create or replace function private.media_path_deletable(p_bucket text, p_name text)
 returns boolean
 language sql
@@ -765,11 +870,16 @@ stable
 security definer
 set search_path = ''
 as $$
-  select p_bucket = 'media-staging' or not exists (
-    select 1 from public.media m
-    where (m.path = p_name or m.thumb_path = p_name)
-      and private.media_field_bucket(m.field) = p_bucket
-      and m.state not in ('uploading', 'removed'));
+  select case when p_bucket = 'media-staging' then not exists (
+      select 1 from public.media m
+      where (m.path = p_name or m.thumb_path = p_name)
+        and m.state = 'uploading' and m.finishing_until > now())
+    else not exists (
+      select 1 from public.media m
+      where (m.path = p_name or m.thumb_path = p_name)
+        and private.media_field_bucket(m.field) = p_bucket
+        and m.state not in ('uploading', 'removed'))
+  end;
 $$;
 
 revoke execute on function private.media_upload_slot(text, text) from public, anon;

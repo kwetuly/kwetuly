@@ -35,12 +35,17 @@ export default function DeleteAccountScreen() {
       if (filesError) throw filesError;
       const byBucket = new Map<string, string[]>();
       for (const f of (files ?? []) as { bucket_id: string; name: string }[]) byBucket.set(f.bucket_id, [...(byBucket.get(f.bucket_id) ?? []), f.name]);
-      const mediaBuckets = new Set(['media', 'media-pending', 'media-staging']);
+      // Every file the person may delete must really be gone (review N5), or the account stays.
+      // TODO(legal): `verification` is the one exception. Reviewed ID and role documents are kept for
+      // the retention periods in private.retention_days() (proposals waiting for legal and the
+      // advocate, H3); the verification-sweep removes them after the account is gone. Make this strict
+      // too once legal confirms nothing must be kept.
+      const keptForLegal = new Set(['verification']);
       for (const [bucket, names] of byBucket) {
         for (let i = 0; i < names.length; i += 100) {
           const batch = names.slice(i, i + 100);
           const { data: gone, error: removeError } = await supabase.storage.from(bucket).remove(batch);
-          if (mediaBuckets.has(bucket) && (removeError || (gone ?? []).length !== batch.length)) throw removeError ?? new Error('Photo files were not deleted');
+          if (!keptForLegal.has(bucket) && (removeError || (gone ?? []).length !== batch.length)) throw removeError ?? new Error('Files were not deleted');
         }
       }
       const { error } = await supabase.rpc('delete_my_account');

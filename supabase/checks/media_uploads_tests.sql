@@ -124,6 +124,15 @@ select pg_temp.put('media', thumb, 90000, 'image/webp') from t_ids where k = 'co
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
 select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667)$q$,
+  'finish without a claim (N3)');
+select pg_temp.expect_error($q$select * from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'b2b2b2b2-0000-4000-8000-0000000000b2')$q$,
+  'claim for another person');
+select pg_temp.check((select claimed from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1')), 'first claim');
+select pg_temp.expect_error($q$select * from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1')$q$,
+  'second claim within 5 minutes (N3)');
+select pg_temp.check((select not private.media_path_deletable('media-staging', path) from t_ids where k = 'cover2'), 'staging file kept while claimed (N3)');
+select pg_temp.check((select not private.media_upload_slot('media-staging', path) from t_ids where k = 'cover2'), 'no upload while claimed (N3)');
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667)$q$,
   'finish with a cache header other than max-age=3600 (M4)');
 select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'b2b2b2b2-0000-4000-8000-0000000000b2', 2000, 667)$q$,
   'finish for another person');
@@ -176,6 +185,8 @@ select pg_temp.put('media', m.path, 400000, 'image/webp'), pg_temp.put('media', 
 from public.media m where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
+select public.svc_claim_media(m.id, m.owner_id) from public.media m
+where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
 select public.svc_finish_media(m.id, m.owner_id, 1600, 1067) from public.media m
 where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
 reset role;
@@ -196,6 +207,10 @@ select set_config('request.jwt.claims', '{"sub":"b2b2b2b2-0000-4000-8000-0000000
 select pg_temp.check((select count(*) = 3 from public.media where state in ('live', 'checked')), 'others see the shown photos only');
 select pg_temp.check((select count(*) = 0 from public.media where state = 'uploading'), 'others do not see unfinished uploads');
 select pg_temp.expect_error($q$select * from public.remove_my_media((select id from t_ids where k = 'cover2'))$q$, 'other removes the cover');
+select pg_temp.expect_error($q$select consent_version from public.media limit 1$q$, 'signed-in non-owner reads consent (N6)');
+select pg_temp.expect_error($q$select owner_id from public.media limit 1$q$, 'signed-in non-owner reads owner_id (N6)');
+select pg_temp.check((select count(*) = 0 from public.my_media('guide', '97979797-0000-4000-8000-000000000097')), 'my_media shows nothing of other people');
+select pg_temp.check(public.remove_all_my_media() = 0, 'remove_all_my_media touches nobody else''s photos');
 select pg_temp.expect_error($q$select * from public.admin_check_media((select id from t_ids where k = 'cover2'), 'checked')$q$, 'non-admin checks');
 select pg_temp.expect_error($q$select * from public.admin_media_list('live', 10)$q$, 'non-admin lists');
 select pg_temp.expect_error($q$select * from public.svc_media_sweep_list(10)$q$, 'client calls the sweep list');
@@ -238,6 +253,8 @@ reset role;
 select set_config('request.jwt.claims', '{"sub":"a1a1a1a1-0000-4000-8000-0000000000a1","role":"authenticated","aal":"aal1"}', true);
 set local role authenticated;
 select pg_temp.check((select count(*) > 0 from public.my_uploaded_files() where bucket_id = 'media'), 'account deletion lists public photo files by folder');
+select pg_temp.check((select count(*) >= 3 and bool_and(consent_version is not null) from public.my_media('guide', '97979797-0000-4000-8000-000000000097')),
+                     'owner reads consent through my_media (N6)');
 select pg_temp.check(public.remove_all_my_media() >= 3, 'remove_all_my_media removes every shown photo');
 select pg_temp.check((select count(*) = 0 from public.media where state <> 'removed'), 'nothing of the owner is left shown');
 select pg_temp.check((select bool_and(private.media_path_deletable(bucket_id, name)) from public.my_uploaded_files()

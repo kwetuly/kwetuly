@@ -71,6 +71,18 @@ describe('uploads match the media migration', () => {
     expect(sql).toContain("is distinct from 'max-age=3600'");
     expect(sql).not.toMatch(/grant [^;]*finish_media[^;]* to authenticated/);
   });
+  it('the media-finish function uses the same sizes per field', () => {
+    const fn = readFileSync(new URL('../../../supabase/functions/media-finish/index.ts', import.meta.url), 'utf8');
+    const table = (name: string) => Object.fromEntries([...fn.match(new RegExp(`const ${name}: Record<string, number> = \\{([^}]*)\\}`))![1].matchAll(/(\w+): (\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    const bytes = table('MAX_BYTES');
+    const thumbs = table('THUMB_SIDE');
+    for (const f of mediaFields) {
+      expect(bytes[f]).toBe(UPLOAD_SPECS[f].maxBytes);
+      expect(thumbs[f]).toBe(UPLOAD_SPECS[f].thumbSide);
+      expect(thumbs[f]).toBeLessThanOrEqual(800);
+    }
+    expect(fn).toContain(`const THUMB_MAX = ${MEDIA_THUMB_MAX_BYTES};`);
+  });
   it('consent version fits the SQL pattern', () => {
     expect(PHOTO_CONSENT_VERSION).toMatch(/^[A-Za-z0-9._-]{1,40}$/);
   });
