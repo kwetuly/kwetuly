@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { updateTag } from 'next/cache';
-import { FEATURE_ID_PATTERN, featureDef, isLockedOff, tanzaniaToday } from '@kwetuly/shared';
+import { FEATURE_ID_PATTERN, featureDef, isLockedOff, parseFeatureRows, tanzaniaToday } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { FEATURES_CACHE_TAG } from '@/lib/features';
@@ -10,7 +10,8 @@ import { createClient } from '@/lib/supabase/server';
 
 // Feature switches. The browser only says which switch and what to change; everything is checked again
 // here and then by public.admin_set_feature (admins with two-step sign-in, known ids, payments_live and
-// save_to_travel locked off, valid dates), which also logs every change (migration 20261126000000).
+// valid dates; payments_live never on and never a team preview), which also logs every change
+// (migration 20261126000000).
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 async function adminOnly(formData: FormData) {
@@ -37,19 +38,17 @@ function code(message: string | undefined): string {
   return 'failed';
 }
 
-type Current = { on: boolean; legal: 'pending' | 'cleared' | 'none'; teamOnly: boolean };
-
 function readId(formData: FormData): string | null {
   const id = String(formData.get('id') ?? '');
   return FEATURE_ID_PATTERN.test(id) && featureDef(id) && !featureDef(id)?.hidden ? id : null;
 }
 
-async function current(id: string): Promise<Current | null> {
+// The current on/off of one switch, from its public row (null = no row).
+async function current(id: string): Promise<{ on: boolean } | null> {
   const supabase = await createClient();
-  const { data } = await supabase.from('site_settings').select('value').eq('key', `feature.${id}`).maybeSingle<{ value: Record<string, unknown> }>();
-  if (!data || typeof data.value?.on !== 'boolean') return null;
-  const legal = data.value.legal === 'pending' || data.value.legal === 'cleared' ? data.value.legal : 'none';
-  return { on: data.value.on, legal, teamOnly: data.value.team_only === true };
+  const { data } = await supabase.from('site_settings').select('key, value').eq('key', `feature.${id}`).maybeSingle<{ key: string; value: unknown }>();
+  const map = parseFeatureRows(data ? [data] : []);
+  return id in map ? { on: map[id] } : null;
 }
 
 async function save(back: string, id: string, on: boolean, legal: string | null, checkedOn: string | null, teamOnly: boolean | null) {
@@ -86,6 +85,7 @@ export async function setFeatureTeamOnly(formData: FormData) {
   if (!id) done(back, null, { e: 'unknown' });
   const want = String(formData.get('team_only') ?? '');
   if (want !== 'true' && want !== 'false') done(back, id, { e: 'failed' });
+  if (want === 'true' && isLockedOff(id)) done(back, id, { e: 'locked' });
   const now = await current(id);
   if (!now) done(back, id, { e: 'unknown' });
   await save(back, id, now.on, null, null, want === 'true');

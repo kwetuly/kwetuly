@@ -1,5 +1,5 @@
-// Texts of the admin feature-switch page /admin/features (slice W1-1). Admin texts: English and
-// Kiswahili. Kiswahili is a draft for native-speaker review. Feature names live in ../features.ts.
+// Texts of the admin feature-switch page /admin/features (slice W1-1). Admin-only: imported by the
+// server-side admin page only, never through the @kwetuly/shared barrel. English and Kiswahili (draft).
 
 export type FeaturesText = {
   title: string;

@@ -27,4 +27,3 @@ export { verificationText, fillText, type VerificationText } from './verificatio
 export { reservationText, type ReservationText } from './reservations';
 export { RESERVE_TEXT, reserveText, type ReserveText } from './reserve';
 export { reservationInboxText, type ReservationInboxText } from './reservation-inbox';
-export { FEATURES_TEXT, featuresText, type FeaturesText } from './features';

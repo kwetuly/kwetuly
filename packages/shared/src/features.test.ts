@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import * as barrel from './index';
 import {
   FEATURES,
   FEATURE_ID_PATTERN,
@@ -7,11 +8,11 @@ import {
   LOCKED_OFF_FEATURES,
   featureName,
   isFeatureOn,
-  isFeatureVisible,
   isLockedOff,
   parseFeatureRows,
 } from './features';
-import { FEATURES_TEXT, featuresText } from './dictionaries/features';
+import { FEATURE_ADMIN } from './admin/features-admin';
+import { FEATURES_TEXT, featuresText } from './admin/features-text';
 
 const dir = new URL('../../../supabase/migrations/', import.meta.url);
 const allSql = readdirSync(dir)
@@ -19,6 +20,7 @@ const allSql = readdirSync(dir)
   .map((name) => readFileSync(new URL(name, dir), 'utf8'))
   .join('\n');
 const adminSql = readFileSync(new URL('20261126000000_feature_switch_admin.sql', dir), 'utf8');
+const MONEY_API = ['split_settlement', 'mobile_money', 'marketplace_checkout', 'instalments', 'crew_payouts', 'tips'];
 
 describe('feature list', () => {
   it('ids are unique and match the database pattern', () => {
@@ -27,24 +29,28 @@ describe('feature list', () => {
     for (const id of ids) expect(id).toMatch(FEATURE_ID_PATTERN);
   });
 
-  it('every id is seeded by a migration', () => {
-    for (const f of FEATURES) expect(allSql, f.id).toContain(`'feature.${f.id}'`);
-  });
-
-  it('seeded legal flag matches legalPending', () => {
+  it('every id is seeded by a migration, with its admin data', () => {
     for (const f of FEATURES) {
+      expect(allSql, f.id).toContain(`'feature.${f.id}'`);
       const legal = f.legalPending ? 'pending' : 'none';
-      const inserted = new RegExp(`^\\s+\\('feature\\.${f.id}',\\s+'\\{`, 'm').test(adminSql)
-        ? new RegExp(`\\('feature\\.${f.id}',\\s+'\\{"on": true, "legal": "${legal}"`).test(adminSql)
-        : new RegExp(`\\('${f.id}',\\s+'${legal}'\\)`).test(adminSql);
-      expect(inserted, f.id).toBe(true);
+      expect(new RegExp(`^\\s+\\('${f.id}',\\s+'${legal}'\\)`, 'm').test(adminSql), f.id).toBe(true);
     }
   });
 
-  it('legal questions go with the legal flag', () => {
+  it('new public rows are exactly {"on": true}', () => {
+    const inserted = [...adminSql.matchAll(/^\s+\('feature\.([a-z0-9_]+)',\s+'(.*)'\)/gm)];
+    expect(inserted.length).toBe(52);
+    for (const [, id, value] of inserted) expect(value, id).toBe('{"on": true}');
+    expect(inserted.map((m) => m[1])).not.toContain('payments_live');
+    expect(inserted.map((m) => m[1])).not.toContain('reservation_commission_billing');
+  });
+
+  it('admin data: one entry per feature, a question exactly when legal is pending', () => {
+    expect(Object.keys(FEATURE_ADMIN).sort()).toEqual(FEATURES.map((f) => f.id).sort());
     for (const f of FEATURES) {
-      expect(f.legalPending, f.id).toBe(f.legalQuestion !== null);
-      if (f.legalQuestion) expect(f.legalQuestion.length, f.id).toBeLessThan(400);
+      const q = FEATURE_ADMIN[f.id].legalQuestion;
+      expect(f.legalPending, f.id).toBe(q !== null);
+      if (q) expect(q.length, f.id).toBeLessThan(400);
     }
   });
 
@@ -52,19 +58,27 @@ describe('feature list', () => {
     const pending = ['vip_hosts', 'investment_hosts', 'driver_guide', 'service_consultant', 'crew_accounts', 'crew_verification_fees',
       'service_trip_runner', 'service_photographer', 'service_translator', 'family_updates', 'academy', 'price_alerts', 'marketplace',
       'tips', 'split_settlement', 'mobile_money', 'crew_payouts', 'instalments', 'insurance_rescue', 'meet_and_greet',
-      'transfers_driving', 'sim_listings', 'operator_channel', 'ship_home', 'corporate_groups', 'jobs_contact_fees', 'spa_reservations', 'save_to_travel'];
+      'transfers_driving', 'sim_listings', 'operator_channel', 'ship_home', 'corporate_groups', 'jobs_contact_fees', 'spa_reservations',
+      'save_to_travel', 'payments_manual'];
     for (const id of pending) expect(FEATURES.find((f) => f.id === id)?.legalPending, id).toBe(true);
   });
 
-  it('locked switches stay off and match the database lock', () => {
-    expect([...LOCKED_OFF_FEATURES].sort()).toEqual(FEATURES.filter((f) => f.lockedOff).map((f) => f.id).sort());
-    expect(adminSql).toContain(`p_id = 'payments_live'`);
-    expect(adminSql).toContain(`new.key = 'feature.payments_live'`);
+  it('payments_live is the only lock and matches the database', () => {
+    expect([...LOCKED_OFF_FEATURES]).toEqual(['payments_live']);
+    expect(FEATURES.filter((f) => f.lockedOff).map((f) => f.id)).toEqual(['payments_live']);
+    expect(adminSql).toContain(`if p_id = 'payments_live' and (p_on or coalesce(p_team_only, false)) then`);
+    expect(adminSql).toContain(`new.key = 'feature.payments_live' and new.value is distinct from '{"on": false}'::jsonb`);
+    expect(adminSql).toContain(`check (feature_id <> 'payments_live' or not team_only)`);
     expect(isLockedOff('payments_live')).toBe(true);
-    expect(isLockedOff('stories')).toBe(false);
+    expect(isLockedOff('save_to_travel')).toBe(false);
     expect(FEATURES.filter((f) => f.hidden)).toEqual([]);
-    expect(adminSql).not.toMatch(/'feature\.save_to_travel'.*false/);
-    expect(adminSql).not.toMatch(/'feature\.payments_live',\s+'\{"on": true/);
+  });
+
+  it('money gates: API paths need payments_live, Lipa does not', () => {
+    expect(adminSql).toContain(`select private.feature_on('payments_live') and private.feature_on(p_id);`);
+    expect(adminSql).toContain(`select private.feature_on('payments_manual');`);
+    for (const id of MONEY_API) expect(adminSql, id).toContain(id);
+    for (const id of [...MONEY_API, 'payments_manual']) expect(FEATURES.find((f) => f.id === id)?.part, id).toMatch(/^(B|marketplace)$/);
   });
 
   it('every part has a name and every feature a known part', () => {
@@ -80,11 +94,25 @@ describe('feature list', () => {
   });
 });
 
+describe('admin-only data stays out of the public barrel (security review M3)', () => {
+  it('no questions, board references or admin texts in @kwetuly/shared', () => {
+    const exported = barrel as Record<string, unknown>;
+    expect(exported.FEATURE_ADMIN).toBeUndefined();
+    expect(exported.FEATURES_TEXT).toBeUndefined();
+    expect(exported.featuresText).toBeUndefined();
+    const publicText = JSON.stringify(FEATURES);
+    for (const info of Object.values(FEATURE_ADMIN)) {
+      if (info.legalQuestion) expect(publicText).not.toContain(info.legalQuestion);
+    }
+    expect(publicText).not.toContain('boardRef');
+    expect(publicText).not.toContain('legalQuestion');
+  });
+});
+
 describe('reading switches', () => {
   const rows = [
-    { key: 'feature.stories', value: { on: true, legal: 'none', legal_checked_on: null, team_only: false } },
-    { key: 'feature.farm_page', value: { on: false, legal: 'none', team_only: true } },
-    { key: 'feature.marketplace', value: { on: true, legal: 'cleared', legal_checked_on: '2026-11-20' } },
+    { key: 'feature.stories', value: { on: true } },
+    { key: 'feature.farm_page', value: { on: false } },
     { key: 'feature.broken', value: { on: 'yes' } },
     { key: 'feature.Bad-Id', value: { on: true } },
     { key: 'badge_fee', value: { amount_usd: null } },
@@ -93,21 +121,11 @@ describe('reading switches', () => {
 
   it('missing or broken rows read as off', () => {
     expect(isFeatureOn(map, 'stories')).toBe(true);
+    expect(isFeatureOn(map, 'farm_page')).toBe(false);
     expect(isFeatureOn(map, 'broken')).toBe(false);
     expect(isFeatureOn(map, 'no_row')).toBe(false);
-    expect(Object.keys(map).sort()).toEqual(['farm_page', 'marketplace', 'stories']);
+    expect(Object.keys(map).sort()).toEqual(['farm_page', 'stories']);
     expect(parseFeatureRows(null)).toEqual({});
-  });
-
-  it('team-only preview for admins only', () => {
-    expect(isFeatureVisible(map, 'farm_page', false)).toBe(false);
-    expect(isFeatureVisible(map, 'farm_page', true)).toBe(true);
-    expect(isFeatureVisible(map, 'no_row', true)).toBe(false);
-  });
-
-  it('legal fields', () => {
-    expect(map.marketplace).toEqual({ on: true, legal: 'cleared', legalCheckedOn: '2026-11-20', teamOnly: false });
-    expect(map.farm_page.legal).toBe('none');
   });
 });
 

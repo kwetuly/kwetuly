@@ -1,34 +1,26 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import {
-  FEATURES,
-  FEATURE_PARTS,
-  featureName,
-  featuresText,
-  isNotAppliedError,
-  parseFeatureRows,
-  tanzaniaToday,
-  type FeatureDef,
-  type FeatureState,
-  type FeaturesText,
-} from '@kwetuly/shared';
+import { FEATURES, FEATURE_PARTS, featureName, isNotAppliedError, tanzaniaToday, type FeatureDef } from '@kwetuly/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 import { AdminMenu } from '../admin-menu';
 import { setFeatureLegal, setFeatureOn, setFeatureTeamOnly } from './actions';
+import { FEATURE_ADMIN, featuresText, type FeatureAdminRow, type FeatureLegal, type FeaturesText } from './admin-data';
 
 export const metadata: Metadata = { title: 'Feature switches', robots: { index: false } };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type LastChange = { feature_id: string; action: string; changed_by_name: string; changed_at: string };
-type LogRow = { id: number; feature_id: string; action: string; old_value: Record<string, unknown> | null; new_value: Record<string, unknown> | null; changed_by_name: string; changed_at: string };
+type State = { hasRow: boolean; on: boolean; legal: FeatureLegal; legalCheckedOn: string | null; teamOnly: boolean };
+type LogRow = { id: number; feature_id: string; kind: 'switch' | 'meta'; action: string; old_value: Record<string, unknown> | null; new_value: Record<string, unknown> | null; changed_by_name: string; changed_at: string };
 
-// Walter's switch page (slice W1-1, docs/team/design-2026-11-24.md section 2.4). The list and the legal
-// questions come from packages/shared/src/features.ts; on/off, legal state and team preview come from the
-// database rows. Hidden switches (save_to_travel) are not listed. Admin texts: English and Kiswahili.
+// Walter's switch page (slice W1-1, docs/team/design-2026-11-24.md section 2.4). The list comes from
+// packages/shared/src/features.ts, the questions and board references from the admin-only module
+// (./admin-data, server only); on/off, legal state and team preview from public.admin_feature_rows()
+// (admins only; the legal state is not public). Admin texts: English and Kiswahili.
 const when = (iso: string) => new Date(iso).toLocaleString('en-GB', { timeZone: 'Africa/Dar_es_Salaam', dateStyle: 'medium', timeStyle: 'short' });
 
 export default async function FeaturesPage({ searchParams }: { searchParams: SearchParams }) {
@@ -63,19 +55,22 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
 
   const supabase = await createClient();
   const [rows, last, log] = await Promise.all([
-    supabase.from('site_settings').select('key, value').like('key', 'feature.%').limit(500),
+    supabase.rpc('admin_feature_rows'),
     supabase.rpc('admin_feature_last_changes'),
     supabase.rpc('admin_feature_log', { p_limit: 50 }),
   ]);
   if (rows.error || last.error) {
     return (
       <section role="alert" className="card mt-4 space-y-3">
-        <p>{isNotAppliedError(last.error) ? t.notApplied : t.loadFailed}</p>
+        <p>{isNotAppliedError(rows.error ?? last.error) ? t.notApplied : t.loadFailed}</p>
         <Link href={`/${locale}/admin/features`} className="btn-outline">{t.tryAgain}</Link>
       </section>
     );
   }
-  const states = parseFeatureRows(rows.data as { key: string; value: unknown }[]);
+  const states: Record<string, State> = {};
+  for (const r of (rows.data ?? []) as FeatureAdminRow[]) {
+    states[r.feature_id] = { hasRow: r.has_row, on: r.on, legal: r.legal, legalCheckedOn: r.legal_checked_on, teamOnly: r.team_only };
+  }
   const lastById = new Map(((last.data ?? []) as LastChange[]).map((r) => [r.feature_id, r]));
   const logRows = (log.data ?? []) as LogRow[];
   const today = tanzaniaToday();
@@ -126,10 +121,12 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
 
 function describe(l: LogRow, t: FeaturesText): string {
   const onText = (v: Record<string, unknown> | null) => (v?.on === true ? t.on : t.off);
-  if (l.action === 'created') return `${t.setupChange} (${onText(l.new_value)})`;
+  if (l.action === 'created') {
+    return l.kind === 'meta' ? `${t.setupChange} (legal: ${String(l.new_value?.legal ?? 'none')})` : `${t.setupChange} (${onText(l.new_value)})`;
+  }
   if (l.action === 'deleted') return 'deleted';
   const parts: string[] = [];
-  if (l.old_value?.on !== l.new_value?.on) parts.push(`${onText(l.old_value)} to ${onText(l.new_value)}`);
+  if (l.kind === 'switch' && l.old_value?.on !== l.new_value?.on) parts.push(`${onText(l.old_value)} to ${onText(l.new_value)}`);
   if (l.old_value?.legal !== l.new_value?.legal) parts.push(`legal: ${String(l.old_value?.legal ?? 'none')} to ${String(l.new_value?.legal ?? 'none')}`);
   if (l.old_value?.team_only !== l.new_value?.team_only) parts.push(`${t.teamOnly}: ${l.new_value?.team_only === true ? t.on : t.off}`);
   return parts.length ? parts.join(', ') : 'saved';
@@ -146,18 +143,19 @@ function Hidden({ id, locale, legalOnly }: { id: string; locale: Locale; legalOn
 }
 
 function FeatureRow({ def, state, last, locale, t, legalOnly, today }: {
-  def: FeatureDef; state: FeatureState | undefined; last: LastChange | undefined; locale: Locale; t: FeaturesText; legalOnly: boolean; today: string;
+  def: FeatureDef; state: State | undefined; last: LastChange | undefined; locale: Locale; t: FeaturesText; legalOnly: boolean; today: string;
 }) {
   const name = featureName(def.id, locale);
   const on = state?.on === true;
   const legal = state?.legal ?? (def.legalPending ? 'pending' : 'none');
+  const admin = FEATURE_ADMIN[def.id];
   return (
     <li id={`feature-${def.id}`} className="card space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="font-semibold">{name}</h3>
           <p className="text-sm text-muted">
-            <code>{def.id}</code> · {t.boardRef} {def.boardRef}
+            <code>{def.id}</code>{admin ? ` · ${t.boardRef} ${admin.boardRef}` : ''}
           </p>
         </div>
         <span className={`rounded-[5px] px-3 py-1 text-sm font-bold ${on ? 'bg-mint text-forest' : 'bg-surface text-charcoal'}`}>
@@ -173,11 +171,11 @@ function FeatureRow({ def, state, last, locale, t, legalOnly, today }: {
         {state?.teamOnly && <span className="rounded-[5px] bg-sand px-3 py-1 text-xs font-bold text-charcoal">{t.teamOnly}</span>}
       </div>
 
-      {def.legalQuestion && (
-        <p className="text-sm"><span className="font-semibold">{t.legalQuestion}:</span> {def.legalQuestion}</p>
+      {admin?.legalQuestion && (
+        <p className="text-sm"><span className="font-semibold">{t.legalQuestion}:</span> {admin.legalQuestion}</p>
       )}
 
-      {!state ? (
+      {!state?.hasRow ? (
         <p className="text-sm text-muted">{t.missingRow}</p>
       ) : (
         <div className="flex flex-wrap items-end gap-3">
