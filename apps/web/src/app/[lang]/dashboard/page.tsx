@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, type DocumentStatus } from '@kwetuly/shared';
+import { StepProgress } from '@/components/step-progress';
+import { BookingLinkEntry } from './booking-link/entry';
 import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -147,7 +149,12 @@ async function GuideEditor({
         .eq('guide_id', guide.id)
         .maybeSingle<PrivateDetails>()
     : { data: null };
+  // Step 4 "your trips": packages sent for checking or approved (drafts and refused ones do not count).
+  const { count: tripCount } = guide
+    ? await supabase.from('guide_packages').select('id', { count: 'exact', head: true }).eq('guide_id', guide.id).in('status', ['pending', 'approved'])
+    : { count: 0 };
   const d = t.dashboard;
+  const g = guideProgressText(locale);
   const now = await today();
   const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
@@ -169,27 +176,21 @@ async function GuideEditor({
     slug: guideStatusText(locale).slugTaken,
     ...Object.fromEntries(['link_facebook', 'link_instagram', 'link_tiktok', 'links'].map((code) => [code, linkErrorMessage(code, locale) ?? t.auth.error])),
   };
-  const stepDone: Record<GuideStep, boolean> = {
-    basics: !!guide,
-    work: (guide?.specialties.length ?? 0) > 0 && !!guide?.headline,
-    documents: !!details?.id_document_path && !!details?.license_document_path,
-    story: !!guide?.bio,
-    calls: !!guide?.call_enabled,
-  };
+  const progress = guideStepProgress({ guide, idDocument: !!details?.id_document_path, licenceDocument: !!details?.license_document_path, tripCount: tripCount ?? 0 });
+  const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
 
   if (step) {
     const index = GUIDE_STEPS.indexOf(step);
     const next = GUIDE_STEPS[index + 1];
     return (
       <>
-        <p className="text-sm font-semibold text-leaf-dark">{d.stepOf.replace('{n}', String(index + 1)).replace('{total}', String(GUIDE_STEPS.length))}</p>
-        <h1 className="mt-1 text-3xl font-bold">{d.steps[index]}</h1>
-        {!guide && <p className="mt-2 text-muted">{d.stepsIntro}</p>}
-        <ol className="mt-4 flex gap-1.5" aria-hidden>
-          {GUIDE_STEPS.map((s, i) => (
-            <li key={s} className={`h-1.5 flex-1 rounded-[5px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
-          ))}
-        </ol>
+        <p className="text-sm font-semibold text-leaf-dark">{g.stepOf.replace('{n}', String(index + 1)).replace('{total}', String(GUIDE_STEPS.length))}</p>
+        <h1 className="mt-1 text-3xl font-bold">
+          {g.steps[index]}
+          {progress.steps[index].optional && <span className="ml-2 align-middle text-sm font-semibold text-muted">({g.optional})</span>}
+        </h1>
+        {!guide && <p className="mt-2 text-muted">{g.stepsIntro}</p>}
+        <StepProgress progress={progress} titles={g.steps} line={guideProgressLine(progress, locale)} labels={progressLabels} current={index} />
         {/* Refusals come back into the form, which keeps everything typed (KeepForm). */}
         {/* key: a message from one step never shows on the next. */}
         <KeepForm key={step} action={saveGuideProfile} messages={stepMessages} fallback={t.auth.error} className="card mt-6 space-y-5">
@@ -273,8 +274,19 @@ async function GuideEditor({
             </>
           )}
 
+          {/* Nothing to save here: trips are packages, made on their own page. "Save and continue" moves on. */}
+          {step === 'trips' && (
+            <>
+              <p className="text-sm text-muted">{g.tripsIntro}</p>
+              <p className="font-semibold">{!tripCount ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</p>
+              <Link href={`/${locale}/dashboard/packages${tripCount ? '' : '?new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
+            </>
+          )}
+
           {step === 'story' && (
             <>
+              {/* TODO(S4/S6 cover_gallery): cover photo and gallery fields go here once the photo manager exists. */}
+              <p className="text-sm text-muted">{g.coverSoon}</p>
               <Field label={d.bio}>
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
@@ -367,21 +379,30 @@ async function GuideEditor({
       )}
       {status.error && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : t.auth.error)}</p>}
 
-      {/* The sign-up steps, each with its own short form. */}
+      {/* The progress line and the sign-up steps, each with its own short form. */}
+      <StepProgress progress={progress} titles={g.steps} line={guideProgressLine(progress, locale)} labels={progressLabels} />
       <ol className="card mt-6 divide-y divide-line">
         {GUIDE_STEPS.map((s, i) => (
           <li key={s} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-            {stepDone[s] ? <CircleCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-5 shrink-0 text-muted" aria-hidden />}
-            <span className="font-semibold">
-              {i + 1}. {d.steps[i]}
+            {progress.steps[i].done ? <CircleCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-5 shrink-0 text-muted" aria-hidden />}
+            <span className="min-w-0">
+              <span className="block font-semibold">
+                {i + 1}. {g.steps[i]}
+              </span>
+              <span className="block text-xs text-muted">
+                {progress.steps[i].done ? g.done : g.todo}
+                {progress.steps[i].optional && ` · ${g.optional}`}
+                {' · '}
+                {g.stepHints[i]}
+              </span>
             </span>
-            <span className="text-xs text-muted">{s === 'calls' ? d.optionalStep : stepDone[s] ? d.stepDone : d.stepTodo}</span>
-            <Link href={stepHref(s)} className={`ml-auto px-4 py-2 text-sm ${stepDone[s] ? 'btn-outline' : 'btn'}`}>
+            <Link href={stepHref(s)} className={`ml-auto shrink-0 px-4 py-2 text-sm ${progress.steps[i].done ? 'btn-outline' : 'btn'}`} aria-label={`${d.edit}: ${g.steps[i]}`}>
               {d.edit}
             </Link>
           </li>
         ))}
       </ol>
+      {guide && <BookingLinkEntry locale={locale} />}
       {guide && (
         <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
           <span className="flex-1">

@@ -66,4 +66,7 @@ export const GLYPHS = {
   shield: { ios: 'checkmark.shield', android: 'verified_user' },
   card: { ios: 'creditcard', android: 'credit_card' },
   admin: { ios: 'gearshape', android: 'admin_panel_settings' },
+  link: { ios: 'link', android: 'link' },
+  qr: { ios: 'qrcode', android: 'qr_code_2' },
+  copy: { ios: 'doc.on.doc', android: 'content_copy' },
 } as const satisfies Record<string, GlyphName>;

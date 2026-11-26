@@ -1,5 +1,7 @@
-/** The guide sign-up steps, in order. Each step's form saves only its own fields. */
-export const GUIDE_STEPS = ['basics', 'work', 'documents', 'story', 'calls'] as const;
-export type GuideStep = (typeof GUIDE_STEPS)[number];
+import { GUIDE_STEP_IDS, isGuideStepId, type GuideStepId } from '@kwetuly/shared';
 
-export const isGuideStep = (value: unknown): value is GuideStep => (GUIDE_STEPS as readonly unknown[]).includes(value);
+/** The six guide sign-up steps, in order (shared with the app). Each step's form saves only its own fields. */
+export const GUIDE_STEPS = GUIDE_STEP_IDS;
+export type GuideStep = GuideStepId;
+
+export const isGuideStep = isGuideStepId;
