@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { uploadsText } from './dictionaries/uploads';
 import {
+  MEDIA_STAGING_BUCKET,
   MEDIA_THUMB_MAX_BYTES,
   PHOTO_CONSENT_VERSION,
   UPLOAD_SPECS,
@@ -63,6 +64,12 @@ describe('uploads match the media migration', () => {
   it('error codes the screens know are raised by the migration', () => {
     // Raised as 'media:<code>', or returned as a reason by private.media_object_check() and raised as 'media:%'.
     for (const code of mediaErrorCodes) expect(sql.includes(`media:${code}`) || sql.includes(`'${code}'`), code).toBe(true);
+  });
+  it('uploads go to the private staging bucket only (review M1) and finished files carry the cache header (M4)', () => {
+    expect(sql).toContain(`('${MEDIA_STAGING_BUCKET}', '${MEDIA_STAGING_BUCKET}', false, 2097152, array['image/webp', 'image/jpeg'])`);
+    expect(sql).toContain("with check (bucket_id = 'media-staging'");
+    expect(sql).toContain("is distinct from 'max-age=3600'");
+    expect(sql).not.toMatch(/grant [^;]*finish_media[^;]* to authenticated/);
   });
   it('consent version fits the SQL pattern', () => {
     expect(PHOTO_CONSENT_VERSION).toMatch(/^[A-Za-z0-9._-]{1,40}$/);

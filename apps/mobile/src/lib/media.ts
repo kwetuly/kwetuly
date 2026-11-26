@@ -1,20 +1,23 @@
 import { createUploadTask, FileSystemUploadType } from 'expo-file-system/legacy';
 import {
   MEDIA_COLUMNS,
+  MEDIA_STAGING_BUCKET,
   PHOTO_CONSENT_VERSION,
   UPLOAD_SPECS,
   mediaErrorCode,
+  mediaErrorCodes,
   type MediaErrorCode,
   type MediaField,
   type MediaItem,
   type MediaSubjectKind,
 } from '@kwetuly/shared';
-import type { CleanUpload } from './clean-photo';
 import { supabase } from './supabase';
 
 // The one upload system in the app (slice S4), the same tables and rules as the website's
 // apps/web/src/lib/media.ts: the database makes the row and checks the stored files; the files go
-// straight to Storage through signed upload URLs for exactly the row's two names, with progress.
+// to the PRIVATE `media-staging` bucket through signed upload URLs for exactly the row's two names,
+// with progress. The `media-finish` Edge Function then checks the bytes, removes metadata and only
+// then publishes the photo (security review M1).
 
 export class MediaError extends Error {
   constructor(public code: MediaErrorCode) {
@@ -59,7 +62,7 @@ export async function startUpload(input: { field: MediaField; subjectKind: Media
     })
     .single<{ id: string; bucket: string; path: string; thumb_path: string }>();
   if (error || !data) fail(error?.message);
-  return sign(data!.id, data!.bucket, data!.path, data!.thumb_path);
+  return sign(data!.id, MEDIA_STAGING_BUCKET, data!.path, data!.thumb_path);
 }
 
 /** New signed URLs for a row that is still uploading ("Try again"). */
@@ -67,7 +70,7 @@ export async function resumeUpload(id: string): Promise<UploadTarget> {
   const { data, error } = await supabase.from('media').select('id, field, path, thumb_path, state').eq('id', id).maybeSingle<{ id: string; field: MediaField; path: string; thumb_path: string; state: string }>();
   if (error) fail(error.message);
   if (!data || data.state !== 'uploading') throw new MediaError('file_missing');
-  return sign(data.id, UPLOAD_SPECS[data.field].bucket, data.path, data.thumb_path);
+  return sign(data.id, MEDIA_STAGING_BUCKET, data.path, data.thumb_path);
 }
 
 /** Sends one file to its signed URL with progress (0 to 1). A file already stored counts as done. */
@@ -95,15 +98,22 @@ async function removeFiles(bucket: string | null | undefined, paths: string[] | 
   if (bucket && paths?.length) await supabase.storage.from(bucket).remove(paths).catch(() => undefined);
 }
 
-export async function finishUpload(id: string, photo: CleanUpload): Promise<{ item: MediaItem; replaced: string[] }> {
-  const { data, error } = await supabase
-    .rpc('finish_media_upload', { p_id: id, p_width: photo.main.width, p_height: photo.main.height, p_placeholder: null })
-    .single<{ state: string; replaced_bucket: string; replaced_paths: string[] }>();
-  if (error || !data) fail(error?.message);
-  await removeFiles(data!.replaced_bucket, data!.replaced_paths);
+/** After both files are in staging: the media-finish function checks and publishes them (it reads the real size from the file). */
+export async function finishUpload(id: string): Promise<{ item: MediaItem; replaced: string[] }> {
+  const { data, error } = await supabase.functions.invoke('media-finish', { body: { id, placeholder: null } });
+  let result = (data ?? {}) as { ok?: boolean; error?: string; replaced?: string[] };
+  if (error) {
+    const response = 'context' in error ? (error.context as Response | undefined) : undefined;
+    result = ((await response?.json?.().catch(() => ({}))) ?? {}) as typeof result;
+    if (!response) throw new MediaError('network');
+  }
+  if (result.ok !== true) {
+    throw new MediaError((mediaErrorCodes as readonly string[]).includes(result.error ?? '') ? (result.error as MediaErrorCode) : 'generic');
+  }
   const { data: row, error: readError } = await supabase.from('media').select(MEDIA_COLUMNS).eq('id', id).single<MediaItem>();
   if (readError || !row) fail(readError?.message);
-  return { item: row!, replaced: data!.replaced_paths ?? [] };
+  if (row!.state === 'removed') throw new MediaError('file_type');
+  return { item: row!, replaced: result.replaced ?? [] };
 }
 
 export async function reorderMedia(subjectKind: MediaSubjectKind, subjectId: string, field: MediaField, ids: string[]) {
@@ -112,7 +122,8 @@ export async function reorderMedia(subjectKind: MediaSubjectKind, subjectId: str
 }
 
 export async function removeMedia(id: string) {
-  const { data, error } = await supabase.rpc('remove_my_media', { p_id: id }).single<{ bucket: string; paths: string[] }>();
+  const { data, error } = await supabase.rpc('remove_my_media', { p_id: id }).single<{ bucket: string; staging: string; paths: string[] }>();
   if (error || !data) fail(error?.message);
   await removeFiles(data!.bucket, data!.paths);
+  await removeFiles(data!.staging, data!.paths);
 }

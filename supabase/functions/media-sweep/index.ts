@@ -1,16 +1,18 @@
-// Deletes photo files from the `media` and `media-pending` buckets (slice S4, migration
-// 20261126000100_media_uploads.sql). Called every hour by pg_cron (private.media_sweep) with
-// "Authorization: Bearer <MEDIA_SWEEP_SECRET>". verify_jwt is off for this function
+// Deletes photo files from the `media`, `media-pending` and `media-staging` buckets (slice S4,
+// migration 20261126000100_media_uploads.sql). Called every hour by pg_cron (private.media_sweep)
+// with "Authorization: Bearer <MEDIA_SWEEP_SECRET>". verify_jwt is off for this function
 // (supabase/config.toml): the secret, not a user token, is the check here. Same pattern as
 // verification-sweep.
 //
 //   POST {}                  normal run
 //   POST { "dry_run": true } counts only, deletes nothing. Use it for the first runs on a project.
 //
-// public.svc_media_sweep_list() lists files of removed photos, files no row names after 24 hours, and
-// files whose account is gone. Circuit breaker: if a run would delete more than MAX_ORPHANS files
-// without a row or account, or more than MAX_SHARE of all files (above MIN_BREAK), it deletes nothing
-// and says so in the log; Walter then checks with a dry run. Logs only counts, never file names.
+// public.svc_media_sweep_list() lists files of removed photos ('removed'), staging copies of finished
+// photos ('staged'), files no row names after 24 hours ('no_row') and files whose account is gone
+// ('no_account'). Security review M3: 'removed' and 'staged' are always deleted. The safety stop
+// applies only to 'no_row' and 'no_account': if more than MAX_ORPHANS of them, or more than
+// MAX_SHARE of all files (above MIN_BREAK), those are kept and every admin gets an email
+// (public.svc_media_sweep_halted, at most once per 6 hours). Logs only counts, never file names.
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -20,6 +22,8 @@ const MIN_SECRET_LENGTH = 32;
 const MAX_ORPHANS = 100;
 const MAX_SHARE = 0.2;
 const MIN_BREAK = 50;
+const BUCKETS = ['media', 'media-pending', 'media-staging'];
+const ORPHAN = new Set(['no_row', 'no_account']);
 
 function sameSecret(a: string, b: string): boolean {
   if (!a || !b || a.length !== b.length) return false;
@@ -51,20 +55,24 @@ Deno.serve(async (req) => {
   const rows = (data ?? []) as { bucket_id: string; name: string; reason: string }[];
   const listed: Record<string, number> = {};
   for (const r of rows) listed[r.reason] = (listed[r.reason] ?? 0) + 1;
-  const orphans = (listed.no_account ?? 0) + (listed.no_row ?? 0);
+  const orphans = rows.filter((r) => ORPHAN.has(r.reason)).length;
   const total = Number(totalData ?? 0);
-  const tripped = orphans > MAX_ORPHANS || (rows.length > MIN_BREAK && rows.length > total * MAX_SHARE);
+  const tripped = orphans > MAX_ORPHANS || (orphans > MIN_BREAK && orphans > total * MAX_SHARE);
 
-  if (dryRun || tripped) {
-    if (tripped && !dryRun) console.error('media-sweep: HALTED by circuit breaker', JSON.stringify({ listed, total }));
-    else console.log('media-sweep: dry run', JSON.stringify({ listed, total }));
-    return json({ dry_run: dryRun, halted: tripped && !dryRun, would_break: tripped, bucket_total: total, listed });
+  if (dryRun) {
+    console.log('media-sweep: dry run', JSON.stringify({ listed, total }));
+    return json({ dry_run: true, would_break: tripped, bucket_total: total, listed });
+  }
+  if (tripped) {
+    await db.rpc('svc_media_sweep_halted');
+    console.error('media-sweep: orphans kept by the safety stop', JSON.stringify({ listed, total }));
   }
 
+  const todo = tripped ? rows.filter((r) => !ORPHAN.has(r.reason)) : rows;
   let removed = 0;
   let failed = 0;
-  for (const bucket of ['media', 'media-pending']) {
-    const names = rows.filter((r) => r.bucket_id === bucket).map((r) => r.name);
+  for (const bucket of BUCKETS) {
+    const names = todo.filter((r) => r.bucket_id === bucket).map((r) => r.name);
     for (let i = 0; i < names.length; i += BATCH) {
       const batch = names.slice(i, i + BATCH);
       const { data: gone, error: rmError } = await db.storage.from(bucket).remove(batch);
@@ -76,6 +84,6 @@ Deno.serve(async (req) => {
       failed += batch.length - (gone ?? []).length;
     }
   }
-  console.log('media-sweep', JSON.stringify({ listed, removed, failed }));
-  return json({ dry_run: false, halted: false, listed, removed, failed });
+  console.log('media-sweep', JSON.stringify({ listed, removed, failed, orphans_kept: tripped }));
+  return json({ dry_run: false, orphans_kept: tripped, listed, removed, failed });
 });

@@ -16,7 +16,7 @@ export type MediaSubjectKind = (typeof mediaSubjectKinds)[number];
 export const mediaStates = ['uploading', 'live', 'pending', 'checked', 'removed'] as const;
 export type MediaState = (typeof mediaStates)[number];
 
-export const mediaRemovedReasons = ['owner', 'replaced', 'not_finished', 'subject_gone', 'admin', 'report'] as const;
+export const mediaRemovedReasons = ['owner', 'replaced', 'not_finished', 'subject_gone', 'refused', 'admin', 'report'] as const;
 export type MediaRemovedReason = (typeof mediaRemovedReasons)[number];
 
 /** Stored image types. WebP first; JPEG only when the browser or phone cannot write WebP. */
@@ -24,6 +24,9 @@ export const mediaMimeTypes = ['image/webp', 'image/jpeg'] as const;
 export type MediaMime = (typeof mediaMimeTypes)[number];
 
 export type MediaBucket = 'media' | 'media-pending' | 'verification';
+
+/** Private bucket every photo is uploaded to first. The media-finish Edge Function checks the bytes and copies it to the field's bucket (security review M1). */
+export const MEDIA_STAGING_BUCKET = 'media-staging';
 
 const MB = 1024 * 1024;
 
@@ -208,7 +211,7 @@ export type MediaItem = {
 export const MEDIA_COLUMNS = 'id, field, path, thumb_path, mime, width, height, placeholder, sort, is_main, state';
 
 /** Error codes the database raises (in the message) that screens turn into polite texts. */
-export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'bad_size', 'busy'] as const;
+export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'file_cache', 'bad_size', 'busy'] as const;
 export type MediaErrorCode = (typeof mediaErrorCodes)[number] | 'network' | 'decode' | 'generic';
 
 /** Reads our error code from a database or storage error message. */

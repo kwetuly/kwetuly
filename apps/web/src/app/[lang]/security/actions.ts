@@ -90,13 +90,25 @@ export async function deleteAccount(formData: FormData) {
   if (!user.email || typed !== user.email.toLowerCase()) redirect(`/${locale}/security?deleteError=1#delete`);
 
   const supabase = await createClient();
-  const { data: files } = await supabase.rpc('my_uploaded_files');
+  // Security review S4 M2: first take every photo off the pages (rows become 'removed'), so the
+  // storage policies allow deleting the files; then delete them. Photo files that cannot be deleted
+  // stop the deletion, so nobody's photos stay public after the account is gone.
+  const { error: mediaError } = await supabase.rpc('remove_all_my_media');
+  // PGRST202: the photo migration is not applied on this project yet, so there are no photos.
+  if (mediaError && mediaError.code !== 'PGRST202') redirect(`/${locale}/security?deleteError=2#delete`);
+  const { data: files, error: filesError } = await supabase.rpc('my_uploaded_files');
+  if (filesError) redirect(`/${locale}/security?deleteError=2#delete`);
   const byBucket = new Map<string, string[]>();
   for (const f of (files ?? []) as { bucket_id: string; name: string }[]) {
     byBucket.set(f.bucket_id, [...(byBucket.get(f.bucket_id) ?? []), f.name]);
   }
+  const mediaBuckets = new Set(['media', 'media-pending', 'media-staging']);
   for (const [bucket, names] of byBucket) {
-    for (let i = 0; i < names.length; i += 100) await supabase.storage.from(bucket).remove(names.slice(i, i + 100));
+    for (let i = 0; i < names.length; i += 100) {
+      const batch = names.slice(i, i + 100);
+      const { data: gone, error } = await supabase.storage.from(bucket).remove(batch);
+      if (mediaBuckets.has(bucket) && (error || (gone ?? []).length !== batch.length)) redirect(`/${locale}/security?deleteError=2#delete`);
+    }
   }
 
   const { error } = await supabase.rpc('delete_my_account');

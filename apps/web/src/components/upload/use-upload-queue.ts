@@ -95,8 +95,13 @@ export function useUploadQueue({ field, subjectKind, subjectId, onDone }: { fiel
           patch(item.key, { stored: { ...stored } });
         }
         patch(item.key, { status: 'finishing', progress: 100 });
-        const done = await finishUpload({ id: mediaId, width: encoded.width, height: encoded.height, placeholder: encoded.placeholder });
-        if (!done.ok) throw new UploadHttpError(`media:${done.error}`);
+        // The server reads the real width and height from the file.
+        const done = await finishUpload({ id: mediaId, placeholder: encoded.placeholder });
+        if (!done.ok) {
+          // A refused file is deleted and its row removed: the next try starts again from the photo.
+          if (['file_type', 'file_too_big', 'bad_size'].includes(done.error)) patch(item.key, { mediaId: undefined, stored: { main: false, thumb: false } });
+          throw new UploadHttpError(`media:${done.error}`);
+        }
         patch(item.key, { status: 'done' });
         onDoneRef.current(done.item, done.replaced);
         URL.revokeObjectURL(item.preview);

@@ -112,7 +112,14 @@ export function MediaField({ field, subjectKind, subjectId, initial, onChanged }
           patch(item.key, { stored: { ...stored } });
         }
         patch(item.key, { status: 'finishing', progress: 100 });
-        const done = await finishUpload(mediaId, photo);
+        let done;
+        try {
+          done = await finishUpload(mediaId);
+        } catch (error) {
+          // A refused file is deleted and its row removed: the next try starts again from the photo.
+          if (error instanceof MediaError && ['file_type', 'file_too_big', 'bad_size'].includes(error.code)) patch(item.key, { mediaId: undefined, stored: { main: false, thumb: false } });
+          throw error;
+        }
         setItems((list) => [...list.filter((i) => i.id !== done.item.id && !done.replaced.includes(i.path)), done.item].sort((a, b) => a.sort - b.sort));
         setQueue((list) => list.filter((q) => q.key !== item.key));
         setMessage({ tone: 'ok', text: t.uploaded });
