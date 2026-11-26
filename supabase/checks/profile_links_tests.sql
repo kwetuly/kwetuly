@@ -109,6 +109,16 @@ select pg_temp.expect_code($q$update public.guides set website = 'http://pltestg
                            'guides_website_format', 'A16: http is refused (stored form is https)');
 select pg_temp.expect_code($q$update public.guides set website = 'https://pltestguide.co.tz/"><script>' where id = '5b5b5b5b-0000-4000-8000-0000000000a1'$q$,
                            'guides_website_format', 'A17: quotes and angle brackets are refused');
+-- Security review M1, L1, L3: more blocked hosts, the platforms' own hosts, phone numbers, "//" in Google links.
+select pg_temp.expect_code(format($q$update public.guides set website = %L where id = '5b5b5b5b-0000-4000-8000-0000000000a1'$q$, u),
+                           'guides_website_format', 'A17b: blocked website ' || u)
+from unnest(array['https://m.me/pltest', 'https://ig.me/m/pltest', 'https://signal.me/pltest', 'https://invite.viber.com/?g=x',
+                  'https://linktr.ee/pltest', 'https://beacons.ai/pltest', 'https://bitly.com/x', 'https://youtu.be/x',
+                  'https://www.facebook.com/pltest', 'https://www.instagram.com/pltest/', 'https://www.google.com/url?q=x',
+                  'https://google.co.tz/', 'https://www.youtube.com/redirect?q=x', 'https://www.tiktok.com/@pltest',
+                  'https://pltestguide.co.tz/contact/255700000000', 'https://pltestguide.co.tz/?p=%2B255700000000']) as u;
+select pg_temp.expect_code($q$update public.guides set google_business_url = 'https://www.google.com/maps/place//evil.example' where id = '5b5b5b5b-0000-4000-8000-0000000000a1'$q$,
+                           'guides_google_business_url_format', 'A17c: "//" after the host is refused in Google links');
 -- A host that only contains a blocked name is fine.
 update public.guides set website = 'https://wa.me.example.com/' where id = '5b5b5b5b-0000-4000-8000-0000000000a1';
 
@@ -149,7 +159,17 @@ select pg_temp.expect_code($q$update public.providers set google_business_url = 
                            'providers_google_business_url_format', 'B6: other hosts are refused for Google');
 select pg_temp.expect_code($q$update public.providers set youtube_url = 'https://www.youtube.com/watch?v=abc' where id = '5c5c5c5c-0000-4000-8000-0000000000b2'$q$,
                            'providers_youtube_url_format', 'B7: YouTube videos are refused');
+-- L4: the business website has the same block and phone checks.
+update public.providers set website = 'https://pl-lodge.co.tz/' where id = '5c5c5c5c-0000-4000-8000-0000000000b2';
+select pg_temp.expect_code($q$update public.providers set website = 'https://wa.me/255700000000' where id = '5c5c5c5c-0000-4000-8000-0000000000b2'$q$,
+                           'providers_website_format', 'B8: a WhatsApp link is not a business website');
+select pg_temp.expect_code($q$update public.providers set website = 'https://linktr.ee/pllodge' where id = '5c5c5c5c-0000-4000-8000-0000000000b2'$q$,
+                           'providers_website_format', 'B9: a link-in-bio page is not a business website');
+select pg_temp.expect_code($q$update public.providers set website = 'https://pl-lodge.co.tz/call/+255700000000' where id = '5c5c5c5c-0000-4000-8000-0000000000b2'$q$,
+                           'providers_website_format', 'B10: a phone number in the website is refused');
 reset role;
+select pg_temp.check((select not convalidated from pg_constraint where conname = 'providers_website_format'),
+                     'B11: providers_website_format is NOT VALID (old live rows are not checked at apply time)');
 
 -- ===========================================================================
 -- C. Admin alert when an approved profile changes a link
@@ -164,6 +184,34 @@ select pg_temp.check((select count(*) >= 1 from public.notification_outbox where
                         and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1'
                         and payload ->> 'changes' like '%YouTube was%'),
                      'C1: changing YouTube on an approved guide alerts the admins');
+-- M3: a second change inside 15 minutes is added to the alert that has not gone out, not dropped.
+create temp table pl_alerts on commit drop as
+  select count(*) as n from public.notification_outbox where event = 'link_changed'
+    and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1';
+grant select on pl_alerts to authenticated;
+select pg_temp.as_user('5a5a5a5a-0000-4000-8000-0000000000a1');
+set local role authenticated;
+update public.guides set youtube_url = 'https://www.youtube.com/@pltestguide3' where id = '5b5b5b5b-0000-4000-8000-0000000000a1';
+reset role;
+select pg_temp.check((select count(*) from public.notification_outbox where event = 'link_changed'
+                        and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1') = (select n from pl_alerts),
+                     'C1b: the second change does not add another alert while the first is pending');
+select pg_temp.check((select bool_and(payload -> 'after' ->> 'youtube_url' = 'https://www.youtube.com/@pltestguide3'
+                                      and payload -> 'before' ->> 'youtube_url' = 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv'
+                                      and payload ->> 'changes' like '%@pltestguide2, now https://www.youtube.com/@pltestguide3%')
+                      from public.notification_outbox where event = 'link_changed'
+                        and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1' and status = 'pending'),
+                     'C1c: the pending alert carries the earliest before, the latest after and both changes');
+-- Once the alert has gone out, a later change writes a new one.
+update public.notification_outbox set status = 'sent', sent_at = now() where event = 'link_changed'
+  and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1';
+select pg_temp.as_user('5a5a5a5a-0000-4000-8000-0000000000a1');
+set local role authenticated;
+update public.guides set youtube_url = 'https://www.youtube.com/@pltestguide4' where id = '5b5b5b5b-0000-4000-8000-0000000000a1';
+reset role;
+select pg_temp.check((select count(*) >= 1 from public.notification_outbox where event = 'link_changed' and status = 'pending'
+                        and payload ->> 'ref' = '5b5b5b5b-0000-4000-8000-0000000000a1'),
+                     'C1d: a change after the alert went out raises a new alert');
 select pg_temp.as_user('5a5a5a5a-0000-4000-8000-0000000000b2');
 set local role authenticated;
 update public.providers set google_business_url = 'https://g.page/pl-lodge-2' where id = '5c5c5c5c-0000-4000-8000-0000000000b2';

@@ -49,17 +49,26 @@ export const LINK_PATTERNS = {
    */
   google:
     '^https://(g\\.page/(r/)?[A-Za-z0-9_-]{2,100}|maps\\.app\\.goo\\.gl/[A-Za-z0-9]{4,40}|www\\.google\\.com/maps/place/[A-Za-z0-9%+._,:@!=~/-]{1,560}|business\\.google\\.com/[A-Za-z0-9_~/-]{1,200})$',
-  /** A path segment that starts with a dot (or an encoded dot) is refused, so a link can never climb out of /maps/place/. */
-  googleDotSegment: '/(\\.|%2[eE])',
+  /**
+   * Refused in a Google link: a path segment that starts with a dot (or an encoded dot), so a link can
+   * never climb out of /maps/place/, and an empty segment ("//") anywhere after the host.
+   */
+  googleBadPath: '/(\\.|%2[eE])|^https://[^/]+.*//',
   /** YouTube channels: https://www.youtube.com/@<handle> or https://www.youtube.com/channel/UC<22 characters>. */
   youtube: '^https://www\\.youtube\\.com/(@[a-z0-9._-]{3,30}|channel/UC[A-Za-z0-9_-]{22})$',
   youtubeReserved: '^https://www\\.youtube\\.com/@[._-]+$',
   /**
-   * Hosts a profile's own website may not be: chat links (they would publish a phone number and take the
-   * conversation off Kwetuly), short links and redirectors (they hide where the link goes).
+   * Hosts a profile's own website may not be (the host or any subdomain of it):
+   * - chat links, which would publish a phone number and take the conversation off Kwetuly;
+   * - link-in-bio pages, which usually carry chat links;
+   * - short links, which hide where the link goes;
+   * - Facebook, Instagram, Google, YouTube and TikTok, which have their own fields (this also covers
+   *   their redirectors such as l.facebook.com, google.com/url and youtube.com/redirect).
    */
   websiteBlocked:
-    '^https://([a-z0-9-]+\\.)*(wa\\.me|wa\\.link|whatsapp\\.com|t\\.me|telegram\\.me|telegram\\.org|telegram\\.dog|bit\\.ly|tinyurl\\.com|goo\\.gl|t\\.co|ow\\.ly|is\\.gd|buff\\.ly|cutt\\.ly|rb\\.gy|tiny\\.cc|shorturl\\.at|rebrand\\.ly)(/|$)|^https://(l|lm)\\.facebook\\.com(/|$)|^https://l\\.instagram\\.com(/|$)',
+    '^https://([a-z0-9-]+\\.)*(wa\\.me|wa\\.link|whatsapp\\.com|t\\.me|telegram\\.me|telegram\\.org|telegram\\.dog|m\\.me|ig\\.me|signal\\.me|viber\\.me|invite\\.viber\\.com|linktr\\.ee|tr\\.ee|beacons\\.ai|bio\\.link|lnk\\.bio|bit\\.ly|bitly\\.com|tinyurl\\.com|goo\\.gl|t\\.co|t\\.ly|s\\.id|bl\\.ink|j\\.mp|ow\\.ly|is\\.gd|buff\\.ly|cutt\\.ly|rb\\.gy|tiny\\.cc|shorturl\\.at|rebrand\\.ly|lnkd\\.in|fb\\.me|qrco\\.de|snip\\.ly|youtu\\.be|g\\.page|facebook\\.com|fb\\.com|instagram\\.com|youtube\\.com|tiktok\\.com|google\\.([a-z]{2,63}|com?\\.[a-z]{2}))(/|$)',
+  /** A website whose path, query or fragment holds 9 or more digits in a row (a phone number), with or without + or %2B. */
+  websitePhoneLike: '^https://[^/]+/.*(\\+|%2[bB])?[0-9]{9}',
 } as const;
 
 /** Characters URL encoding never leaves in a link; the database refuses them too. */
@@ -295,7 +304,7 @@ export function normaliseGoogleBusiness(input: string | null | undefined): LinkR
     out = `https://www.google.com${path.replace(/\/+$/, '')}`;
   }
   if (out.length > GOOGLE_MAX) return fail('too_long');
-  if (matches(LINK_PATTERNS.googleDotSegment, out) || !matches(LINK_PATTERNS.google, out)) return fail('handle');
+  if (matches(LINK_PATTERNS.googleBadPath, out) || !matches(LINK_PATTERNS.google, out)) return fail('handle');
   return { ok: true, url: out, host: new URL(out).hostname, handle: null };
 }
 
@@ -347,14 +356,19 @@ export function normaliseYoutube(input: string | null | undefined): LinkResult {
 }
 
 /**
- * A guide's own website: the website rules, and never a chat link (WhatsApp, Telegram), a short
- * link or a redirector, so it cannot publish a phone number or hide where it goes.
+ * A guide's or business's own website: the website rules, never a host from websiteBlocked (chat,
+ * link-in-bio, short links, the platforms that have their own field) and no phone number in the
+ * path or query, so it cannot publish a phone number or hide where it goes.
  */
 export function normaliseProfileWebsite(input: string | null | undefined): LinkResult {
   const result = normaliseWebsite(input);
   if (!result.ok) return result;
-  return matches(LINK_PATTERNS.websiteBlocked, result.url) ? fail('blocked') : result;
+  if (matches(LINK_PATTERNS.websiteBlocked, result.url) || matches(LINK_PATTERNS.websitePhoneLike, result.url)) return fail('blocked');
+  return result;
 }
+
+/** True when a host has a punycode (xn--) label: it is shown as is, with a note, so a lookalike is visible. */
+export const isPunycodeHost = (host: string): boolean => /(^|\.)xn--/.test(host);
 
 /** Every link a guide or business can put on their page. */
 export type ProfileLinkKind = SocialPlatform | 'google' | 'youtube' | 'website';
@@ -398,6 +412,18 @@ export function normaliseProfileLink(kind: ProfileLinkKind, input: string | null
 }
 
 export type ShownProfileLink = { kind: ProfileLinkKind; url: string; host: string; handle: string | null };
+
+/** Stored links that are not valid for their kind (pages leave them out); for the admin review card. */
+export function invalidProfileLinks(
+  row: Partial<Record<ProfileLinkColumn, string | null | undefined>> | null | undefined,
+  kinds: readonly ProfileLinkKind[],
+): { kind: ProfileLinkKind; value: string }[] {
+  if (!row) return [];
+  return kinds.flatMap((kind) => {
+    const stored = row[PROFILE_LINK_COLUMNS[kind]];
+    return stored && !normaliseProfileLink(kind, stored).ok ? [{ kind, value: stored }] : [];
+  });
+}
 
 /**
  * The stored links to show on a page, in the order of `kinds`. Each stored value is cleaned again and

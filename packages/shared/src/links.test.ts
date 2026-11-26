@@ -5,6 +5,8 @@ import { LOCALES } from './locales';
 import {
   BUSINESS_LINK_KINDS,
   GUIDE_LINK_KINDS,
+  invalidProfileLinks,
+  isPunycodeHost,
   LINK_PATTERNS,
   PROFILE_LINK_COLUMNS,
   normaliseGoogleBusiness,
@@ -262,6 +264,11 @@ describe('normaliseGoogleBusiness', () => {
     expect(g('https://www.google.com/maps/place/../../url')).toBe('fail:handle');
     expect(g('https://www.google.com/maps/place/x/%2e%2e/%2e%2e/url')).toBe('fail:handle');
     expect(g('https://www.google.com/maps/place/')).toBe('fail:handle');
+    // L1: no empty path segment after the host.
+    expect(g('https://www.google.com/maps/place//evil.example')).toBe('fail:handle');
+    expect(g('https://www.google.com/maps/place/a//b')).toBe('fail:handle');
+    expect(g('https://business.google.com//evil.example')).toBe('fail:handle');
+    expect(new RegExp(LINK_PATTERNS.googleBadPath).test('https://www.google.com//maps/place/x')).toBe(true);
     expect(g('https://www.google.co.tz/maps/place/Moshi')).toBe('fail:host');
     expect(g('https://google.com.evil.com/maps/place/x')).toBe('fail:host');
     expect(g('https://evil.com/g.page/x')).toBe('fail:host');
@@ -342,6 +349,36 @@ describe('normaliseProfileWebsite', () => {
     expect(site('https://l.instagram.com/?u=https%3A%2F%2Fevil.com')).toBe('fail:blocked');
     expect(site('javascript:alert(1)')).toBe('fail:scheme');
   });
+  it('refuses the hosts added after the security review (M1)', () => {
+    const blocked = [
+      'm.me', 'ig.me', 'signal.me', 'viber.me', 'invite.viber.com', 'wa.link',
+      'linktr.ee', 'tr.ee', 'beacons.ai', 'bio.link', 'lnk.bio',
+      't.ly', 's.id', 'bl.ink', 'j.mp', 'bitly.com', 'lnkd.in', 'fb.me', 'qrco.de', 'snip.ly', 'youtu.be',
+      'facebook.com', 'www.facebook.com', 'm.facebook.com', 'business.facebook.com', 'instagram.com', 'www.instagram.com',
+      'google.com', 'www.google.com', 'google.co.tz', 'maps.google.com', 'youtube.com', 'm.youtube.com', 'tiktok.com', 'vm.tiktok.com', 'g.page',
+    ];
+    for (const host of blocked) expect(site(`https://${host}/amani`), host).toBe('fail:blocked');
+    expect(site('https://www.google.com/url?q=https://evil.example')).toBe('fail:blocked');
+    expect(site('https://www.youtube.com/redirect?q=https://evil.example')).toBe('fail:blocked');
+    // Names that only look like a blocked host are fine.
+    expect(site('https://linktree-tours.co.tz/')).toBe('https://linktree-tours.co.tz/');
+    expect(site('https://mytiktok.com.tz/')).toBe('https://mytiktok.com.tz/');
+    expect(site('https://googlesafaris.com/')).toBe('https://googlesafaris.com/');
+  });
+  it('refuses a phone number in the path or query (L3)', () => {
+    expect(site('https://amani.co.tz/contact/255700000000')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/?phone=+255700000000')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/?phone=%2B255700000000')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/call/0712345678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/tours/2026/12345678')).toBe('https://amani.co.tz/tours/2026/12345678');
+    expect(site('https://123456789.co.tz/')).toBe('https://123456789.co.tz/');
+  });
+  it('marks punycode hosts (L2)', () => {
+    expect(isPunycodeHost('xn--mnchen-3ya.de')).toBe(true);
+    expect(isPunycodeHost('www.xn--80ak6aa92e.com')).toBe(true);
+    expect(isPunycodeHost('amani.co.tz')).toBe(false);
+    expect(isPunycodeHost('maxn--a.com')).toBe(false);
+  });
 });
 
 describe('profile link kinds', () => {
@@ -372,6 +409,8 @@ describe('profile link kinds', () => {
     expect(shown[2]).toMatchObject({ url: 'https://www.instagram.com/amani/', handle: 'amani' });
     expect(shownProfileLinks({ website: 'https://wa.me/255700000000' }, ['website'])).toEqual([]);
     expect(shownProfileLinks(null, GUIDE_LINK_KINDS)).toEqual([]);
+    expect(invalidProfileLinks({ youtube_url: 'https://evil.com/@amani', website: 'https://amani.co.tz/', tiktok_url: null }, GUIDE_LINK_KINDS))
+      .toEqual([{ kind: 'youtube', value: 'https://evil.com/@amani' }]);
   });
 });
 
@@ -382,7 +421,7 @@ describe('S5 stored links match the database patterns', () => {
       expect(r.ok).toBe(true);
       if (r.ok) {
         expect(new RegExp(LINK_PATTERNS.google).test(r.url)).toBe(true);
-        expect(new RegExp(LINK_PATTERNS.googleDotSegment).test(r.url)).toBe(false);
+        expect(new RegExp(LINK_PATTERNS.googleBadPath).test(r.url)).toBe(false);
         expect(r.url.length).toBeLessThanOrEqual(600);
       }
     }
@@ -404,13 +443,19 @@ describe('S5 stored links match the database patterns', () => {
     const count = (needle: string) => body.split(needle).length - 1;
     // Guides and providers each have the Google and YouTube checks.
     expect(count(`google_business_url ~ '${LINK_PATTERNS.google}'`)).toBe(2);
-    expect(count(`google_business_url !~ '${LINK_PATTERNS.googleDotSegment}'`)).toBe(2);
+    expect(count(`google_business_url !~ '${LINK_PATTERNS.googleBadPath}'`)).toBe(2);
     expect(count(`youtube_url ~ '${LINK_PATTERNS.youtube}'`)).toBe(2);
     expect(count(`youtube_url !~ '${LINK_PATTERNS.youtubeReserved}'`)).toBe(2);
     expect(count('char_length(google_business_url) <= 600')).toBe(2);
     // The guide's website: the website form and the blocked hosts.
-    expect(body).toContain(`website ~ '${LINK_PATTERNS.website}'`);
-    expect(body).toContain(`website !~ '${LINK_PATTERNS.websiteBlocked}'`);
+    // Guides' and providers' websites (L4): the website form, the blocked hosts and the phone check.
+    expect(count(`website ~ '${LINK_PATTERNS.website}'`)).toBe(2);
+    expect(count(`website !~ '${LINK_PATTERNS.websiteBlocked}'`)).toBe(2);
+    expect(count(`website !~ '${LINK_PATTERNS.websitePhoneLike}'`)).toBe(2);
+    expect(body).toMatch(/add constraint providers_website_format check \([\s\S]*?\) not valid;/);
+    // The read-only query in the header uses the same block and phone patterns.
+    expect(sql).toContain(`website ~ '${LINK_PATTERNS.websiteBlocked}'`);
+    expect(sql).toContain(`or website ~ '${LINK_PATTERNS.websitePhoneLike}'`);
     // Providers' social links: the guides' rules.
     expect(body).toContain(`instagram_url ~ '${LINK_PATTERNS.instagram}'`);
     expect(body).toContain(`instagram_url !~ '${LINK_PATTERNS.instagramReserved}'`);

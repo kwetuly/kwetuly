@@ -1,5 +1,5 @@
 import 'server-only';
-import { BUSINESS_TYPES, GUIDE_EXPERTISE, PACKAGE_COLUMNS, PACKAGE_KINDS, normaliseWebsite, type GuidePackage } from '@kwetuly/shared';
+import { BUSINESS_TYPES, GUIDE_EXPERTISE, GUIDE_LINK_KINDS, PACKAGE_COLUMNS, PACKAGE_KINDS, invalidProfileLinks, normaliseWebsite, type GuidePackage, type ProfileLinkColumn } from '@kwetuly/shared';
 import type { createClient } from '@/lib/supabase/server';
 import { darToday } from '@/lib/admin-format';
 
@@ -71,9 +71,28 @@ export type GuideRow = {
     license_document_path: string | null;
     first_aid_document_path: string | null;
   } | null;
-};
-export const GUIDE_COLUMNS =
+} & Partial<Record<ProfileLinkColumn, string | null>>;
+const GUIDE_BASE_COLUMNS =
   'id, slug, display_name, headline, base_region, specialties, languages, expertise, female_guide, association, is_sample, created_at, updated_at, verification_status, identity_checked_at, licence_checked_at, first_aid_checked_at, first_aid_valid_until, guide_private(phone, whatsapp_number, registration_number, kinapa_tanapa_id, id_document_path, license_document_path, first_aid_document_path)';
+/** With every profile link, so the review card shows what travellers will see (security review M2). */
+export const GUIDE_COLUMNS = `${GUIDE_BASE_COLUMNS}, instagram_url, facebook_url, tiktok_url, google_business_url, youtube_url, website`;
+/** Until 20261126000200 is applied the new link columns do not exist: the old three are read instead. */
+const GUIDE_COLUMNS_BEFORE_S5 = `${GUIDE_BASE_COLUMNS}, instagram_url, facebook_url, tiktok_url`;
+
+/** 42703: undefined column (the S5 migration is not applied yet). */
+const missingColumn = (error: { code?: string } | null) => error?.code === '42703';
+
+async function pendingGuides(supabase: Supabase) {
+  const run = (columns: string) => supabase.from('guides').select(columns).eq('verification_status', 'pending').order('created_at').returns<GuideRow[]>();
+  const first = await run(GUIDE_COLUMNS);
+  return missingColumn(first.error) ? run(GUIDE_COLUMNS_BEFORE_S5) : first;
+}
+
+async function oneGuide(supabase: Supabase, id: string) {
+  const run = (columns: string) => supabase.from('guides').select(columns).eq('id', id).maybeSingle<GuideRow>();
+  const first = await run(GUIDE_COLUMNS);
+  return missingColumn(first.error) ? run(GUIDE_COLUMNS_BEFORE_S5) : first;
+}
 
 export type PackageRow = GuidePackage & {
   updated_at: string;
@@ -178,6 +197,8 @@ export function guideReadiness(g: GuideRow): Readiness {
   else single.push('No registration number given.');
   const skills = [...(g.female_guide ? ['Female guide'] : []), ...GUIDE_EXPERTISE.filter((e) => g.expertise.includes(e.id)).map((e) => e.label.en)];
   if (skills.length) single.push(`Self-declared skills to prove: ${skills.join(', ')}. Approve one by one after you have seen the proof.`);
+  const badLinks = invalidProfileLinks(g, GUIDE_LINK_KINDS);
+  if (badLinks.length) single.push(`Profile links not valid (not shown to travellers): ${badLinks.map((l) => l.kind).join(', ')}.`);
   return readiness(passed, blocked, single);
 }
 
@@ -269,7 +290,7 @@ export type Queue = { items: QueueItem[]; failed: ReviewKind[] };
 /** Everything pending in the five review queues, oldest first, with the ready rule worked out. */
 export async function loadQueue(supabase: Supabase): Promise<Queue> {
   const [guides, packages, businesses, groups, jobs] = await Promise.all([
-    supabase.from('guides').select(GUIDE_COLUMNS).eq('verification_status', 'pending').order('created_at').returns<GuideRow[]>(),
+    pendingGuides(supabase),
     supabase.from('guide_packages').select(PACKAGE_SELECT).eq('status', 'pending').order('updated_at').returns<PackageRow[]>(),
     supabase.from('providers').select(BUSINESS_SELECT).eq('verification_status', 'pending').order('created_at').returns<BusinessRow[]>(),
     supabase.from('group_trips').select(GROUP_SELECT).eq('status', 'pending').eq('cancelled', false).order('created_at').returns<GroupRow[]>(),
@@ -298,7 +319,7 @@ export async function loadOne(supabase: Supabase, kind: ReviewKind, id: string):
   const today = darToday();
   switch (kind) {
     case 'guide': {
-      const { data } = await supabase.from('guides').select(GUIDE_COLUMNS).eq('id', id).maybeSingle<GuideRow>();
+      const { data } = await oneGuide(supabase, id);
       return data ? { ...toItem({ kind, row: data }, today), status: data.verification_status } : null;
     }
     case 'package': {

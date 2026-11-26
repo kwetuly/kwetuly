@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import { profileLinkLabel, profileLinksShownText, type ShownProfileLink } from '@kwetuly/shared';
+import { isPunycodeHost, profileLinkLabel, profileLinksShownText, type ShownProfileLink } from '@kwetuly/shared';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { ListGroup, ListRow, SectionTitle } from '@/components/ui';
 import { openExternal } from '@/lib/open-external';
@@ -23,7 +23,7 @@ export function ProfileLinks({ links, name, locale }: { links: ShownProfileLink[
             key={link.kind}
             accessibilityRole="link"
             title={profileLinkLabel(link.kind, locale)}
-            subtitle={link.handle ? `@${link.handle}` : link.host}
+            subtitle={link.handle ? `@${link.handle}` : isPunycodeHost(link.host) ? `${link.host} ${t.punycode}` : link.host}
             onPress={() => openExternal(link.url)}
           />
         ))}
@@ -38,7 +38,8 @@ export function ProfileWebsite({ link, name, locale }: { link: ShownProfileLink 
   const { type, font } = useType();
   if (!link || link.kind !== 'website') return null;
   const t = profileLinksShownText(locale);
-  const label = `${t.website.replace('{name}', () => name)}: ${link.host}`;
+  // A punycode host is shown as it is, with a note, so a lookalike address is noticed (review L2).
+  const label = `${t.website.replace('{name}', () => name)}: ${link.host}${isPunycodeHost(link.host) ? ` ${t.punycode}` : ''}`;
   return (
     <Pressable
       accessibilityRole="link"

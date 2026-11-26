@@ -1,5 +1,5 @@
 import { Globe } from 'lucide-react';
-import { USER_LINK_REL, profileLinkLabel, profileLinksShownText, type ShownProfileLink } from '@kwetuly/shared';
+import { USER_LINK_REL, isPunycodeHost, profileLinkLabel, profileLinksShownText, type ShownProfileLink } from '@kwetuly/shared';
 
 // Links a guide (or later a business) added to their page (slice S5). Every link is user content:
 // rel={USER_LINK_REL} (nofollow ugc, no opener, no referrer) and a new tab. The links passed in come
@@ -22,6 +22,7 @@ export function ProfileLinks({ links, name, locale, className }: { links: ShownP
               ) : link.kind === 'website' ? (
                 <span className="ml-1 font-semibold">{link.host}</span>
               ) : null}
+              {isPunycodeHost(link.host) && <span className="ml-1 text-xs text-muted">{t.punycode}</span>}
               <span className="sr-only"> {t.newTab}</span>
             </a>
           </li>
@@ -42,6 +43,8 @@ export function ProfileWebsite({ link, name, locale }: { link: ShownProfileLink 
         <Globe className="size-4 shrink-0" aria-hidden />
         <span>
           {t.website.replace('{name}', () => name)}: <span className="font-semibold">{link.host}</span>
+          {/* A punycode host is shown as it is, with a note, so a lookalike address is noticed (review L2). */}
+          {isPunycodeHost(link.host) && <span className="ml-1 text-xs text-muted">{t.punycode}</span>}
         </span>
         <span className="sr-only"> {t.newTab}</span>
       </a>

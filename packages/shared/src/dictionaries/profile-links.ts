@@ -24,6 +24,8 @@ const shownEn = {
   google: 'Google Maps',
   /** Read out after each link for screen readers. */
   newTab: '(opens in a new tab)',
+  /** Next to a host written in punycode (xn--), so a lookalike address is noticed. */
+  punycode: '(address with non-Latin letters)',
 };
 
 export type ProfileLinksShownText = typeof shownEn;
@@ -37,6 +39,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: 'Tovuti',
     google: 'Google Maps',
     newTab: '(inafunguka kwenye kichupo kipya)',
+    punycode: '(anwani yenye herufi zisizo za Kilatini)',
   },
   fr: {
     title: 'Retrouver {name} en ligne',
@@ -45,6 +48,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: 'Site web',
     google: 'Google Maps',
     newTab: '(s’ouvre dans un nouvel onglet)',
+    punycode: '(adresse avec des lettres non latines)',
   },
   it: {
     title: 'Trova {name} online',
@@ -53,6 +57,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: 'Sito web',
     google: 'Google Maps',
     newTab: '(si apre in una nuova scheda)',
+    punycode: '(indirizzo con lettere non latine)',
   },
   de: {
     title: '{name} im Internet',
@@ -61,6 +66,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: 'Website',
     google: 'Google Maps',
     newTab: '(öffnet in einem neuen Tab)',
+    punycode: '(Adresse mit nicht lateinischen Buchstaben)',
   },
   pl: {
     title: '{name} w internecie',
@@ -69,6 +75,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: 'Strona internetowa',
     google: 'Mapy Google',
     newTab: '(otwiera się w nowej karcie)',
+    punycode: '(adres z literami spoza alfabetu łacińskiego)',
   },
   zh: {
     title: '在网上找到 {name}',
@@ -77,6 +84,7 @@ const SHOWN: Record<Locale, ProfileLinksShownText> = {
     websiteLabel: '网站',
     google: 'Google 地图',
     newTab: '（在新标签页打开）',
+    punycode: '（含非拉丁字母的网址）',
   },
 };
 
@@ -104,7 +112,7 @@ const en = {
   guideHeading: 'On your guide page',
   businessHeading: 'On the page of {business}',
   websiteLabel: 'Your own website',
-  websiteHint: 'Shown on your page below the box where travellers ask you about a trip. WhatsApp, Telegram and short links (such as bit.ly) cannot be used here: travellers reach you through Kwetuly first.',
+  websiteHint: 'Shown on your page below the box where travellers ask you about a trip. Chat links, link-in-bio pages, short links and phone numbers cannot be used here: travellers reach you through Kwetuly first.',
   googleLabel: 'Google Business Profile',
   googleHint: 'Open your profile on Google Maps, press Share and paste the link. It starts with https://maps.app.goo.gl/ or https://g.page/.',
   youtubeLabel: 'YouTube channel',
@@ -124,7 +132,7 @@ const en = {
   /** {label} = the field's name, {example} = an example link. */
   invalid: 'Your {label} link was not saved. Paste the link to your own page, for example {example}.',
   websiteInvalid: 'Your website was not saved. Use the full address of your own site, for example https://www.yourname.co.tz.',
-  websiteBlocked: 'Your website was not saved. WhatsApp, Telegram, short links (such as bit.ly) and redirect links cannot be used as a website.',
+  websiteBlocked: 'Your website was not saved. Chat links (WhatsApp, Telegram, Messenger), link-in-bio pages (such as Linktree), short links (such as bit.ly), Facebook, Instagram, Google, YouTube or TikTok pages, and links with a phone number in them cannot be used as a website. Facebook, Instagram, Google, YouTube and TikTok have their own fields.',
   googleInvalid: 'Your Google link was not saved. Open your profile on Google Maps, press Share and paste that link, for example https://maps.app.goo.gl/AbCd1234.',
   youtubeInvalid: 'Your YouTube link was not saved. Paste the link to your channel, for example https://www.youtube.com/@yourname, or type your @name. Links to single videos cannot be used.',
   /** Shown as soon as a field is left with a link that would be refused. */
@@ -141,7 +149,7 @@ const sw: ProfileLinksText = {
   guideHeading: 'Kwenye ukurasa wako wa mwongozaji',
   businessHeading: 'Kwenye ukurasa wa {business}',
   websiteLabel: 'Tovuti yako mwenyewe',
-  websiteHint: 'Inaonyeshwa kwenye ukurasa wako chini ya sehemu ambapo wasafiri wanakuuliza kuhusu safari. Viungo vya WhatsApp, Telegram na viungo vifupi (kama bit.ly) havitumiki hapa: wasafiri wanakufikia kupitia Kwetuly kwanza.',
+  websiteHint: 'Inaonyeshwa kwenye ukurasa wako chini ya sehemu ambapo wasafiri wanakuuliza kuhusu safari. Viungo vya mazungumzo, kurasa za viungo, viungo vifupi na namba za simu havitumiki hapa: wasafiri wanakufikia kupitia Kwetuly kwanza.',
   googleLabel: 'Wasifu wa Biashara wa Google',
   googleHint: 'Fungua wasifu wako kwenye Google Maps, bonyeza Shiriki (Share) na ubandike kiungo. Kinaanza na https://maps.app.goo.gl/ au https://g.page/.',
   youtubeLabel: 'Chaneli ya YouTube',
@@ -160,7 +168,7 @@ const sw: ProfileLinksText = {
   dashboard: 'Dashibodi',
   invalid: 'Kiungo chako cha {label} hakikuhifadhiwa. Bandika kiungo cha ukurasa wako mwenyewe, kwa mfano {example}.',
   websiteInvalid: 'Tovuti yako haikuhifadhiwa. Tumia anwani kamili ya tovuti yako, kwa mfano https://www.jinalako.co.tz.',
-  websiteBlocked: 'Tovuti yako haikuhifadhiwa. WhatsApp, Telegram, viungo vifupi (kama bit.ly) na viungo vya kupeleka mahali pengine haviwezi kutumika kama tovuti.',
+  websiteBlocked: 'Tovuti yako haikuhifadhiwa. Viungo vya mazungumzo (WhatsApp, Telegram, Messenger), kurasa za viungo (kama Linktree), viungo vifupi (kama bit.ly), kurasa za Facebook, Instagram, Google, YouTube au TikTok, na viungo vyenye namba ya simu haviwezi kutumika kama tovuti. Facebook, Instagram, Google, YouTube na TikTok zina sehemu zake.',
   googleInvalid: 'Kiungo chako cha Google hakikuhifadhiwa. Fungua wasifu wako kwenye Google Maps, bonyeza Shiriki (Share) na ubandike kiungo hicho, kwa mfano https://maps.app.goo.gl/AbCd1234.',
   youtubeInvalid: 'Kiungo chako cha YouTube hakikuhifadhiwa. Bandika kiungo cha chaneli yako, kwa mfano https://www.youtube.com/@jinalako, au andika @jina lako. Viungo vya video moja haviwezi kutumika.',
   check: 'Hiki si kiungo cha {label} chako. Kwa mfano {example}.',
