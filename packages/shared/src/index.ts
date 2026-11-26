@@ -25,3 +25,4 @@ export * from './payment-rules';
 export * from './reservations';
 export * from './reservation-rules';
 export * from './reservation-screens';
+export * from './uploads';
