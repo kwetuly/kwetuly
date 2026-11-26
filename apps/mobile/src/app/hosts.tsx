@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText } from '@kwetuly/shared';
+import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText, isFeatureOn } from '@kwetuly/shared';
 import { Button, Card, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
-import { useFeatures } from '@/lib/feature-switches';
+import { useFeatures } from '@/lib/features';
 import { useI18n } from '@/lib/i18n';
 import { useType } from '@/lib/use-type';
 import { brand, colors, layout, space } from '@/theme';
@@ -23,10 +23,22 @@ export default function HostsScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  // "Please contact me" is sent once per account on this phone. The database cannot be asked yet
+  // (interest_signups has no user_id and only admins read it), so this is a device-side guard only.
+  const sentKey = session ? `host-contact-sent:${session.user.id}` : null;
+  const [sentNow, setAlreadySent] = useState(false);
+  const [missing, setMissing] = useState(false);
+  let stored = false;
+  try {
+    stored = !!sentKey && globalThis.localStorage?.getItem(sentKey) === '1';
+  } catch {
+    // Storage unavailable: rely on this visit only.
+  }
+  const alreadySent = sentNow || stored;
   const x = hostsText(locale);
   const e = hostsEntryText(locale);
-  const concierge = features.on.includes(HOST_FEATURES.concierge);
-  const investment = features.on.includes(HOST_FEATURES.investment);
+  const concierge = isFeatureOn(features.data ?? {}, HOST_FEATURES.concierge);
+  const investment = isFeatureOn(features.data ?? {}, HOST_FEATURES.investment);
 
   if (features.isPending || features.error || (!concierge && !investment)) {
     return (
@@ -63,9 +75,11 @@ export default function HostsScreen() {
   // The same "interest" list as the coming-soon pages; an admin reads it. Only this account's own name
   // and phone or email are sent, after the person taps the button.
   async function askContact() {
-    const contact = profile.data?.phone ?? session?.user.email ?? '';
-    const name = profile.data?.full_name ?? '';
-    if (!contact || !name) return setMessage({ tone: 'error', text: t.auth.error });
+    // An empty phone falls back to the email.
+    const contact = profile.data?.phone?.trim() || session?.user.email || '';
+    const name = profile.data?.full_name?.trim() || '';
+    if (alreadySent) return setMessage({ tone: 'ok', text: HOSTS_ENTRY_LINKS.askContactSent[locale] });
+    if (!contact || !name) return setMissing(true);
     setBusy(true);
     setMessage(null);
     try {
@@ -78,7 +92,13 @@ export default function HostsScreen() {
         message: `Host sign-up: wants to apply (${kinds.map((k) => k.id).join(', ')}), signed in as ${role ?? 'unknown'}`,
         locale: locale === 'sw' ? 'sw' : 'en',
       });
-      setMessage({ tone: 'ok', text: e.askContactSent });
+      setMessage({ tone: 'ok', text: HOSTS_ENTRY_LINKS.askContactSent[locale] });
+      setAlreadySent(true);
+      try {
+        if (sentKey) globalThis.localStorage?.setItem(sentKey, '1');
+      } catch {
+        // Storage unavailable: the button stays hidden for this visit only.
+      }
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {
@@ -147,9 +167,18 @@ export default function HostsScreen() {
       ) : (
         profile.data && (
           <Card>
-            <Muted>{e.notGuide}</Muted>
+            <Muted>{HOSTS_ENTRY_LINKS.notGuide[locale]}</Muted>
             <FormMessage message={message} />
-            {message?.tone !== 'ok' && <Button title={e.askContact} onPress={askContact} loading={busy} />}
+            {alreadySent && !message && <Muted>{HOSTS_ENTRY_LINKS.askContactSent[locale]}</Muted>}
+            {/* No name or no phone/email on the account: say what to add and open the Account tab. */}
+            {missing ? (
+              <>
+                <FormMessage message={{ tone: 'error', text: HOSTS_ENTRY_LINKS.missingDetails[locale] }} />
+                <Button title={HOSTS_ENTRY_LINKS.openAccount[locale]} variant="outline" onPress={() => router.navigate('/account')} />
+              </>
+            ) : (
+              message?.tone !== 'ok' && !alreadySent && <Button title={HOSTS_ENTRY_LINKS.askContact[locale]} onPress={askContact} loading={busy} />
+            )}
           </Card>
         )
       )}

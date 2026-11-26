@@ -6,6 +6,7 @@ import { GUIDE_EXPERTISE } from './expertise';
 import { CALL_TOPICS } from './guides';
 import { L, type Label } from './locales';
 import { HOSTS_ENTRY_LINKS } from './dictionaries/hosts-entry';
+import { isFeatureOn, type FeatureMap } from './features';
 
 /**
  * Kwetuly merchandise shop: the menu item, the website's /merch page and order action, and the
@@ -27,22 +28,15 @@ export type MenuItem = {
 };
 
 /**
- * Admin switches (site_settings rows "feature.<id>", read like private.feature_on: a missing row is
- * off) that hide menu items. Host sign-up is a legal-check item (docs/legal/vip-and-investment-hosts.md).
+ * Admin switches (site_settings rows "feature.<id>", read with parseFeatureRows in ./features: a missing
+ * row is off) that hide menu items. Host sign-up is a legal-check item (docs/legal/vip-and-investment-hosts.md).
  */
 export const HOST_FEATURES = { concierge: 'vip_hosts', investment: 'investment_hosts' } as const;
 export type FeatureSwitch = (typeof HOST_FEATURES)[keyof typeof HOST_FEATURES];
 
-/** The ids of the switched-on features, from site_settings rows like {key: "feature.x", value: {on: true}}. */
-export function featuresFromSettings(rows: { key: string; value: unknown }[] | null | undefined): string[] {
-  return (rows ?? [])
-    .filter((r) => r.key.startsWith('feature.') && (r.value as { on?: unknown } | null)?.on === true)
-    .map((r) => r.key.slice('feature.'.length));
-}
-
 /** The items of a section that may be shown with these features on. */
-export function visibleItems(items: MenuItem[], on: readonly string[]): MenuItem[] {
-  return items.filter((item) => !item.feature || on.includes(item.feature));
+export function visibleItems(items: MenuItem[], on: FeatureMap): MenuItem[] {
+  return items.filter((item) => !item.feature || isFeatureOn(on, item.feature));
 }
 
 /**
@@ -50,14 +44,14 @@ export function visibleItems(items: MenuItem[], on: readonly string[]): MenuItem
  * concierge sign-up is open, the investment visit host wording when only that is open, else null.
  * `anchor` is the matching part of /hosts.
  */
-export function hostSignUpOption(on: readonly string[]): { anchor: 'concierge' | 'investment'; title: Label; body: Label } | null {
-  if (on.includes(HOST_FEATURES.concierge)) return { anchor: 'concierge', ...HOSTS_ENTRY_LINKS.join };
-  if (on.includes(HOST_FEATURES.investment)) return { anchor: 'investment', ...HOSTS_ENTRY_LINKS.joinInvestment };
+export function hostSignUpOption(on: FeatureMap): { anchor: 'concierge' | 'investment'; title: Label; body: Label } | null {
+  if (isFeatureOn(on, HOST_FEATURES.concierge)) return { anchor: 'concierge', ...HOSTS_ENTRY_LINKS.join };
+  if (isFeatureOn(on, HOST_FEATURES.investment)) return { anchor: 'investment', ...HOSTS_ENTRY_LINKS.joinInvestment };
   return null;
 }
 
 /** Sections with switched-off items left out (and sections left empty by that dropped). */
-export function menuFor(sections: MenuSection[], on: readonly string[]): MenuSection[] {
+export function menuFor(sections: MenuSection[], on: FeatureMap): MenuSection[] {
   return sections
     .map((section) => ({ ...section, items: visibleItems(section.items, on) }))
     .filter((section) => section.items.length > 0);

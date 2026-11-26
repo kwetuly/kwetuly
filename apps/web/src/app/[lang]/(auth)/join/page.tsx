@@ -8,7 +8,7 @@ import { phoneCountryHint } from '@/lib/phone';
 import { JoinForm as JoinFields } from './join-form';
 import { SocialSignIn } from '@/components/social-sign-in';
 import { EVENTS, hostSignUpOption, hostsEntryText } from '@kwetuly/shared';
-import { featuresOn } from '@/lib/feature-switches';
+import { getFeatures } from '@/lib/features';
 import { LogEvent } from '@/components/analytics';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +44,7 @@ async function JoinForm({
   t: Dictionary;
   locale: Locale;
 }) {
-  const [params, features] = await Promise.all([searchParams, featuresOn()]);
+  const [params, features] = await Promise.all([searchParams, getFeatures()]);
   const selected = roles.includes(params.role as string) ? (params.role as string) : 'traveler';
   // Host sign-up ("Become a concierge or VIP host") while either host switch is on: the option leads to
   // /hosts, which explains the work and comes back here with role=guide&intent=host.

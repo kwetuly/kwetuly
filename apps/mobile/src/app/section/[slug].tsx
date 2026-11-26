@@ -5,7 +5,7 @@ import { Glyph } from '@/components/glyph';
 import { Muted, ScreenState } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
-import { useFeatures } from '@/lib/feature-switches';
+import { useFeatures } from '@/lib/features';
 import { menuIcon } from '@/lib/menu-icons';
 import { brand, colors, radius, space, textSize } from '@/theme';
 
@@ -24,7 +24,7 @@ export default function SectionScreen() {
       <Stack.Title>{section.label[locale]}</Stack.Title>
       <Muted>{section.tagline[locale]}</Muted>
       <View style={{ backgroundColor: colors.card, borderRadius: radius.card, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.separator, overflow: 'hidden' }}>
-        {visibleItems(section.items, features.on).filter((item) => !item.webOnly).map((item, i) => (
+        {visibleItems(section.items, (features.data ?? {})).filter((item) => !item.webOnly).map((item, i) => (
           <Link key={item.slug} href={appHref(section, item)} asChild>
             <Pressable accessibilityRole="link" style={{ borderTopWidth: i ? 1 : 0, borderTopColor: colors.separator }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.lg }}>

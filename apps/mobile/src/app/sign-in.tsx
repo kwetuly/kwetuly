@@ -11,7 +11,7 @@ import { needsSecondStep } from '@/lib/auth';
 import { SITE_URL, supabase } from '@/lib/supabase';
 import { enabledProviders, PROVIDER_NAMES, signInWithProvider, type SocialProvider } from '@/lib/social';
 import { useType } from '@/lib/use-type';
-import { useFeatures } from '@/lib/feature-switches';
+import { useFeatures } from '@/lib/features';
 import { menuIcon } from '@/lib/menu-icons';
 import { layout } from '@/theme';
 
@@ -26,7 +26,7 @@ export default function SignInScreen() {
   const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES.find((r) => r === params.role) ?? 'traveler');
   // "Become a concierge or VIP host" (or investment visit host) while a host switch is on. It picks Guide
   // and opens the hosts screen, whose Apply comes back to this screen instead of opening a second one.
-  const hostOption = hostSignUpOption(useFeatures().on);
+  const hostOption = hostSignUpOption(useFeatures().data ?? {});
   const [fullName, setFullName] = useState('');
   // Country from the phone's region setting (Tanzania otherwise); the number as the person types it.
   const [phone, setPhone] = useState(() => initialPhone(null));

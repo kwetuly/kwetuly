@@ -10,7 +10,7 @@ import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { PhotoHero } from '@/components/photo-hero';
 import { SECTION_PHOTOS } from '@/lib/photos';
-import { featuresOn } from '@/lib/feature-switches';
+import { getFeatures } from '@/lib/features';
 
 const sections = ALL_SECTIONS;
 
@@ -41,7 +41,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
   const { section: slug } = await params;
   const section = sections.find((s) => s.slug === slug);
   if (!section) notFound();
-  const [t, locale, features] = await Promise.all([getDictionary(), getLocale(), featuresOn()]);
+  const [t, locale, features] = await Promise.all([getDictionary(), getLocale(), getFeatures()]);
 
   return (
     <>

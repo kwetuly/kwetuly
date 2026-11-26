@@ -2,7 +2,8 @@
 // concierge or VIP host" option next to the account types on sign-up, and the concierge explainer on
 // /hosts and the app's hosts screen.
 // Links and the sign-up option are seen by travellers too, so they are in all 7 languages. The
-// explainer and notes are host texts: English and Kiswahili, other languages show English.
+// explainer and notes are host texts: English and Kiswahili, other languages show English. The
+// "Please contact me" texts are seen by travellers and business accounts, so they are in all 7.
 // Wording follows docs/legal/vip-and-investment-hosts.md (draft for a Tanzanian advocate): no
 // security, protection or bodyguard work; "VIP" describes the style of service only; no investment,
 // legal or tax advice. The Kiswahili and the other languages are drafts for native-speaker review.
@@ -18,6 +19,16 @@ export const HOSTS_ENTRY_LINKS: {
   joinInvestment: { title: Label; body: Label };
   /** The app's hosts screen when both switches are off. */
   closed: Label;
+  /**
+   * Signed-in traveller or business account on /hosts or the app's hosts screen: hosts need a guide
+   * account; the next step is asking Kwetuly to get in touch.
+   */
+  notGuide: Label;
+  askContact: Label;
+  askContactSent: Label;
+  /** The account has no name or no phone/email to be contacted on. */
+  missingDetails: Label;
+  openAccount: Label;
 } = {
   concierge: {
     label: L(
@@ -108,6 +119,35 @@ export const HOSTS_ENTRY_LINKS: {
     'Przepraszamy, rejestracja opiekunów jest obecnie zamknięta.',
     '抱歉，陪同人员注册目前尚未开放。',
   ),
+  notGuide: L(
+    'Hosts apply with a guide account. You are signed in with another account type. Would you like Kwetuly to contact you about it?',
+    'Wenyeji wanaomba kwa akaunti ya mwongozaji. Umeingia kwa aina nyingine ya akaunti. Ungependa Kwetuly iwasiliane nawe kuhusu hili?',
+    'Les hôtes postulent avec un compte guide. Vous êtes connecté avec un autre type de compte. Souhaitez-vous que Kwetuly vous contacte à ce sujet ?',
+    'Gli host si candidano con un account guida. Hai effettuato l’accesso con un altro tipo di account. Vuoi che Kwetuly ti contatti a riguardo?',
+    'Gastgeber bewerben sich mit einem Guide-Konto. Sie sind mit einer anderen Kontoart angemeldet. Möchten Sie, dass Kwetuly Sie dazu kontaktiert?',
+    'Opiekunowie zgłaszają się przez konto przewodnika. Jesteś zalogowany na inny typ konta. Czy Kwetuly ma się z Tobą skontaktować w tej sprawie?',
+    '陪同人员需使用导游账户申请。你当前登录的是其他类型的账户。需要 Kwetuly 就此联系你吗？',
+  ),
+  askContact: L('Please contact me', 'Tafadhali wasiliana nami', 'Merci de me contacter', 'Contattatemi, per favore', 'Bitte kontaktieren Sie mich', 'Proszę o kontakt', '请联系我'),
+  askContactSent: L(
+    'Thank you. Kwetuly will contact you using the details on your account.',
+    'Asante. Kwetuly itawasiliana nawe kwa taarifa zilizo kwenye akaunti yako.',
+    'Merci. Kwetuly vous contactera avec les coordonnées de votre compte.',
+    'Grazie. Kwetuly ti contatterà con i dati del tuo account.',
+    'Danke. Kwetuly meldet sich über die Angaben in Ihrem Konto.',
+    'Dziękujemy. Kwetuly skontaktuje się z Tobą, korzystając z danych z Twojego konta.',
+    '谢谢。Kwetuly 将通过你账户中的联系方式与你联系。',
+  ),
+  missingDetails: L(
+    'Please add your name and phone in your account first.',
+    'Tafadhali ongeza kwanza jina lako na namba ya simu kwenye akaunti yako.',
+    'Merci d’ajouter d’abord votre nom et votre téléphone dans votre compte.',
+    'Aggiungi prima nome e telefono nel tuo account.',
+    'Bitte tragen Sie zuerst Ihren Namen und Ihre Telefonnummer in Ihrem Konto ein.',
+    'Najpierw dodaj imię i numer telefonu na swoim koncie.',
+    '请先在账户中填写你的姓名和电话。',
+  ),
+  openAccount: L('Open my account', 'Fungua akaunti yangu', 'Ouvrir mon compte', 'Apri il mio account', 'Mein Konto öffnen', 'Otwórz moje konto', '打开我的账户'),
 };
 
 /** Host texts: English and Kiswahili. */
@@ -119,11 +159,7 @@ export type HostsEntryText = {
   conciergeNot: string;
   serviceNote: string;
   joinIntent: string;
-  notGuide: string;
   continueGuide: string;
-  /** Next step for a signed-in traveller or business account: ask Kwetuly to get in touch. */
-  askContact: string;
-  askContactSent: string;
 };
 
 const en: HostsEntryText = {
@@ -140,10 +176,7 @@ const en: HostsEntryText = {
   serviceNote: 'After approval, Kwetuly will ask you which host service you would like to add: "Personal trip host" or "Investment visit host". Kwetuly checks each service before it appears.',
   joinIntent:
     'Karibu. You are applying to be a host. Please create a guide account below and complete the guide steps. After approval, Kwetuly will ask you which host service you would like to add.',
-  notGuide: 'Hosts apply with a guide account. You are signed in with another account type. Would you like Kwetuly to contact you about it?',
   continueGuide: 'Continue your guide profile',
-  askContact: 'Please contact me',
-  askContactSent: 'Thank you. Kwetuly will contact you using the details on your account.',
 };
 
 const sw: HostsEntryText = {
@@ -160,10 +193,7 @@ const sw: HostsEntryText = {
   serviceNote: 'Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza: "Mwenyeji wa safari binafsi" au "Mwenyeji wa ziara za uwekezaji". Kwetuly inakagua kila huduma kabla haijaonekana.',
   joinIntent:
     'Karibu. Unaomba kuwa mwenyeji. Tafadhali fungua akaunti ya mwongozaji hapa chini na ukamilishe hatua za mwongozaji. Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza.',
-  notGuide: 'Wenyeji wanaomba kwa akaunti ya mwongozaji. Umeingia kwa aina nyingine ya akaunti. Ungependa Kwetuly ikuwasiliane kuhusu hili?',
   continueGuide: 'Endelea na wasifu wako wa mwongozaji',
-  askContact: 'Tafadhali niwasiliane',
-  askContactSent: 'Asante. Kwetuly itawasiliana nawe kwa taarifa zilizo kwenye akaunti yako.',
 };
 
 export const HOSTS_ENTRY_TEXT: Partial<Record<Locale, HostsEntryText>> & { en: HostsEntryText } = { en, sw };

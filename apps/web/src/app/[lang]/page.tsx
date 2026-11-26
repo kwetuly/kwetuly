@@ -9,7 +9,7 @@ import { RecentlyViewed } from '@/components/recently-viewed';
 import { siteStats } from '@/lib/guides';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
-import { featuresOn } from '@/lib/feature-switches';
+import { getFeatures } from '@/lib/features';
 import { PHOTOS, SECTION_PHOTOS, photoUrl } from '@/lib/photos';
 import { pageMeta } from '@/lib/seo';
 import { SITE_URL } from '@/lib/site';
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [t, locale, stats, features] = await Promise.all([getDictionary(), getLocale(), siteStats(), featuresOn()]);
+  const [t, locale, stats, features] = await Promise.all([getDictionary(), getLocale(), siteStats(), getFeatures()]);
   const hero = PHOTOS.kiliCampMawenzi;
 
   return (

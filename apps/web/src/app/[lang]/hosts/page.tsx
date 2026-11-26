@@ -1,11 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { Crown } from 'lucide-react';
-import { HOST_FEATURES, hostsEntryText, hostsText } from '@kwetuly/shared';
+import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText, isFeatureOn } from '@kwetuly/shared';
+import { LOCALE_TAGS, type Locale } from '@/i18n/config';
+import { getCurrentUser } from '@/lib/auth';
+import { HostContact } from './host-contact';
 import { pageMeta } from '@/lib/seo';
-import { getLocale } from '@/i18n/dictionaries';
-import { featuresOn } from '@/lib/feature-switches';
+import { getDictionary, getLocale } from '@/i18n/dictionaries';
+import { getFeatures } from '@/lib/features';
 
 // "Become a host": a static page for people who want to be personal trip or investment visit hosts.
 // Host texts are guide/owner texts (English and Kiswahili; other languages show English).
@@ -18,9 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HostsPage() {
-  const [locale, features] = await Promise.all([getLocale(), featuresOn()]);
-  const concierge = features.includes(HOST_FEATURES.concierge);
-  const investment = features.includes(HOST_FEATURES.investment);
+  const [locale, features] = await Promise.all([getLocale(), getFeatures()]);
+  const concierge = isFeatureOn(features, HOST_FEATURES.concierge);
+  const investment = isFeatureOn(features, HOST_FEATURES.investment);
   if (!concierge && !investment) notFound();
   const x = hostsText(locale);
   const e = hostsEntryText(locale);
@@ -86,12 +90,45 @@ export default async function HostsPage() {
         <p className="mt-4 text-sm text-muted">{x.draftNote}</p>
       </section>
 
-      <div className="mt-8">
-        <Link href={apply} className="btn w-full sm:w-auto" data-track="hosts_apply">
-          {x.apply}
-        </Link>
-        <p className="mt-2 text-sm text-muted">{x.applyNote}</p>
-      </div>
+      {/* The rest of the page is the same for everyone; only this part depends on who is signed in. */}
+      <Suspense fallback={<ApplyLink href={apply} label={x.apply} note={x.applyNote} />}>
+        <HostAction locale={locale} apply={apply} label={x.apply} note={x.applyNote} />
+      </Suspense>
+    </div>
+  );
+}
+
+function ApplyLink({ href, label, note }: { href: string; label: string; note: string }) {
+  return (
+    <div className="mt-8">
+      <Link href={href} className="btn w-full sm:w-auto" data-track="hosts_apply">
+        {label}
+      </Link>
+      <p className="mt-2 text-sm text-muted">{note}</p>
+    </div>
+  );
+}
+
+// One main action: signed out or a guide, "Apply"; a signed-in traveller or business account cannot
+// apply with that account, so their next step is "Please contact me".
+async function HostAction({ locale, apply, label, note }: { locale: Locale; apply: string; label: string; note: string }) {
+  const user = await getCurrentUser();
+  if (!user || user.role === 'guide' || user.role === 'admin') return <ApplyLink href={apply} label={label} note={note} />;
+  const t = await getDictionary();
+  return (
+    <div lang={LOCALE_TAGS[locale]}>
+      <HostContact
+        locale={locale}
+        accountHref={`/${locale}/dashboard`}
+        t={{
+          notGuide: HOSTS_ENTRY_LINKS.notGuide[locale],
+          askContact: HOSTS_ENTRY_LINKS.askContact[locale],
+          sent: HOSTS_ENTRY_LINKS.askContactSent[locale],
+          missing: HOSTS_ENTRY_LINKS.missingDetails[locale],
+          openAccount: HOSTS_ENTRY_LINKS.openAccount[locale],
+          error: t.auth.error,
+        }}
+      />
     </div>
   );
 }

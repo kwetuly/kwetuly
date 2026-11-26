@@ -8,7 +8,7 @@ import { PhoneField, initialPhone } from '@/components/phone-field';
 import { completeOnboarding, getInviteOnly } from '@/lib/api-more';
 import { useProfile } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { useFeatures } from '@/lib/feature-switches';
+import { useFeatures } from '@/lib/features';
 import { menuIcon } from '@/lib/menu-icons';
 import { safeNext } from '@/lib/onboarding';
 import { colors, space } from '@/theme';
@@ -32,7 +32,7 @@ export default function WelcomeScreen() {
   const [busy, setBusy] = useState(false);
   // "Become a concierge or VIP host" (or investment visit host) while a host switch is on. It picks Guide
   // and opens the hosts screen, whose Apply comes back to this screen instead of opening a second one.
-  const hostOption = hostSignUpOption(useFeatures().on);
+  const hostOption = hostSignUpOption(useFeatures().data ?? {});
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   // Fill in the account name once the profile arrives (adjusting state while rendering, not in an effect).

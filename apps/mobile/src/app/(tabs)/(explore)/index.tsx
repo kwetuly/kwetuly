@@ -10,7 +10,7 @@ import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, ListGroup, ListRo
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
-import { useFeatures } from '@/lib/feature-switches';
+import { useFeatures } from '@/lib/features';
 import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
 import { brand, colors, layout, media, radius, scrim, space } from '@/theme';
@@ -101,7 +101,7 @@ export default function ExploreScreen() {
           whole description shows in every language (two columns cut German and English off at 320–375 wide). */}
       <Section title={t.explore.title} style={{ paddingHorizontal: layout.screenX }}>
         <ListGroup>
-          {menuFor(MENU, features.on).map((section) => (
+          {menuFor(MENU, (features.data ?? {})).map((section) => (
             <ListRow
               key={section.slug}
               icon={menuIcon(section.icon)}

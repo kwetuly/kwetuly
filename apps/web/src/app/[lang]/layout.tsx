@@ -16,7 +16,7 @@ import { Analytics } from '@/components/analytics';
 import { INDEXING_ON, SITE_URL } from '@/lib/site';
 import { DEFAULT_SHARE_IMAGE } from '@/lib/seo';
 import { itemHref } from '@/lib/menu';
-import { featuresOn } from '@/lib/feature-switches';
+import { getFeatures } from '@/lib/features';
 
 const jakarta = Plus_Jakarta_Sans({ variable: '--font-jakarta', subsets: ['latin', 'latin-ext'] });
 
@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<'/[lang]'>) {
   const locale = await getLocale();
   const t = await getDictionary();
   // Menu items behind an admin switch (host sign-up) show only while it is on.
-  const features = await featuresOn();
+  const features = await getFeatures();
 
   return (
     <html lang={LOCALE_TAGS[locale]} className={`${jakarta.variable} h-full antialiased`}>

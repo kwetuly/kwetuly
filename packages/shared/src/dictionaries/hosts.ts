@@ -54,7 +54,7 @@ const en: HostsText = {
   ],
   howTitle: 'How it works',
   how: [
-    'Sign up in the same five steps as our guides: About you, What you do, Documents, Story and links, Prep calls.',
+    'Sign up as a guide and complete the same steps as our guides.',
     'Kwetuly reviews and approves each applicant one by one. Not every application is accepted.',
     'Once approved, you add your services. Kwetuly approves each one before it appears.',
     'You set your own price. Kwetuly’s share is explained clearly before you agree.',
@@ -106,7 +106,7 @@ const sw: HostsText = {
   ],
   howTitle: 'Jinsi inavyofanya kazi',
   how: [
-    'Jisajili kwa hatua tano zile zile za waongozaji: Kuhusu wewe, Unachofanya, Nyaraka, Hadithi na viungo, Simu za maandalizi.',
+    'Jisajili kama mwongozaji na ukamilishe hatua zile zile za waongozaji wetu.',
     'Kwetuly inakagua na kuidhinisha kila mwombaji mmoja mmoja. Si kila ombi linakubaliwa.',
     'Ukikubaliwa, unaongeza huduma zako. Kwetuly inaidhinisha kila huduma kabla haijaonekana.',
     'Unaweka bei yako mwenyewe. Sehemu ya Kwetuly inaelezwa wazi kabla hujakubali.',
