@@ -1,7 +1,25 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { linkErrorMessage } from './dictionaries';
-import { LINK_PATTERNS, normaliseSocial, normaliseTripadvisor, normaliseWebsite, safeExternalUrl, socialHandle, type LinkResult, type SocialPlatform } from './links';
+import { linkErrorMessage, profileLinkCheckMessage, profileLinkErrorCode, profileLinkErrorMessage, profileLinkLabel, profileLinksShownText, profileLinksText, PROFILE_LINKS_TEXT } from './dictionaries';
+import { LOCALES } from './locales';
+import {
+  BUSINESS_LINK_KINDS,
+  GUIDE_LINK_KINDS,
+  LINK_PATTERNS,
+  PROFILE_LINK_COLUMNS,
+  normaliseGoogleBusiness,
+  normaliseProfileLink,
+  normaliseProfileWebsite,
+  normaliseSocial,
+  normaliseTripadvisor,
+  normaliseWebsite,
+  normaliseYoutube,
+  safeExternalUrl,
+  shownProfileLinks,
+  socialHandle,
+  type LinkResult,
+  type SocialPlatform,
+} from './links';
 
 const url = (r: LinkResult) => (r.ok ? r.url : `fail:${r.reason}`);
 
@@ -210,5 +228,224 @@ describe('link messages', () => {
     expect(linkErrorMessage('link_tiktok', 'sw')).toContain('https://www.tiktok.com/@yourname');
     expect(linkErrorMessage('link_website', 'fr')).toBe(linkErrorMessage('link_website', 'en'));
     expect(linkErrorMessage('name', 'en')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// S5: Google Business Profile, YouTube, a profile's own website
+// ---------------------------------------------------------------------------
+
+describe('normaliseGoogleBusiness', () => {
+  const g = (s: string) => url(normaliseGoogleBusiness(s));
+  it('accepts the Google share links and keeps one stored form', () => {
+    expect(g('https://maps.app.goo.gl/AbCd1234XyZ')).toBe('https://maps.app.goo.gl/AbCd1234XyZ');
+    expect(g('maps.app.goo.gl/AbCd1234?g_st=iw')).toBe('https://maps.app.goo.gl/AbCd1234');
+    expect(g('https://g.page/amani-safaris')).toBe('https://g.page/amani-safaris');
+    expect(g('https://g.page/amani-safaris/review?rc')).toBe('https://g.page/amani-safaris');
+    expect(g('https://g.page/r/CQ1a2b3c4d5e6EAE/review')).toBe('https://g.page/r/CQ1a2b3c4d5e6EAE');
+    expect(g('http://g.page/r/CQ1a2b3c4d5e6EAE/')).toBe('https://g.page/r/CQ1a2b3c4d5e6EAE');
+    expect(g('https://www.google.com/maps/place/Amani+Safaris/@-3.3869,36.6830,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x1!8m2!3d-3.38!4d36.68?entry=ttu'))
+      .toBe('https://www.google.com/maps/place/Amani+Safaris/@-3.3869,36.6830,17z/data=!3m1!4b1!4m6!3m5!1s0x0:0x1!8m2!3d-3.38!4d36.68');
+    expect(g('https://maps.google.com/maps/place/Amani%20Lodge/')).toBe('https://www.google.com/maps/place/Amani%20Lodge');
+    expect(g('google.com/maps/place/Moshi')).toBe('https://www.google.com/maps/place/Moshi');
+    expect(g('https://business.google.com/n/12345/profile')).toBe('https://business.google.com/n/12345/profile');
+    const r = normaliseGoogleBusiness('https://g.page/amani');
+    expect(r.ok && r.handle).toBeNull();
+  });
+  it('refuses other short links, Google redirects and lookalikes', () => {
+    expect(g('https://goo.gl/maps/abc123')).toBe('fail:host');
+    expect(g('https://goo.gl/abc123')).toBe('fail:host');
+    expect(g('https://bit.ly/abc123')).toBe('fail:host');
+    expect(g('https://www.google.com/url?q=https://evil.com')).toBe('fail:handle');
+    expect(g('https://www.google.com/amp/s/evil.com')).toBe('fail:handle');
+    expect(g('https://www.google.com/search?q=amani')).toBe('fail:handle');
+    expect(g('https://www.google.com/maps/place/../../url')).toBe('fail:handle');
+    expect(g('https://www.google.com/maps/place/x/%2e%2e/%2e%2e/url')).toBe('fail:handle');
+    expect(g('https://www.google.com/maps/place/')).toBe('fail:handle');
+    expect(g('https://www.google.co.tz/maps/place/Moshi')).toBe('fail:host');
+    expect(g('https://google.com.evil.com/maps/place/x')).toBe('fail:host');
+    expect(g('https://evil.com/g.page/x')).toBe('fail:host');
+    expect(g('https://maps.app.goo.gl.evil.com/AbCd1234')).toBe('fail:host');
+    expect(g('https://maps.app.goo.gl/')).toBe('fail:handle');
+    expect(g('https://maps.app.goo.gl/a/b')).toBe('fail:handle');
+    expect(g('https://g.page/')).toBe('fail:handle');
+    expect(g('https://g.page/a/b/c')).toBe('fail:handle');
+    expect(g('https://business.google.com/')).toBe('fail:handle');
+    expect(g('https://business.google.com/a.b')).toBe('fail:handle');
+    expect(g('https://user@g.page/amani')).toBe('fail:credentials');
+    expect(g('https://g.page:8443/amani')).toBe('fail:port');
+    expect(g('javascript:alert(1)')).toBe('fail:scheme');
+    // A quote is encoded by the address parser, so it can never close the href.
+    expect(g('https://www.google.com/maps/place/a"onmouseover=x')).toBe('https://www.google.com/maps/place/a%22onmouseover=x');
+    expect(g("https://www.google.com/maps/place/Mama's")).toBe('fail:handle');
+    expect(g('https://www.google.com/maps/place/a b')).toBe('fail:invalid');
+    expect(g(`https://www.google.com/maps/place/${'a'.repeat(600)}`)).toBe('fail:too_long');
+    expect(g('')).toBe('fail:empty');
+  });
+});
+
+describe('normaliseYoutube', () => {
+  const yt = (s: string) => url(normaliseYoutube(s));
+  it('accepts channel links, @names and channel ids', () => {
+    expect(yt('https://www.youtube.com/@AmaniSafaris')).toBe('https://www.youtube.com/@amanisafaris');
+    expect(yt('youtube.com/@amani.tz/videos')).toBe('https://www.youtube.com/@amani.tz');
+    expect(yt('https://m.youtube.com/@amani-tz/?si=abc')).toBe('https://www.youtube.com/@amani-tz');
+    expect(yt('@amani_tz')).toBe('https://www.youtube.com/@amani_tz');
+    expect(yt('amani_tz')).toBe('https://www.youtube.com/@amani_tz');
+    expect(yt('https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv')).toBe('https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv');
+    expect(yt('https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw/featured')).toBe('https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw');
+    const r = normaliseYoutube('@amani_tz');
+    expect(r.ok && r.handle).toBe('amani_tz');
+  });
+  it('refuses videos, old links, other hosts and bad names', () => {
+    expect(yt('https://youtu.be/dQw4w9WgXcQ')).toBe('fail:host');
+    expect(yt('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/c/amani')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/user/amani')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/@amani/watch')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/@amani/videos/extra')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/channel/UCshort')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/channel/XXabcdefghijklmnopqrstuv')).toBe('fail:handle');
+    expect(yt('https://www.youtube.com/redirect?q=https://evil.com')).toBe('fail:handle');
+    expect(yt('http://www.youtube.com/@amani')).toBe('fail:scheme');
+    expect(yt('https://youtube.com.evil.com/@amani')).toBe('fail:host');
+    expect(yt('https://user@youtube.com/@amani')).toBe('fail:credentials');
+    expect(yt('@ab')).toBe('fail:handle');
+    expect(yt('@...')).toBe('fail:reserved');
+    expect(yt('youtube.com')).toBe('fail:handle');
+    expect(yt('a'.repeat(31))).toBe('fail:handle');
+    expect(yt('')).toBe('fail:empty');
+  });
+});
+
+describe('normaliseProfileWebsite', () => {
+  const site = (s: string) => url(normaliseProfileWebsite(s));
+  it('keeps own websites', () => {
+    expect(site('amanisafaris.co.tz')).toBe('https://amanisafaris.co.tz/');
+    expect(site('https://www.amani-tours.com/kilimanjaro')).toBe('https://www.amani-tours.com/kilimanjaro');
+    expect(site('https://watchme.com/')).toBe('https://watchme.com/');
+    expect(site('https://bitly.com.tz/')).toBe('https://bitly.com.tz/');
+  });
+  it('refuses chat links, short links and redirectors', () => {
+    expect(site('https://wa.me/255700000000')).toBe('fail:blocked');
+    expect(site('wa.me/255700000000')).toBe('fail:blocked');
+    expect(site('https://api.whatsapp.com/send?phone=255700000000')).toBe('fail:blocked');
+    expect(site('https://chat.whatsapp.com/AbC')).toBe('fail:blocked');
+    expect(site('https://wa.link/abc')).toBe('fail:blocked');
+    expect(site('https://t.me/amani')).toBe('fail:blocked');
+    expect(site('https://telegram.me/amani')).toBe('fail:blocked');
+    expect(site('https://bit.ly/abc')).toBe('fail:blocked');
+    expect(site('https://TinyURL.com/abc')).toBe('fail:blocked');
+    expect(site('https://goo.gl/abc')).toBe('fail:blocked');
+    expect(site('https://t.co/abc')).toBe('fail:blocked');
+    expect(site('https://l.facebook.com/l.php?u=https%3A%2F%2Fevil.com')).toBe('fail:blocked');
+    expect(site('https://l.instagram.com/?u=https%3A%2F%2Fevil.com')).toBe('fail:blocked');
+    expect(site('javascript:alert(1)')).toBe('fail:scheme');
+  });
+});
+
+describe('profile link kinds', () => {
+  it('normaliseProfileLink uses the rules for each kind', () => {
+    expect(url(normaliseProfileLink('instagram', '@amani'))).toBe('https://www.instagram.com/amani/');
+    expect(url(normaliseProfileLink('google', 'https://g.page/amani'))).toBe('https://g.page/amani');
+    expect(url(normaliseProfileLink('youtube', '@amani'))).toBe('https://www.youtube.com/@amani');
+    expect(url(normaliseProfileLink('website', 'https://wa.me/1'))).toBe('fail:blocked');
+  });
+  it('every kind has a column, guides get the website, businesses do not', () => {
+    for (const kind of GUIDE_LINK_KINDS) expect(PROFILE_LINK_COLUMNS[kind]).toBeTruthy();
+    expect(GUIDE_LINK_KINDS).toContain('website');
+    expect(BUSINESS_LINK_KINDS).not.toContain('website');
+  });
+  it('shownProfileLinks keeps valid stored links in order and drops bad ones', () => {
+    const shown = shownProfileLinks(
+      {
+        website: 'https://amani.co.tz/',
+        google_business_url: 'https://g.page/amani',
+        youtube_url: 'https://evil.com/@amani',
+        instagram_url: 'https://www.instagram.com/amani/',
+        facebook_url: null,
+        tiktok_url: 'javascript:alert(1)',
+      },
+      GUIDE_LINK_KINDS,
+    );
+    expect(shown.map((l) => l.kind)).toEqual(['website', 'google', 'instagram']);
+    expect(shown[2]).toMatchObject({ url: 'https://www.instagram.com/amani/', handle: 'amani' });
+    expect(shownProfileLinks({ website: 'https://wa.me/255700000000' }, ['website'])).toEqual([]);
+    expect(shownProfileLinks(null, GUIDE_LINK_KINDS)).toEqual([]);
+  });
+});
+
+describe('S5 stored links match the database patterns', () => {
+  it('google, youtube and website outputs match', () => {
+    for (const input of ['https://g.page/r/CQ1a2b3c4d5e6EAE', 'maps.app.goo.gl/Ab12', 'https://www.google.com/maps/place/A+B/@-3.1,36.2,17z', 'https://business.google.com/n/1/profile']) {
+      const r = normaliseGoogleBusiness(input);
+      expect(r.ok).toBe(true);
+      if (r.ok) {
+        expect(new RegExp(LINK_PATTERNS.google).test(r.url)).toBe(true);
+        expect(new RegExp(LINK_PATTERNS.googleDotSegment).test(r.url)).toBe(false);
+        expect(r.url.length).toBeLessThanOrEqual(600);
+      }
+    }
+    for (const input of ['@abc', 'https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv', 'z'.repeat(30)]) {
+      const r = normaliseYoutube(input);
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(new RegExp(LINK_PATTERNS.youtube).test(r.url)).toBe(true);
+    }
+    for (const input of ['amani.co.tz', 'https://wa.me.example.com/']) {
+      const r = normaliseProfileWebsite(input);
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(new RegExp(LINK_PATTERNS.websiteBlocked).test(r.url)).toBe(false);
+    }
+  });
+
+  it('the S5 migration uses the same patterns', () => {
+    const sql = readFileSync(new URL('../../../supabase/migrations/20261126000200_profile_links.sql', import.meta.url), 'utf8');
+    const body = sql.split('\n').filter((line) => !line.trimStart().startsWith('--')).join('\n');
+    const count = (needle: string) => body.split(needle).length - 1;
+    // Guides and providers each have the Google and YouTube checks.
+    expect(count(`google_business_url ~ '${LINK_PATTERNS.google}'`)).toBe(2);
+    expect(count(`google_business_url !~ '${LINK_PATTERNS.googleDotSegment}'`)).toBe(2);
+    expect(count(`youtube_url ~ '${LINK_PATTERNS.youtube}'`)).toBe(2);
+    expect(count(`youtube_url !~ '${LINK_PATTERNS.youtubeReserved}'`)).toBe(2);
+    expect(count('char_length(google_business_url) <= 600')).toBe(2);
+    // The guide's website: the website form and the blocked hosts.
+    expect(body).toContain(`website ~ '${LINK_PATTERNS.website}'`);
+    expect(body).toContain(`website !~ '${LINK_PATTERNS.websiteBlocked}'`);
+    // Providers' social links: the guides' rules.
+    expect(body).toContain(`instagram_url ~ '${LINK_PATTERNS.instagram}'`);
+    expect(body).toContain(`instagram_url !~ '${LINK_PATTERNS.instagramReserved}'`);
+    expect(body).toContain(`facebook_url ~ '${LINK_PATTERNS.facebook}'`);
+    expect(body).toContain(`facebook_url !~ '${LINK_PATTERNS.facebookReserved}'`);
+    expect(body).toContain(`tiktok_url ~ '${LINK_PATTERNS.tiktok}'`);
+    expect(body).toContain(`tiktok_url !~ '${LINK_PATTERNS.tiktokReserved}'`);
+    // The Maps place length in the pattern fits inside the 600-character limit.
+    expect(LINK_PATTERNS.google).toContain('{1,560}');
+  });
+});
+
+describe('profile link texts', () => {
+  it('has traveller texts in all 7 languages', () => {
+    for (const locale of LOCALES) {
+      const t = profileLinksShownText(locale);
+      for (const value of Object.values(t)) expect(value.length).toBeGreaterThan(0);
+      expect(t.title).toContain('{name}');
+      expect(t.website).toContain('{name}');
+      if (locale !== 'en') expect(t.note).not.toBe(profileLinksShownText('en').note);
+    }
+    expect(profileLinkLabel('youtube', 'zh')).toBe('YouTube');
+    expect(profileLinkLabel('website', 'sw')).toBe('Tovuti');
+  });
+  it('has guide and owner texts in English and Kiswahili with the same keys', () => {
+    expect(Object.keys(PROFILE_LINKS_TEXT.sw).sort()).toEqual(Object.keys(PROFILE_LINKS_TEXT.en).sort());
+    expect(profileLinksText('fr')).toBe(PROFILE_LINKS_TEXT.en);
+    expect(profileLinksText('sw')).toBe(PROFILE_LINKS_TEXT.sw);
+  });
+  it('has a message for every error code', () => {
+    for (const kind of GUIDE_LINK_KINDS) expect(profileLinkErrorMessage(profileLinkErrorCode(kind, 'handle'), 'en')).toBeTruthy();
+    expect(profileLinkErrorCode('website', 'blocked')).toBe('pl_website_blocked');
+    expect(profileLinkErrorMessage('pl_website_blocked', 'sw')).toContain('WhatsApp');
+    expect(profileLinkErrorMessage('pl_instagram', 'en')).toContain('https://www.instagram.com/yourname');
+    expect(profileLinkErrorMessage('other', 'en')).toBeNull();
+    expect(profileLinkCheckMessage('youtube', 'handle', 'en')).toContain('https://www.youtube.com/@yourname');
   });
 });

@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { MessagesSquare, Video } from 'lucide-react';
 import { startConversation } from '../../messages/actions';
-import { CALL_TOPICS, EVENTS, SOCIAL_NAMES, SOCIAL_PLATFORMS, USER_LINK_REL, formatUsd, guideChecks, limitTexts, normaliseSocial } from '@kwetuly/shared';
+import { CALL_TOPICS, EVENTS, GUIDE_LINK_KINDS, SWITCHED_GUIDE_LINK_KINDS, formatUsd, guideChecks, limitTexts, shownProfileLinks } from '@kwetuly/shared';
 import { getGuideBySlug, getGuidePackages, listGuides, listReviews, type Guide } from '@/lib/guides';
 import { GuidePackages } from '@/components/guide-packages';
 import { getCurrentUser } from '@/lib/auth';
@@ -29,6 +29,8 @@ import { requestCall, requestGuide, submitReview } from './actions';
 import { SubmitButton } from '@/components/submit-button';
 import { InViewNote } from '@/components/in-view-note';
 import { PhotoCredits } from '@/components/sample-offer';
+import { ProfileLinks, ProfileWebsite } from '@/components/profile-links';
+import { getGuideLinks, profileLinksOn } from '@/lib/profile-links';
 
 export async function generateMetadata({ params }: PageProps<'/[lang]/guides/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
@@ -77,7 +79,11 @@ async function Profile({
   const { slug } = await params;
   const guide = await getGuideBySlug(slug);
   if (!guide) notFound();
-  const [status, packages, user] = await Promise.all([searchParams, getGuidePackages(guide.id), getCurrentUser()]);
+  const [status, packages, user, linkRow, linksOn] = await Promise.all([searchParams, getGuidePackages(guide.id), getCurrentUser(), getGuideLinks(guide.id), profileLinksOn()]);
+  // The guide's own links (slice S5). Instagram, Facebook and TikTok always show; website, Google and
+  // YouTube only while feature.profile_links is on. The website sits below the "Ask" box, the rest in About.
+  const links = shownProfileLinks(linkRow, GUIDE_LINK_KINDS.filter((kind) => linksOn || !SWITCHED_GUIDE_LINK_KINDS.includes(kind)));
+  const website = links.find((link) => link.kind === 'website');
   // Signed-in travellers find their name and phone (or email) already filled in; they can still change them.
   const defaultName = user?.fullName ?? '';
   const defaultContact = user?.phone ?? user?.email ?? '';
@@ -225,20 +231,8 @@ async function Profile({
 
 
         {/* The guide's own profiles, with the name so travellers see where the link goes. Links that
-            are not a valid profile address (from before the checks) are left out. */}
-        <div className="mt-8 flex flex-wrap gap-4 text-sm">
-          {SOCIAL_PLATFORMS.map((platform) => {
-            const stored = guide[`${platform}_url`];
-            const profile = stored ? normaliseSocial(platform, stored) : null;
-            if (!profile?.ok) return null;
-            return (
-              <a key={platform} className="text-forest underline" href={profile.url} rel={USER_LINK_REL} target="_blank">
-                {SOCIAL_NAMES[platform]}
-                {profile.handle && <span className="ml-1 font-semibold">@{profile.handle}</span>}
-              </a>
-            );
-          })}
-        </div>
+            are not a valid link of their kind (from before the checks) are left out. */}
+        <ProfileLinks links={links.filter((link) => link.kind !== 'website')} name={guide.display_name} locale={locale} />
 
         <div className="mt-6">
           <ShareButtons path={`/${locale}/guides/${guide.slug}`} title={guide.display_name} text={`${t.share.shareGuide}: ${guide.display_name}`} labels={t.share} />
@@ -289,6 +283,7 @@ async function Profile({
           </form>
         )}
       </aside>
+      <ProfileWebsite link={website} name={guide.display_name} locale={locale} />
       </div>
     </div>
     <Suspense fallback={null}>

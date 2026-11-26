@@ -16,7 +16,7 @@ export const SOCIAL_EXAMPLES: Record<SocialPlatform, string> = {
   tiktok: 'https://www.tiktok.com/@yourname',
 };
 
-export type LinkFailure = 'empty' | 'too_long' | 'invalid' | 'scheme' | 'credentials' | 'port' | 'host' | 'handle' | 'reserved';
+export type LinkFailure = 'empty' | 'too_long' | 'invalid' | 'scheme' | 'credentials' | 'port' | 'host' | 'handle' | 'reserved' | 'blocked';
 
 export type LinkResult =
   | { ok: true; url: string; host: string; handle: string | null }
@@ -42,6 +42,24 @@ export const LINK_PATTERNS = {
     '^https://www\\.facebook\\.com/(\\.+|[a-z0-9.]*\\.php|share|sharer|login|logout|groups|watch|events|plugins|pages|people|photo|photos|videos|reels|stories|marketplace|gaming|settings|messages|notifications|friends|hashtag|search|dialog|policies|privacy|business|recover|checkpoint)$',
   tiktok: '^https://www\\.tiktok\\.com/@[a-z0-9._]{2,24}$',
   tiktokReserved: '^https://www\\.tiktok\\.com/@\\.+$',
+  /**
+   * Google Business Profile links (supabase/migrations/20261126000200_profile_links.sql), stored as one of
+   * https://g.page/<name>, https://g.page/r/<id>, https://maps.app.goo.gl/<id>,
+   * https://www.google.com/maps/place/<path>, https://business.google.com/<path>. No query, no fragment.
+   */
+  google:
+    '^https://(g\\.page/(r/)?[A-Za-z0-9_-]{2,100}|maps\\.app\\.goo\\.gl/[A-Za-z0-9]{4,40}|www\\.google\\.com/maps/place/[A-Za-z0-9%+._,:@!=~/-]{1,560}|business\\.google\\.com/[A-Za-z0-9_~/-]{1,200})$',
+  /** A path segment that starts with a dot (or an encoded dot) is refused, so a link can never climb out of /maps/place/. */
+  googleDotSegment: '/(\\.|%2[eE])',
+  /** YouTube channels: https://www.youtube.com/@<handle> or https://www.youtube.com/channel/UC<22 characters>. */
+  youtube: '^https://www\\.youtube\\.com/(@[a-z0-9._-]{3,30}|channel/UC[A-Za-z0-9_-]{22})$',
+  youtubeReserved: '^https://www\\.youtube\\.com/@[._-]+$',
+  /**
+   * Hosts a profile's own website may not be: chat links (they would publish a phone number and take the
+   * conversation off Kwetuly), short links and redirectors (they hide where the link goes).
+   */
+  websiteBlocked:
+    '^https://([a-z0-9-]+\\.)*(wa\\.me|wa\\.link|whatsapp\\.com|t\\.me|telegram\\.me|telegram\\.org|telegram\\.dog|bit\\.ly|tinyurl\\.com|goo\\.gl|t\\.co|ow\\.ly|is\\.gd|buff\\.ly|cutt\\.ly|rb\\.gy|tiny\\.cc|shorturl\\.at|rebrand\\.ly)(/|$)|^https://(l|lm)\\.facebook\\.com(/|$)|^https://l\\.instagram\\.com(/|$)',
 } as const;
 
 /** Characters URL encoding never leaves in a link; the database refuses them too. */
@@ -209,3 +227,194 @@ export function safeExternalUrl(input: string | null | undefined): string | null
 
 /** rel for every link a guide, owner or other user typed in. */
 export const USER_LINK_REL = 'nofollow noopener noreferrer ugc';
+
+// ---------------------------------------------------------------------------
+// Google Business Profile, YouTube and a profile's own website (slice S5, social links)
+// Stored in guides.google_business_url, youtube_url, website and providers.google_business_url,
+// youtube_url (plus the providers' Facebook, Instagram and TikTok links, with the guide rules above).
+// The database checks the same patterns: supabase/migrations/20261126000200_profile_links.sql.
+// ---------------------------------------------------------------------------
+
+/** Longest Google link kept (a Maps place link with its data path can be long). */
+const GOOGLE_MAX = 600;
+
+/** Only these Google hosts. maps.app.goo.gl is Google's own Maps share link; no other goo.gl short link. */
+const GOOGLE_HOSTS: readonly string[] = ['g.page', 'maps.app.goo.gl', 'google.com', 'www.google.com', 'maps.google.com', 'business.google.com'];
+
+/** Characters never part of a link someone means to share (spaces, control characters, backslashes). */
+const BAD_INPUT = /[\s\u0000-\u001f\u007f\\]/;
+
+/** Parses typed text as an https address (http is upgraded when allowed, a bare host gets https://). */
+function parseHttps(raw: string, allowHttp: boolean): { ok: true; url: URL } | { ok: false; reason: LinkFailure } {
+  const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw);
+  const full = hasScheme ? raw : `https://${raw}`;
+  let url: URL;
+  try {
+    url = new URL(full);
+  } catch {
+    return { ok: false, reason: 'invalid' };
+  }
+  if (url.protocol !== 'https:' && !(allowHttp && url.protocol === 'http:')) return { ok: false, reason: 'scheme' };
+  if (url.username || url.password || /^[a-z]+:\/\/[^/?#]*@/i.test(full)) return { ok: false, reason: 'credentials' };
+  if (url.port && url.port !== '443') return { ok: false, reason: 'port' };
+  return { ok: true, url };
+}
+
+/**
+ * Cleans a Google Business Profile link (the "Share" link from Google Maps, a g.page link, a Maps
+ * place link or a business.google.com link) into one stored form: https, no query, no fragment,
+ * no trailing slash.
+ */
+export function normaliseGoogleBusiness(input: string | null | undefined): LinkResult {
+  const raw = String(input ?? '').trim();
+  if (!raw) return fail('empty');
+  if (raw.length > 2000) return fail('too_long');
+  if (BAD_INPUT.test(raw)) return fail('invalid');
+  const parsed = parseHttps(raw, true);
+  if (!parsed.ok) return fail(parsed.reason);
+  const { hostname: host, pathname: path } = parsed.url;
+  if (!GOOGLE_HOSTS.includes(host)) return fail('host');
+
+  let out: string;
+  if (host === 'g.page') {
+    // g.page/<name>, g.page/r/<id>, and the same with /review (the "write a review" link).
+    const m = path.match(/^\/(r\/)?([A-Za-z0-9_-]{2,100})(\/review)?\/?$/);
+    if (!m) return fail('handle');
+    out = `https://g.page/${m[1] ?? ''}${m[2]}`;
+  } else if (host === 'maps.app.goo.gl') {
+    const m = path.match(/^\/([A-Za-z0-9]{4,40})\/?$/);
+    if (!m) return fail('handle');
+    out = `https://maps.app.goo.gl/${m[1]}`;
+  } else if (host === 'business.google.com') {
+    const trimmed = path.replace(/\/+$/, '');
+    if (!trimmed) return fail('handle');
+    out = `https://business.google.com${trimmed}`;
+  } else {
+    // google.com, www.google.com, maps.google.com: a Maps place only (never /url, /amp or search).
+    if (!path.startsWith('/maps/place/')) return fail('handle');
+    out = `https://www.google.com${path.replace(/\/+$/, '')}`;
+  }
+  if (out.length > GOOGLE_MAX) return fail('too_long');
+  if (matches(LINK_PATTERNS.googleDotSegment, out) || !matches(LINK_PATTERNS.google, out)) return fail('handle');
+  return { ok: true, url: out, host: new URL(out).hostname, handle: null };
+}
+
+const YOUTUBE_HOSTS: readonly string[] = ['youtube.com', 'www.youtube.com', 'm.youtube.com'];
+/** Channel tabs people copy by accident; the link is kept to the channel itself. */
+const YOUTUBE_TABS: readonly string[] = ['featured', 'videos', 'shorts', 'streams', 'playlists', 'podcasts', 'community', 'about'];
+const YOUTUBE_HANDLE = /^[a-z0-9._-]{3,30}$/;
+const YOUTUBE_CHANNEL = /^UC[A-Za-z0-9_-]{22}$/;
+
+function youtubeFromHandle(rawHandle: string): LinkResult {
+  const handle = rawHandle.toLowerCase();
+  if (!YOUTUBE_HANDLE.test(handle)) return fail('handle');
+  const url = `https://www.youtube.com/@${handle}`;
+  if (matches(LINK_PATTERNS.youtubeReserved, url)) return fail('reserved');
+  if (!matches(LINK_PATTERNS.youtube, url)) return fail('handle');
+  return { ok: true, url, host: 'www.youtube.com', handle };
+}
+
+/**
+ * Cleans a YouTube channel link, or a bare @name, into https://www.youtube.com/@name or
+ * https://www.youtube.com/channel/UC... Video links (youtu.be, /watch) and old /c/ and /user/ links are refused.
+ */
+export function normaliseYoutube(input: string | null | undefined): LinkResult {
+  const raw = String(input ?? '').trim();
+  if (!raw) return fail('empty');
+  if (raw.length > 300) return fail('too_long');
+  if (BAD_INPUT.test(raw)) return fail('invalid');
+  if (/^@?[A-Za-z0-9._-]+$/.test(raw) && !/^(www\.|m\.)?youtube\.com$/i.test(raw)) return youtubeFromHandle(raw.replace(/^@/, ''));
+
+  const parsed = parseHttps(raw, false);
+  if (!parsed.ok) return fail(parsed.reason);
+  if (!YOUTUBE_HOSTS.includes(parsed.url.hostname)) return fail('host');
+  const segments = parsed.url.pathname.split('/').slice(1);
+  if (segments.at(-1) === '') segments.pop();
+  const [first = '', ...rest] = segments;
+  let result: LinkResult;
+  if (first.startsWith('@')) {
+    result = youtubeFromHandle(first.slice(1));
+  } else if (first === 'channel') {
+    const id = rest.shift() ?? '';
+    if (!YOUTUBE_CHANNEL.test(id)) return fail('handle');
+    const url = `https://www.youtube.com/channel/${id}`;
+    result = matches(LINK_PATTERNS.youtube, url) ? { ok: true, url, host: 'www.youtube.com', handle: null } : fail('handle');
+  } else {
+    return fail('handle');
+  }
+  if (rest.length > 1 || (rest.length === 1 && !YOUTUBE_TABS.includes(rest[0]))) return fail('handle');
+  return result;
+}
+
+/**
+ * A guide's own website: the website rules, and never a chat link (WhatsApp, Telegram), a short
+ * link or a redirector, so it cannot publish a phone number or hide where it goes.
+ */
+export function normaliseProfileWebsite(input: string | null | undefined): LinkResult {
+  const result = normaliseWebsite(input);
+  if (!result.ok) return result;
+  return matches(LINK_PATTERNS.websiteBlocked, result.url) ? fail('blocked') : result;
+}
+
+/** Every link a guide or business can put on their page. */
+export type ProfileLinkKind = SocialPlatform | 'google' | 'youtube' | 'website';
+
+/** The links on a guide page, in the order they are shown and asked for. */
+export const GUIDE_LINK_KINDS: readonly ProfileLinkKind[] = ['website', 'google', 'youtube', 'instagram', 'facebook', 'tiktok'];
+/** The links a business adds on the links page (its website stays in the business form). */
+export const BUSINESS_LINK_KINDS: readonly ProfileLinkKind[] = ['google', 'youtube', 'instagram', 'facebook', 'tiktok'];
+/** Guide links that only show while feature.profile_links is on (Instagram, Facebook and TikTok always show). */
+export const SWITCHED_GUIDE_LINK_KINDS: readonly ProfileLinkKind[] = ['website', 'google', 'youtube'];
+
+/** The database column for each link, the same on guides and providers. */
+export const PROFILE_LINK_COLUMNS = {
+  website: 'website',
+  google: 'google_business_url',
+  youtube: 'youtube_url',
+  instagram: 'instagram_url',
+  facebook: 'facebook_url',
+  tiktok: 'tiktok_url',
+} as const satisfies Record<ProfileLinkKind, string>;
+
+export type ProfileLinkColumn = (typeof PROFILE_LINK_COLUMNS)[ProfileLinkKind];
+
+/** Platform names (not translated). The website's label comes from the dictionary. */
+export const PROFILE_LINK_NAMES: Record<Exclude<ProfileLinkKind, 'website'>, string> = { ...SOCIAL_NAMES, google: 'Google', youtube: 'YouTube' };
+
+/** Example links shown in hints and error messages. */
+export const PROFILE_LINK_EXAMPLES: Record<ProfileLinkKind, string> = {
+  ...SOCIAL_EXAMPLES,
+  google: 'https://maps.app.goo.gl/AbCd1234',
+  youtube: 'https://www.youtube.com/@yourname',
+  website: 'https://www.yourname.co.tz',
+};
+
+/** Cleans any profile link with the rules for its kind. */
+export function normaliseProfileLink(kind: ProfileLinkKind, input: string | null | undefined): LinkResult {
+  if (kind === 'google') return normaliseGoogleBusiness(input);
+  if (kind === 'youtube') return normaliseYoutube(input);
+  if (kind === 'website') return normaliseProfileWebsite(input);
+  return normaliseSocial(kind, input);
+}
+
+export type ShownProfileLink = { kind: ProfileLinkKind; url: string; host: string; handle: string | null };
+
+/**
+ * The stored links to show on a page, in the order of `kinds`. Each stored value is cleaned again and
+ * left out when it is not a valid link of its kind (for example a row saved before the checks).
+ * Pages render every one with rel={USER_LINK_REL}.
+ */
+export function shownProfileLinks(
+  row: Partial<Record<ProfileLinkColumn, string | null | undefined>> | null | undefined,
+  kinds: readonly ProfileLinkKind[],
+): ShownProfileLink[] {
+  if (!row) return [];
+  const out: ShownProfileLink[] = [];
+  for (const kind of kinds) {
+    const stored = row[PROFILE_LINK_COLUMNS[kind]];
+    if (!stored) continue;
+    const result = normaliseProfileLink(kind, stored);
+    if (result.ok) out.push({ kind, url: result.url, host: result.host, handle: result.handle });
+  }
+  return out;
+}
