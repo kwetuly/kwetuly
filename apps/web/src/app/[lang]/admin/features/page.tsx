@@ -74,7 +74,7 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
   const lastById = new Map(((last.data ?? []) as LastChange[]).map((r) => [r.feature_id, r]));
   const logRows = (log.data ?? []) as LogRow[];
   const today = tanzaniaToday();
-  const visible = FEATURES.filter((f) => !f.hidden && (!legalOnly || states[f.id]?.legal === 'pending' || (!states[f.id] && f.legalPending)));
+  const visible = FEATURES.filter((f) => !f.hidden && (!legalOnly || states[f.id]?.legal === 'pending' || (!states[f.id] && FEATURE_ADMIN[f.id]?.legalPending)));
 
   return (
     <div className="mt-4 space-y-8">
@@ -147,8 +147,8 @@ function FeatureRow({ def, state, last, locale, t, legalOnly, today }: {
 }) {
   const name = featureName(def.id, locale);
   const on = state?.on === true;
-  const legal = state?.legal ?? (def.legalPending ? 'pending' : 'none');
   const admin = FEATURE_ADMIN[def.id];
+  const legal = state?.legal ?? (admin?.legalPending ? 'pending' : 'none');
   return (
     <li id={`feature-${def.id}`} className="card space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">

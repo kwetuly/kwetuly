@@ -5,6 +5,8 @@
 -- NOT APPLIED. Order on live: after 20261122200000_reservation_setup, 20261122300000_reservations and
 -- 20261123000000_business_chat (feature.reservation_commission_billing comes from 20261122300000).
 -- Walter pastes it himself. Every statement is safe to run twice.
+-- A test database that ran the first version of this file (feature rows with "legal"/"team_only" keys)
+-- first needs: update public.site_settings set value = jsonb_build_object('on', value -> 'on') where key like 'feature.%';
 --
 -- What it does:
 --   1. Public switches stay as they are: site_settings rows feature.<id> = {"on": true|false} and now
@@ -19,10 +21,11 @@
 --   4. Money gates:
 --        private.money_feature_on(id) = feature_on('payments_live') and feature_on(id). For every money
 --        path that goes through an API payment provider: split_settlement, mobile_money,
---        marketplace_checkout, instalments, crew_payouts, tips. While payments_live is off they are all off,
+--        marketplace_checkout, instalments, crew_payouts, tips, save_to_travel. While payments_live is off
+--        they are all off,
 --        whatever their own switch says.
---        private.manual_payments_on() = feature_on('payments_manual'). Lipa-number manual payments do NOT
---        depend on payments_live (Walter wants them working now). jobs_contact_fees and
+--        private.manual_payments_on(id) = feature_on('payments_manual') and feature_on(id). Lipa-number
+--        manual payments for that feature do NOT depend on payments_live (Walter wants them working now). jobs_contact_fees and
 --        crew_verification_fees may be paid by Lipa too; the payer is always the operator or the vouching
 --        guide, never the job seeker or the porter (2026-11-21 decision 6). That rule belongs in the
 --        function that charges, not in the switch.
@@ -55,7 +58,7 @@
 --   drop function if exists public.admin_feature_last_changes();
 --   drop function if exists public.feature_visible(text), private.feature_visible(text);
 --   drop function if exists private.money_feature_on(text);
---   drop function if exists private.manual_payments_on();
+--   drop function if exists private.manual_payments_on(text);
 --   drop table if exists private.feature_switch_meta;   -- its triggers go with it
 --   drop table if exists private.feature_switch_log;
 --   drop function if exists private.site_settings_feature_guard(), private.site_settings_feature_log(),
@@ -85,11 +88,13 @@ stable
 set search_path = ''
 as $$
   select coalesce(
-           nullif(current_setting('request.jwt.claim.role', true), ''),
            nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role',
+           nullif(current_setting('request.jwt.claim.role', true), ''),
            '') in ('anon', 'authenticated')
       or current_user in ('anon', 'authenticated');
 $$;
+-- The guard below runs as the caller, so server code with the service role must reach private too.
+grant usage on schema private to service_role;
 revoke execute on function private.request_is_api() from public;
 grant execute on function private.request_is_api() to anon, authenticated, service_role;
 
@@ -177,23 +182,23 @@ as $$
   select private.feature_on('payments_live') and private.feature_on(p_id);
 $$;
 comment on function private.money_feature_on(text) is
-  'Money paths through an API payment provider (split_settlement, mobile_money, marketplace_checkout, instalments, crew_payouts, tips): on only while payments_live is on too.';
+  'Money paths through an API payment provider (split_settlement, mobile_money, marketplace_checkout, instalments, crew_payouts, tips, save_to_travel): on only while payments_live is on too.';
 revoke execute on function private.money_feature_on(text) from public;
 grant execute on function private.money_feature_on(text) to anon, authenticated, service_role;
 
-create or replace function private.manual_payments_on()
+create or replace function private.manual_payments_on(p_id text)
 returns boolean
 language sql
 stable
 security invoker
 set search_path = ''
 as $$
-  select private.feature_on('payments_manual');
+  select private.feature_on('payments_manual') and private.feature_on(p_id);
 $$;
-comment on function private.manual_payments_on() is
-  'Lipa-number manual payments. Does not depend on payments_live. Fees for jobs contacts and crew verification are paid by the operator or vouching guide, never the job seeker or porter.';
-revoke execute on function private.manual_payments_on() from public;
-grant execute on function private.manual_payments_on() to anon, authenticated, service_role;
+comment on function private.manual_payments_on(text) is
+  'Lipa-number manual payments for one feature: payments_manual and that switch. Does not depend on payments_live. Fees for jobs contacts and crew verification are paid by the operator or vouching guide, never the job seeker or porter.';
+revoke execute on function private.manual_payments_on(text) from public;
+grant execute on function private.manual_payments_on(text) to anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 4. Change log (append-only)

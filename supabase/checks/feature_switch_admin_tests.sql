@@ -59,7 +59,8 @@ select pg_temp.check((select count(*) > 0 from private.feature_switch_log), 'see
 
 -- Money gates
 select pg_temp.check(not private.money_feature_on('mobile_money'), 'API money path off while payments_live is off');
-select pg_temp.check(private.manual_payments_on(), 'Lipa payments do not depend on payments_live');
+select pg_temp.check(private.manual_payments_on('jobs_contact_fees'), 'Lipa payments do not depend on payments_live');
+select pg_temp.check(not private.manual_payments_on('no_such_feature'), 'Lipa payments need the feature switch too');
 
 -- Shape and admin data checks (as postgres) ---------------------------------------------------
 select pg_temp.expect_error($q$update public.site_settings set value = '{"on": true, "legal": "pending"}' where key = 'feature.stories'$q$,
@@ -174,6 +175,15 @@ reset role;
 -- The guard follows the JWT role, not current_user (L1): postgres carrying an API JWT is still limited.
 select pg_temp.expect_error($q$update public.site_settings set value = '{"on": true}' where key = 'feature.payments_live'$q$,
                             'API JWT limited even as postgres', 'P0001', 'locked off');
+
+-- Service role (server code): not limited by the guard ----------------------------------------
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+update public.site_settings set value = '{"on": false}' where key = 'feature.stories';
+reset role;
+select pg_temp.check((select value = '{"on": false}'::jsonb from public.site_settings where key = 'feature.stories'),
+                     'service role can switch a feature');
+update public.site_settings set value = '{"on": true}' where key = 'feature.stories';
 
 -- No JWT: SQL editor ---------------------------------------------------------------------
 select set_config('request.jwt.claims', '', true);

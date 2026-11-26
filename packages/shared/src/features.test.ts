@@ -32,7 +32,7 @@ describe('feature list', () => {
   it('every id is seeded by a migration, with its admin data', () => {
     for (const f of FEATURES) {
       expect(allSql, f.id).toContain(`'feature.${f.id}'`);
-      const legal = f.legalPending ? 'pending' : 'none';
+      const legal = FEATURE_ADMIN[f.id]?.legalPending ? 'pending' : 'none';
       expect(new RegExp(`^\\s+\\('${f.id}',\\s+'${legal}'\\)`, 'm').test(adminSql), f.id).toBe(true);
     }
   });
@@ -49,7 +49,7 @@ describe('feature list', () => {
     expect(Object.keys(FEATURE_ADMIN).sort()).toEqual(FEATURES.map((f) => f.id).sort());
     for (const f of FEATURES) {
       const q = FEATURE_ADMIN[f.id].legalQuestion;
-      expect(f.legalPending, f.id).toBe(q !== null);
+      expect(FEATURE_ADMIN[f.id].legalPending, f.id).toBe(q !== null);
       if (q) expect(q.length, f.id).toBeLessThan(400);
     }
   });
@@ -60,7 +60,7 @@ describe('feature list', () => {
       'tips', 'split_settlement', 'mobile_money', 'crew_payouts', 'instalments', 'insurance_rescue', 'meet_and_greet',
       'transfers_driving', 'sim_listings', 'operator_channel', 'ship_home', 'corporate_groups', 'jobs_contact_fees', 'spa_reservations',
       'save_to_travel', 'payments_manual'];
-    for (const id of pending) expect(FEATURES.find((f) => f.id === id)?.legalPending, id).toBe(true);
+    for (const id of pending) expect(FEATURE_ADMIN[id]?.legalPending, id).toBe(true);
   });
 
   it('payments_live is the only lock and matches the database', () => {
@@ -76,7 +76,7 @@ describe('feature list', () => {
 
   it('money gates: API paths need payments_live, Lipa does not', () => {
     expect(adminSql).toContain(`select private.feature_on('payments_live') and private.feature_on(p_id);`);
-    expect(adminSql).toContain(`select private.feature_on('payments_manual');`);
+    expect(adminSql).toContain(`select private.feature_on('payments_manual') and private.feature_on(p_id);`);
     for (const id of MONEY_API) expect(adminSql, id).toContain(id);
     for (const id of [...MONEY_API, 'payments_manual']) expect(FEATURES.find((f) => f.id === id)?.part, id).toMatch(/^(B|marketplace)$/);
   });
@@ -106,6 +106,7 @@ describe('admin-only data stays out of the public barrel (security review M3)', 
     }
     expect(publicText).not.toContain('boardRef');
     expect(publicText).not.toContain('legalQuestion');
+    expect(publicText).not.toContain('legalPending');
   });
 });
 
