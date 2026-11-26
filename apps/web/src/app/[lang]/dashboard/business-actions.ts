@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { revalidateTag } from 'next/cache';
-import { OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, linkErrorCode, normaliseWebsite } from '@kwetuly/shared';
+import { OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, linkErrorCode, normaliseProfileWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -54,7 +54,8 @@ export async function saveBusiness(formData: FormData) {
   if (isReservedDisplayName(name)) redirect(`${back}?business_error=name#business`);
   // The website is stored in one clean https form. A website that is not one is not saved (the
   // saved one stays) but everything else is, and the form says which link was refused.
-  const website = websiteInput ? normaliseWebsite(websiteInput) : null;
+  // The business's own site: no chat, link-in-bio or short links, no phone number (the database checks it too).
+  const website = websiteInput ? normaliseProfileWebsite(websiteInput) : null;
   const badWebsite = !!website && !website.ok;
 
   const row: Record<string, unknown> = {
@@ -76,6 +77,8 @@ export async function saveBusiness(formData: FormData) {
     ? await supabase.from('providers').update(row).eq('id', existing.id).select('id').single<{ id: string }>()
     : await supabase.from('providers').insert({ ...row, owner_id: user.id }).select('id').single<{ id: string }>();
   if (isDisplayNameReservedError(saved.error)) redirect(`${back}?business_error=name#business`);
+  // The database's own website rules (private.guard_provider_website): say the website is not allowed.
+  if (saved.error?.message?.includes('website_not_allowed')) redirect(`${back}?business_error=link_website_refused#business`);
   if (saved.error || !saved.data) redirect(`${back}?business_error=save#business`);
 
   // WhatsApp number and licence stay private: only the owner and Kwetuly can read them.
@@ -85,7 +88,7 @@ export async function saveBusiness(formData: FormData) {
   if (error) redirect(`${back}?business_error=save#business`);
 
   revalidateTag('businesses', 'max');
-  redirect(badWebsite ? `${back}?business_error=${linkErrorCode('website')}#business` : `${back}?business=saved#business`);
+  redirect(badWebsite ? `${back}?business_error=${website && !website.ok && website.reason === 'blocked' ? 'link_website_blocked' : linkErrorCode('website')}#business` : `${back}?business=saved#business`);
 }
 
 // The owner asks for the paid badge check; Kwetuly then arranges the check and the payment.

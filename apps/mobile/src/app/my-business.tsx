@@ -4,7 +4,7 @@ import { Redirect, Stack, router, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, isReservableType, reservationInboxText, linkTexts, normaliseWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
+import { BUSINESS_TYPES, OWNER_BUSINESS_TYPES, REGIONS, isDisplayNameReservedError, isReservedDisplayName, formatUsd, hasValidBadge, isReservableType, reservationInboxText, linkTexts, normaliseProfileWebsite, resolvePhone, type BusinessType } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
 import { Avatar, Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, ListGroup, ListRow, MetaItems, Muted, ScreenState, SectionTitle } from '@/components/ui';
 import { useProfile, useSession } from '@/lib/auth';
@@ -95,9 +95,10 @@ function Editor({
     if (!whatsappNumber) return setMessage({ tone: 'error', text: `${bt.whatsappField}: ${t.phone.invalidGeneric}` });
     // Names that look like Kwetuly are kept for its own team (the database refuses them too).
     if (isReservedDisplayName(f.name)) return setMessage({ tone: 'error', text: t.auth.nameReserved });
-    // The website is stored in one clean https form (the database refuses anything else).
-    const website = f.website.trim() ? normaliseWebsite(f.website) : null;
-    if (website && !website.ok) return setMessage({ tone: 'error', text: linkTexts(locale).websiteInvalid });
+    // The website is stored in one clean https form; no chat, link-in-bio or short links and no phone
+    // number (the database refuses anything else).
+    const website = f.website.trim() ? normaliseProfileWebsite(f.website) : null;
+    if (website && !website.ok) return setMessage({ tone: 'error', text: website.reason === 'blocked' ? linkTexts(locale).websiteBlocked : linkTexts(locale).websiteInvalid });
     setBusy(true);
     setMessage(null);
     try {
@@ -121,7 +122,9 @@ function Editor({
       setMessage({ tone: 'ok', text: bt.saved });
       onSaved();
     } catch (e) {
-      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
+      // The database's own website rules: say the website is not allowed, not "could not save".
+      const websiteRefused = (e as Error)?.message?.includes('website_not_allowed');
+      setMessage({ tone: 'error', text: websiteRefused ? linkTexts(locale).websiteBlocked : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }

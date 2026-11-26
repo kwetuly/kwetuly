@@ -103,7 +103,7 @@ export async function BusinessListing({
         </Link>
       )}
       {/* Business saves use their own params, so a guide who also owns a listing sees one banner. */}
-      {(status.business === 'saved' || status.business_error === 'link_website') && <SavedNote className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</SavedNote>}
+      {(status.business === 'saved' || status.business_error === 'link_website' || status.business_error === 'link_website_blocked') && <SavedNote className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{bt.saved}</SavedNote>}
       {businessError && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(businessError, locale) ?? (businessError === 'name' ? t.auth.nameReserved : businessError === 'whatsapp' ? t.phone.invalidGeneric : t.auth.error)}</p>}
 
       <form action={saveBusiness} className="card mt-6 space-y-4">
