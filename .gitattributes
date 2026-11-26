@@ -1,0 +1,4 @@
+# SQL and TypeScript are stored with LF line endings, also on Windows checkouts, so tests that read
+# migration files see the same text everywhere. Existing files are not renormalized in bulk.
+*.sql text eol=lf
+*.ts text eol=lf

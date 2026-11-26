@@ -104,7 +104,7 @@ export default function ProfileEditScreen() {
   const { t, locale } = useI18n();
   const d = t.dashboard;
   const { type, font } = useType();
-  const { session } = useSession();
+  const { session, ready } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
   const queryClient = useQueryClient();
@@ -207,6 +207,8 @@ export default function ProfileEditScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;
+  // Signed out (or the session ended): sign in instead of waiting forever.
+  if (ready && !userId) return <Redirect href="/sign-in" />;
   if (!userId || mine.isLoading) return <ScreenState screen loading />;
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
@@ -394,8 +396,9 @@ export default function ProfileEditScreen() {
         <Card>
           <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })} accessibilityRole="button">
             <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={media.thumb} />
-            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{d.photo}</Text>
+            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{`${d.photo} (${g.needed})`}</Text>
           </Pressable>
+          {!photo && !guide?.photo_url && <Muted>{g.photoNeeded}</Muted>}
           <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
           <ChipSelect label={d.baseRegion} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.base_region} onChange={set('base_region')} multiple={false} />
           <ChipSelect label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />

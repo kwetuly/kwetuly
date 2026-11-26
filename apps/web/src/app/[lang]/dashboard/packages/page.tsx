@@ -10,6 +10,8 @@ import { createClient } from '@/lib/supabase/server';
 import { DirectUpload } from '@/components/direct-upload';
 import { deletePackage, savePackage } from './actions';
 import { SubmitButton } from '@/components/submit-button';
+import { guideProgressText } from '@kwetuly/shared';
+import { signupReturn, signupReturnHref, type SignupReturn } from '@/lib/guide-steps';
 
 export const metadata: Metadata = { title: 'My packages', robots: { index: false } };
 
@@ -44,10 +46,12 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
   const packages = (data ?? []) as GuidePackage[];
   const editing = typeof params.edit === 'string' ? packages.find((p) => p.id === params.edit) : undefined;
   const showForm = !!editing || params.new === '1' || packages.length === 0;
+  // Opened from sign-up ("Add a trip"): the way back and the saved form lead to that step again.
+  const next = signupReturn(params.next);
 
   return (
     <>
-      <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.dashboard.title}</Link>
+      <Link href={next ? signupReturnHref(locale, next) : `/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{next ? guideProgressText(locale).backToSignup : t.dashboard.title}</Link>
       <h1 className="mt-2 text-3xl font-bold">{pt.manageTitle}</h1>
       <p className="mt-2 text-muted">{pt.manageIntro}</p>
       {params.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{pt.saved}</p>}
@@ -84,21 +88,22 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
       )}
 
       {showForm ? (
-        <PackageForm p={editing} t={t} locale={locale} userId={user.id} />
+        <PackageForm p={editing} t={t} locale={locale} userId={user.id} next={next} />
       ) : (
-        <Link href={`/${locale}/dashboard/packages?new=1`} className="btn mt-6">{pt.add}</Link>
+        <Link href={`/${locale}/dashboard/packages?new=1${next ? `&next=${next}` : ''}`} className="btn mt-6">{pt.add}</Link>
       )}
     </>
   );
 }
 
-function PackageForm({ p, t, locale, userId }: { p?: GuidePackage; t: Dictionary; locale: Locale; userId: string }) {
+function PackageForm({ p, t, locale, userId, next }: { p?: GuidePackage; t: Dictionary; locale: Locale; userId: string; next: SignupReturn | null }) {
   const pt = t.packages;
   return (
     <form action={savePackage} className="card mt-6 space-y-4">
       <h2 className="text-lg font-bold">{p ? pt.editPackage : pt.add}</h2>
       {p?.status === 'approved' && <p className="text-sm text-muted">{pt.changeNote}</p>}
       <input type="hidden" name="locale" value={locale} />
+      {next && <input type="hidden" name="next" value={next} />}
       {p && <input type="hidden" name="id" value={p.id} />}
       <label className="block">
         <span className="label">{pt.kindField}</span>

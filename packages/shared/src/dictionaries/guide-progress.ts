@@ -39,6 +39,10 @@ const en = {
   continue: 'Continue',
   // Step 5, your page.
   coverSoon: 'A cover photo and a photo gallery are coming soon.',
+  // Step 1: the photo is needed for the step to count as finished.
+  photoNeeded: 'A photo is needed for this step. Please choose a clear photo of your face.',
+  needed: 'needed',
+  backToSignup: 'Back to your sign-up steps',
 
   // My booking link.
   linkTitle: 'My booking link',
@@ -96,9 +100,12 @@ const sw: GuideProgressText = {
   tripsSee: 'Tazama safari zangu',
   continue: 'Endelea',
   coverSoon: 'Picha ya jalada na picha nyingine zinakuja hivi karibuni.',
+  photoNeeded: 'Picha inahitajika kwa hatua hii. Tafadhali chagua picha safi ya uso wako.',
+  needed: 'inahitajika',
+  backToSignup: 'Rudi kwenye hatua zako za usajili',
 
   linkTitle: 'Kiungo changu cha kuweka nafasi',
-  linkMenuHint: 'Kinakili, kishiriki au waonyeshe wageni wako msimbo wake wa QR',
+  linkMenuHint: 'Nakili, shiriki au waonyeshe wageni wako msimbo wa QR',
   linkIntro: 'Huu ni ukurasa wako mwenyewe kwenye Kwetuly. Unakaribishwa kuushiriki na wageni wako kwenye WhatsApp au Instagram, au kuwaonyesha msimbo wa QR, ili waone safari zako na wakutumie ombi.',
   linkPending: 'Kiungo chako kitaanza kufanya kazi baada ya Kwetuly kuidhinisha wasifu wako. Asante kwa uvumilivu wako.',
   linkNoProfile: 'Tafadhali maliza hatua ya kwanza, kuhusu wewe, na kiungo chako kitakuwa tayari hapa.',

@@ -209,7 +209,9 @@ async function GuideEditor({
                 </select>
               </Field>
               <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
-              <Field label={d.photo}>
+              <Field label={`${d.photo} (${g.needed})`}>
+                {/* Needed for step 1 to count as finished; saving without one still works, as before. */}
+                {!guide?.photo_url && <span className="mb-2 block text-sm text-muted">{g.photoNeeded}</span>}
                 {guide?.photo_url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={guide.photo_url} alt={d.currentPhoto} className="mb-2 block size-20 rounded-[5px] object-cover" />
@@ -279,7 +281,7 @@ async function GuideEditor({
             <>
               <p className="text-sm text-muted">{g.tripsIntro}</p>
               <p className="font-semibold">{!tripCount ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</p>
-              <Link href={`/${locale}/dashboard/packages${tripCount ? '' : '?new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
+              <Link href={`/${locale}/dashboard/packages?next=trips${tripCount ? '' : '&new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
             </>
           )}
 

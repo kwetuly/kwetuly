@@ -34,7 +34,7 @@ export default function BookingLinkScreen() {
   const { locale } = useI18n();
   const g = guideProgressText(locale);
   const { type, font } = useType();
-  const { session } = useSession();
+  const { session, ready } = useSession();
   const userId = session?.user.id;
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
   const on = useBookingLinkOn();
@@ -43,6 +43,8 @@ export default function BookingLinkScreen() {
   const needsSetup = useNeedsSetup();
 
   if (needsSetup) return <Redirect href={welcomeHref('/booking-link')} />;
+  // Signed out (or the session ended): sign in instead of waiting forever.
+  if (ready && !userId) return <Redirect href="/sign-in" />;
   const title = <Stack.Title>{g.linkTitle}</Stack.Title>;
   if (!userId || mine.isLoading || on.isLoading) return <>{title}<ScreenState screen loading loadingCount={1} /></>;
   if (mine.error || on.error) {
