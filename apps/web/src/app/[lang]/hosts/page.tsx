@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { Crown } from 'lucide-react';
-import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText, isFeatureOn } from '@kwetuly/shared';
+import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText, isFeatureOn, limitTexts } from '@kwetuly/shared';
 import { LOCALE_TAGS, type Locale } from '@/i18n/config';
 import { getCurrentUser } from '@/lib/auth';
 import { HostContact } from './host-contact';
+import { hostContactAlreadySent } from './host-contact-status';
 import { pageMeta } from '@/lib/seo';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { getFeatures } from '@/lib/features';
@@ -114,18 +115,20 @@ function ApplyLink({ href, label, note }: { href: string; label: string; note: s
 async function HostAction({ locale, apply, label, note }: { locale: Locale; apply: string; label: string; note: string }) {
   const user = await getCurrentUser();
   if (!user || user.role === 'guide' || user.role === 'admin') return <ApplyLink href={apply} label={label} note={note} />;
-  const t = await getDictionary();
+  const [t, alreadySent] = await Promise.all([getDictionary(), hostContactAlreadySent()]);
   return (
     <div lang={LOCALE_TAGS[locale]}>
       <HostContact
         locale={locale}
         accountHref={`/${locale}/dashboard`}
+        alreadySent={alreadySent}
         t={{
           notGuide: HOSTS_ENTRY_LINKS.notGuide[locale],
           askContact: HOSTS_ENTRY_LINKS.askContact[locale],
           sent: HOSTS_ENTRY_LINKS.askContactSent[locale],
           missing: HOSTS_ENTRY_LINKS.missingDetails[locale],
           openAccount: HOSTS_ENTRY_LINKS.openAccount[locale],
+          busy: limitTexts(locale).tooMany,
           error: t.auth.error,
         }}
       />

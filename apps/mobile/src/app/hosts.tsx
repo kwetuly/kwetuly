@@ -1,14 +1,19 @@
 import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollView, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText, isFeatureOn } from '@kwetuly/shared';
+import { HOST_FEATURES, HOSTS_ENTRY_LINKS, RATE_LIMIT_MESSAGE, hostsEntryText, hostsText, isFeatureOn, limitTexts } from '@kwetuly/shared';
 import { Button, Card, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
-import { registerInterest } from '@/lib/api-more';
+import { myInterestExists, registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useFeatures } from '@/lib/features';
 import { useI18n } from '@/lib/i18n';
 import { useType } from '@/lib/use-type';
 import { brand, colors, layout, space } from '@/theme';
+
+// "Please contact me" is stored as this interest row (the website uses the same values).
+const HOST_CONTACT_SECTION = 'partners';
+const HOST_CONTACT_ITEM = 'become-host';
 
 // "Become a host", like /hosts on the website: what a concierge (VIP host) and an investment visit host
 // do, what is not offered, and the way in (a guide account, then a host service once approved).
@@ -23,18 +28,14 @@ export default function HostsScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
-  // "Please contact me" is sent once per account on this phone. The database cannot be asked yet
-  // (interest_signups has no user_id and only admins read it), so this is a device-side guard only.
-  const sentKey = session ? `host-contact-sent:${session.user.id}` : null;
-  const [sentNow, setAlreadySent] = useState(false);
+  // "Please contact me" is sent once per account: the database says whether this account already sent
+  // it (from the website or the app), so the button stays hidden on every phone and later visits.
+  const queryClient = useQueryClient();
+  const userId = session?.user.id;
+  const sentKey = ['my-interest', userId, HOST_CONTACT_SECTION, HOST_CONTACT_ITEM] as const;
+  const sent = useQuery({ queryKey: sentKey, queryFn: () => myInterestExists(HOST_CONTACT_SECTION, HOST_CONTACT_ITEM), enabled: !!userId });
+  const alreadySent = sent.data === true;
   const [missing, setMissing] = useState(false);
-  let stored = false;
-  try {
-    stored = !!sentKey && globalThis.localStorage?.getItem(sentKey) === '1';
-  } catch {
-    // Storage unavailable: rely on this visit only.
-  }
-  const alreadySent = sentNow || stored;
   const x = hostsText(locale);
   const e = hostsEntryText(locale);
   const concierge = isFeatureOn(features.data ?? {}, HOST_FEATURES.concierge);
@@ -84,8 +85,8 @@ export default function HostsScreen() {
     setMessage(null);
     try {
       await registerInterest({
-        section: 'partners',
-        item: 'become-host',
+        section: HOST_CONTACT_SECTION,
+        item: HOST_CONTACT_ITEM,
         kind: role === 'provider' ? 'business' : 'traveler',
         name,
         contact,
@@ -93,14 +94,11 @@ export default function HostsScreen() {
         locale: locale === 'sw' ? 'sw' : 'en',
       });
       setMessage({ tone: 'ok', text: HOSTS_ENTRY_LINKS.askContactSent[locale] });
-      setAlreadySent(true);
-      try {
-        if (sentKey) globalThis.localStorage?.setItem(sentKey, '1');
-      } catch {
-        // Storage unavailable: the button stays hidden for this visit only.
-      }
-    } catch {
-      setMessage({ tone: 'error', text: t.auth.error });
+      queryClient.setQueryData(sentKey, true);
+    } catch (err) {
+      // More than 5 requests an hour: the database refuses with 'rate_limited'.
+      const busy = err instanceof Error && err.message === RATE_LIMIT_MESSAGE;
+      setMessage({ tone: 'error', text: busy ? limitTexts(locale).tooMany : t.auth.error });
     } finally {
       setBusy(false);
     }
@@ -177,7 +175,7 @@ export default function HostsScreen() {
                 <Button title={HOSTS_ENTRY_LINKS.openAccount[locale]} variant="outline" onPress={() => router.navigate('/account')} />
               </>
             ) : (
-              message?.tone !== 'ok' && !alreadySent && <Button title={HOSTS_ENTRY_LINKS.askContact[locale]} onPress={askContact} loading={busy} />
+              message?.tone !== 'ok' && !alreadySent && !sent.isLoading && <Button title={HOSTS_ENTRY_LINKS.askContact[locale]} onPress={askContact} loading={busy} />
             )}
           </Card>
         )
