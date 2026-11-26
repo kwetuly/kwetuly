@@ -7,7 +7,7 @@ const en = {
   socialInvalid: 'Your {platform} link was not saved. Paste the link to your own profile, for example {example}, or just type your @name.',
   socialHint: 'Paste the link to your profile, or just type your @name.',
   websiteInvalid: 'Your website was not saved. Use the full address of your own site, for example https://www.yourbusiness.co.tz.',
-  websiteBlocked: 'Your website was not saved. Chat links (WhatsApp, Telegram, Messenger), link-in-bio pages (such as Linktree), short links (such as bit.ly), Facebook, Instagram, Google, YouTube or TikTok pages, and links with a phone number in them cannot be used as a website.',
+  websiteBlocked: 'This website is not allowed. Chat links (WhatsApp, Telegram, Messenger, Discord), link-in-bio pages (such as Linktree), short links (such as bit.ly), Facebook, Instagram, Google, YouTube or TikTok pages, and links with a phone number in them cannot be used as a website.',
   checkLinks: 'Your profile was not saved. Please check your profile links (Instagram, Facebook, TikTok): each must be the link to your own profile, or just your @name.',
 };
 
@@ -17,7 +17,7 @@ const sw: LinkTexts = {
   socialInvalid: 'Kiungo chako cha {platform} hakikuhifadhiwa. Bandika kiungo cha wasifu wako mwenyewe, kwa mfano {example}, au andika tu @jina lako.',
   socialHint: 'Bandika kiungo cha wasifu wako, au andika tu @jina lako.',
   websiteInvalid: 'Tovuti yako haikuhifadhiwa. Tumia anwani kamili ya tovuti yako, kwa mfano https://www.biasharayako.co.tz.',
-  websiteBlocked: 'Tovuti yako haikuhifadhiwa. Viungo vya mazungumzo (WhatsApp, Telegram, Messenger), kurasa za viungo (kama Linktree), viungo vifupi (kama bit.ly), kurasa za Facebook, Instagram, Google, YouTube au TikTok, na viungo vyenye namba ya simu haviwezi kutumika kama tovuti.',
+  websiteBlocked: 'Tovuti hii hairuhusiwi. Viungo vya mazungumzo (WhatsApp, Telegram, Messenger, Discord), kurasa za viungo (kama Linktree), viungo vifupi (kama bit.ly), kurasa za Facebook, Instagram, Google, YouTube au TikTok, na viungo vyenye namba ya simu haviwezi kutumika kama tovuti.',
   checkLinks: 'Wasifu wako haukuhifadhiwa. Tafadhali angalia viungo vya wasifu wako (Instagram, Facebook, TikTok): kila kimoja kiwe kiungo cha wasifu wako mwenyewe, au @jina lako tu.',
 };
 
@@ -27,7 +27,7 @@ export const LINK_TEXT: Record<'en' | 'sw', LinkTexts> = { en, sw };
 export const linkTexts = (locale: Locale | string): LinkTexts => (locale === 'sw' ? sw : en);
 
 /** The error code a save path uses for each field ("link_instagram", ..., "link_website"). */
-export type LinkErrorCode = `link_${SocialPlatform}` | 'link_website' | 'link_website_blocked' | 'links';
+export type LinkErrorCode = `link_${SocialPlatform}` | 'link_website' | 'link_website_blocked' | 'link_website_refused' | 'links';
 
 export const linkErrorCode = (field: SocialPlatform | 'website'): LinkErrorCode => `link_${field}`;
 
@@ -35,7 +35,8 @@ export const linkErrorCode = (field: SocialPlatform | 'website'): LinkErrorCode 
 export function linkErrorMessage(code: unknown, locale: Locale | string): string | null {
   const texts = linkTexts(locale);
   if (code === 'link_website') return texts.websiteInvalid;
-  if (code === 'link_website_blocked') return texts.websiteBlocked;
+  // blocked: refused before saving (the rest was saved); refused: the database refused the whole save.
+  if (code === 'link_website_blocked' || code === 'link_website_refused') return texts.websiteBlocked;
   if (code === 'links') return texts.checkLinks;
   for (const platform of Object.keys(SOCIAL_NAMES) as SocialPlatform[]) {
     if (code === `link_${platform}`) {

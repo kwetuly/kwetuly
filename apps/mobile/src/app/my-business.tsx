@@ -122,7 +122,9 @@ function Editor({
       setMessage({ tone: 'ok', text: bt.saved });
       onSaved();
     } catch (e) {
-      setMessage({ tone: 'error', text: isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
+      // The database's own website rules: say the website is not allowed, not "could not save".
+      const websiteRefused = (e as Error)?.message?.includes('website_not_allowed');
+      setMessage({ tone: 'error', text: websiteRefused ? linkTexts(locale).websiteBlocked : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
     } finally {
       setBusy(false);
     }

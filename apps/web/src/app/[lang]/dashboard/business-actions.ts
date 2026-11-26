@@ -77,6 +77,8 @@ export async function saveBusiness(formData: FormData) {
     ? await supabase.from('providers').update(row).eq('id', existing.id).select('id').single<{ id: string }>()
     : await supabase.from('providers').insert({ ...row, owner_id: user.id }).select('id').single<{ id: string }>();
   if (isDisplayNameReservedError(saved.error)) redirect(`${back}?business_error=name#business`);
+  // The database's own website rules (private.guard_provider_website): say the website is not allowed.
+  if (saved.error?.message?.includes('website_not_allowed')) redirect(`${back}?business_error=link_website_refused#business`);
   if (saved.error || !saved.data) redirect(`${back}?business_error=save#business`);
 
   // WhatsApp number and licence stay private: only the owner and Kwetuly can read them.

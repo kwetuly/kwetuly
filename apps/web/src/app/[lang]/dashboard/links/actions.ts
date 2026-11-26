@@ -62,6 +62,7 @@ function linkPatch(formData: FormData, kinds: readonly ProfileLinkKind[]): { pat
 function saveError(error: { message?: string; code?: string } | null): ProfileLinkErrorCode | null {
   if (!error) return null;
   if (error.message?.includes('profile_links_off')) return 'pl_off';
+  if (error.message?.includes('guides_website_format') || error.message?.includes('website_not_allowed')) return 'pl_website_blocked';
   return 'pl_save';
 }
 

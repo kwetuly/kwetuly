@@ -230,6 +230,9 @@ describe('link messages', () => {
     expect(linkErrorMessage('link_tiktok', 'sw')).toContain('https://www.tiktok.com/@yourname');
     expect(linkErrorMessage('link_website', 'fr')).toBe(linkErrorMessage('link_website', 'en'));
     expect(linkErrorMessage('name', 'en')).toBeNull();
+    // N3: a website the rules refuse is "not allowed", in English and Kiswahili.
+    expect(linkErrorMessage('link_website_refused', 'en')).toMatch(/^This website is not allowed\./);
+    expect(linkErrorMessage('link_website_blocked', 'sw')).toMatch(/^Tovuti hii hairuhusiwi\./);
   });
 });
 
@@ -365,13 +368,35 @@ describe('normaliseProfileWebsite', () => {
     expect(site('https://mytiktok.com.tz/')).toBe('https://mytiktok.com.tz/');
     expect(site('https://googlesafaris.com/')).toBe('https://googlesafaris.com/');
   });
-  it('refuses a phone number in the path or query (L3)', () => {
+  it('refuses a Tanzanian phone number anywhere in the address (L3, N5)', () => {
     expect(site('https://amani.co.tz/contact/255700000000')).toBe('fail:blocked');
     expect(site('https://amani.co.tz/?phone=+255700000000')).toBe('fail:blocked');
-    expect(site('https://amani.co.tz/?phone=%2B255700000000')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/?phone=%2B255712345678')).toBe('fail:blocked');
     expect(site('https://amani.co.tz/call/0712345678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/call/0612345678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/call/0712-345-678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/call/+255.712.345.678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/call/255 712 345 678')).toBe('fail:invalid');
+    expect(site('https://amani.co.tz/call/255%20712%20345%20678')).toBe('fail:blocked');
+    expect(site('https://amani.co.tz/#0754123456')).toBe('fail:blocked');
+    // Digits in the host count too.
+    expect(site('https://0712345678.co.tz/')).toBe('fail:blocked');
+    expect(site('https://call-255712345678.com/')).toBe('fail:blocked');
+  });
+  it('allows booking, page and other long numbers (N5)', () => {
     expect(site('https://amani.co.tz/tours/2026/12345678')).toBe('https://amani.co.tz/tours/2026/12345678');
     expect(site('https://123456789.co.tz/')).toBe('https://123456789.co.tz/');
+    expect(site('https://amani.co.tz/booking/123456789012')).toBe('https://amani.co.tz/booking/123456789012');
+    expect(site('https://amani.co.tz/p/90712345678123')).toBe('https://amani.co.tz/p/90712345678123');
+    expect(site('https://amani.co.tz/?id=0812345678')).toBe('https://amani.co.tz/?id=0812345678');
+    expect(site('https://amani.co.tz/2026-07-12/')).toBe('https://amani.co.tz/2026-07-12/');
+  });
+  it('refuses Messenger, Discord invites and whatsapp.net (N6)', () => {
+    for (const url of ['https://www.messenger.com/t/amani', 'https://messenger.com/', 'https://m.me/amani', 'https://discord.gg/abc',
+      'https://discord.com/invite/abc', 'https://www.discord.com/invite/abc', 'https://discordapp.com/invite/abc', 'https://web.whatsapp.net/x']) {
+      expect(site(url), url).toBe('fail:blocked');
+    }
+    expect(site('https://discord.com/channels/1')).toBe('https://discord.com/channels/1');
   });
   it('marks punycode hosts (L2)', () => {
     expect(isPunycodeHost('xn--mnchen-3ya.de')).toBe(true);
@@ -448,11 +473,17 @@ describe('S5 stored links match the database patterns', () => {
     expect(count(`youtube_url !~ '${LINK_PATTERNS.youtubeReserved}'`)).toBe(2);
     expect(count('char_length(google_business_url) <= 600')).toBe(2);
     // The guide's website: the website form and the blocked hosts.
-    // Guides' and providers' websites (L4): the website form, the blocked hosts and the phone check.
-    expect(count(`website ~ '${LINK_PATTERNS.website}'`)).toBe(2);
-    expect(count(`website !~ '${LINK_PATTERNS.websiteBlocked}'`)).toBe(2);
-    expect(count(`website !~ '${LINK_PATTERNS.websitePhoneLike}'`)).toBe(2);
-    expect(body).toMatch(/add constraint providers_website_format check \([\s\S]*?\) not valid;/);
+    // guides.website: the website form, the blocked hosts and the phone check, as a constraint.
+    expect(count(`website ~ '${LINK_PATTERNS.website}'`)).toBe(1);
+    expect(count(`  and website !~ '${LINK_PATTERNS.websiteBlocked}'`)).toBe(1);
+    expect(count(`  and website !~ '${LINK_PATTERNS.websitePhoneLike}'`)).toBe(1);
+    // providers.website (N3): providers_website_format is left alone; the same rules run in a trigger
+    // only when the website is set or changed.
+    expect(body).not.toContain('providers_website_format');
+    expect(body).toContain(`if new.website ~ '${LINK_PATTERNS.websiteBlocked}'`);
+    expect(body).toContain(`or new.website ~ '${LINK_PATTERNS.websitePhoneLike}'`);
+    expect(body).toContain("new.website is not distinct from old.website");
+    expect(body).toMatch(/before insert or update of website on public\.providers\s+for each row execute function private\.guard_provider_website\(\)/);
     // The read-only query in the header uses the same block and phone patterns.
     expect(sql).toContain(`website ~ '${LINK_PATTERNS.websiteBlocked}'`);
     expect(sql).toContain(`or website ~ '${LINK_PATTERNS.websitePhoneLike}'`);

@@ -17,10 +17,12 @@
 --        youtube_url          https://www.youtube.com/@<handle> | https://www.youtube.com/channel/UC<22>
 --        guides.website       the website form (as providers.website), not a blocked host (chat links,
 --                             link-in-bio pages, short links, and Facebook, Instagram, Google, YouTube and
---                             TikTok, which have their own fields), and no 9 or more digits in a row in the
---                             path or query (a phone number)
---        providers.website    replaced: the same format plus the same block and phone checks, NOT VALID
---                             (rows already on live are not checked; see the count query below)
+--                             TikTok, which have their own fields, Messenger and Discord invites), and no
+--                             Tanzanian phone number anywhere in it (255 or 0, then 6 or 7, then 8 digits)
+--        providers.website    providers_website_format from 20261030000000 stays as it is (validated). The
+--                             same block and phone rules run in a BEFORE trigger
+--                             (private.guard_provider_website), only when the website is set or changed,
+--                             so websites already on live never block other saves
 --        providers.facebook_url / instagram_url / tiktok_url   the same rules as the guides' columns
 --      The columns are new and empty, so the checks are added validated (nothing to clean first).
 --   3. Switch: feature.profile_links (seeded on, legal 'none', if S1 has not seeded it already). While it
@@ -29,19 +31,18 @@
 --      are not switched: they existed before.
 --   4. The admin alert for link changes on approved profiles (private.on_guide_link_changed and
 --      private.on_provider_link_changed from 20261030000000) now covers the new columns too, and a change
---      inside the 15-minute window is added to the alert that has not gone out yet instead of being dropped.
+--      is never dropped: it is added to an alert that nobody has claimed yet, and an alert that comes
+--      within 15 minutes of one already sent is held until those 15 minutes are over.
 --
--- BEFORE APPLYING, Walter runs this read-only query. It lists business websites already on live that the
--- new providers_website_format would refuse. The constraint is NOT VALID, so the migration itself does not
--- fail, but a later save of such a business would, until its website is corrected or cleared:
+-- Optional, read-only: this lists business websites already on live that the new rules would refuse if
+-- they were typed in now. Nothing fails because of them (the trigger only checks a website when it is set
+-- or changed); an admin may want to correct or clear them with the owner:
 --
 --   select id, business_name, website from public.providers
 --    where website is not null and (
---      website ~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)'
---      or website ~ '^https://[^/]+/.*(\+|%2[bB])?[0-9]{9}');
+--      website ~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
+--      or website ~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)');
 --
--- If it returns rows, an admin corrects or clears those websites with the owner. Once it returns none:
---   alter table public.providers validate constraint providers_website_format;
 --
 -- Access rules: unchanged. Owners already update their own guides and providers rows ("Owners update own
 -- guide profile" and the providers owner policy); everyone already reads approved guides and providers.
@@ -57,8 +58,8 @@
 --   drop function if exists private.guard_provider_profile_links_switch();
 --   then re-run section 2 of 20261030000000_profile_link_checks.sql (the two alert functions and the
 --   two "after update of" triggers) to put the old alert back;
---   alter table public.providers drop constraint providers_website_format; then re-run the
---   providers_website_format statement from section 1 of that file;
+--   drop trigger if exists providers_website_rules on public.providers;
+--   drop function if exists private.guard_provider_website();
 --   drop function if exists private.link_alert(uuid, text, text, text[], jsonb, jsonb);
 --   drop function if exists private.link_changes(jsonb, jsonb, text[]); and:
 --   alter table public.guides drop column if exists google_business_url, drop column if exists youtube_url,
@@ -115,8 +116,8 @@ alter table public.guides
       and website ~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})(/[!-~]*)?$'
       and website !~ '["<>]'
       and strpos(website, '\') = 0
-      and website !~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)'
-      and website !~ '^https://[^/]+/.*(\+|%2[bB])?[0-9]{9}'
+      and website !~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
+      and website !~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)'
     )
   );
 
@@ -226,31 +227,50 @@ create trigger providers_profile_links_switch
   for each row execute function private.guard_provider_profile_links_switch();
 
 -- ---------------------------------------------------------------------------
--- 3. providers.website: the same block checks as guides.website (security review L4)
--- Replaces providers_website_format from 20261030000000: the same format rules plus the blocked hosts and
--- the phone-number check. NOT VALID: rows already on live are not checked now, but a later update of such
--- a row fails until its website is fixed. Run the query in the header first.
+-- 3. providers.website: the same block and phone rules as guides.website (security review L4, N3)
+-- providers_website_format from 20261030000000 is kept as it is (validated). The extra rules are a
+-- trigger, not a constraint, so they only look at a website when it is set or changed (always on insert):
+-- a website already on live never blocks a save of something else. Applies to everyone, admins included.
+-- Owners get the code 'website_not_allowed' and a message that this website is not allowed.
 -- ---------------------------------------------------------------------------
-alter table public.providers drop constraint if exists providers_website_format;
-alter table public.providers
-  add constraint providers_website_format check (
-    website is null or (
-      char_length(website) <= 300
-      and website ~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+([a-z]{2,63}|xn--[a-z0-9-]{1,59})(/[!-~]*)?$'
-      and website !~ '["<>]'
-      and strpos(website, '\') = 0
-      and website !~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)'
-      and website !~ '^https://[^/]+/.*(\+|%2[bB])?[0-9]{9}'
-    )
-  ) not valid;
+create or replace function private.guard_provider_website()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if new.website is null or (tg_op = 'UPDATE' and new.website is not distinct from old.website) then
+    return new;
+  end if;
+  if new.website ~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
+     or new.website ~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)' then
+    raise exception 'website_not_allowed' using errcode = 'P0001',
+      hint = 'Chat links, link-in-bio pages, short links, social and Google pages and phone numbers cannot be a website.';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function private.guard_provider_website() from public, anon, authenticated;
+
+drop trigger if exists providers_website_rules on public.providers;
+create trigger providers_website_rules
+  before insert or update of website on public.providers
+  for each row execute function private.guard_provider_website();
 
 -- ---------------------------------------------------------------------------
 -- 4. Admin alert when an approved guide or business changes a link (now every link column)
 -- Same rules as 20261030000000: SECURITY DEFINER so it can call notify_admins; the caller's role is read
 -- from the JWT, so only signed-in members (not admins, server jobs or the SQL editor) raise the alert.
--- Security review M3: a change inside the 15-minute window is no longer dropped. While the alert for that
--- profile has not gone out yet (status pending), the change is added to it, keeping the earliest "before"
--- and the latest "after"; once it has gone out, a new alert is written.
+-- No change is dropped (security review M3, N1, N2):
+--   - A change is added to a pending alert for the same profile that the sender has not claimed (the
+--     sender claims a row by raising attempts and setting locked_until to now + 2 minutes): created in the
+--     last 15 minutes, or held (see below). The earliest "before" and the latest "after" are kept.
+--   - Otherwise a new alert is written. If an alert for this profile was sent in the last 15 minutes, the
+--     new one is held: locked_until = that sent_at + 15 minutes, so the sender does not take it before
+--     then and later changes are added to it. At most one alert per profile every 15 minutes goes out.
+--   - The "changes" text keeps its newest end if it ever passes 4000 characters (N4).
 -- ---------------------------------------------------------------------------
 create or replace function private.link_alert(p_ref uuid, p_kind text, p_name text, p_changes text[], p_before jsonb, p_after jsonb)
 returns void
@@ -260,25 +280,47 @@ set search_path = ''
 as $$
 declare
   v_merged int;
+  v_last_sent timestamptz;
 begin
   if coalesce(cardinality(p_changes), 0) = 0 then
     return;
   end if;
   update public.notification_outbox o
      set payload = o.payload || jsonb_build_object(
-           'changes', left(concat_ws('; ', nullif(o.payload ->> 'changes', ''), array_to_string(p_changes, '; ')), 4000),
+           'changes', right(concat_ws('; ', nullif(o.payload ->> 'changes', ''), array_to_string(p_changes, '; ')), 4000),
            'before', p_before || coalesce(o.payload -> 'before', '{}'::jsonb),
            'after', coalesce(o.payload -> 'after', '{}'::jsonb) || p_after)
    where o.event = 'link_changed'
      and o.payload ->> 'ref' = p_ref::text
      and o.status = 'pending'
-     and o.created_at > now() - interval '15 minutes';
+     and (o.attempts = 0 or o.locked_until is null or o.locked_until < now())
+     and (o.created_at > now() - interval '15 minutes' or (o.attempts = 0 and o.locked_until > now()));
   get diagnostics v_merged = row_count;
-  if v_merged = 0 then
-    perform private.notify_admins('link_changed', jsonb_build_object(
-      'ref', p_ref, 'kind', p_kind, 'name', p_name,
-      'changes', left(array_to_string(p_changes, '; '), 4000), 'before', p_before, 'after', p_after,
-      'link', '/admin'));
+  if v_merged > 0 then
+    return;
+  end if;
+
+  select max(o.sent_at) into v_last_sent
+    from public.notification_outbox o
+   where o.event = 'link_changed'
+     and o.payload ->> 'ref' = p_ref::text
+     and o.status = 'sent'
+     and o.sent_at > now() - interval '15 minutes';
+
+  perform private.notify_admins('link_changed', jsonb_build_object(
+    'ref', p_ref, 'kind', p_kind, 'name', p_name,
+    'changes', right(array_to_string(p_changes, '; '), 4000), 'before', p_before, 'after', p_after,
+    'link', '/admin'));
+
+  if v_last_sent is not null then
+    update public.notification_outbox o
+       set locked_until = v_last_sent + interval '15 minutes'
+     where o.event = 'link_changed'
+       and o.payload ->> 'ref' = p_ref::text
+       and o.status = 'pending'
+       and o.attempts = 0
+       and o.locked_until is null
+       and o.created_at = now();
   end if;
 end;
 $$;

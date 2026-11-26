@@ -27,7 +27,7 @@ export async function saveListing(formData: FormData) {
   const region = text(formData, 'base_region', 80);
   const back = `/${locale}/admin/listings`;
   const websiteInput = text(formData, 'website', 1000);
-  // The same rules as owners (providers_website_format refuses chat, short and platform links).
+  // The same rules as owners (private.guard_provider_website refuses chat, short and platform links).
   const website = websiteInput ? normaliseProfileWebsite(websiteInput) : null;
   if (website && !website.ok) redirect(`${back}?error=website${id ? `#b-${id}` : ''}`);
   const row = {
@@ -51,6 +51,7 @@ export async function saveListing(formData: FormData) {
     ? await supabase.from('providers').update(row).eq('id', id)
     : await supabase.from('providers').insert({ ...row, owner_id: userId, languages: ['en', 'sw'] });
   revalidateTag('businesses', 'max');
+  if (error?.message?.includes('website_not_allowed')) redirect(`${back}?error=website${id ? `#b-${id}` : ''}`);
   redirect(`${back}?${error ? 'error' : 'saved'}=1${id ? `#b-${id}` : ''}`);
 }
 

@@ -132,7 +132,7 @@ const en = {
   /** {label} = the field's name, {example} = an example link. */
   invalid: 'Your {label} link was not saved. Paste the link to your own page, for example {example}.',
   websiteInvalid: 'Your website was not saved. Use the full address of your own site, for example https://www.yourname.co.tz.',
-  websiteBlocked: 'Your website was not saved. Chat links (WhatsApp, Telegram, Messenger), link-in-bio pages (such as Linktree), short links (such as bit.ly), Facebook, Instagram, Google, YouTube or TikTok pages, and links with a phone number in them cannot be used as a website. Facebook, Instagram, Google, YouTube and TikTok have their own fields.',
+  websiteBlocked: 'This website is not allowed. Chat links (WhatsApp, Telegram, Messenger, Discord), link-in-bio pages (such as Linktree), short links (such as bit.ly), Facebook, Instagram, Google, YouTube or TikTok pages, and links with a phone number in them cannot be used as a website. Facebook, Instagram, Google, YouTube and TikTok have their own fields.',
   googleInvalid: 'Your Google link was not saved. Open your profile on Google Maps, press Share and paste that link, for example https://maps.app.goo.gl/AbCd1234.',
   youtubeInvalid: 'Your YouTube link was not saved. Paste the link to your channel, for example https://www.youtube.com/@yourname, or type your @name. Links to single videos cannot be used.',
   /** Shown as soon as a field is left with a link that would be refused. */
@@ -168,7 +168,7 @@ const sw: ProfileLinksText = {
   dashboard: 'Dashibodi',
   invalid: 'Kiungo chako cha {label} hakikuhifadhiwa. Bandika kiungo cha ukurasa wako mwenyewe, kwa mfano {example}.',
   websiteInvalid: 'Tovuti yako haikuhifadhiwa. Tumia anwani kamili ya tovuti yako, kwa mfano https://www.jinalako.co.tz.',
-  websiteBlocked: 'Tovuti yako haikuhifadhiwa. Viungo vya mazungumzo (WhatsApp, Telegram, Messenger), kurasa za viungo (kama Linktree), viungo vifupi (kama bit.ly), kurasa za Facebook, Instagram, Google, YouTube au TikTok, na viungo vyenye namba ya simu haviwezi kutumika kama tovuti. Facebook, Instagram, Google, YouTube na TikTok zina sehemu zake.',
+  websiteBlocked: 'Tovuti hii hairuhusiwi. Viungo vya mazungumzo (WhatsApp, Telegram, Messenger, Discord), kurasa za viungo (kama Linktree), viungo vifupi (kama bit.ly), kurasa za Facebook, Instagram, Google, YouTube au TikTok, na viungo vyenye namba ya simu haviwezi kutumika kama tovuti. Facebook, Instagram, Google, YouTube na TikTok zina sehemu zake.',
   googleInvalid: 'Kiungo chako cha Google hakikuhifadhiwa. Fungua wasifu wako kwenye Google Maps, bonyeza Shiriki (Share) na ubandike kiungo hicho, kwa mfano https://maps.app.goo.gl/AbCd1234.',
   youtubeInvalid: 'Kiungo chako cha YouTube hakikuhifadhiwa. Bandika kiungo cha chaneli yako, kwa mfano https://www.youtube.com/@jinalako, au andika @jina lako. Viungo vya video moja haviwezi kutumika.',
   check: 'Hiki si kiungo cha {label} chako. Kwa mfano {example}.',

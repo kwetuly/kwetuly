@@ -63,12 +63,18 @@ export const LINK_PATTERNS = {
    * - link-in-bio pages, which usually carry chat links;
    * - short links, which hide where the link goes;
    * - Facebook, Instagram, Google, YouTube and TikTok, which have their own fields (this also covers
-   *   their redirectors such as l.facebook.com, google.com/url and youtube.com/redirect).
+   *   their redirectors such as l.facebook.com, google.com/url and youtube.com/redirect);
+   * - Discord invite links (discord.gg and discord.com/invite).
    */
   websiteBlocked:
-    '^https://([a-z0-9-]+\\.)*(wa\\.me|wa\\.link|whatsapp\\.com|t\\.me|telegram\\.me|telegram\\.org|telegram\\.dog|m\\.me|ig\\.me|signal\\.me|viber\\.me|invite\\.viber\\.com|linktr\\.ee|tr\\.ee|beacons\\.ai|bio\\.link|lnk\\.bio|bit\\.ly|bitly\\.com|tinyurl\\.com|goo\\.gl|t\\.co|t\\.ly|s\\.id|bl\\.ink|j\\.mp|ow\\.ly|is\\.gd|buff\\.ly|cutt\\.ly|rb\\.gy|tiny\\.cc|shorturl\\.at|rebrand\\.ly|lnkd\\.in|fb\\.me|qrco\\.de|snip\\.ly|youtu\\.be|g\\.page|facebook\\.com|fb\\.com|instagram\\.com|youtube\\.com|tiktok\\.com|google\\.([a-z]{2,63}|com?\\.[a-z]{2}))(/|$)',
-  /** A website whose path, query or fragment holds 9 or more digits in a row (a phone number), with or without + or %2B. */
-  websitePhoneLike: '^https://[^/]+/.*(\\+|%2[bB])?[0-9]{9}',
+    '^https://([a-z0-9-]+\\.)*(wa\\.me|wa\\.link|whatsapp\\.com|whatsapp\\.net|t\\.me|telegram\\.me|telegram\\.org|telegram\\.dog|m\\.me|ig\\.me|signal\\.me|viber\\.me|invite\\.viber\\.com|messenger\\.com|discord\\.gg|linktr\\.ee|tr\\.ee|beacons\\.ai|bio\\.link|lnk\\.bio|bit\\.ly|bitly\\.com|tinyurl\\.com|goo\\.gl|t\\.co|t\\.ly|s\\.id|bl\\.ink|j\\.mp|ow\\.ly|is\\.gd|buff\\.ly|cutt\\.ly|rb\\.gy|tiny\\.cc|shorturl\\.at|rebrand\\.ly|lnkd\\.in|fb\\.me|qrco\\.de|snip\\.ly|youtu\\.be|g\\.page|facebook\\.com|fb\\.com|instagram\\.com|youtube\\.com|tiktok\\.com|google\\.([a-z]{2,63}|com?\\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\\.)*discord(app)?\\.com/invite(/|$)',
+  /**
+   * A Tanzanian phone number anywhere in the website (host, path, query or fragment): 255 or 0, then 6 or
+   * 7, then 8 digits, with an optional + (or %2B) and - . or encoded space between the digits. Not part of
+   * a longer run of digits, so booking or page numbers stay allowed.
+   */
+  websitePhoneLike:
+    '(^|[^0-9])(\\+|%2[bB])?(2(-|\\.|%20)?5(-|\\.|%20)?5|0)(-|\\.|%20)?[67]((-|\\.|%20)?[0-9]){8}([^0-9]|$)',
 } as const;
 
 /** Characters URL encoding never leaves in a link; the database refuses them too. */
@@ -357,8 +363,8 @@ export function normaliseYoutube(input: string | null | undefined): LinkResult {
 
 /**
  * A guide's or business's own website: the website rules, never a host from websiteBlocked (chat,
- * link-in-bio, short links, the platforms that have their own field) and no phone number in the
- * path or query, so it cannot publish a phone number or hide where it goes.
+ * link-in-bio, short links, the platforms that have their own field) and no Tanzanian phone number
+ * anywhere in it, so it cannot publish a phone number or hide where it goes.
  */
 export function normaliseProfileWebsite(input: string | null | undefined): LinkResult {
   const result = normaliseWebsite(input);

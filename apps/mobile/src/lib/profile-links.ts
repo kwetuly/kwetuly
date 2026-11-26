@@ -81,7 +81,12 @@ function linkPatch(values: Partial<Record<ProfileLinkKind, string>>, kinds: read
   return { ok: true, patch };
 }
 
-const dbError = (error: { message?: string } | null): SaveResult => (error ? { ok: false, error: error.message?.includes('profile_links_off') ? 'pl_off' : 'pl_save' } : { ok: true });
+const dbError = (error: { message?: string } | null): SaveResult => {
+  if (!error) return { ok: true };
+  if (error.message?.includes('profile_links_off')) return { ok: false, error: 'pl_off' };
+  if (error.message?.includes('guides_website_format') || error.message?.includes('website_not_allowed')) return { ok: false, error: 'pl_website_blocked', kind: 'website' };
+  return { ok: false, error: 'pl_save' };
+};
 
 /** Saves the guide's links. While the switch is off only Instagram, Facebook and TikTok are written. */
 export async function saveGuideLinks(guideId: string, values: Partial<Record<ProfileLinkKind, string>>, on: boolean): Promise<SaveResult> {
