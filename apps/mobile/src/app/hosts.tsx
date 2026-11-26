@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText, hostsText } from '@kwetuly/shared';
-import { Button, Card, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { Button, Card, FormMessage, Muted, ScreenState, SectionTitle } from '@/components/ui';
+import { registerInterest } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useFeatures } from '@/lib/feature-switches';
 import { useI18n } from '@/lib/i18n';
@@ -17,6 +19,10 @@ export default function HostsScreen() {
   const { session } = useSession();
   const profile = useProfile();
   const features = useFeatures();
+  // Opened from sign-up or the welcome step: Apply goes back there instead of opening a second copy.
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const x = hostsText(locale);
   const e = hostsEntryText(locale);
   const concierge = features.on.includes(HOST_FEATURES.concierge);
@@ -41,16 +47,44 @@ export default function HostsScreen() {
 
   const kinds = x.kinds.filter((k) => (k.id === 'concierge' ? concierge : investment));
   const role = profile.data?.role;
-  // Signed out: sign up as a guide. A guide (or admin) carries on with the guide profile. Other account
-  // types are told that hosts apply with a guide account.
-  // Signed in but the welcome step not finished yet: finish it as a guide.
+  const back = (screen: string) => from === screen && router.canGoBack();
+  // Signed out: sign up as a guide. Signed in but the welcome step not finished: finish it as a guide.
+  // A guide (or admin) carries on with the guide profile. Sign-up and the welcome step already chose
+  // Guide before opening this screen, so going back to them is enough.
+  // Other account types get a next step below: ask Kwetuly to get in touch.
   const apply = !session
-    ? () => router.push({ pathname: '/sign-in', params: { mode: 'join', role: 'guide' } })
+    ? () => (back('sign-in') ? router.back() : router.push({ pathname: '/sign-in', params: { mode: 'join', role: 'guide' } }))
     : profile.data && !profile.data.onboarded_at
-      ? () => router.replace({ pathname: '/welcome', params: { role: 'guide' } })
+      ? () => (back('welcome') ? router.back() : router.replace({ pathname: '/welcome', params: { role: 'guide' } }))
     : role === 'guide' || role === 'admin'
       ? () => router.push('/profile-edit')
       : null;
+
+  // The same "interest" list as the coming-soon pages; an admin reads it. Only this account's own name
+  // and phone or email are sent, after the person taps the button.
+  async function askContact() {
+    const contact = profile.data?.phone ?? session?.user.email ?? '';
+    const name = profile.data?.full_name ?? '';
+    if (!contact || !name) return setMessage({ tone: 'error', text: t.auth.error });
+    setBusy(true);
+    setMessage(null);
+    try {
+      await registerInterest({
+        section: 'partners',
+        item: 'become-host',
+        kind: role === 'provider' ? 'business' : 'traveler',
+        name,
+        contact,
+        message: `Host sign-up: wants to apply (${kinds.map((k) => k.id).join(', ')}), signed in as ${role ?? 'unknown'}`,
+        locale: locale === 'sw' ? 'sw' : 'en',
+      });
+      setMessage({ tone: 'ok', text: e.askContactSent });
+    } catch {
+      setMessage({ tone: 'error', text: t.auth.error });
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const bullets = (lines: string[]) => lines.map((line) => <Text key={line} style={{ ...type.body, color: colors.label }}>• {line}</Text>);
 
@@ -61,7 +95,7 @@ export default function HostsScreen() {
       <Muted>{x.intro}</Muted>
 
       <Card>
-        <SectionTitle>{x.kindsTitle}</SectionTitle>
+        <SectionTitle>{kinds.length > 1 ? x.kindsTitle : e.oneKindTitle}</SectionTitle>
         {kinds.map((k) => (
           <Text key={k.id} style={{ ...type.body, color: colors.label }}>
             <Text style={font.bold}>{k.name}. </Text>
@@ -111,7 +145,13 @@ export default function HostsScreen() {
           {!session && <Muted>{x.applyNote}</Muted>}
         </Card>
       ) : (
-        profile.data && <Muted>{e.notGuide}</Muted>
+        profile.data && (
+          <Card>
+            <Muted>{e.notGuide}</Muted>
+            <FormMessage message={message} />
+            {message?.tone !== 'ok' && <Button title={e.askContact} onPress={askContact} loading={busy} />}
+          </Card>
+        )
       )}
     </ScrollView>
   );

@@ -35,7 +35,7 @@ export default async function HostsPage() {
       <p className="mt-3 text-lg text-muted">{x.intro}</p>
 
       <section className="card mt-8" aria-labelledby="host-kinds">
-        <h2 id="host-kinds" className="text-2xl font-bold">{x.kindsTitle}</h2>
+        <h2 id="host-kinds" className="text-2xl font-bold">{kinds.length > 1 ? x.kindsTitle : e.oneKindTitle}</h2>
         <ul className="mt-4 space-y-4">
           {kinds.map((k) => (
             <li key={k.id} id={k.id} className="scroll-mt-32">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { EVENTS, HOST_FEATURES, HOSTS_ENTRY_LINKS, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
+import { EVENTS, hostSignUpOption, isReservedDisplayName, normalizePhone } from '@kwetuly/shared';
 import { Button, Card, Chip, Field, FormMessage, FormScreen, ListGroup, ListRow, Muted } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { useI18n } from '@/lib/i18n';
@@ -24,9 +24,9 @@ export default function SignInScreen() {
   const params = useLocalSearchParams<{ mode?: string; role?: string }>();
   const [mode, setMode] = useState<'signIn' | 'join'>(params.mode === 'join' ? 'join' : 'signIn');
   const [role, setRole] = useState<(typeof ROLES)[number]>(ROLES.find((r) => r === params.role) ?? 'traveler');
-  // "Become a concierge or VIP host" while a host switch is on; it opens the hosts screen first.
-  const features = useFeatures();
-  const hostsOpen = features.on.includes(HOST_FEATURES.concierge) || features.on.includes(HOST_FEATURES.investment);
+  // "Become a concierge or VIP host" (or investment visit host) while a host switch is on. It picks Guide
+  // and opens the hosts screen, whose Apply comes back to this screen instead of opening a second one.
+  const hostOption = hostSignUpOption(useFeatures().on);
   const [fullName, setFullName] = useState('');
   // Country from the phone's region setting (Tanzania otherwise); the number as the person types it.
   const [phone, setPhone] = useState(() => initialPhone(null));
@@ -201,14 +201,17 @@ export default function SignInScreen() {
               ))}
             </View>
             <Muted>{t.join[role].body}</Muted>
-            {hostsOpen && (
+            {hostOption && (
               <ListGroup>
                 <ListRow
-                  icon={menuIcon('crown')}
-                  title={HOSTS_ENTRY_LINKS.join.title[locale]}
-                  subtitle={HOSTS_ENTRY_LINKS.join.body[locale]}
+                  icon={menuIcon(hostOption.anchor === 'concierge' ? 'crown' : 'trending-up')}
+                  title={hostOption.title[locale]}
+                  subtitle={hostOption.body[locale]}
                   accessibilityRole="link"
-                  onPress={() => router.push('/hosts')}
+                  onPress={() => {
+                    setRole('guide');
+                    router.push({ pathname: '/hosts', params: { from: 'sign-in' } });
+                  }}
                 />
               </ListGroup>
             )}

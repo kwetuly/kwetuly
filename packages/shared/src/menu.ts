@@ -45,6 +45,17 @@ export function visibleItems(items: MenuItem[], on: readonly string[]): MenuItem
   return items.filter((item) => !item.feature || on.includes(item.feature));
 }
 
+/**
+ * The "become a host" option next to the account types on sign-up: the concierge wording while
+ * concierge sign-up is open, the investment visit host wording when only that is open, else null.
+ * `anchor` is the matching part of /hosts.
+ */
+export function hostSignUpOption(on: readonly string[]): { anchor: 'concierge' | 'investment'; title: Label; body: Label } | null {
+  if (on.includes(HOST_FEATURES.concierge)) return { anchor: 'concierge', ...HOSTS_ENTRY_LINKS.join };
+  if (on.includes(HOST_FEATURES.investment)) return { anchor: 'investment', ...HOSTS_ENTRY_LINKS.joinInvestment };
+  return null;
+}
+
 /** Sections with switched-off items left out (and sections left empty by that dropped). */
 export function menuFor(sections: MenuSection[], on: readonly string[]): MenuSection[] {
   return sections

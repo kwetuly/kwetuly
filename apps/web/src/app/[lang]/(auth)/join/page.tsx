@@ -7,7 +7,7 @@ import { inviteRequired } from '@/lib/invite';
 import { phoneCountryHint } from '@/lib/phone';
 import { JoinForm as JoinFields } from './join-form';
 import { SocialSignIn } from '@/components/social-sign-in';
-import { EVENTS, HOST_FEATURES, HOSTS_ENTRY_LINKS, hostsEntryText } from '@kwetuly/shared';
+import { EVENTS, hostSignUpOption, hostsEntryText } from '@kwetuly/shared';
 import { featuresOn } from '@/lib/feature-switches';
 import { LogEvent } from '@/components/analytics';
 
@@ -48,9 +48,8 @@ async function JoinForm({
   const selected = roles.includes(params.role as string) ? (params.role as string) : 'traveler';
   // Host sign-up ("Become a concierge or VIP host") while either host switch is on: the option leads to
   // /hosts, which explains the work and comes back here with role=guide&intent=host.
-  const concierge = features.includes(HOST_FEATURES.concierge);
-  const hostsOpen = concierge || features.includes(HOST_FEATURES.investment);
-  const hostIntent = hostsOpen && params.intent === 'host';
+  const hostOption = hostSignUpOption(features);
+  const hostIntent = !!hostOption && params.intent === 'host';
 
   if (params.sent) {
     return <>
@@ -72,10 +71,10 @@ async function JoinForm({
       invite={await inviteRequired()}
       phoneCountry={await phoneCountryHint()}
       initialError={typeof params.error === 'string' ? params.error : null}
-      hostOption={hostsOpen && !hostIntent ? {
-        href: `/${locale}/hosts${concierge ? '#concierge' : '#investment'}`,
-        title: HOSTS_ENTRY_LINKS.join.title[locale],
-        body: HOSTS_ENTRY_LINKS.join.body[locale],
+      hostOption={hostOption && !hostIntent ? {
+        href: `/${locale}/hosts#${hostOption.anchor}`,
+        title: hostOption.title[locale],
+        body: hostOption.body[locale],
       } : null}
       t={{
         auth: {

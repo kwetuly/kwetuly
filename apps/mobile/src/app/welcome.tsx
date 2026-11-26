@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { HOST_FEATURES, HOSTS_ENTRY_LINKS } from '@kwetuly/shared';
+import { hostSignUpOption } from '@kwetuly/shared';
 import { Button, Card, Chip, Field, FormMessage, ListGroup, ListRow, Muted } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { completeOnboarding, getInviteOnly } from '@/lib/api-more';
@@ -30,9 +30,9 @@ export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const inviteOnly = useQuery({ queryKey: ['invite-only'], queryFn: getInviteOnly });
   const [busy, setBusy] = useState(false);
-  // "Become a concierge or VIP host" while a host switch is on; it opens the hosts screen first.
-  const features = useFeatures();
-  const hostsOpen = features.on.includes(HOST_FEATURES.concierge) || features.on.includes(HOST_FEATURES.investment);
+  // "Become a concierge or VIP host" (or investment visit host) while a host switch is on. It picks Guide
+  // and opens the hosts screen, whose Apply comes back to this screen instead of opening a second one.
+  const hostOption = hostSignUpOption(useFeatures().on);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   // Fill in the account name once the profile arrives (adjusting state while rendering, not in an effect).
@@ -70,16 +70,16 @@ export default function WelcomeScreen() {
           ))}
         </View>
         <Muted>{t.join[role].body}</Muted>
-        {hostsOpen && (
+        {hostOption && (
           <ListGroup>
             <ListRow
-              icon={menuIcon('crown')}
-              title={HOSTS_ENTRY_LINKS.join.title[locale]}
-              subtitle={HOSTS_ENTRY_LINKS.join.body[locale]}
+              icon={menuIcon(hostOption.anchor === 'concierge' ? 'crown' : 'trending-up')}
+              title={hostOption.title[locale]}
+              subtitle={hostOption.body[locale]}
               accessibilityRole="link"
               onPress={() => {
                 setRole('guide');
-                router.push('/hosts');
+                router.push({ pathname: '/hosts', params: { from: 'welcome' } });
               }}
             />
           </ListGroup>

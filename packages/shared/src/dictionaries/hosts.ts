@@ -75,7 +75,7 @@ const en: HostsText = {
   ],
   draftNote: 'These rules are being reviewed by a Tanzanian advocate and may change before hosts go live. Approved hosts accept the final version before their services appear.',
   apply: 'Apply to become a host',
-  applyNote: 'You will create a guide account first. Tell us in your story that you want to be a host.',
+  applyNote: 'You will create a guide account first. After approval, Kwetuly will ask you which host service you would like to add.',
 };
 
 const sw: HostsText = {
@@ -127,7 +127,7 @@ const sw: HostsText = {
   ],
   draftNote: 'Kanuni hizi zinakaguliwa na wakili wa Tanzania na zinaweza kubadilika kabla wenyeji hawajaanza. Wenyeji walioidhinishwa wanakubali toleo la mwisho kabla huduma zao hazijaonekana.',
   apply: 'Omba kuwa mwenyeji',
-  applyNote: 'Utafungua akaunti ya mwongozaji kwanza. Tuambie kwenye hadithi yako kuwa unataka kuwa mwenyeji.',
+  applyNote: 'Utafungua akaunti ya mwongozaji kwanza. Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza.',
 };
 
 export const HOSTS_TEXT: Partial<Record<Locale, HostsText>> & { en: HostsText } = { en, sw };
