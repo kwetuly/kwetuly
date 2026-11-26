@@ -382,6 +382,11 @@ describe('normaliseProfileWebsite', () => {
     // Digits in the host count too.
     expect(site('https://0712345678.co.tz/')).toBe('fail:blocked');
     expect(site('https://call-255712345678.com/')).toBe('fail:blocked');
+    // Wider separators and a 00 prefix.
+    for (const path of ['0712_345_678', '0712/345/678', '(0712)345678', '0712%2D345%2D678', '0712%09345678', '00255712345678',
+      '255-712--345-678', '0712.345_678', '%2B255%20712%20345%20678']) {
+      expect(site(`https://amani.co.tz/call/${path}`), path).toBe('fail:blocked');
+    }
   });
   it('allows booking, page and other long numbers (N5)', () => {
     expect(site('https://amani.co.tz/tours/2026/12345678')).toBe('https://amani.co.tz/tours/2026/12345678');
@@ -390,7 +395,10 @@ describe('normaliseProfileWebsite', () => {
     expect(site('https://amani.co.tz/p/90712345678123')).toBe('https://amani.co.tz/p/90712345678123');
     expect(site('https://amani.co.tz/?id=0812345678')).toBe('https://amani.co.tz/?id=0812345678');
     expect(site('https://amani.co.tz/2026-07-12/')).toBe('https://amani.co.tz/2026-07-12/');
-  });
+    expect(site('https://amani.co.tz/hotel/123456789')).toBe('https://amani.co.tz/hotel/123456789');
+    expect(site('https://amani.co.tz/id/1234567890712')).toBe('https://amani.co.tz/id/1234567890712');
+    expect(site('https://amani.co.tz/id/0712345678901')).toBe('https://amani.co.tz/id/0712345678901');
+    expect(site('https://amani.co.tz/id/2557123456789')).toBe('https://amani.co.tz/id/2557123456789');  });
   it('refuses Messenger, Discord invites and whatsapp.net (N6)', () => {
     for (const url of ['https://www.messenger.com/t/amani', 'https://messenger.com/', 'https://m.me/amani', 'https://discord.gg/abc',
       'https://discord.com/invite/abc', 'https://www.discord.com/invite/abc', 'https://discordapp.com/invite/abc', 'https://web.whatsapp.net/x']) {
