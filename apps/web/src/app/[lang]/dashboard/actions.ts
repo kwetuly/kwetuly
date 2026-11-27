@@ -1,11 +1,13 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { updateTag } from 'next/cache';
-import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
+import { revalidateTag, updateTag } from 'next/cache';
+import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_LINK_KINDS, GUIDE_SPECIALTIES, REGIONS, SWITCHED_GUIDE_LINK_KINDS, isDisplayNameReservedError, vipChange, type VipChange, type VipPackage } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
-import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
+import { GUIDE_STEPS, guideStep, type GuideStep } from '@/lib/guide-steps';
 import { requireOnboarded } from '@/lib/auth';
+import { featureOn } from '@/lib/features';
+import { linkPatch, linkSaveError, linksOn } from '@/lib/profile-link-form';
 import { createClient } from '@/lib/supabase/server';
 import { phoneFromForm } from '@/lib/phone';
 import type { FormResult } from '@/components/keep-form';
@@ -61,8 +63,7 @@ export async function saveGuideProfile(_previous: FormResult, formData: FormData
 async function saveGuideStep(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
-  const stepValue = formData.get('step');
-  const step: GuideStep | null = isGuideStep(stepValue) ? stepValue : null;
+  const step: GuideStep | null = guideStep(formData.get('step'));
   const back = `/${locale}/dashboard`;
   const fail = refuse;
 
@@ -125,9 +126,19 @@ async function saveGuideStep(formData: FormData) {
       summits: int(formData, 'summits'),
     });
   }
-  if (has('story')) {
-    // Instagram, Facebook and TikTok are saved only on /dashboard/links (QA L3): this step never
-    // writes facebook_url, instagram_url or tiktok_url, so the saved links stay as they are.
+  // Step 5 also carries the profile links (slice S8; the same rules as /dashboard/links). Only link
+  // fields the form carries are written (QA L3), and a link that is not valid stops the whole save
+  // before anything is written, so the guide fixes it with everything typed kept.
+  let linksStep = false;
+  if (has('page') && GUIDE_LINK_KINDS.some((kind) => formData.has(`link_${kind}`))) {
+    linksStep = true;
+    const on = await linksOn(supabase);
+    const kinds = on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind));
+    const links = linkPatch(formData, kinds);
+    if (links.error) fail(links.error);
+    Object.assign(patch, links.patch);
+  }
+  if (has('page')) {
     const slug = slugify(text(formData, 'slug', 60) ?? '');
     Object.assign(patch, {
       bio: text(formData, 'bio', 4000),
@@ -171,8 +182,27 @@ async function saveGuideStep(formData: FormData) {
     if (!guideId) fail('save');
   } else if (Object.keys(patch).length > 0) {
     const { error } = await supabase.from('guides').update(patch).eq('id', guideId);
+    // Step 5 with links: a link refusal from the database names its own field (profile_links_off, website checks).
+    const linkRefused = linksStep && error && /profile_links_off|guides_website_format|website_not_allowed/.test(error.message ?? '') ? linkSaveError(error) : null;
+    if (linkRefused) fail(linkRefused);
     // 23514: a database check refused the row, which on guides means a profile link (e.g. one saved before the checks).
     if (error) fail(error.code === '23505' ? 'slug' : error.code === '23514' ? 'links' : isDisplayNameReservedError(error) ? 'name' : 'save');
+  }
+
+  // Step 6: the "Offer VIP hosting" switch (the personal_host package kind). Only when the form showed
+  // it, which it does only while feature.service_concierge is on.
+  let vip: VipChange = { kind: 'none' };
+  if (has('calls') && formData.get('vip_shown') === '1' && guideId && (await featureOn('service_concierge'))) {
+    const { data: packages, error: packagesError } = await supabase.from('guide_packages').select('id, kind, status').eq('guide_id', guideId).eq('kind', 'personal_host');
+    if (packagesError) fail('vip');
+    vip = vipChange((packages ?? []) as VipPackage[], formData.get('vip') === 'on');
+    if (vip.kind === 'hide' || vip.kind === 'resend') {
+      // Hidden as drafts, never deleted; a hidden one goes back to Kwetuly for checking (database guard).
+      const ids = vip.kind === 'hide' ? vip.ids : [vip.id];
+      const { error: vipError } = await supabase.from('guide_packages').update({ status: vip.kind === 'hide' ? 'draft' : 'pending' }).in('id', ids).eq('guide_id', guideId);
+      if (vipError) fail('vip');
+      revalidateTag('packages', 'max');
+    }
   }
 
   if (has('documents')) {
@@ -205,6 +235,10 @@ async function saveGuideStep(formData: FormData) {
 
   // The public guide pages show the change straight away (not after the cache's next refresh).
   updateTag('guides');
+  // Switched on with no VIP hosting trip yet: the guide describes it as a new package, then comes back here.
+  if (vip.kind === 'create') redirect(`/${locale}/dashboard/packages?new=1&kind=personal_host&next=calls`);
+  // Step 4 "Send for checking": back to the overview, which thanks the guide (when steps 1-4 are done).
+  if (step === 'trips' && formData.get('send') === '1') redirect(`${back}?sent=1`);
   // On to the next step, or back to the overview after the last one.
   const next = step ? GUIDE_STEPS[GUIDE_STEPS.indexOf(step) + 1] : undefined;
   redirect(next ? `${back}?step=${next}` : `${back}?saved=1`);

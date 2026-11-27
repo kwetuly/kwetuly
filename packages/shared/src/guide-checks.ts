@@ -62,6 +62,7 @@ export type CompletionItemId =
   | 'regions'
   | 'years'
   | 'phone'
+  | 'trips'
   | 'idDocument'
   | 'licenceDocument'
   | 'firstAidDocument';
@@ -78,14 +79,19 @@ export type CompletionInput = {
   id_document_path?: string | null;
   license_document_path?: string | null;
   first_aid_document_path?: string | null;
+  /** Packages sent for checking or approved (step 4 of the six sign-up steps). */
+  trip_count?: number | null;
 };
 
-/** Profile strength: required items count towards the percentage; first aid is optional. */
+/**
+ * Profile strength: required items count towards the percentage. It follows the six sign-up steps
+ * (slice S8): items from steps 1-4 are required, so is at least one trip; the bio is on the optional
+ * step 5 "Your page", and first aid is optional, so neither lowers the percentage.
+ */
 export function profileCompletion(p: CompletionInput) {
   const items: { id: CompletionItemId; done: boolean; optional: boolean }[] = [
     { id: 'photo', done: !!p.photo_url, optional: false },
     { id: 'headline', done: !!p.headline?.trim(), optional: false },
-    { id: 'bio', done: !!p.bio?.trim(), optional: false },
     { id: 'specialties', done: (p.specialties?.length ?? 0) > 0, optional: false },
     { id: 'languages', done: (p.languages?.length ?? 0) > 0, optional: false },
     { id: 'regions', done: (p.regions?.length ?? 0) > 0, optional: false },
@@ -93,6 +99,8 @@ export function profileCompletion(p: CompletionInput) {
     { id: 'phone', done: !!p.phone?.trim(), optional: false },
     { id: 'idDocument', done: !!p.id_document_path, optional: false },
     { id: 'licenceDocument', done: !!p.license_document_path, optional: false },
+    { id: 'trips', done: (p.trip_count ?? 0) > 0, optional: false },
+    { id: 'bio', done: !!p.bio?.trim(), optional: true },
     { id: 'firstAidDocument', done: !!p.first_aid_document_path, optional: true },
   ];
   const required = items.filter((i) => !i.optional);

@@ -2,19 +2,11 @@
 
 import { redirect } from 'next/navigation';
 import { updateTag } from 'next/cache';
-import {
-  BUSINESS_LINK_KINDS,
-  GUIDE_LINK_KINDS,
-  PROFILE_LINK_COLUMNS,
-  SWITCHED_GUIDE_LINK_KINDS,
-  normaliseProfileLink,
-  profileLinkErrorCode,
-  type ProfileLinkErrorCode,
-  type ProfileLinkKind,
-} from '@kwetuly/shared';
+import { BUSINESS_LINK_KINDS, GUIDE_LINK_KINDS, SWITCHED_GUIDE_LINK_KINDS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { signupReturn } from '@/lib/guide-steps';
+import { linkPatch, linkSaveError as saveError, linksOn } from '@/lib/profile-link-form';
 import { createClient } from '@/lib/supabase/server';
 import type { FormResult } from '@/components/keep-form';
 
@@ -29,42 +21,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function localeOf(formData: FormData) {
   const value = String(formData.get('locale') ?? '');
   return hasLocale(value) ? value : defaultLocale;
-}
-
-/** feature.profile_links, read fresh for a save (missing row = off, like private.feature_on). */
-async function linksOn(supabase: Supabase): Promise<boolean> {
-  const { data } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
-  return data?.value?.on === true;
-}
-
-/**
- * The cleaned value of each field in `kinds`: null clears it. A field that is not a valid link is
- * left out of the patch (the saved link stays) and its error code is returned.
- */
-function linkPatch(formData: FormData, kinds: readonly ProfileLinkKind[]): { patch: Record<string, string | null>; error: ProfileLinkErrorCode | null } {
-  const patch: Record<string, string | null> = {};
-  let error: ProfileLinkErrorCode | null = null;
-  for (const kind of kinds) {
-    const field = `link_${kind}`;
-    if (!formData.has(field)) continue;
-    const value = String(formData.get(field) ?? '').trim();
-    if (!value) {
-      patch[PROFILE_LINK_COLUMNS[kind]] = null;
-      continue;
-    }
-    const result = normaliseProfileLink(kind, value);
-    if (result.ok) patch[PROFILE_LINK_COLUMNS[kind]] = result.url;
-    else error ??= profileLinkErrorCode(kind, result.reason);
-  }
-  return { patch, error };
-}
-
-/** Maps a database refusal to the page's error codes. */
-function saveError(error: { message?: string; code?: string } | null): ProfileLinkErrorCode | null {
-  if (!error) return null;
-  if (error.message?.includes('profile_links_off')) return 'pl_off';
-  if (error.message?.includes('guides_website_format') || error.message?.includes('website_not_allowed')) return 'pl_website_blocked';
-  return 'pl_save';
 }
 
 /** The signed-in, onboarded member, or a redirect to sign in. */

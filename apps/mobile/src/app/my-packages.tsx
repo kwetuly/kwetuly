@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
@@ -41,8 +41,11 @@ export default function MyPackagesScreen() {
   const guideId = mine.data?.guide?.id;
   const packages = useQuery({ queryKey: ['my-packages', guideId], queryFn: () => listMyPackages(guideId!), enabled: !!guideId });
 
-  const [editing, setEditing] = useState<GuidePackage | 'new' | null>(null);
-  const [f, setF] = useState(EMPTY);
+  // ?kind=personal_host (from "Offer VIP hosting" in sign-up step 6, S8): open a new package of that kind.
+  const params = useLocalSearchParams<{ kind?: string }>();
+  const presetKind = PACKAGE_KINDS.find((k) => k.id === params.kind)?.id;
+  const [editing, setEditing] = useState<GuidePackage | 'new' | null>(presetKind ? 'new' : null);
+  const [f, setF] = useState(presetKind ? { ...EMPTY, kind: [presetKind] as string[] } : EMPTY);
   const [photo, setPhoto] = useState<{ uri: string; mimeType: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);

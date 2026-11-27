@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { GUIDE_STEP_IDS, guideStepProgress, guideStepsDone, isGuideStepId, stepProgress } from './steps';
+import { GUIDE_STEP_IDS, canSendForChecking, guideStepFrom, guideStepProgress, guideStepsDone, isGuideStepId, stepProgress, vipChange, vipHosting } from './steps';
 import { guideProgressLine, guideProgressText } from './dictionaries/guide-progress';
+import { guideSignupText } from './dictionaries/guide-signup';
 
 const fullGuide = {
   display_name: 'Neema',
@@ -27,9 +28,21 @@ describe('stepProgress', () => {
 
 describe('guide steps', () => {
   it('has six steps with stable ids', () => {
-    expect(GUIDE_STEP_IDS).toEqual(['basics', 'work', 'documents', 'trips', 'story', 'calls']);
+    expect(GUIDE_STEP_IDS).toEqual(['basics', 'work', 'documents', 'trips', 'page', 'calls']);
     expect(isGuideStepId('trips')).toBe(true);
     expect(isGuideStepId('nope')).toBe(false);
+  });
+
+  it('opens your page from old story links', () => {
+    expect(guideStepFrom('story')).toBe('page');
+    expect(guideStepFrom('calls')).toBe('calls');
+    expect(guideStepFrom('https://example.test')).toBeNull();
+    expect(guideStepFrom(undefined)).toBeNull();
+  });
+
+  it('can be sent for checking once steps 1-4 are done, even without 5 and 6', () => {
+    expect(canSendForChecking(stepProgress([true, true, true, true, false, false], 4))).toBe(true);
+    expect(canSendForChecking(stepProgress([true, true, true, false, true, true], 4))).toBe(false);
   });
 
   it('counts nothing for a new guide', () => {
@@ -90,5 +103,44 @@ describe('guideProgressLine', () => {
         expect(value).not.toMatch(/[→←»]|\b[A-Z]{4,}\b/);
       }
     }
+  });
+});
+
+describe('VIP hosting switch', () => {
+  const host = (id: string, status: 'draft' | 'pending' | 'approved' | 'rejected') => ({ id, kind: 'personal_host', status });
+
+  it('is on only with a personal_host package sent for checking or approved', () => {
+    expect(vipHosting([]).on).toBe(false);
+    expect(vipHosting([{ id: 'a', kind: 'cultural', status: 'approved' }]).on).toBe(false);
+    expect(vipHosting([host('a', 'rejected')]).on).toBe(false);
+    expect(vipHosting([host('a', 'pending')])).toMatchObject({ on: true, liveIds: ['a'] });
+  });
+
+  it('hides live packages when switched off and never deletes them', () => {
+    expect(vipChange([host('a', 'approved'), host('b', 'pending')], false)).toEqual({ kind: 'hide', ids: ['a', 'b'] });
+  });
+
+  it('sends a hidden one again, or asks for a new one, when switched on', () => {
+    expect(vipChange([host('a', 'draft')], true)).toEqual({ kind: 'resend', id: 'a' });
+    expect(vipChange([host('a', 'rejected')], true)).toEqual({ kind: 'create' });
+    expect(vipChange([], true)).toEqual({ kind: 'create' });
+  });
+
+  it('does nothing when the switch did not change', () => {
+    expect(vipChange([host('a', 'approved')], true)).toEqual({ kind: 'none' });
+    expect(vipChange([], false)).toEqual({ kind: 'none' });
+  });
+});
+
+describe('guide sign-up texts', () => {
+  it('has the same keys in English and Kiswahili, with no all caps or arrows', () => {
+    const en = guideSignupText('en');
+    const sw = guideSignupText('sw');
+    expect(Object.keys(sw).sort()).toEqual(Object.keys(en).sort());
+    for (const value of [...Object.values(en), ...Object.values(sw)]) {
+      expect(value.trim()).not.toBe('');
+      expect(value).not.toMatch(/[→←»]|\b[A-Z]{4,}\b/);
+    }
+    expect(guideSignupText('de')).toBe(en);
   });
 });

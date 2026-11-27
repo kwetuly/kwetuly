@@ -1,15 +1,55 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, router, useLocalSearchParams, type Href } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
+import {
+  CALL_TOPICS,
+  GROUP_SIZES,
+  GUIDE_EXPERTISE,
+  GUIDE_LANGUAGES,
+  GUIDE_LINK_KINDS,
+  GUIDE_SPECIALTIES,
+  PROFILE_LINK_COLUMNS,
+  REGIONS,
+  SWITCHED_GUIDE_LINK_KINDS,
+  canSendForChecking,
+  documentStatus,
+  guideSignupText,
+  guideStatusText,
+  isDisplayNameReservedError,
+  isFeatureOn,
+  isReservedDisplayName,
+  linkTexts,
+  normaliseProfileLink,
+  profileCompletion,
+  profileLinkCheckMessage,
+  profileLinkErrorMessage,
+  profileLinkFieldLabel,
+  profileLinkHint,
+  resolvePhone,
+  splitPhone,
+  GUIDE_STEP_IDS,
+  guideStepProgress,
+  guideProgressLine,
+  guideProgressText,
+  profileLinksText,
+  uploadsText,
+  vipChange,
+  vipHosting,
+  type DocumentStatus,
+  type ProfileLinkKind,
+} from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from '@/components/booking-link';
+import { MediaField } from '@/components/media-field';
 import { ProfileLinksEntry } from '@/components/profile-links-entry';
 import { PhotosEntry } from '@/components/photos-entry';
-import { listMyPackages } from '@/lib/packages';
+import { listMyPackages, setPackagesStatus } from '@/lib/packages';
+import { useFeatures } from '@/lib/features';
+import { loadMedia } from '@/lib/media';
+import { getMyLinks, saveGuideLinks } from '@/lib/profile-links';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState, SectionTitle, Toggle } from '@/components/ui';
@@ -45,7 +85,7 @@ async function pickImage(square: boolean): Promise<Upload | null> {
 type Translations = ReturnType<typeof useI18n>['t'];
 
 // Profile strength: how complete the profile is and what is still missing (same rules as the website).
-function ProfileStrength({ input, t }: { input: Parameters<typeof profileCompletion>[0]; t: Translations }) {
+function ProfileStrength({ input, t, tripsLabel }: { input: Parameters<typeof profileCompletion>[0]; t: Translations; tripsLabel: string }) {
   const c = t.checks;
   const { type, font } = useType();
   const { items, percent } = profileCompletion(input);
@@ -71,7 +111,7 @@ function ProfileStrength({ input, t }: { input: Parameters<typeof profileComplet
               color={item.done ? brand.leafDark : colors.secondaryLabel}
             />
             <Text style={{ ...type.callout, ...(item.done ? font.regular : font.bold), color: item.done ? colors.secondaryLabel : colors.label, flex: 1 }}>
-              {c[item.id]}
+              {item.id === 'trips' ? tripsLabel : c[item.id]}
               {item.optional ? ` (${c.optional})` : ''}
             </Text>
           </View>
@@ -101,7 +141,7 @@ function DocumentRow({ label, status, picked, onPick, t }: { label: string; stat
   );
 }
 
-// Create or edit the guide profile in five short steps, the same fields and rules as the website editor.
+// Create or edit the guide profile in six short steps, the same fields and rules as the website editor.
 export default function ProfileEditScreen() {
   const { t, locale } = useI18n();
   const d = t.dashboard;
@@ -116,6 +156,34 @@ export default function ProfileEditScreen() {
   const packages = useQuery({ queryKey: ['my-packages', guideId], queryFn: () => listMyPackages(guideId!), enabled: !!guideId });
   const tripCount = (packages.data ?? []).filter((p) => p.status === 'pending' || p.status === 'approved').length;
   const g = guideProgressText(locale);
+  const s = guideSignupText(locale);
+  const pl = profileLinksText(locale);
+  const up = uploadsText(locale);
+  // Step 5 "Your page": cover, gallery (feature.cover_gallery) and links (feature.profile_links).
+  // Step 6: "Offer VIP hosting" (feature.service_concierge). Missing or unknown switches read as off.
+  const features = useFeatures();
+  const photosOn = !!features.data && isFeatureOn(features.data, 'cover_gallery');
+  const vipShown = !!features.data && isFeatureOn(features.data, 'service_concierge');
+  const photos = useQuery({ queryKey: ['my-media', guideId], queryFn: () => loadMedia('guide', guideId!, ['cover', 'gallery']), enabled: !!guideId && photosOn });
+  const links = useQuery({ queryKey: ['my-links', userId], queryFn: () => getMyLinks(userId!), enabled: !!userId && !!guideId });
+  const linkRow = links.data?.guide ?? null;
+  const linksOn = !!links.data?.on;
+  const [linkEdits, setLinkEdits] = useState<Partial<Record<ProfileLinkKind, string>>>({});
+  const [linkRefused, setLinkRefused] = useState<ProfileLinkKind | null>(null);
+  const savedLink = (kind: ProfileLinkKind) => linkRow?.[PROFILE_LINK_COLUMNS[kind]] ?? '';
+  const linkValue = (kind: ProfileLinkKind) => linkEdits[kind] ?? savedLink(kind);
+  const linkEditable = (kind: ProfileLinkKind) => linksOn || !SWITCHED_GUIDE_LINK_KINDS.includes(kind);
+  // A typed link the shared rules (and so the database) would refuse, shown under its field. A saved
+  // link shown unchanged is never blocked, as on the website.
+  const linkError = (kind: ProfileLinkKind): string | null => {
+    const value = linkValue(kind).trim();
+    if (!value || value === savedLink(kind)) return linkRefused === kind ? profileLinkCheckMessage(kind, null, locale) : null;
+    const result = normaliseProfileLink(kind, value);
+    return result.ok ? null : profileLinkCheckMessage(kind, result.reason, locale);
+  };
+  const vipState = vipHosting(packages.data ?? []);
+  const [vipWanted, setVipWanted] = useState<boolean | null>(null);
+  const vipOn = vipWanted ?? vipState.on;
 
   const [f, setF] = useState({
     display_name: '',
@@ -303,6 +371,7 @@ export default function ProfileEditScreen() {
     id_document_path: idDocument?.uri ?? details?.id_document_path,
     license_document_path: licenceDocument?.uri ?? details?.license_document_path,
     first_aid_document_path: firstAidDocument?.uri ?? details?.first_aid_document_path,
+    trip_count: tripCount,
   };
 
   // The same six steps as the website. A new guide starts at step one; others see the overview.
@@ -319,8 +388,63 @@ export default function ProfileEditScreen() {
   const progressLine = guideProgressLine(progress, locale);
   const stepDone = progress.steps.map((s) => s.done);
 
+  const canSend = canSendForChecking(progress);
+  const missingRequired = progress.steps.flatMap((p, i) => (!p.optional && !p.done ? [g.steps[i]] : []));
+
+  // Step 5: the links that changed, saved after the profile with the same rules as the links screen.
+  async function saveLinks(): Promise<boolean> {
+    if (!linkRow || links.error) return true;
+    const changed = GUIDE_LINK_KINDS.filter((kind) => linkEditable(kind) && kind in linkEdits && linkValue(kind).trim() !== savedLink(kind));
+    if (changed.length === 0) return true;
+    const result = await saveGuideLinks(linkRow.id, Object.fromEntries(changed.map((kind) => [kind, linkValue(kind)])), linksOn);
+    if (!result.ok) {
+      setLinkRefused(result.kind ?? null);
+      setMessage({ tone: 'error', text: profileLinkErrorMessage(result.error, locale) ?? pl.saveError });
+      return false;
+    }
+    setLinkEdits({});
+    setLinkRefused(null);
+    await queryClient.invalidateQueries({ queryKey: ['my-links'] });
+    await queryClient.invalidateQueries({ queryKey: ['guide-links'] });
+    return true;
+  }
+
+  // Step 6: "Offer VIP hosting". Hiding keeps the package as a draft (nothing is deleted); a hidden one
+  // goes back for checking; with none yet, the guide describes it on My packages. Returns false on error.
+  async function saveVip(): Promise<boolean | 'create'> {
+    if (!vipShown || vipWanted === null || !guideId) return true;
+    const change = vipChange(packages.data ?? [], vipWanted);
+    try {
+      if (change.kind === 'hide') await setPackagesStatus(guideId, change.ids, 'draft');
+      if (change.kind === 'resend') await setPackagesStatus(guideId, [change.id], 'pending');
+    } catch {
+      setMessage({ tone: 'error', text: s.vipError });
+      return false;
+    }
+    setVipWanted(null);
+    await queryClient.invalidateQueries({ queryKey: ['my-packages'] });
+    return change.kind === 'create' ? 'create' : true;
+  }
+
   async function saveStep(index: number) {
-    if (await save()) setStep(index + 1 < STEP_COUNT ? index + 1 : null);
+    if (!(await save())) return;
+    if (index === 4 && !(await saveLinks())) return;
+    if (index === 5) {
+      const vip = await saveVip();
+      if (vip === false) return;
+      if (vip === 'create') {
+        setStep(null);
+        router.push({ pathname: '/my-packages', params: { kind: 'personal_host' } });
+        return;
+      }
+    }
+    // Step 4 with steps 1-4 done: "Send for checking" goes back to the overview with a thank-you.
+    if (index === 3 && canSend) {
+      setStep(null);
+      setMessage({ tone: 'ok', text: s.sent });
+      return;
+    }
+    setStep(index + 1 < STEP_COUNT ? index + 1 : null);
   }
 
   if (current == null) {
@@ -372,7 +496,7 @@ export default function ProfileEditScreen() {
         {guide && <PhotosEntry />}
         {guide && <ProfileLinksEntry />}
         {guide && <GuideReferralCard approved={guide.verification_status === 'approved'} />}
-        <ProfileStrength input={strengthInput} t={t} />
+        <ProfileStrength input={strengthInput} t={t} tripsLabel={s.strengthTrips} />
       </ScrollView>
     );
   }
@@ -382,7 +506,12 @@ export default function ProfileEditScreen() {
       bar={
         <>
           <FormMessage message={message} />
-          <Button title={current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish} onPress={() => saveStep(current)} loading={busy} />
+          <Button
+            title={current === 3 && canSend ? s.send : current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish}
+            onPress={() => saveStep(current)}
+            loading={busy}
+            disabled={current === 4 && GUIDE_LINK_KINDS.some((kind) => linkEditable(kind) && !!linkError(kind))}
+          />
         </>
       }
     >
@@ -469,16 +598,40 @@ export default function ProfileEditScreen() {
             <Text style={{ ...type.body, ...font.bold }}>{tripCount === 0 ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</Text>
           )}
           <Button title={tripCount ? g.tripsSee : g.tripsAdd} icon={tripCount ? GLYPHS.list : GLYPHS.plus} variant="outline" size="md" onPress={() => router.push('/my-packages')} />
+          {/* Steps 1-4 done: the guide can send the profile for checking (steps 5 and 6 stay optional). */}
+          <SectionTitle>{s.sendTitle}</SectionTitle>
+          <Muted>{canSend ? s.sendReady : s.sendNotReady}</Muted>
+          {!canSend && missingRequired.length > 0 && <Muted>{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</Muted>}
         </Card>
       )}
 
       {current === 4 && (
+        <>
+          <Muted>{s.pageIntro}</Muted>
+          {/* Photos save themselves as they upload (slice S4), so they need no save button. */}
+          <Card>
+            <SectionTitle>{s.photosTitle}</SectionTitle>
+            {!guideId ? (
+              <Muted>{s.photosLater}</Muted>
+            ) : features.data && !photosOn ? (
+              <Muted>{up.switchedOff}</Muted>
+            ) : photos.data ? (
+              <>
+                <Muted>{s.photosNote}</Muted>
+                <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'cover')} />
+                <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'gallery')} />
+                <Muted>{up.checkedAfter}</Muted>
+              </>
+            ) : (
+              <ScreenState loading={!photos.error && !features.error} error={photos.error ?? features.error} onRetry={() => void (features.error ? features.refetch() : photos.refetch())} retryLabel={up.retryLoad} />
+            )}
+          </Card>
+        </>
+      )}
+
+      {current === 4 && (
         <Card>
-          {/* Cover photo and gallery have their own screen (S4); travellers see them from S6. */}
-          <Muted>{uploadsText(locale).menuHint}</Muted>
-          <Button title={uploadsText(locale).title} icon={GLYPHS.photos} variant="outline" size="md" onPress={() => router.push('/photos' as Href)} />
-          <Muted>{profileLinksText(locale).entryNote}</Muted>
-          <Button title={profileLinksText(locale).entry} icon={GLYPHS.globe} variant="outline" size="md" onPress={() => router.push('/profile-links' as Href)} />
+          <SectionTitle>{s.aboutTitle}</SectionTitle>
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
           <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} hint={d.certificationsHint} />
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
@@ -499,8 +652,46 @@ export default function ProfileEditScreen() {
         </Card>
       )}
 
+      {/* Profile links (slice S5), saved with this step. While feature.profile_links is off only
+          Instagram, Facebook and TikTok are shown, as on the links screen; nothing is deleted. */}
+      {current === 4 && guideId && (
+        <Card>
+          <SectionTitle>{s.linksTitle}</SectionTitle>
+          <Muted>{s.linksNote}</Muted>
+          {links.error ? (
+            <ScreenState error={links.error} onRetry={() => void links.refetch()} retryLabel={pl.retry} />
+          ) : !links.data ? (
+            <ScreenState loading />
+          ) : (
+            <>
+              {!linksOn && <Muted>{pl.switchedOff}</Muted>}
+              {GUIDE_LINK_KINDS.filter(linkEditable).map((kind) => (
+                <Field
+                  key={kind}
+                  label={profileLinkFieldLabel(kind, locale)}
+                  value={linkValue(kind)}
+                  onChangeText={(value) => {
+                    setLinkEdits((current) => ({ ...current, [kind]: value }));
+                    if (linkRefused === kind) setLinkRefused(null);
+                  }}
+                  hint={profileLinkHint(kind, locale)}
+                  error={linkError(kind)}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  maxLength={kind === 'google' ? 2000 : 300}
+                />
+              ))}
+              <Muted>{pl.clearNote}</Muted>
+            </>
+          )}
+        </Card>
+      )}
+
       {current === 5 && (
         <Card>
+          <SectionTitle>{s.callsTitle}</SectionTitle>
           <Muted>{d.callsHint}</Muted>
           <Toggle label={d.callEnabled} value={f.call_enabled} onChange={set('call_enabled')} />
           <Field label={d.callPrice} value={f.call_price_usd} onChangeText={set('call_price_usd')} keyboardType="number-pad" placeholder="49" />
@@ -508,11 +699,28 @@ export default function ProfileEditScreen() {
           <ChipSelect label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} selected={f.call_topics} onChange={set('call_topics')} />
         </Card>
       )}
+      {/* The booking link (hidden while feature.booking_link is off). */}
+      {current === 5 && guide && <BookingLinkEntry />}
+      {/* "Offer VIP hosting": the personal_host package kind (design 4.1), behind feature.service_concierge. */}
+      {current === 5 && guide && vipShown && (
+        <Card>
+          <SectionTitle>{s.vipTitle}</SectionTitle>
+          {packages.error ? (
+            <ScreenState error={packages.error} onRetry={() => void packages.refetch()} retryLabel={g.retry} />
+          ) : (
+            <>
+              <Toggle label={s.vipLabel} value={vipOn} onChange={setVipWanted} />
+              <Muted>{s.vipHint}</Muted>
+              <Muted>{vipState.on ? `${s.vipOn} ${s.vipOffNote}` : s.vipCreate}</Muted>
+            </>
+          )}
+        </Card>
+      )}
 
       {guide ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: space.sm }}>
           {guide && current > 0 && <Button title={d.back} variant="outline" size="md" onPress={() => setStep(current - 1)} />}
-          {guide && <Button title={d.skip} variant="text" size="md" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} />}
+          {guide && <Button title={current === 3 && canSend ? s.continuePage : d.skip} variant="text" size="md" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} />}
         </View>
       ) : null}
     </FormScreen>

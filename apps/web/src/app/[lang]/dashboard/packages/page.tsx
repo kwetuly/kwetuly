@@ -88,7 +88,7 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
       )}
 
       {showForm ? (
-        <PackageForm p={editing} t={t} locale={locale} userId={user.id} next={next} />
+        <PackageForm p={editing} t={t} locale={locale} userId={user.id} next={next} kind={PACKAGE_KINDS.find((k) => k.id === params.kind)?.id} />
       ) : (
         <Link href={`/${locale}/dashboard/packages?new=1${next ? `&next=${next}` : ''}`} className="btn mt-6">{pt.add}</Link>
       )}
@@ -96,7 +96,8 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
   );
 }
 
-function PackageForm({ p, t, locale, userId, next }: { p?: GuidePackage; t: Dictionary; locale: Locale; userId: string; next: SignupReturn | null }) {
+// kind: a new package's kind picked in advance, e.g. personal_host from the "Offer VIP hosting" switch (S8).
+function PackageForm({ p, t, locale, userId, next, kind }: { p?: GuidePackage; t: Dictionary; locale: Locale; userId: string; next: SignupReturn | null; kind?: string }) {
   const pt = t.packages;
   return (
     <form action={savePackage} className="card mt-6 space-y-4">
@@ -107,7 +108,7 @@ function PackageForm({ p, t, locale, userId, next }: { p?: GuidePackage; t: Dict
       {p && <input type="hidden" name="id" value={p.id} />}
       <label className="block">
         <span className="label">{pt.kindField}</span>
-        <select className="field" name="kind" required defaultValue={p?.kind ?? 'cultural'}>
+        <select className="field" name="kind" required defaultValue={p?.kind ?? kind ?? 'cultural'}>
           {PACKAGE_KINDS.map((k) => <option key={k.id} value={k.id}>{k[locale]}</option>)}
         </select>
       </label>
