@@ -181,7 +181,7 @@ alter table public.site_settings add constraint site_settings_payments_shape che
       and jsonb_typeof(value) = 'object'
       and (value - array['show_coming_soon', 'show_prices_for_web_only_items_in_app', 'ios_link_out_storefronts', 'android_link_out_countries']) = '{}'::jsonb
       and jsonb_typeof(value -> 'show_coming_soon') = 'object'
-      and (value -> 'show_coming_soon' - array['web', 'ios', 'android']) = '{}'::jsonb
+      and ((value -> 'show_coming_soon') - array['web', 'ios', 'android']) = '{}'::jsonb
       and not jsonb_path_exists(value, '$.show_coming_soon.* ? (@.type() != "boolean")')
       and coalesce(jsonb_typeof(value -> 'show_prices_for_web_only_items_in_app'), 'boolean') = 'boolean'
       and coalesce(jsonb_typeof(value -> 'ios_link_out_storefronts'), 'array') = 'array'
