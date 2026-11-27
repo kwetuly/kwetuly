@@ -211,7 +211,7 @@ export type MediaItem = {
 export const MEDIA_COLUMNS = 'id, field, path, thumb_path, mime, width, height, placeholder, sort, is_main, state';
 
 /** Error codes the database raises (in the message) that screens turn into polite texts. */
-export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'file_cache', 'bad_size', 'too_thin', 'busy'] as const;
+export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'file_cache', 'bad_size', 'too_thin', 'busy', 'switched_off'] as const;
 export type MediaErrorCode = (typeof mediaErrorCodes)[number] | 'network' | 'decode' | 'generic';
 
 /** Reads our error code from a database or storage error message. */

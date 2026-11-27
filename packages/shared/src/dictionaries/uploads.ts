@@ -93,6 +93,7 @@ const en = {
     too_thin: 'Sorry, this photo is very long and narrow, like a wide panorama, so we cannot make a small copy of it. Please crop it to a less narrow shape and try again.',
     bad_size: 'Sorry, we could not read the size of this photo. Please try again.',
     busy: 'Another photo is still uploading here. Please wait a moment.',
+    switched_off: 'Cover photos and galleries are switched off for now, so new photos cannot be added. Thank you for your patience.',
     network: 'Sorry, the connection dropped. Please try again.',
     decode: 'Sorry, we could not open this photo. Some computers cannot open HEIC photos; please save it as JPEG and try again.',
     generic: 'Sorry, something went wrong. Please try again.',
@@ -103,8 +104,8 @@ export type UploadsText = typeof en;
 
 const sw: UploadsText = {
   title: 'Picha za ukurasa wako',
-  menuHint: 'Picha ya juu na hadi picha 12',
-  intro: 'Karibu. Hapa unachagua picha ya juu na picha za ukurasa wako. Zinaonekana mara moja; mtu wa Kwetuly anakagua kila moja baadaye na anaweza kuondoa picha inayokiuka kanuni.',
+  menuHint: 'Picha ya jalada na hadi picha 12',
+  intro: 'Karibu. Hapa unachagua picha ya jalada na picha za ukurasa wako. Zinaonekana mara moja; mtu wa Kwetuly anakagua kila moja baadaye na anaweza kuondoa picha inayokiuka kanuni.',
   forGuidesOnly: 'Ukurasa huu ni wa waongozaji. Tafadhali tengeneza wasifu wako wa mwongozaji kwanza.',
   switchedOff: 'Picha kwenye wasifu zimezimwa kwa sasa. Asante kwa uvumilivu wako.',
   loadError: 'Samahani, hatukuweza kupakia picha zako. Tafadhali jaribu tena.',
@@ -112,7 +113,7 @@ const sw: UploadsText = {
 
   fields: {
     avatar: { title: 'Picha ya wasifu', hint: 'Picha inayoonyesha uso wako vizuri. Inakatwa kuwa mraba.' },
-    cover: { title: 'Picha ya juu', hint: 'Picha moja pana juu ya ukurasa wako, upana mara tatu ya urefu. Unachagua sehemu ya kuonyesha.' },
+    cover: { title: 'Picha ya jalada', hint: 'Picha moja pana juu ya ukurasa wako, upana mara tatu ya urefu. Unachagua sehemu ya kuonyesha.' },
     gallery: { title: 'Picha', hint: 'Hadi picha {max} za safari na kazi yako. Ya kwanza ni picha yako kuu.' },
     product: { title: 'Picha za bidhaa', hint: 'Hadi picha {max}. Zinaonekana baada ya Kwetuly kuidhinisha bidhaa.' },
   },
@@ -153,7 +154,7 @@ const sw: UploadsText = {
   orderSaved: 'Asante. Mpangilio mpya umehifadhiwa.',
   stillUploading: 'Tafadhali subiri hadi picha zimalize kupakiwa.',
   photoAlt: 'Picha yako ya {n}',
-  coverAlt: 'Picha yako ya juu',
+  coverAlt: 'Picha yako ya jalada',
   avatarAlt: 'Picha yako ya wasifu',
   checkedAfter: 'Picha zinaonekana mara moja. Mtu wa Kwetuly anazikagua baadaye.',
 
@@ -187,6 +188,7 @@ const sw: UploadsText = {
     too_thin: 'Samahani, picha hii ni ndefu na nyembamba sana, kama picha pana ya mandhari, kwa hiyo hatuwezi kutengeneza nakala yake ndogo. Tafadhali ikate iwe na umbo lisilo jembamba sana kisha ujaribu tena.',
     bad_size: 'Samahani, hatukuweza kusoma ukubwa wa picha hii. Tafadhali jaribu tena.',
     busy: 'Picha nyingine bado inapakiwa hapa. Tafadhali subiri kidogo.',
+    switched_off: 'Picha za jalada na mkusanyiko wa picha zimezimwa kwa sasa, kwa hiyo picha mpya haziwezi kuongezwa. Asante kwa uvumilivu wako.',
     network: 'Samahani, mtandao umekatika. Tafadhali jaribu tena.',
     decode: 'Samahani, hatukuweza kufungua picha hii. Baadhi ya kompyuta haziwezi kufungua picha za HEIC; tafadhali ihifadhi kama JPEG kisha ujaribu tena.',
     generic: 'Samahani, kuna tatizo. Tafadhali jaribu tena.',

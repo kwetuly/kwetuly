@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import {
   BUSINESS_LINK_KINDS,
   GUIDE_LINK_KINDS,
   PROFILE_LINK_COLUMNS,
   SWITCHED_GUIDE_LINK_KINDS,
+  guideProgressText,
   profileLinkErrorMessage,
   profileLinksText,
   type ProfileLinkColumn,
@@ -15,6 +16,7 @@ import {
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
+import { signupReturn, signupReturnHref } from '@/lib/guide-steps';
 import { createClient } from '@/lib/supabase/server';
 import { KeepForm } from '@/components/keep-form';
 import { SubmitButton } from '@/components/submit-button';
@@ -29,15 +31,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 type LinkRow = Partial<Record<ProfileLinkColumn, string | null>>;
 
-// Profile links (slice S5): a guide adds a website, Google Business Profile and YouTube (and the
-// Instagram, Facebook and TikTok links that are also in the "story" step); a business owner adds the
-// same social links for each business. Guide and owner texts, so English and Kiswahili.
+// Profile links (slice S5): a guide adds a website, Google Business Profile, YouTube, Instagram,
+// Facebook and TikTok (this is the only place for them); a business owner adds the social links for
+// each business. Guide and owner texts, so English and Kiswahili.
 export default async function LinksPage({ searchParams }: PageProps<'/[lang]/dashboard/links'>) {
   const locale = await getLocale();
   const t = profileLinksText(locale);
+  const plain = <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.dashboard}</Link>;
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.dashboard}</Link>
+      <Suspense fallback={plain}>
+        <SignupBackLink locale={locale} searchParams={searchParams} fallback={plain} />
+      </Suspense>
       <h1 className="mt-2 text-3xl font-bold">{t.title}</h1>
       <p className="mt-2 text-muted">{t.intro}</p>
       <Suspense fallback={<Loading />}>
@@ -45,6 +50,13 @@ export default async function LinksPage({ searchParams }: PageProps<'/[lang]/das
       </Suspense>
     </div>
   );
+}
+
+// Reached from the "Your page" sign-up step (?next=story): the way back goes to that step.
+async function SignupBackLink({ locale, searchParams, fallback }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>>; fallback: ReactNode }) {
+  const next = signupReturn((await searchParams).next);
+  if (!next) return fallback;
+  return <Link href={signupReturnHref(locale, next)} className="text-sm font-semibold text-forest underline">{guideProgressText(locale).backToSignup}</Link>;
 }
 
 function Loading() {
@@ -101,6 +113,7 @@ async function Content({ locale, t, searchParams }: { locale: Locale; t: Profile
           {!on && <p className="mt-2 rounded-[5px] bg-surface p-3 text-sm text-muted">{t.switchedOff}</p>}
           <KeepForm action={saveGuideLinks} messages={messages} fallback={t.saveError} className="mt-4 space-y-5">
             <input type="hidden" name="locale" value={locale} />
+            {signupReturn(status.next) && <input type="hidden" name="next" value={signupReturn(status.next)!} />}
             <Fields kinds={GUIDE_LINK_KINDS} row={guide.data} formId="guide" locale={locale} disabled={(kind) => !on && SWITCHED_GUIDE_LINK_KINDS.includes(kind)} />
             <p className="text-xs text-muted">{t.clearNote}</p>
             <SubmitButton className="btn">{t.save}</SubmitButton>

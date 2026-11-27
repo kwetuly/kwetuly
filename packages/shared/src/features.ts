@@ -78,7 +78,7 @@ export const FEATURES: readonly FeatureDef[] = [
   f('farm_page', 'A', 'Farm, village and cooking page (A14)', 'Ukurasa wa shamba, kijiji na mapishi (A14)'),
   f('price_alerts', 'A', 'Price alerts and low-season deals (A16)', 'Taarifa za bei na ofa za msimu wa chini (A16)'),
   f('offline_web', 'A', 'Offline on the website (A17)', 'Tovuti bila intaneti (A17)'),
-  f('cover_gallery', 'profile', 'Cover photo and gallery', 'Picha ya juu na mkusanyiko wa picha'),
+  f('cover_gallery', 'profile', 'Cover photo and gallery', 'Picha ya jalada na mkusanyiko wa picha'),
   f('photo_share', 'profile', 'Share a photo as a story', 'Shiriki picha kama hadithi'),
   f('profile_links', 'profile', 'Profile links (Google, YouTube, website)', 'Viungo vya wasifu (Google, YouTube, tovuti)'),
   f('local_prices', 'profile', 'Estimated price in the visitor\'s currency', 'Makadirio ya bei kwa sarafu ya mgeni'),

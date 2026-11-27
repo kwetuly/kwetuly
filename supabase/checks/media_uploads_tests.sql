@@ -58,6 +58,10 @@ insert into public.guides (id, owner_id, slug, display_name, base_region, verifi
 values ('97979797-0000-4000-8000-000000000097', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'mu-test-guide', 'MU Test Guide', 'Arusha', 'approved'),
        ('98989898-0000-4000-8000-000000000098', 'b2b2b2b2-0000-4000-8000-0000000000b2', 'mu-other-guide', 'MU Other Guide', 'Moshi', 'pending');
 
+-- Cover photos and galleries on for the test (QA M1; rolled back with everything else).
+insert into public.site_settings (key, value) values ('feature.cover_gallery', '{"on": true}')
+on conflict (key) do update set value = excluded.value;
+
 -- Buckets
 select pg_temp.check((select public and file_size_limit = 2097152 and allowed_mime_types = array['image/webp', 'image/jpeg']
                       from storage.buckets where id = 'media'), 'media bucket public, 2 MB, webp and jpeg');
@@ -116,6 +120,48 @@ select pg_temp.check((select not private.media_upload_slot('media-staging', path
 select pg_temp.check(not private.media_upload_slot('media-staging', 'a1a1a1a1-0000-4000-8000-0000000000a1/anything.webp'), 'no slot for a free name');
 
 reset role;
+
+-- 1b. Switch feature.cover_gallery (QA M1) ---------------------------------------------
+-- Off: no new cover or gallery photo (start function or direct insert); the open cover upload stays;
+-- avatar photos are not switched. Then on again for the rest of the script.
+select set_config('request.jwt.claims', '', true);
+update public.site_settings set value = '{"on": false}' where key = 'feature.cover_gallery';
+select pg_temp.check((select value = '{"on": false}'::jsonb from public.site_settings where key = 'feature.cover_gallery'), 'cover_gallery switched off for the test');
+select set_config('request.jwt.claims', '{"sub":"a1a1a1a1-0000-4000-8000-0000000000a1","role":"authenticated","aal":"aal1"}', true);
+set local role authenticated;
+do $$
+declare
+  v_sql text;
+begin
+  foreach v_sql in array array[
+    $q$select * from public.start_media_upload('cover', 'guide', '97979797-0000-4000-8000-000000000097', 'webp', 'photo-consent-2026-11')$q$,
+    $q$select * from public.start_media_upload('gallery', 'guide', '97979797-0000-4000-8000-000000000097', 'webp', 'photo-consent-2026-11')$q$,
+    $q$insert into public.media (id, owner_id, subject_kind, subject_id, field, path, thumb_path, consent_version)
+       values ('a1a1a1a1-0000-4000-8000-00000000f001', 'a1a1a1a1-0000-4000-8000-0000000000a1', 'guide', '97979797-0000-4000-8000-000000000097', 'gallery',
+               'a1a1a1a1-0000-4000-8000-0000000000a1/a1a1a1a1-0000-4000-8000-00000000f001.webp',
+               'a1a1a1a1-0000-4000-8000-0000000000a1/a1a1a1a1-0000-4000-8000-00000000f001-thumb.webp', 'x')$q$
+  ] loop
+    begin
+      execute v_sql;
+      raise exception 'FAIL: cover or gallery upload while feature.cover_gallery is off (should have been refused): %', v_sql;
+    exception when others then
+      if sqlerrm like 'FAIL:%' then raise; end if;
+      if sqlerrm not like '%media:switched_off%' then
+        raise exception 'FAIL: switched-off upload refused with the wrong error: %', sqlerrm;
+      end if;
+    end;
+  end loop;
+end $$;
+select pg_temp.check((select state = 'uploading' from public.media m join t_ids t on t.id = m.id where t.k = 'cover2'),
+                     'a refused cover start leaves the open cover upload alone');
+insert into t_ids (k, id, path, thumb)
+select 'avatar_off', s.id, s.path, s.thumb_path
+from public.start_media_upload('avatar', 'guide', '97979797-0000-4000-8000-000000000097', 'webp', null) s;
+select pg_temp.check((select count(*) = 1 from t_ids where k = 'avatar_off'), 'avatar upload still works while cover_gallery is off');
+select pg_temp.check((select count(*) = 1 from public.remove_my_media((select id from t_ids where k = 'avatar_off'))), 'test avatar removed again');
+reset role;
+select set_config('request.jwt.claims', '', true);
+update public.site_settings set value = '{"on": true}' where key = 'feature.cover_gallery';
 
 -- 2. Finish (service role, as the media-finish function does) ------------------
 -- Staging copies, and the cleaned files in the public bucket: one with a wrong cache header first.

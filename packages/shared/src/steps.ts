@@ -63,8 +63,8 @@ export function guideStepsDone({ guide, idDocument, licenceDocument, tripCount }
     // TODO(RP7, library_picks): count trips picked from the trip library too, once those picks exist.
     // Today a "trip" is a guide package that was sent for review or approved.
     trips: tripCount > 0,
-    // Your page: the bio is what counts. TODO(S4/S6 cover_gallery, S5 profile_links): cover photo,
-    // gallery and the new links are optional extras and never block this step.
+    // Your page: the bio is what counts. The cover photo and gallery (S4, /dashboard/photos) and the
+    // profile links (S5, /dashboard/links) are optional extras on their own pages and never block this step.
     story: !!guide?.bio?.trim(),
     // Calls and booking link: the booking link needs nothing from the guide, so prep calls decide it.
     calls: !!guide?.call_enabled,

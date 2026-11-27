@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation';
 import { updateTag } from 'next/cache';
 import { CALL_TOPICS, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, isDisplayNameReservedError } from '@kwetuly/shared';
-import { linkErrorCode, normaliseSocial, type SocialPlatform } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { requireOnboarded } from '@/lib/auth';
@@ -35,14 +34,6 @@ const text = (formData: FormData, key: string, max = 500) => {
 const int = (formData: FormData, key: string) => {
   const n = Number.parseInt(String(formData.get(key) ?? ''), 10);
   return Number.isFinite(n) && n >= 0 ? n : null;
-};
-
-/** A social profile link, cleaned to the platform's own profile address; empty clears it. */
-const socialLink = (formData: FormData, platform: SocialPlatform): { ok: true; url: string | null } | { ok: false } => {
-  const value = String(formData.get(`${platform}_url`) ?? '').trim();
-  if (!value) return { ok: true, url: null };
-  const result = normaliseSocial(platform, value);
-  return result.ok ? { ok: true, url: result.url } : { ok: false };
 };
 
 function slugify(value: string) {
@@ -88,7 +79,6 @@ async function saveGuideStep(formData: FormData) {
   // Only the fields of the parts this form carries are written, so other steps keep their answers.
   const has = (part: GuideStep) => !step || step === part;
   const patch: Record<string, unknown> = {};
-  let badLink: string | null = null;
 
   // Phone and WhatsApp (documents step) are optional; when given they are saved as international
   // numbers. Checked before anything is written, against what was saved before, so an unchanged
@@ -136,14 +126,8 @@ async function saveGuideStep(formData: FormData) {
     });
   }
   if (has('story')) {
-    // Profile links: only the guide's own Instagram, Facebook or TikTok profile, stored in one fixed
-    // form. A link that is not one is not saved (the saved one stays), but the rest of the step is,
-    // and the step comes back with that link's message.
-    for (const platform of ['facebook', 'instagram', 'tiktok'] as const) {
-      const link = socialLink(formData, platform);
-      if (!link.ok) badLink ??= linkErrorCode(platform);
-      else patch[`${platform}_url`] = link.url;
-    }
+    // Instagram, Facebook and TikTok are saved only on /dashboard/links (QA L3): this step never
+    // writes facebook_url, instagram_url or tiktok_url, so the saved links stay as they are.
     const slug = slugify(text(formData, 'slug', 60) ?? '');
     Object.assign(patch, {
       bio: text(formData, 'bio', 4000),
@@ -221,8 +205,6 @@ async function saveGuideStep(formData: FormData) {
 
   // The public guide pages show the change straight away (not after the cache's next refresh).
   updateTag('guides');
-  // A refused profile link: everything else is saved; the step stays open, with that link's message.
-  if (badLink) refuse(badLink);
   // On to the next step, or back to the overview after the last one.
   const next = step ? GUIDE_STEPS[GUIDE_STEPS.indexOf(step) + 1] : undefined;
   redirect(next ? `${back}?step=${next}` : `${back}?saved=1`);

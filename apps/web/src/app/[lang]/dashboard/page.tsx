@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from './booking-link/entry';
 import { ProfileLinksEntry } from './links/entry';
@@ -22,7 +22,6 @@ import { today } from '@/lib/today';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
 import { PhoneField } from '@/components/phone-field';
-import { LinkInput } from '@/components/link-input';
 import { KeepForm } from '@/components/keep-form';
 import { SavedNote } from '@/components/saved-note';
 import { MarkedInput } from '@/components/marked-input';
@@ -101,8 +100,8 @@ async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; lo
   const businessTools = (embedded: boolean) => (
     <>
       <BusinessListing t={t} locale={locale} user={user} status={params} embedded={embedded} />
-      {/* Under a guide's overview the guide already has this line. */}
-      {!embedded && <ProfileLinksEntry locale={locale} />}
+      {/* Under a guide's overview the guide already has this line (the same page covers both). */}
+      {!embedded && <ProfileLinksEntry locale={locale} business />}
       <div className="mt-12">
         <BusinessDashboard t={t} locale={locale} user={user} />
       </div>
@@ -180,7 +179,8 @@ async function GuideEditor({
     phone: `${guideStatusText(locale).phoneShort}: ${t.phone.invalidGeneric}`,
     whatsapp: `${guideStatusText(locale).whatsappShort}: ${t.phone.invalidGeneric}`,
     slug: guideStatusText(locale).slugTaken,
-    ...Object.fromEntries(['link_facebook', 'link_instagram', 'link_tiktok', 'links'].map((code) => [code, linkErrorMessage(code, locale) ?? t.auth.error])),
+    // A link saved before the database checks can still refuse a save of this step ('links').
+    links: linkErrorMessage('links', locale) ?? t.auth.error,
   };
   const progress = guideStepProgress({ guide, idDocument: !!details?.id_document_path, licenceDocument: !!details?.license_document_path, tripCount: tripCount ?? 0 });
   const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
@@ -293,15 +293,19 @@ async function GuideEditor({
 
           {step === 'story' && (
             <>
-              {/* Cover photo and gallery have their own page (S4); travellers see them from S6. */}
-              <p className="text-sm text-muted">
-                {up.menuHint}{' '}
-                <Link href={`/${locale}/dashboard/photos`} className="font-semibold text-forest underline">{up.title}</Link>
-              </p>
-              <p className="text-sm text-muted">
-                {pl.entryNote}{' '}
-                <Link href={`/${locale}/dashboard/links`} className="font-semibold text-forest underline">{pl.entry}</Link>
-              </p>
+              {/* Photos (S4) and profile links (S5) have their own pages, which come back here (?next=story).
+                  They leave this form, so the guide is asked to save first. */}
+              <div className="space-y-2 rounded-[5px] bg-surface p-4 text-sm">
+                <p className="font-semibold">{g.saveFirst}</p>
+                <p>
+                  <Link href={`/${locale}/dashboard/photos?next=story`} className="font-semibold text-forest underline">{up.title}</Link>
+                  <span className="block text-muted">{up.menuHint}</span>
+                </p>
+                <p>
+                  <Link href={`/${locale}/dashboard/links?next=story`} className="font-semibold text-forest underline">{pl.entry}</Link>
+                  <span className="block text-muted">{pl.entryNote}</span>
+                </p>
+              </div>
               <Field label={d.bio}>
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
@@ -320,12 +324,6 @@ async function GuideEditor({
                 <input type="checkbox" name="open_to_partners" defaultChecked={guide?.open_to_partners ?? false} className="size-4 accent-forest" />
                 {d.openToPartners}
               </label>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Facebook"><LinkInput id="facebook_url" name="facebook_url" kind="facebook" locale={locale} defaultValue={guide?.facebook_url} placeholder="facebook.com/…" /></Field>
-                <Field label="Instagram"><LinkInput id="instagram_url" name="instagram_url" kind="instagram" locale={locale} defaultValue={guide?.instagram_url} placeholder="@…" /></Field>
-                <Field label="TikTok"><LinkInput id="tiktok_url" name="tiktok_url" kind="tiktok" locale={locale} defaultValue={guide?.tiktok_url} placeholder="@…" /></Field>
-              </div>
-              <p className="text-sm text-muted">{linkTexts(locale).socialHint}</p>
               <p className="text-sm text-muted">{d.followUs}</p>
               <Field label={`${d.slug} (kwetuly.com/${locale}/guides/…)`}>
                 <MarkedInput id="slug" errorCode="slug" message={guideStatusText(locale).slugTaken} className="field" name="slug" maxLength={60} pattern="[a-z0-9\-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
@@ -417,9 +415,7 @@ async function GuideEditor({
           </li>
         ))}
       </ol>
-      {guide && <BookingLinkEntry locale={locale} />}
-      {guide && <PhotosEntry locale={locale} />}
-      {guide && <ProfileLinksEntry locale={locale} />}
+      {/* Same order as the app's profile overview: packages, booking link, photos, links. */}
       {guide && (
         <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
           <span className="flex-1">
@@ -429,6 +425,9 @@ async function GuideEditor({
           <span className="btn px-4 py-2 text-sm">{t.packages.add}</span>
         </Link>
       )}
+      {guide && <BookingLinkEntry locale={locale} />}
+      {guide && <PhotosEntry locale={locale} />}
+      {guide && <ProfileLinksEntry locale={locale} />}
       {guide && <GuideReferral approved={guide.verification_status === 'approved'} t={t} locale={locale} />}
       <ProfileStrength guide={guide} details={details} t={t} />
     </>

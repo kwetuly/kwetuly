@@ -105,9 +105,11 @@ export function profileLinkLabel(kind: ProfileLinkKind, locale: Locale | string)
 
 const en = {
   title: 'Your profile links',
-  /** Dashboard entry line (S8 or a later slice adds it to the dashboard). */
+  /** Dashboard entry line and the "Your page" sign-up step (guides). */
   entry: 'Profile links',
-  entryNote: 'Add your website, Google and YouTube so travellers can see more of your work.',
+  entryNote: 'You are welcome to add your website, Google, YouTube, Instagram, Facebook and TikTok, so travellers can see more of your work.',
+  /** Dashboard entry line for business owners. */
+  businessEntryNote: 'You are welcome to add your Google, YouTube, Instagram, Facebook and TikTok links.',
   intro: 'Add the places where travellers can see more of your work. Each link is checked before it is saved, and every link on Kwetuly is marked as added by you.',
   guideHeading: 'On your guide page',
   businessHeading: 'On the page of {business}',
@@ -144,7 +146,8 @@ export type ProfileLinksText = typeof en;
 const sw: ProfileLinksText = {
   title: 'Viungo vya wasifu wako',
   entry: 'Viungo vya wasifu',
-  entryNote: 'Ongeza tovuti yako, Google na YouTube ili wasafiri waone zaidi kazi yako.',
+  entryNote: 'Karibu uongeze tovuti yako, Google, YouTube, Instagram, Facebook na TikTok, ili wasafiri waone zaidi kazi yako.',
+  businessEntryNote: 'Karibu uongeze viungo vyako vya Google, YouTube, Instagram, Facebook na TikTok.',
   intro: 'Ongeza sehemu ambazo wasafiri wanaweza kuona zaidi kazi yako. Kila kiungo kinakaguliwa kabla ya kuhifadhiwa, na kila kiungo kwenye Kwetuly kinaonyeshwa kuwa umekiongeza wewe.',
   guideHeading: 'Kwenye ukurasa wako wa mwongozaji',
   businessHeading: 'Kwenye ukurasa wa {business}',

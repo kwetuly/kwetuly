@@ -14,6 +14,7 @@ import {
 } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
+import { signupReturn } from '@/lib/guide-steps';
 import { createClient } from '@/lib/supabase/server';
 import type { FormResult } from '@/components/keep-form';
 
@@ -96,7 +97,9 @@ export async function saveGuideLinks(_previous: FormResult, formData: FormData):
     updateTag('guides');
   }
   if (error) return { error };
-  redirect(`/${locale}/dashboard/links?saved=guide`);
+  // Reached from the "Your page" sign-up step: keep the way back (only the step name, never an address).
+  const next = signupReturn(formData.get('next'));
+  redirect(`/${locale}/dashboard/links?saved=guide${next ? `&next=${next}` : ''}`);
 }
 
 export async function saveBusinessLinks(_previous: FormResult, formData: FormData): Promise<FormResult> {

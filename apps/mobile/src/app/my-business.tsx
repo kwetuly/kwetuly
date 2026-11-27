@@ -224,8 +224,9 @@ function Editor({
         </ListGroup>
       )}
 
-      {/* Instagram, Facebook and TikTok for each business (slice S5). */}
-      {business && <ProfileLinksEntry />}
+      {/* Google, YouTube, Instagram, Facebook and TikTok for each business (slice S5); the business
+          website stays in this form. */}
+      {business && <ProfileLinksEntry business />}
 
       {business && <BusinessSalesCard providerId={business.id} />}
 

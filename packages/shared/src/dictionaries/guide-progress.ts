@@ -37,8 +37,8 @@ const en = {
   tripsAdd: 'Add a trip',
   tripsSee: 'See my trips',
   continue: 'Continue',
-  // Step 5, your page.
-  coverSoon: 'A cover photo and a photo gallery are coming soon.',
+  // Step 5, your page: shown before the links to the photos and profile links pages, which leave the form.
+  saveFirst: 'Please save this step first.',
   // Step 1: the photo is needed for the step to count as finished.
   photoNeeded: 'A photo is needed for this step. Please choose a clear photo of your face.',
   needed: 'needed',
@@ -100,7 +100,7 @@ const sw: GuideProgressText = {
   tripsAdd: 'Ongeza safari',
   tripsSee: 'Tazama safari zangu',
   continue: 'Endelea',
-  coverSoon: 'Picha ya jalada na picha nyingine zinakuja hivi karibuni.',
+  saveFirst: 'Tafadhali hifadhi hatua hii kwanza.',
   photoNeeded: 'Picha inahitajika kwa hatua hii. Tafadhali chagua picha safi ya uso wako.',
   needed: 'inahitajika',
   backToSignup: 'Rudi kwenye hatua zako za usajili',

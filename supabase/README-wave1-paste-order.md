@@ -16,7 +16,7 @@ for a local or test project only: never run them on live.
 | --- | --- | --- | --- |
 | 1 | `migrations/20261126000000_feature_switch_admin.sql` | 32,184 bytes | `checks/feature_switch_admin_tests.sql` (15,873 bytes) |
 | 2 | `migrations/20261126000060_interest_signups_owner.sql` | 13,885 bytes | `checks/interest_signups_owner_tests.sql` (12,367 bytes) |
-| 3 | `migrations/20261126000100_media_uploads.sql` | 51,302 bytes | `checks/media_uploads_tests.sql` (22,194 bytes) |
+| 3 | `migrations/20261126000100_media_uploads.sql` | 52,855 bytes | `checks/media_uploads_tests.sql` (25,285 bytes) |
 | 4 | `migrations/20261126000200_profile_links.sql` | 23,536 bytes | `checks/profile_links_tests.sql` (26,925 bytes) |
 
 `20261126000050_host_switches.sql` is gone on purpose: the `feature.vip_hosts` and
@@ -39,9 +39,11 @@ migration that list shows empty. The hosts pages themselves work before and afte
 
 ## 3. Photo uploads (S4): paste alone
 
-`20261126000100_media_uploads.sql` is about 51 KB. Paste it on its own, in a fresh SQL editor tab,
+`20261126000100_media_uploads.sql` is about 53 KB. Paste it on its own, in a fresh SQL editor tab,
 with nothing else in the same run. It uses `pg_cron`, `pg_net` and Vault, which the project already
-uses for the other sweeps.
+uses for the other sweeps. It also seeds `feature.cover_gallery` (on) if step 1 has not, and while
+that switch is off it refuses new cover and gallery photos (profile and product photos are not
+switched).
 
 Deploy steps around it, in this order:
 

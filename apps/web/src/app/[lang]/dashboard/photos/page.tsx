@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Suspense } from 'react';
-import { MEDIA_COLUMNS, uploadsText, type MediaItem, type UploadsText } from '@kwetuly/shared';
+import { Suspense, type ReactNode } from 'react';
+import { MEDIA_COLUMNS, guideProgressText, uploadsText, type MediaItem, type UploadsText } from '@kwetuly/shared';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
+import { featureOn } from '@/lib/features';
+import { signupReturn, signupReturnHref } from '@/lib/guide-steps';
 import { createClient } from '@/lib/supabase/server';
 import { MediaField } from '@/components/upload/media-field';
 
@@ -14,18 +16,28 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Guide photo manager (slice S4): the cover photo and up to 12 photos for the guide's own page. They
 // are shown at once and checked by Kwetuly afterwards. The public page shows them from slice S6.
-export default async function PhotosPage() {
+export default async function PhotosPage({ searchParams }: PageProps<'/[lang]/dashboard/photos'>) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const u = uploadsText(locale);
+  const plain = <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.nav.dashboard}</Link>;
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.nav.dashboard}</Link>
+      <Suspense fallback={plain}>
+        <SignupBackLink locale={locale} searchParams={searchParams} fallback={plain} />
+      </Suspense>
       <h1 className="mt-2 text-3xl font-bold">{u.title}</h1>
       <Suspense fallback={<Loading />}>
         <Content locale={locale} u={u} dashboard={t.nav.dashboard} />
       </Suspense>
     </div>
   );
+}
+
+// Reached from the "Your page" sign-up step (?next=story): the way back goes to that step.
+async function SignupBackLink({ locale, searchParams, fallback }: { locale: Locale; searchParams: Promise<Record<string, string | string[] | undefined>>; fallback: ReactNode }) {
+  const next = signupReturn((await searchParams).next);
+  if (!next) return fallback;
+  return <Link href={signupReturnHref(locale, next)} className="text-sm font-semibold text-forest underline">{guideProgressText(locale).backToSignup}</Link>;
 }
 
 function Loading() {
@@ -49,7 +61,7 @@ async function Content({ locale, u, dashboard }: { locale: Locale; u: UploadsTex
     );
   }
   const supabase = await createClient();
-  const [media, setting] = await Promise.all([
+  const [media, on] = await Promise.all([
     supabase
       .from('media')
       .select(MEDIA_COLUMNS)
@@ -58,10 +70,11 @@ async function Content({ locale, u, dashboard }: { locale: Locale; u: UploadsTex
       .in('field', ['cover', 'gallery'])
       .not('state', 'in', '(removed,uploading)')
       .order('sort'),
-    // Until S1's feature helper lands: only an explicit "off" hides this page.
-    supabase.from('site_settings').select('value').eq('key', 'feature.cover_gallery').maybeSingle<{ value: { on?: boolean } }>(),
+    // feature.cover_gallery, read like the database (missing row = off): start_media_upload() refuses
+    // cover and gallery photos while it is off (QA M1).
+    featureOn('cover_gallery'),
   ]);
-  if (setting.data?.value?.on === false) {
+  if (!on) {
     return <p className="card mt-6">{u.switchedOff}</p>;
   }
   if (media.error) {

@@ -1,7 +1,10 @@
 -- STATUS: NOT APPLIED anywhere. Walter pastes live SQL himself; run it on a test project first, then
 -- supabase/checks/media_uploads_tests.sql, then the security advisors.
 -- Order: after 20261123000000_business_chat.sql (and the reservations files before it). It does not
--- depend on 20261126000000_feature_switch_admin.sql (S1).
+-- depend on 20261126000000_feature_switch_admin.sql (S1): it seeds feature.cover_gallery itself
+-- ({"on": true}, only if the row is missing) and reads it with private.feature_on (20261031214101).
+-- QA M1: while feature.cover_gallery is off, start_media_upload() and the insert guard refuse new
+-- cover and gallery photos ('media:switched_off'). Avatar and product photos are not switched.
 --
 -- Slice S4: one upload system (design docs/team/design-2026-11-24.md, section 9.2), with the changes
 -- from the S4 security review (M1-M4, L1, L3, L5-L7).
@@ -46,6 +49,14 @@
 --     private.media_field_max_bytes(public.media_field), private.media_field_max(public.media_field);
 --   drop table public.media; drop type public.media_state, public.media_subject_kind, public.media_field;
 --   delete from storage.buckets where id in ('media', 'media-pending', 'media-staging'); (only when empty)
+
+-- ---------------------------------------------------------------------------
+-- 0. Switch feature.cover_gallery (QA M1). S1 (20261126000000) seeds the same row; whichever runs
+-- first wins and the other leaves it. Exactly {"on": ...}, the shape S1's check allows.
+-- ---------------------------------------------------------------------------
+insert into public.site_settings (key, value)
+values ('feature.cover_gallery', '{"on": true}')
+on conflict (key) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- 1. Enums and field rules (mirrored in packages/shared/src/uploads.ts)
@@ -372,6 +383,11 @@ begin
       if private.media_subject_owner(new.subject_kind, new.subject_id) is distinct from new.owner_id then
         raise exception 'media:not_yours' using errcode = '42501';
       end if;
+      -- QA M1: while feature.cover_gallery is off (or missing), no new cover or gallery photo, also not
+      -- by a direct insert. Avatar and product photos are not switched. Photos already there stay.
+      if new.field in ('cover', 'gallery') and not private.feature_on('cover_gallery') then
+        raise exception 'media:switched_off' using errcode = '42501';
+      end if;
       new.state := 'uploading';
       new.mime := null;
       new.bytes := null;
@@ -522,6 +538,11 @@ begin
   end if;
   if private.media_subject_owner(p_subject_kind, p_subject_id) is distinct from v_uid then
     raise exception 'media:not_yours' using errcode = '42501';
+  end if;
+  -- QA M1: cover and gallery follow feature.cover_gallery (missing row = off). Checked here first so
+  -- an open cover upload is not given up below; private.guard_media() checks it again on the insert.
+  if p_field in ('cover', 'gallery') and not private.feature_on('cover_gallery') then
+    raise exception 'media:switched_off' using errcode = '42501';
   end if;
   -- A cover or avatar upload that never finished is given up when a new one starts (row level
   -- security limits the update to the caller's own rows).
