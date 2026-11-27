@@ -79,6 +79,8 @@ function RootStack() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="intro" options={{ headerShown: false, gestureEnabled: false, animation: 'fade' }} />
       <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: t.auth.signInTitle }} />
+      {/* The payment-method chooser: a native sheet (iOS form sheet, Android modal). */}
+      <Stack.Screen name="pay-methods" options={{ presentation: 'formSheet', sheetAllowedDetents: [0.75, 1], sheetGrabberVisible: true }} />
     </Stack>
   );
 }

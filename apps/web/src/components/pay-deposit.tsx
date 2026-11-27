@@ -1,5 +1,7 @@
 import { CreditCard } from 'lucide-react';
-import { depositTzs, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { canPick, depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { manualRate, paymentMethods } from '@/lib/lipa';
+import { PayNow } from './pay-now';
 import type { Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { depositPayable, depositUsd, paymentsConfig } from '@/lib/payments';
@@ -66,6 +68,29 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
   // a disabled Pay button. The payable check is skipped: while off, the Edge Function answers
   // not_configured to every check, so it cannot tell us more.
   if (!config.enabled) {
+    // Lipa numbers (manual payments, 2026-11-26): offered when the server lists a live method for this
+    // deposit (feature.deposits_via_kwetuly_lipa, a switched-on number, a current rate). This money
+    // belongs to the guide or business: Kwetuly holds it until it is paid out.
+    const purpose = kind === 'offer' ? 'offer_deposit' : 'group_deposit';
+    const [rows, rate] = await Promise.all([paymentMethods(purpose), manualRate()]);
+    const cents = totalUsd * percent;
+    const lipaTzs = rate && Number.isSafeInteger(cents) ? depositTzsFromRateText(cents, rate.rate) : null;
+    if (lipaTzs && rows?.some(canPick)) {
+      const lp = lipaPayText(locale);
+      return (
+        <div id="pay" className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
+          <p className="flex items-center gap-2 font-bold"><CreditCard className="size-5" aria-hidden /> {p.title}</p>
+          <p className="text-2xl font-extrabold">
+            ${depositUsd(totalUsd, percent).toLocaleString(locale)} <span className="text-sm font-semibold">({percent}%)</span>
+          </p>
+          <p className="text-sm font-semibold">{formatTzsAmount(lipaTzs)}</p>
+          {error && <p role="alert" className="text-sm font-semibold">{Object.hasOwn(lp.errors, error) ? lp.errors[error] : errorText(error, p)}</p>}
+          <PayNow purpose={purpose} subject={id} amountTzs={lipaTzs} locale={locale} back={back} />
+          <p className="text-xs opacity-80">{lp.depositHeld}</p>
+          <p className="text-xs opacity-70">{p.direct}</p>
+        </div>
+      );
+    }
     return (
       <div id="pay" className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
         <p className="flex items-center gap-2 font-bold"><CreditCard className="size-5" aria-hidden /> {p.title}</p>

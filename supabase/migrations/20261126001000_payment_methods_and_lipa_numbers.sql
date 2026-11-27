@@ -6,11 +6,13 @@
 -- 20261122100000 (payments provider columns), 20261122200000 (price_list).
 --
 -- What this file does:
---   1. Switches. feature.payments_manual (ON) and feature.deposits_via_kwetuly_lipa (ON, Walter's
---      "everything on"; see the warning below). feature.payments_live is not touched (stays OFF).
---      private.manual_payments_on() and private.money_feature_on(id) are defined with
---      create or replace so this file and the switches slice (20261126000000) can run in either order;
---      both define the same bodies.
+--   1. Switches. feature.payments_manual (ON), feature.deposits_via_kwetuly_lipa (ON, Walter's
+--      "everything on"; see the warning below), feature.guide_verification_fees and
+--      feature.business_badge_fees (ON). feature.payments_live is not touched (stays OFF).
+--      private.manual_payments_on(p_id) (payments_manual AND that path's own switch) and
+--      private.money_feature_on(id) are defined with create or replace so this file and the switches
+--      slice (20261126000000) can run in either order; both define the same bodies.
+--      private.payment_feature_id(purpose) names each charge path's switch.
 --   2. site_settings 'payments.providers': which provider takes each payment method, chosen by admins,
 --      not in code. Default {"mobile_money": ["manual_lipa"], "bank": ["manual_lipa"], "card": []}.
 --      Shape check: only known methods and provider ids. A hosted provider (flutterwave, azampay,
@@ -42,11 +44,12 @@
 --     private.payment_audit(text, uuid, text, text, text, jsonb), private.mask_phone(text),
 --     private.log_payment_settings(), private.log_payment_numbers(), private.guard_payment_numbers(),
 --     private.payment_audit_append_only(), private.price_code_editable(text),
---     private.manual_rate(), private.provider_for(text, text);
+--     private.manual_rate(), private.provider_for(text, text), private.payment_feature_id(text);
 --   drop table public.payment_audit_log, public.payment_numbers;
 --   alter table public.site_settings drop constraint site_settings_payments_shape;
 --   delete from public.site_settings where key in ('payments.providers', 'payments.manual_usd_tzs_rate',
---     'feature.payments_manual', 'feature.deposits_via_kwetuly_lipa');
+--     'feature.payments_manual', 'feature.deposits_via_kwetuly_lipa', 'feature.guide_verification_fees',
+--     'feature.business_badge_fees');
 --   price_list: the verification and business_badge rows can stay (drafts, no amount); to remove the codes,
 --     re-create the price functions and checks from 20261122200000 (only while no row uses the codes).
 --   private.manual_payments_on and private.money_feature_on: keep if the switches slice is applied.
@@ -69,23 +72,47 @@ $$;
 -- ---------------------------------------------------------------------------
 -- 1. Switches
 -- ---------------------------------------------------------------------------
+-- One switch per charge path, so switching one fee off stops only that fee (W1-1 switch review).
+-- guide_verification_fees and business_badge_fees are new ids (ON); crew_verification_fees and
+-- jobs_contact_fees belong to the switches slice and are not seeded here.
 insert into public.site_settings (key, value) values
   ('feature.payments_manual', '{"on": true}'),
-  ('feature.deposits_via_kwetuly_lipa', '{"on": true}')
+  ('feature.deposits_via_kwetuly_lipa', '{"on": true}'),
+  ('feature.guide_verification_fees', '{"on": true}'),
+  ('feature.business_badge_fees', '{"on": true}')
 on conflict (key) do nothing;
 
--- Same bodies as the switches slice (20261126000000); whichever runs last leaves the same function.
-create or replace function private.manual_payments_on()
+-- Same body as the switches slice (20261126000000, one-argument form); whichever runs last leaves the
+-- same function: Lipa payments are on AND the charge path's own switch is on.
+create or replace function private.manual_payments_on(p_id text)
 returns boolean
 language sql
 stable
 security invoker
 set search_path = ''
 as $$
-  select private.feature_on('payments_manual');
+  select private.feature_on('payments_manual') and private.feature_on(p_id);
 $$;
-revoke execute on function private.manual_payments_on() from public;
-grant execute on function private.manual_payments_on() to anon, authenticated;
+revoke execute on function private.manual_payments_on(text) from public;
+grant execute on function private.manual_payments_on(text) to anon, authenticated;
+
+-- The switch of each charge path (order purpose). Unknown purposes have none (always off).
+create or replace function private.payment_feature_id(p_purpose text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_purpose
+    when 'verification' then 'guide_verification_fees'
+    when 'business_badge' then 'business_badge_fees'
+    when 'reservation_commission' then 'reservation_commission_billing'
+    when 'offer_deposit' then 'deposits_via_kwetuly_lipa'
+    when 'group_deposit' then 'deposits_via_kwetuly_lipa'
+    else 'none_' || coalesce(p_purpose, 'x') end;
+$$;
+revoke execute on function private.payment_feature_id(text) from public;
+grant execute on function private.payment_feature_id(text) to authenticated;
 
 create or replace function private.money_feature_on(p_id text)
 returns boolean
@@ -131,13 +158,33 @@ alter table public.site_settings add constraint site_settings_payments_shape che
       and jsonb_typeof(value) = 'object'
       and (value - array['verification', 'business_badge', 'reservation_commission', 'offer_deposit', 'group_deposit']) = '{}'::jsonb
       and not jsonb_path_exists(value, '$.* ? (!(@ == "real_world_service" || @ == "physical_goods" || @ == "digital_feature"))'))
-  -- Per platform and purchase kind: allow, website_only or hide (part 3).
+  -- Per platform and item type: the route (part 3, from docs/legal/app-store-payment-rules-2026-11.md).
   or (key = 'payments.store_policy'
       and jsonb_typeof(value) = 'object'
       and (value - array['web', 'ios', 'android']) = '{}'::jsonb
       and not jsonb_path_exists(value, '$.* ? (@.type() != "object")')
-      and not jsonb_path_exists(value, '$.*.keyvalue() ? (!(@.key == "real_world_service" || @.key == "physical_goods" || @.key == "digital_feature"))')
-      and not jsonb_path_exists(value, '$.*.* ? (!(@ == "allow" || @ == "website_only" || @ == "hide"))')));
+      and not jsonb_path_exists(value, '$.*.keyvalue() ? (!(@.key == "verification" || @.key == "crew_verification" || @.key == "business_badge"
+            || @.key == "reservation_commission" || @.key == "offer_deposit" || @.key == "group_deposit" || @.key == "accommodation_reservation"
+            || @.key == "marketplace_item" || @.key == "tip_person" || @.key == "donation_cause" || @.key == "profile_boost"
+            || @.key == "subscription_premium" || @.key == "jobs_contact_fee"))')
+      and not jsonb_path_exists(value, '$.*.* ? (!(@ == "third_party_in_app" || @ == "store_billing" || @ == "web_only" || @ == "not_offered"))'))
+  -- Display-only rates for the viewer's own currency, typed by an admin with a source (none seeded):
+  -- {"EUR": {"per_usd": "0.92", "source": "...", "as_of": "YYYY-MM-DD"}}. Never used for any charge.
+  or (key = 'payments.display_rates'
+      and jsonb_typeof(value) = 'object'
+      and not jsonb_path_exists(value, '$.keyvalue() ? (!(@.key like_regex "^[A-Z]{3}$"))')
+      and not jsonb_path_exists(value, '$.* ? (@.type() != "object" || @.per_usd.type() != "string" || @.source.type() != "string")')
+      and not jsonb_path_exists(value, '$.*.per_usd ? (!(@ like_regex "^[0-9]{1,6}(\\.[0-9]{1,6})?$"))'))
+  -- Store flags: coming-soon methods per platform, link-out lists (empty: Tanzania is in no program).
+  or (key = 'payments.store_flags'
+      and jsonb_typeof(value) = 'object'
+      and (value - array['show_coming_soon', 'show_prices_for_web_only_items_in_app', 'ios_link_out_storefronts', 'android_link_out_countries']) = '{}'::jsonb
+      and jsonb_typeof(value -> 'show_coming_soon') = 'object'
+      and (value -> 'show_coming_soon' - array['web', 'ios', 'android']) = '{}'::jsonb
+      and not jsonb_path_exists(value, '$.show_coming_soon.* ? (@.type() != "boolean")')
+      and coalesce(jsonb_typeof(value -> 'show_prices_for_web_only_items_in_app'), 'boolean') = 'boolean'
+      and coalesce(jsonb_typeof(value -> 'ios_link_out_storefronts'), 'array') = 'array'
+      and coalesce(jsonb_typeof(value -> 'android_link_out_countries'), 'array') = 'array'));
 
 insert into public.site_settings (key, value) values
   ('payments.providers', '{"mobile_money": ["manual_lipa"], "bank": ["manual_lipa"], "card": []}')
@@ -158,7 +205,8 @@ as $$
        jsonb_array_elements_text(s.value -> p_method) with ordinality as p(id, n)
   where s.key = 'payments.providers'
     and case p.id
-          when 'manual_lipa' then private.manual_payments_on()
+          when 'manual_lipa' then case when p_purpose is null then private.feature_on('payments_manual')
+                                       else private.manual_payments_on(private.payment_feature_id(p_purpose)) end
           else private.money_feature_on(p.id)
                -- Hosted adapters only take deposits today (supabase/functions/payments).
                and (p_purpose is null or p_purpose in ('offer_deposit', 'group_deposit'))
@@ -592,7 +640,7 @@ as $$
   from public.payment_numbers n
   where n.is_on
     and (select auth.uid()) is not null
-    and private.manual_payments_on()
+    and private.feature_on('payments_manual')
     and ((n.network <> 'bank' and private.provider_for('mobile_money') = 'manual_lipa')
          or (n.network = 'bank' and private.provider_for('bank') = 'manual_lipa'))
   order by n.sort, n.network, n.created_at;

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { depositTzs, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { LipaPayButton } from '@/components/lipa-pay-button';
+import { supabase } from '@/lib/supabase';
 import { Button, Card, IconSquare } from '@/components/ui';
 import { GLYPHS } from '@/components/glyph';
 import { depositPayable, depositState, payDeposit, paymentsConfig } from '@/lib/api-requests';
@@ -29,6 +31,16 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
     queryFn: () => depositPayable(kind, id),
     enabled: Boolean(enabled.data) && percent > 0 && paid.data?.paid === false && !paid.data.review,
   });
+  // The admin-typed rate for Lipa deposits (display only; the server computes the real amount).
+  const lipaRate = useQuery({
+    queryKey: ['lipa-rate'],
+    queryFn: async () => {
+      const { data } = await supabase.from('site_settings').select('value').eq('key', 'payments.manual_usd_tzs_rate').maybeSingle<{ value: { rate?: unknown } }>();
+      return typeof data?.value?.rate === 'string' ? data.value.rate : null;
+    },
+    enabled: config.data?.enabled === false,
+    staleTime: 10 * 60_000,
+  });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
@@ -54,14 +66,27 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   // Payments switched off (Walter, 2026-11-22: show every button): the amount and a disabled Pay button
   // with "opens soon". While off, the Edge Function answers not_configured to every check.
   if (config.data && !config.data.enabled && paid.data?.paid === false) {
+    // Lipa numbers (2026-11-26): trip deposits may be paid in the app (store rules: real-world service).
+    // LipaPayButton renders only when the server lists a method for this deposit on this platform.
+    const lipaTzs = depositTzsFromRateText(totalUsd * percent, lipaRate.data ?? null);
     return (
       <Card style={{ backgroundColor: brand.sand }}>
         <Text style={{ ...type.cardTitle, color: brand.ink }}>{p.title}</Text>
         <Text style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>
           ${(Math.round(totalUsd * percent) / 100).toLocaleString(locale)} <Text style={{ fontSize: textSize.subhead, ...font.semibold }}>({percent}%)</Text>
         </Text>
-        <Button title={p.cta} onPress={() => undefined} disabled accessibilityLabel={`${p.cta}. ${p.opensSoon}`} />
-        <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{p.opensSoon}</Text>
+        {lipaTzs ? (
+          <>
+            <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{formatTzsAmount(lipaTzs)}</Text>
+            <LipaPayButton purpose={kind === 'offer' ? 'offer_deposit' : 'group_deposit'} subject={id} amountTzs={lipaTzs} />
+            <Text style={type.caption}>{lipaPayText(locale).depositHeld}</Text>
+          </>
+        ) : (
+          <>
+            <Button title={p.cta} onPress={() => undefined} disabled accessibilityLabel={`${p.cta}. ${p.opensSoon}`} />
+            <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{p.opensSoon}</Text>
+          </>
+        )}
         <Text style={type.caption}>{p.direct}</Text>
       </Card>
     );

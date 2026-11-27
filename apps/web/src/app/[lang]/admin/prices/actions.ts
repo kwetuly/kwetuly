@@ -46,7 +46,8 @@ function parseTzs(raw: FormDataEntryValue | null): number | null | 'bad' {
   if (!text) return null;
   if (!/^\d{1,9}$/.test(text)) return 'bad';
   const n = Number(text);
-  return n >= 1 && n <= reservationLimits.reservationAmountTzsMax ? n : 'bad';
+  // Fee prices (verification, badge) may be larger than a reservation rate; the database caps each code.
+  return n >= 1 && n <= 100_000_000 ? n : 'bad';
 }
 
 function parsePercent(raw: FormDataEntryValue | null): number | null | 'bad' {

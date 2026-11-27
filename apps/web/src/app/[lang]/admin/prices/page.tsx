@@ -57,11 +57,16 @@ const ERROR_TEXT: Record<string, string> = {
 const SERVICE_LABEL: Record<string, string> = {
   reservation_commission: 'Reservation commission',
   reservation_unpriced_fee: 'Fee per person, service with no listed price',
+  verification: 'Verification',
+  business_badge: '"Checked by Kwetuly" badge',
 };
 const TYPE_LABEL: Record<string, string> = { restaurant: 'Restaurant', spa: 'Spa and massage', salon: 'Salon' };
+const ACCOUNT_LABEL: Record<string, string> = { porter: 'Porter', cook: 'Cook', driver: 'Driver', assistant_guide: 'Assistant guide', guide: 'Guide', business: 'Business' };
+const FEE_CODES = new Set(['verification', 'business_badge']);
 
 type PriceRow = {
   id: string;
+  account_type: string;
   business_type: string | null;
   service_code: string;
   period: string;
@@ -79,6 +84,7 @@ type LogRow = { id: number; price_id: string | null; action: string; actor_name:
 const tzs = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
 
 function basis(row: PriceRow): string {
+  if (FEE_CODES.has(row.service_code)) return `TZS per ${row.period}, paid to Kwetuly by Lipa number`;
   if (row.service_code === 'reservation_unpriced_fee') return 'TZS per person served';
   if (row.period === 'percent') return 'Percent of the listed service price';
   return 'TZS per guest who came';
@@ -87,6 +93,7 @@ function basis(row: PriceRow): string {
 function valueText(row: PriceRow): string {
   if (row.period === 'percent') return row.percent == null ? 'not set' : `${row.percent}%`;
   if (row.amount_tzs == null) return 'not set';
+  if (FEE_CODES.has(row.service_code)) return `${tzs(row.amount_tzs)} per ${row.period}`;
   const per = row.service_code === 'reservation_unpriced_fee' ? 'per person' : 'per guest';
   return `${tzs(row.amount_tzs)} ${per}${row.max_guests_counted ? `, up to ${row.max_guests_counted} guests counted` : ''}`;
 }
@@ -169,7 +176,9 @@ async function ReservationRates({ locale }: { locale: Locale }) {
               <h3 className="font-semibold">
                 {SERVICE_LABEL[row.service_code] ?? row.service_code}
                 {' · '}
-                {row.business_type ? (TYPE_LABEL[row.business_type] ?? row.business_type) : 'Spa and salon'}
+                {FEE_CODES.has(row.service_code)
+                  ? `${ACCOUNT_LABEL[row.account_type] ?? row.account_type}, per ${row.period}`
+                  : row.business_type ? (TYPE_LABEL[row.business_type] ?? row.business_type) : 'Spa and salon'}
               </h3>
               <span className="text-sm font-semibold">{statusText(row, today)}</span>
             </div>

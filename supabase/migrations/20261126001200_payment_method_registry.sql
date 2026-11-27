@@ -15,21 +15,34 @@
 --      (so feature.payments_live, locked off) and a built adapter (only Flutterwave, deposits only).
 --      Anything else shows as coming_soon. The chooser (website and app) reads
 --      public.payment_methods_for(purpose, platform) and never decides by itself.
---   3. App-store routing: site_settings 'payments.purchase_kinds' (what each order type is:
---      real_world_service, physical_goods, digital_feature) and 'payments.store_policy' (per platform
---      and kind: allow, website_only, hide). The defaults below are PROVISIONAL until the Google Play
---      and Apple research is in; admins change them without code. Each order saves its purchase_kind
---      and platform. A missing app value counts as website_only (fail closed).
+--   3. App-store routing, from docs/legal/app-store-payment-rules-2026-11.md ("per-platform policy
+--      values"), admin-editable, until Walter and the advocate decide:
+--        'payments.purchase_kinds'  what each order type is (real_world_service, physical_goods,
+--                                   digital_feature); saved on every order with its platform.
+--        'payments.store_policy'    per platform and item type: third_party_in_app, store_billing (not
+--                                   built), web_only, not_offered. Deposits, reservations, marketplace
+--                                   items and 100% tips: third_party_in_app (Apple 3.1.3(e), Google
+--                                   Payments s.3). Guide and porter verification, the badge and the
+--                                   reservation commission: web_only (grey; commission is not in the
+--                                   research table, so the safest grey value). Boosts, subscriptions,
+--                                   donations: web_only. Web: everything third_party_in_app. A missing
+--                                   app value counts as not_offered (fail closed).
+--        'payments.store_flags'     show_coming_soon per platform (web true; ios and android false:
+--                                   Apple 2.1(a) and 2.5.19), show_prices_for_web_only_items_in_app
+--                                   (false), link-out lists (empty: Tanzania is in no program).
+--      In the apps a web_only item gets NO rows from payment_methods_for: no price, button, link,
+--      webview or "go to the website" text.
 --   4. public.start_payment_order(..., p_provider, p_platform) (replaces the part 2 draft): refuses a
---      provider that is not live, a route other than allow, and hosted providers (their orders are made
---      by the payments Edge Function).
+--      provider that is not live, any route other than third_party_in_app, a switched-off charge path
+--      (private.manual_payments_on(private.payment_feature_id(purpose))) and hosted providers (their
+--      orders are made by the payments Edge Function).
 --
 -- Undo: drop function public.start_payment_order(text, uuid, text, text, date, text, text),
 --   public.payment_methods_for(text, text), public.admin_payment_methods(), public.admin_save_payment_method(text, text, text, integer, text[]),
---   public.admin_set_store_policy(jsonb, jsonb), private.payment_method_state(text, text), private.purchase_kind(text),
---   private.store_route(text, text), private.log_payment_methods();
+--   public.admin_set_store_policy(jsonb, jsonb, jsonb), private.payment_method_state(text, text), private.purchase_kind(text),
+--   private.store_route(text, text), private.show_coming_soon(text), private.log_payment_methods();
 --   drop table public.payment_method_registry;
---   delete from public.site_settings where key in ('payments.purchase_kinds', 'payments.store_policy');
+--   delete from public.site_settings where key in ('payments.purchase_kinds', 'payments.store_policy', 'payments.store_flags');
 
 -- ---------------------------------------------------------------------------
 -- 1. Registry
@@ -89,15 +102,43 @@ create trigger payment_method_registry_log before update on public.payment_metho
   for each row execute function private.log_payment_methods();
 
 -- ---------------------------------------------------------------------------
--- 2. Purchase kinds and store policy (PROVISIONAL defaults, see the header)
+-- 2. Purchase kinds and store policy (defaults from the research; Walter decides, see the header)
 -- ---------------------------------------------------------------------------
 insert into public.site_settings (key, value) values
-  ('payments.purchase_kinds', '{"verification": "digital_feature", "business_badge": "digital_feature",
+  -- Verification and badge: a person checks documents or a business (grey between digital and service).
+  ('payments.purchase_kinds', '{"verification": "real_world_service", "business_badge": "real_world_service",
      "reservation_commission": "real_world_service", "offer_deposit": "real_world_service", "group_deposit": "real_world_service"}'),
-  ('payments.store_policy', '{"web": {"real_world_service": "allow", "physical_goods": "allow", "digital_feature": "allow"},
-     "ios": {"real_world_service": "allow", "physical_goods": "allow", "digital_feature": "website_only"},
-     "android": {"real_world_service": "allow", "physical_goods": "allow", "digital_feature": "website_only"}}')
+  ('payments.store_policy', '{
+     "web": {"offer_deposit": "third_party_in_app", "group_deposit": "third_party_in_app", "accommodation_reservation": "third_party_in_app",
+             "marketplace_item": "third_party_in_app", "tip_person": "third_party_in_app", "verification": "third_party_in_app",
+             "crew_verification": "third_party_in_app", "business_badge": "third_party_in_app", "reservation_commission": "third_party_in_app",
+             "profile_boost": "third_party_in_app", "subscription_premium": "third_party_in_app", "donation_cause": "third_party_in_app",
+             "jobs_contact_fee": "third_party_in_app"},
+     "ios": {"offer_deposit": "third_party_in_app", "group_deposit": "third_party_in_app", "accommodation_reservation": "third_party_in_app",
+             "marketplace_item": "third_party_in_app", "tip_person": "third_party_in_app", "verification": "web_only",
+             "crew_verification": "web_only", "business_badge": "web_only", "reservation_commission": "web_only",
+             "profile_boost": "web_only", "subscription_premium": "web_only", "donation_cause": "web_only", "jobs_contact_fee": "web_only"},
+     "android": {"offer_deposit": "third_party_in_app", "group_deposit": "third_party_in_app", "accommodation_reservation": "third_party_in_app",
+             "marketplace_item": "third_party_in_app", "tip_person": "third_party_in_app", "verification": "web_only",
+             "crew_verification": "web_only", "business_badge": "web_only", "reservation_commission": "web_only",
+             "profile_boost": "web_only", "subscription_premium": "web_only", "donation_cause": "web_only", "jobs_contact_fee": "web_only"}}'),
+  ('payments.store_flags', '{"show_coming_soon": {"web": true, "ios": false, "android": false},
+     "show_prices_for_web_only_items_in_app": false, "ios_link_out_storefronts": [], "android_link_out_countries": []}')
 on conflict (key) do nothing;
+
+-- Whether coming-soon methods are listed on this platform (missing = no).
+create or replace function private.show_coming_soon(p_platform text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce((select (s.value -> 'show_coming_soon' -> p_platform) = 'true'::jsonb
+                   from public.site_settings s where s.key = 'payments.store_flags'), false);
+$$;
+revoke execute on function private.show_coming_soon(text) from public;
+grant execute on function private.show_coming_soon(text) to authenticated;
 
 -- Unknown purpose kinds count as digital_feature (the strictest).
 create or replace function private.purchase_kind(p_purpose text)
@@ -112,8 +153,9 @@ $$;
 revoke execute on function private.purchase_kind(text) from public;
 grant execute on function private.purchase_kind(text) to authenticated;
 
--- 'allow', 'website_only' or 'hide'. Web defaults to allow; the apps default to website_only.
-create or replace function private.store_route(p_platform text, p_kind text)
+-- The route for an item type on a platform. Store rules do not apply to the website, so web defaults to
+-- third_party_in_app; a missing app value is not_offered (fail closed).
+create or replace function private.store_route(p_platform text, p_item text)
 returns text
 language sql
 stable
@@ -121,8 +163,8 @@ security definer
 set search_path = ''
 as $$
   select coalesce(
-    (select s.value -> p_platform ->> p_kind from public.site_settings s where s.key = 'payments.store_policy'),
-    case when p_platform = 'web' then 'allow' else 'website_only' end);
+    (select s.value -> p_platform ->> p_item from public.site_settings s where s.key = 'payments.store_policy'),
+    case when p_platform = 'web' then 'third_party_in_app' else 'not_offered' end);
 $$;
 revoke execute on function private.store_route(text, text) from public;
 grant execute on function private.store_route(text, text) to authenticated;
@@ -148,8 +190,8 @@ begin
     return 'coming_soon';
   end if;
   if r.id = 'manual_lipa' then
-    if private.manual_payments_on()
-       and (p_purpose is null or p_purpose not in ('offer_deposit', 'group_deposit') or private.feature_on('deposits_via_kwetuly_lipa'))
+    if (case when p_purpose is null then private.feature_on('payments_manual')
+             else private.manual_payments_on(private.payment_feature_id(p_purpose)) end)
        and ((private.provider_for('mobile_money', p_purpose) = 'manual_lipa'
              and exists (select 1 from public.payment_numbers n where n.is_on and n.network <> 'bank'))
          or (private.provider_for('bank', p_purpose) = 'manual_lipa'
@@ -217,11 +259,13 @@ begin
     raise exception 'unknown platform' using errcode = 'P0001';
   end if;
   v_kind := private.purchase_kind(p_purpose);
-  if private.store_route(p_platform, v_kind) <> 'allow' then
-    raise exception 'use_website' using errcode = 'P0001', hint = 'The store policy sends this payment to the website';
+  -- Store rules: in the apps only third_party_in_app items can be paid (web_only, store_billing and
+  -- not_offered are refused; the app shows no price, button, link or wording for them).
+  if private.store_route(p_platform, p_purpose) <> 'third_party_in_app' then
+    raise exception 'not_in_app' using errcode = 'P0001', hint = 'The store policy does not allow paying this here';
   end if;
-  if not private.manual_payments_on() and p_provider = 'manual_lipa' then
-    raise exception 'payments_off' using errcode = 'P0001', hint = 'feature.payments_manual is off';
+  if p_provider = 'manual_lipa' and not private.manual_payments_on(private.payment_feature_id(p_purpose)) then
+    raise exception 'payments_off' using errcode = 'P0001', hint = 'Lipa payments or this fee are switched off';
   end if;
   if private.payment_method_state(p_provider, p_purpose) <> 'live' then
     raise exception 'provider_not_live' using errcode = 'P0001';
@@ -407,7 +451,7 @@ grant execute on function public.start_payment_order(text, uuid, text, text, dat
 
 
 -- The chooser's list for a purpose on a platform: every non-hidden method with the server's state
--- ('live' or 'coming_soon') and the store route for this platform ('allow', 'website_only', 'hide').
+-- ('live' or 'coming_soon'; coming soon only where payments.store_flags shows it) and the store route.
 -- Badges of manual_lipa are the networks of its switched-on numbers.
 create or replace function public.payment_methods_for(p_purpose text, p_platform text default 'web')
 returns table (id text, display_name text, methods text[], badges text[], sort integer, state text,
@@ -429,19 +473,24 @@ begin
   if p_purpose is null or p_purpose not in ('verification', 'business_badge', 'reservation_commission', 'offer_deposit', 'group_deposit') then
     raise exception 'unknown purpose' using errcode = 'P0001';
   end if;
-  v_route := private.store_route(v_platform, v_kind);
-  if v_route = 'hide' then
+  v_route := private.store_route(v_platform, p_purpose);
+  -- In the apps anything but third_party_in_app gets no rows at all: the screen then shows no price,
+  -- button, link or wording (store rules; the website is not limited).
+  if v_platform <> 'web' and v_route <> 'third_party_in_app' then
     return;
   end if;
   return query
-    select r.id, r.display_name, r.methods,
-           case when r.id = 'manual_lipa'
-                then coalesce((select array_agg(distinct n.network order by n.network) from public.payment_numbers n where n.is_on), '{}')
-                else r.badges end,
-           r.sort, private.payment_method_state(r.id, p_purpose), v_route, v_kind
-    from public.payment_method_registry r
-    where r.status <> 'hidden'
-    order by r.sort, r.id;
+    select x.id, x.display_name, x.methods, x.badges, x.sort, x.state, v_route, v_kind
+    from (
+      select r.id, r.display_name, r.methods,
+             case when r.id = 'manual_lipa'
+                  then coalesce((select array_agg(distinct n.network order by n.network) from public.payment_numbers n where n.is_on), '{}')
+                  else r.badges end as badges,
+             r.sort, private.payment_method_state(r.id, p_purpose) as state
+      from public.payment_method_registry r
+      where r.status <> 'hidden') x
+    where x.state = 'live' or (x.state = 'coming_soon' and private.show_coming_soon(v_platform))
+    order by x.sort, x.id;
 end;
 $$;
 revoke execute on function public.payment_methods_for(text, text) from public, anon;
@@ -494,8 +543,9 @@ $$;
 revoke execute on function public.admin_save_payment_method(text, text, text, integer, text[]) from public, anon;
 grant execute on function public.admin_save_payment_method(text, text, text, integer, text[]) to authenticated;
 
--- Both values are checked by site_settings_payments_shape; changes are logged by the settings trigger.
-create or replace function public.admin_set_store_policy(p_kinds jsonb, p_policy jsonb)
+-- All three are checked by site_settings_payments_shape; changes are logged by the settings trigger.
+-- null = leave that setting as it is.
+create or replace function public.admin_set_store_policy(p_kinds jsonb, p_policy jsonb, p_flags jsonb default null)
 returns void
 language plpgsql
 security definer
@@ -513,7 +563,11 @@ begin
     insert into public.site_settings (key, value) values ('payments.store_policy', p_policy)
     on conflict (key) do update set value = excluded.value;
   end if;
+  if p_flags is not null then
+    insert into public.site_settings (key, value) values ('payments.store_flags', p_flags)
+    on conflict (key) do update set value = excluded.value;
+  end if;
 end;
 $$;
-revoke execute on function public.admin_set_store_policy(jsonb, jsonb) from public, anon;
-grant execute on function public.admin_set_store_policy(jsonb, jsonb) to authenticated;
+revoke execute on function public.admin_set_store_policy(jsonb, jsonb, jsonb) from public, anon;
+grant execute on function public.admin_set_store_policy(jsonb, jsonb, jsonb) to authenticated;

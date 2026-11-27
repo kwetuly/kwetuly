@@ -9,7 +9,7 @@
 // Money state never changes here or in a screen: only an admin confirmation (manual_lipa) or a verified
 // provider callback (hosted) on the server does.
 
-export const PAYMENT_PROVIDER_IDS = ['manual_lipa', 'flutterwave', 'azampay', 'selcom'] as const;
+export const PAYMENT_PROVIDER_IDS = ['manual_lipa', 'flutterwave', 'azampay', 'selcom', 'pesapal'] as const;
 export type PaymentProviderKey = (typeof PAYMENT_PROVIDER_IDS)[number];
 
 export const PAYMENT_METHODS = ['mobile_money', 'bank', 'card'] as const;
@@ -70,6 +70,7 @@ export const PROVIDER_INFO: Record<PaymentProviderKey, ProviderInfo> = {
   flutterwave: { id: 'flutterwave', name: 'Flutterwave', mode: 'hosted', methods: ['mobile_money', 'card', 'bank'], confirmation: 'webhook', purposes: ['offer_deposit', 'group_deposit'], built: true },
   azampay: { id: 'azampay', name: 'AzamPay', mode: 'hosted', methods: ['mobile_money', 'bank'], confirmation: 'webhook', purposes: [], built: false },
   selcom: { id: 'selcom', name: 'Selcom', mode: 'hosted', methods: ['mobile_money', 'card'], confirmation: 'webhook', purposes: [], built: false },
+  pesapal: { id: 'pesapal', name: 'Pesapal', mode: 'hosted', methods: ['mobile_money', 'card'], confirmation: 'webhook', purposes: [], built: false },
 };
 
 /** Whether a provider may take a payment now (same rule as private.provider_for in the database). */
@@ -95,6 +96,8 @@ export function lipaOpen(settings: ProviderSettings, purpose: PaymentPurpose, sw
 // ---------------------------------------------------------------------------
 
 /** The smallest part of a Supabase client the adapters need. */
+import type { PaymentPlatform } from './payment-chooser';
+
 export type RpcClient = {
   rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
 };
@@ -107,6 +110,8 @@ export type StartPayment = {
   accountType?: string | null;
   month?: string | null;
   locale: string;
+  /** What the client runs on; only picks the app-store route on the server. */
+  platform?: PaymentPlatform;
 };
 
 export type StartResult =
@@ -129,7 +134,7 @@ export type PaymentProviderAdapter = {
 /** Short codes for database refusals, for fixed texts on screen (never the raw message). */
 export function paymentErrorCode(message: string | null | undefined): string {
   const m = message ?? '';
-  const known = ['rate_limited', 'payments_off', 'no_lipa_method', 'crew_fees_not_open', 'checks_first', 'price_not_set', 'billing_off',
+  const known = ['use_website', 'provider_not_live', 'use_hosted_checkout', 'rate_limited', 'payments_off', 'no_lipa_method', 'crew_fees_not_open', 'checks_first', 'price_not_set', 'billing_off',
     'nothing_to_pay', 'deposits_off', 'rate_not_set', 'rate_too_old', 'deposit_not_allowed', 'claim_waiting', 'order_closed',
     'transaction_format', 'phone_format', 'too_many_claims'];
   const hit = known.find((k) => m.includes(k));
@@ -154,6 +159,8 @@ const manualLipa: PaymentProviderAdapter = {
       p_period: r.period ?? null,
       p_account_type: r.accountType ?? null,
       p_month: r.month ?? null,
+      p_provider: 'manual_lipa',
+      p_platform: r.platform ?? 'web',
     });
     if (error) return { kind: 'error', code: paymentErrorCode(error.message) };
     const row = (Array.isArray(data) ? data[0] : data) as { reference?: unknown } | undefined;
@@ -182,6 +189,7 @@ export const PAYMENT_ADAPTERS: Record<PaymentProviderKey, PaymentProviderAdapter
   flutterwave: hostedAdapter('flutterwave'),
   azampay: hostedAdapter('azampay'),
   selcom: hostedAdapter('selcom'),
+  pesapal: hostedAdapter('pesapal'),
 };
 
 // ---------------------------------------------------------------------------

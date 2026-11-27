@@ -27,3 +27,7 @@ export { verificationText, fillText, type VerificationText } from './verificatio
 export { reservationText, type ReservationText } from './reservations';
 export { RESERVE_TEXT, reserveText, type ReserveText } from './reserve';
 export { reservationInboxText, type ReservationInboxText } from './reservation-inbox';
+export { LIPA_PAY_TEXT, lipaPayText, type LipaPayText } from './lipa-pay';
+export { lipaMemberText, type LipaMemberText } from './lipa-member';
+export { PAY_CHOOSER_TEXT, payChooserText, type PayChooserText } from './pay-chooser';
+export { lipaAdminText, type LipaAdminText } from './lipa-admin';
