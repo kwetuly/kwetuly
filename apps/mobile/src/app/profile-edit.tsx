@@ -4,10 +4,11 @@ import { Redirect, Stack, router, useLocalSearchParams, type Href } from 'expo-r
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from '@/components/booking-link';
 import { ProfileLinksEntry } from '@/components/profile-links-entry';
+import { PhotosEntry } from '@/components/photos-entry';
 import { listMyPackages } from '@/lib/packages';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
@@ -368,6 +369,7 @@ export default function ProfileEditScreen() {
           </Card>
         )}
         {guide && <BookingLinkEntry />}
+        {guide && <PhotosEntry />}
         {guide && <ProfileLinksEntry />}
         {guide && <GuideReferralCard approved={guide.verification_status === 'approved'} />}
         <ProfileStrength input={strengthInput} t={t} />
@@ -472,8 +474,9 @@ export default function ProfileEditScreen() {
 
       {current === 4 && (
         <Card>
-          {/* TODO(S4/S6 cover_gallery): cover photo and gallery go here once the photo manager exists. */}
-          <Muted>{g.coverSoon}</Muted>
+          {/* Cover photo and gallery have their own screen (S4); travellers see them from S6. */}
+          <Muted>{uploadsText(locale).menuHint}</Muted>
+          <Button title={uploadsText(locale).title} icon={GLYPHS.photos} variant="outline" size="md" onPress={() => router.push('/photos' as Href)} />
           <Muted>{profileLinksText(locale).entryNote}</Muted>
           <Button title={profileLinksText(locale).entry} icon={GLYPHS.globe} variant="outline" size="md" onPress={() => router.push('/profile-links' as Href)} />
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />

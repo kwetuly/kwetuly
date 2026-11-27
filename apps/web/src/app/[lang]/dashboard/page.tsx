@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from './booking-link/entry';
 import { ProfileLinksEntry } from './links/entry';
+import { PhotosEntry } from './photos/entry';
 import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -159,6 +160,7 @@ async function GuideEditor({
   const d = t.dashboard;
   const g = guideProgressText(locale);
   const pl = profileLinksText(locale);
+  const up = uploadsText(locale);
   const now = await today();
   const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
@@ -291,8 +293,11 @@ async function GuideEditor({
 
           {step === 'story' && (
             <>
-              {/* TODO(S4/S6 cover_gallery): cover photo and gallery fields go here once the photo manager exists. */}
-              <p className="text-sm text-muted">{g.coverSoon}</p>
+              {/* Cover photo and gallery have their own page (S4); travellers see them from S6. */}
+              <p className="text-sm text-muted">
+                {up.menuHint}{' '}
+                <Link href={`/${locale}/dashboard/photos`} className="font-semibold text-forest underline">{up.title}</Link>
+              </p>
               <p className="text-sm text-muted">
                 {pl.entryNote}{' '}
                 <Link href={`/${locale}/dashboard/links`} className="font-semibold text-forest underline">{pl.entry}</Link>
@@ -413,6 +418,7 @@ async function GuideEditor({
         ))}
       </ol>
       {guide && <BookingLinkEntry locale={locale} />}
+      {guide && <PhotosEntry locale={locale} />}
       {guide && <ProfileLinksEntry locale={locale} />}
       {guide && (
         <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
