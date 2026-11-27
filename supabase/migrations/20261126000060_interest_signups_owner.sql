@@ -71,13 +71,13 @@ create index if not exists interest_signups_contact_created_idx
   on public.interest_signups (lower(trim(contact)), created_at desc) where user_id is null;
 
 -- ---------------------------------------------------------------------------
--- 2. Insert policy: the existing checks, plus the row is the caller's own or unlinked.
+-- 2. Insert policy: the existing checks, plus signed-in rows must carry the caller's id and signed-out rows none.
 -- ---------------------------------------------------------------------------
 drop policy if exists "Anyone can register interest" on public.interest_signups;
 create policy "Anyone can register interest" on public.interest_signups
   for insert to anon, authenticated
   with check (length(name) > 0 and length(contact) > 0
-              and (user_id is null or user_id = (select auth.uid())));
+              and user_id is not distinct from (select auth.uid()));
 
 -- ---------------------------------------------------------------------------
 -- 3. "Did I already send this?" for the signed-in caller only.

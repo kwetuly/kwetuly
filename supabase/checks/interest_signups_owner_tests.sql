@@ -130,11 +130,12 @@ select pg_temp.check((select count(*) = 5 from public.interest_signups
 select set_config('request.jwt.claims', '{"sub":"e2e2e2e2-0000-4000-8000-0000000000e2","role":"authenticated","aal":"aal1"}', true);
 set local role authenticated;
 select pg_temp.check(not public.my_interest_exists('partners', 'become-host'), 'B does not see A''s request');
--- B's own limit is separate from A's, and B may still send an unlinked row (user_id null).
+-- B's own limit is separate from A's. A signed-in caller may not send an unlinked row (user_id null).
 insert into public.interest_signups (section, item, kind, name, contact)
 values ('partners', 'become-host', 'traveler', 'Traveller B', 'is-b@example.test');
-insert into public.interest_signups (section, item, kind, name, contact, user_id)
-values ('tours', 'b-unlinked', 'traveler', 'Traveller B', 'is-b-unlinked@example.test', null);
+select pg_temp.expect_error(\ into public.interest_signups (section, item, kind, name, contact, user_id)
+  values ('tours', 'b-unlinked', 'traveler', 'Traveller B', 'is-b-unlinked@example.test', null)\
+  'signed-in caller cannot send an unlinked row', '42501');
 select pg_temp.check(public.my_interest_exists('partners', 'become-host'), 'B: own request seen');
 reset role;
 
