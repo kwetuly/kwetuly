@@ -133,8 +133,8 @@ select pg_temp.check(not public.my_interest_exists('partners', 'become-host'), '
 -- B's own limit is separate from A's. A signed-in caller may not send an unlinked row (user_id null).
 insert into public.interest_signups (section, item, kind, name, contact)
 values ('partners', 'become-host', 'traveler', 'Traveller B', 'is-b@example.test');
-select pg_temp.expect_error(\ into public.interest_signups (section, item, kind, name, contact, user_id)
-  values ('tours', 'b-unlinked', 'traveler', 'Traveller B', 'is-b-unlinked@example.test', null)\
+select pg_temp.expect_error($q$insert into public.interest_signups (section, item, kind, name, contact, user_id)
+  values ('tours', 'b-unlinked', 'traveler', 'Traveller B', 'is-b-unlinked@example.test', null)$q$,
   'signed-in caller cannot send an unlinked row', '42501');
 select pg_temp.check(public.my_interest_exists('partners', 'become-host'), 'B: own request seen');
 reset role;
