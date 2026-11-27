@@ -649,8 +649,8 @@ begin
   -- Request caps (review M3): 10 a day, 3 a day for accounts younger than 3 days.
   if (select count(*) from public.reservations r
       where r.traveler_id = v_user and r.created_at > now() - interval '24 hours')
-     >= case when (select u.created_at from auth.users u where u.id = v_user) > now() - interval '3 days'
-             then 3 else 10 end then
+     >= (case when (select u.created_at from auth.users u where u.id = v_user) > now() - interval '3 days'
+              then 3 else 10 end) then
     raise exception 'reservation_refused: too_many_requests' using errcode = 'P0001';
   end if;
   if (select count(*) from public.reservations r
