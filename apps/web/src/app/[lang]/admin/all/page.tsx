@@ -249,10 +249,10 @@ async function Inbox({ locale }: { locale: Locale }) {
       .returns<{ id: string; traveler_name: string; traveler_contact: string; message: string | null; created_at: string; trips: { title_en: string } | null; providers: { business_name: string; is_sample: boolean } | null; guides: { display_name: string } | null }[]>(),
     supabase
       .from('interest_signups')
-      .select('id, section, item, kind, name, contact, business_name, message, locale, created_at')
+      .select('id, section, item, kind, name, contact, business_name, message, locale, created_at, user_id')
       .order('created_at', { ascending: false })
       .limit(50)
-      .returns<{ id: string; section: string; item: string; kind: string; name: string; contact: string; business_name: string | null; message: string | null; locale: string; created_at: string }[]>(),
+      .returns<{ id: string; section: string; item: string; kind: string; name: string; contact: string; business_name: string | null; message: string | null; locale: string; created_at: string; user_id: string | null }[]>(),
   ]);
 
   return (
@@ -281,7 +281,8 @@ async function Inbox({ locale }: { locale: Locale }) {
               </p>
               <p>{s.business_name ? `${s.business_name} · ` : ''}{s.name} · {s.contact} · {s.locale.toUpperCase()}</p>
               {s.message && <p className="mt-1 whitespace-pre-line text-muted">{s.message}</p>}
-              <p className="mt-1 text-xs text-muted">{when(s.created_at)}</p>
+              {/* user_id (20261126000060): set when it was sent signed in; older rows and signed-out forms have none. */}
+              <p className="mt-1 text-xs text-muted">{when(s.created_at)} · {s.user_id ? 'Linked to an account' : 'No account linked'}</p>
             </li>
           ))}
           {!signups.data?.length && <li className="text-muted">No sign-ups yet.</li>}

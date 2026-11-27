@@ -146,7 +146,9 @@ describe('recorded guide checks', () => {
   it('"ID and licence checked" needs both checks', () => {
     expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01' })).toBe(false);
     expect(hasIdAndLicenceCheck({ ...none, licence_checked_at: '2026-10-01' })).toBe(false);
-    expect(hasIdAndLicenceCheck({ ...none, first_aid_checked_at: '2026-10-01' })).toBe(false);
+    // A variable, not an inline object: the extra first-aid field is fine at run time but not as a literal.
+    const firstAidOnly = { ...none, first_aid_checked_at: '2026-10-01' };
+    expect(hasIdAndLicenceCheck(firstAidOnly)).toBe(false);
     expect(hasIdAndLicenceCheck({ ...none, identity_checked_at: '2026-10-01', licence_checked_at: '2026-10-02' })).toBe(true);
   });
 });

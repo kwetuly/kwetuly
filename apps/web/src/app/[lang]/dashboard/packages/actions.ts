@@ -6,6 +6,7 @@ import { PACKAGE_KINDS } from '@kwetuly/shared';
 import { defaultLocale, hasLocale } from '@/i18n/config';
 import { requireOnboarded } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
+import { signupReturn, signupReturnHref } from '@/lib/guide-steps';
 
 const text = (formData: FormData, key: string, max: number) => {
   const value = String(formData.get(key) ?? '').trim().slice(0, max);
@@ -29,7 +30,10 @@ function ownPhoto(formData: FormData, userId: string) {
 export async function savePackage(formData: FormData) {
   const localeValue = String(formData.get('locale') ?? '');
   const locale = hasLocale(localeValue) ? localeValue : defaultLocale;
+  // From sign-up ("Add a trip"): errors stay on the packages page with the same next=, success goes back to the step.
+  const next = signupReturn(formData.get('next'));
   const back = `/${locale}/dashboard/packages`;
+  const backWith = (query: string) => `${back}?${next ? `next=${next}&` : ''}${query}`;
   const id = String(formData.get('id') ?? '');
 
   const supabase = await createClient();
@@ -45,7 +49,7 @@ export async function savePackage(formData: FormData) {
   const title = text(formData, 'title', 120);
   const summary = text(formData, 'summary', 500);
   if (!PACKAGE_KINDS.some((k) => k.id === kind) || !title || title.length < 3 || !summary || summary.length < 10) {
-    redirect(`${back}?${id ? `edit=${id}&` : 'new=1&'}error=missing`);
+    redirect(backWith(`${id ? `edit=${id}&` : 'new=1&'}error=missing`));
   }
   const price = Number.parseFloat(String(formData.get('price_usd') ?? ''));
 
@@ -73,10 +77,10 @@ export async function savePackage(formData: FormData) {
   const { error } = id
     ? await supabase.from('guide_packages').update(row).eq('id', id).eq('guide_id', guide.id)
     : await supabase.from('guide_packages').insert({ ...row, guide_id: guide.id });
-  if (error) redirect(`${back}?${id ? `edit=${id}&` : 'new=1&'}error=save`);
+  if (error) redirect(backWith(`${id ? `edit=${id}&` : 'new=1&'}error=save`));
 
   revalidateTag('packages', 'max');
-  redirect(`${back}?saved=1`);
+  redirect(next ? signupReturnHref(locale, next) : `${back}?saved=1`);
 }
 
 export async function deletePackage(formData: FormData) {

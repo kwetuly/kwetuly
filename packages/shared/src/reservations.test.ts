@@ -20,7 +20,7 @@ import {
   closedNoteOk,
 } from './reservations';
 
-const sql = readFileSync(new URL('../../../supabase/migrations/20261122200000_reservation_setup.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../../../supabase/migrations/20261122200000_reservation_setup.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n'); // Windows checkouts have CRLF
 
 describe('reservations match migration 20261122200000', () => {
   it('terms version', () => {

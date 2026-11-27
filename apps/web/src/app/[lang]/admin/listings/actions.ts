@@ -2,7 +2,7 @@
 
 import { revalidateTag } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { BUSINESS_TYPES, REGIONS, SAMPLE_MEDIA_BUCKET, normaliseWebsite } from '@kwetuly/shared';
+import { BUSINESS_TYPES, REGIONS, SAMPLE_MEDIA_BUCKET, normaliseProfileWebsite } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { getCurrentUser, isAdminSession } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -27,7 +27,8 @@ export async function saveListing(formData: FormData) {
   const region = text(formData, 'base_region', 80);
   const back = `/${locale}/admin/listings`;
   const websiteInput = text(formData, 'website', 1000);
-  const website = websiteInput ? normaliseWebsite(websiteInput) : null;
+  // The same rules as owners (private.guard_provider_website refuses chat, short and platform links).
+  const website = websiteInput ? normaliseProfileWebsite(websiteInput) : null;
   if (website && !website.ok) redirect(`${back}?error=website${id ? `#b-${id}` : ''}`);
   const row = {
     business_name: text(formData, 'business_name', 120),
@@ -50,6 +51,7 @@ export async function saveListing(formData: FormData) {
     ? await supabase.from('providers').update(row).eq('id', id)
     : await supabase.from('providers').insert({ ...row, owner_id: userId, languages: ['en', 'sw'] });
   revalidateTag('businesses', 'max');
+  if (error?.message?.includes('website_not_allowed')) redirect(`${back}?error=website${id ? `#b-${id}` : ''}`);
   redirect(`${back}?${error ? 'error' : 'saved'}=1${id ? `#b-${id}` : ''}`);
 }
 

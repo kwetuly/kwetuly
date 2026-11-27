@@ -7,7 +7,8 @@ import { inviteRequired } from '@/lib/invite';
 import { phoneCountryHint } from '@/lib/phone';
 import { JoinForm as JoinFields } from './join-form';
 import { SocialSignIn } from '@/components/social-sign-in';
-import { EVENTS } from '@kwetuly/shared';
+import { EVENTS, hostSignUpOption, hostsEntryText } from '@kwetuly/shared';
+import { getFeatures } from '@/lib/features';
 import { LogEvent } from '@/components/analytics';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,8 +44,12 @@ async function JoinForm({
   t: Dictionary;
   locale: Locale;
 }) {
-  const params = await searchParams;
+  const [params, features] = await Promise.all([searchParams, getFeatures()]);
   const selected = roles.includes(params.role as string) ? (params.role as string) : 'traveler';
+  // Host sign-up ("Become a concierge or VIP host") while either host switch is on: the option leads to
+  // /hosts, which explains the work and comes back here with role=guide&intent=host.
+  const hostOption = hostSignUpOption(features);
+  const hostIntent = !!hostOption && params.intent === 'host';
 
   if (params.sent) {
     return <>
@@ -55,6 +60,9 @@ async function JoinForm({
 
   return (
     <div className="card mt-8 space-y-5">
+    {hostIntent && (
+      <p lang={locale === 'sw' ? 'sw' : 'en'} className="rounded-[5px] border border-gold bg-sand p-4 text-charcoal">{hostsEntryText(locale).joinIntent}</p>
+    )}
     <LogEvent event={EVENTS.signupStarted} props={{ role: selected, locale }} />
     <SocialSignIn locale={locale} t={t} role={selected} />
     <JoinFields
@@ -63,6 +71,11 @@ async function JoinForm({
       invite={await inviteRequired()}
       phoneCountry={await phoneCountryHint()}
       initialError={typeof params.error === 'string' ? params.error : null}
+      hostOption={hostOption && !hostIntent ? {
+        href: `/${locale}/hosts#${hostOption.anchor}`,
+        title: hostOption.title[locale],
+        body: hostOption.body[locale],
+      } : null}
       t={{
         auth: {
           welcomeRole: t.auth.welcomeRole,

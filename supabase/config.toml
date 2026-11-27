@@ -16,3 +16,11 @@ verify_jwt = false
 # The function checks every caller itself: webhook signature, sweep secret, or the user's token for
 # check, checkout and status (security-reviewer L4).
 verify_jwt = false
+
+[functions.media-sweep]
+# Called by pg_cron with MEDIA_SWEEP_SECRET, which is not a JWT. The function checks the secret.
+verify_jwt = false
+
+[functions.media-finish]
+# Called with the signed-in person's token; the gateway checks it, and the function checks it again.
+verify_jwt = true

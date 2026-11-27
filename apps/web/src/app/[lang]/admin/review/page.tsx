@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Check, CircleAlert, Search } from 'lucide-react';
-import { BADGE_CHECKS, PACKAGE_KINDS, USER_LINK_REL, normaliseWebsite, packageDuration, packagePrice } from '@kwetuly/shared';
+import { BADGE_CHECKS, GUIDE_LINK_KINDS, PACKAGE_KINDS, USER_LINK_REL, invalidProfileLinks, isPunycodeHost, normaliseWebsite, packageDuration, packagePrice, profileLinkLabel, shownProfileLinks } from '@kwetuly/shared';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -536,6 +536,18 @@ function Details({
           <p>Languages: {g.languages.map(languageName).join(', ') || 'none given'}</p>
           <p>Registration: <strong>{p?.registration_number ?? 'not given'}</strong> · KINAPA/TANAPA: {p?.kinapa_tanapa_id ?? 'not given'}</p>
           <p>Phone: {p?.phone ?? 'not given'} · WhatsApp: {p?.whatsapp_number ?? 'not given'}{g.association ? ` · ${g.association}` : ''}</p>
+          {/* The guide's profile links, as travellers will see them (security review M2). Invalid ones are not shown publicly. */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {shownProfileLinks(g, GUIDE_LINK_KINDS).map((link) => (
+              <a key={link.kind} href={link.url} target="_blank" rel={USER_LINK_REL} className="text-forest underline">
+                {profileLinkLabel(link.kind, 'en')}: {link.handle ? `@${link.handle}` : link.host}
+                {isPunycodeHost(link.host) && <span className="ml-1 text-xs text-muted">(punycode address, check for a lookalike)</span>}
+              </a>
+            ))}
+            {invalidProfileLinks(g, GUIDE_LINK_KINDS).map((link) => (
+              <span key={link.kind} className="break-all text-red-800">{profileLinkLabel(link.kind, 'en')} not valid, not shown to travellers: {link.value}</span>
+            ))}
+          </div>
           {/* Tick only what you actually looked at: each tick shows publicly as "… checked". Ticks are saved one guide at a time. */}
           <form action={reviewGuide} className="mt-3 space-y-2 rounded-[5px] border border-line p-3">
             <input type="hidden" name="locale" value={locale} />

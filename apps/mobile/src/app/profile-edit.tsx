@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
+import { StepProgress } from '@/components/step-progress';
+import { BookingLinkEntry } from '@/components/booking-link';
+import { ProfileLinksEntry } from '@/components/profile-links-entry';
+import { PhotosEntry } from '@/components/photos-entry';
+import { listMyPackages } from '@/lib/packages';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState, SectionTitle, Toggle } from '@/components/ui';
@@ -18,7 +23,9 @@ import { brand, colors, control, icon, layout, media, radius, space } from '@/th
 
 type Upload = { uri: string; mimeType: string };
 
-const STEP_COUNT = 5;
+// The six steps, the same as the website: 0 about you, 1 what you do, 2 documents, 3 your trips,
+// 4 your page, 5 calls and booking link. Steps 1-4 are required.
+const STEP_COUNT = GUIDE_STEP_IDS.length;
 
 // Profile photos are cropped square; ID card photos are kept as taken. Both are shrunk to at most
 // 1600px (phone photos are often 8–12 MB, too slow on mobile data and over the storage limit) and
@@ -99,11 +106,16 @@ export default function ProfileEditScreen() {
   const { t, locale } = useI18n();
   const d = t.dashboard;
   const { type, font } = useType();
-  const { session } = useSession();
+  const { session, ready } = useSession();
   const userId = session?.user.id;
   const profile = useProfile();
   const queryClient = useQueryClient();
   const mine = useQuery({ queryKey: ['my-guide', userId], queryFn: () => getMyGuide(userId!), enabled: !!userId });
+  const guideId = mine.data?.guide?.id;
+  // Step 4 "your trips": packages sent for checking or approved (same key as My packages, so it refreshes).
+  const packages = useQuery({ queryKey: ['my-packages', guideId], queryFn: () => listMyPackages(guideId!), enabled: !!guideId });
+  const tripCount = (packages.data ?? []).filter((p) => p.status === 'pending' || p.status === 'approved').length;
+  const g = guideProgressText(locale);
 
   const [f, setF] = useState({
     display_name: '',
@@ -197,6 +209,8 @@ export default function ProfileEditScreen() {
 
   const needsSetup = useNeedsSetup();
   if (needsSetup) return <Redirect href={welcomeHref('/profile-edit')} />;
+  // Signed out (or the session ended): sign in instead of waiting forever.
+  if (ready && !userId) return <Redirect href="/sign-in" />;
   if (!userId || mine.isLoading) return <ScreenState screen loading />;
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
@@ -291,15 +305,19 @@ export default function ProfileEditScreen() {
     first_aid_document_path: firstAidDocument?.uri ?? details?.first_aid_document_path,
   };
 
-  // The same five steps as the website. A new guide starts at step one; others see the overview.
+  // The same six steps as the website. A new guide starts at step one; others see the overview.
+  // Counted from what is on screen, so the line moves as the guide works (like profile strength).
   const current = step ?? (guide ? null : 0);
-  const stepDone = [
-    !!guide,
-    f.specialties.length > 0 && !!f.headline.trim(),
-    !!details?.id_document_path && !!details?.license_document_path,
-    !!f.bio.trim(),
-    f.call_enabled,
-  ];
+  const progress = guideStepProgress({
+    guide: guide
+      ? { display_name: f.display_name, base_region: f.base_region[0], languages: f.languages, photo_url: photo?.uri ?? guide.photo_url, headline: f.headline, specialties: f.specialties, bio: f.bio, call_enabled: f.call_enabled }
+      : null,
+    idDocument: !!(idDocument ?? details?.id_document_path),
+    licenceDocument: !!(licenceDocument ?? details?.license_document_path),
+    tripCount,
+  });
+  const progressLine = guideProgressLine(progress, locale);
+  const stepDone = progress.steps.map((s) => s.done);
 
   async function saveStep(index: number) {
     if (await save()) setStep(index + 1 < STEP_COUNT ? index + 1 : null);
@@ -315,12 +333,14 @@ export default function ProfileEditScreen() {
           </Card>
         )}
         <FormMessage message={message} />
+        <StepProgress progress={progress} line={progressLine} labels={g} />
         <Card>
-          {d.steps.map((title, i) => (
+          {g.steps.map((title, i) => (
             <Pressable
               key={title}
               onPress={() => setStep(i)}
               accessibilityRole="button"
+              accessibilityLabel={`${d.edit}: ${g.stepStatus.replace('{n}', String(i + 1)).replace('{title}', title).replace('{status}', `${stepDone[i] ? g.done : g.todo}${progress.steps[i].optional ? `, ${g.optional}` : ''}`)}`}
               style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.row, paddingVertical: space.sm, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border, opacity: pressed ? 0.7 : 1 })}
             >
               <Glyph
@@ -332,7 +352,10 @@ export default function ProfileEditScreen() {
                 <Text style={{ ...type.body, ...font.bold }}>
                   {i + 1}. {title}
                 </Text>
-                <Text style={type.meta}>{i === STEP_COUNT - 1 ? d.optionalStep : stepDone[i] ? d.stepDone : d.stepTodo}</Text>
+                <Text style={type.meta}>
+                  {stepDone[i] ? g.done : g.todo}
+                  {progress.steps[i].optional ? ` · ${g.optional}` : ''} · {g.stepHints[i]}
+                </Text>
               </View>
               <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{d.edit}</Text>
             </Pressable>
@@ -345,6 +368,9 @@ export default function ProfileEditScreen() {
             <Button title={t.packages.add} onPress={() => router.push('/my-packages')} />
           </Card>
         )}
+        {guide && <BookingLinkEntry />}
+        {guide && <PhotosEntry />}
+        {guide && <ProfileLinksEntry />}
         {guide && <GuideReferralCard approved={guide.verification_status === 'approved'} />}
         <ProfileStrength input={strengthInput} t={t} />
       </ScrollView>
@@ -360,23 +386,23 @@ export default function ProfileEditScreen() {
         </>
       }
     >
-      <Stack.Title>{d.steps[current]}</Stack.Title>
+      <Stack.Title>{g.steps[current]}</Stack.Title>
       <View style={{ gap: space.sm }}>
-        <Text style={{ ...type.label, color: brand.leafDark }}>{d.stepOf.replace('{n}', String(current + 1)).replace('{total}', String(STEP_COUNT))}</Text>
-        <View style={{ flexDirection: 'row', gap: space.xs }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {d.steps.map((title, i) => (
-            <View key={title} style={{ flex: 1, height: space.xs + space.xxs, borderRadius: radius.bar, backgroundColor: i <= current ? brand.leaf : colors.fill }} />
-          ))}
-        </View>
-        {!guide && <Muted>{d.stepsIntro}</Muted>}
+        <Text style={{ ...type.label, color: brand.leafDark }}>
+          {g.stepOf.replace('{n}', String(current + 1)).replace('{total}', String(STEP_COUNT))}
+          {progress.steps[current].optional ? ` · ${g.optional}` : ''}
+        </Text>
+        <StepProgress progress={progress} line={progressLine} labels={g} current={current} />
+        {!guide && <Muted>{g.stepsIntro}</Muted>}
       </View>
 
       {current === 0 && (
         <Card>
           <Pressable onPress={async () => setPhoto((await pickImage(true)) ?? photo)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: control.touch, opacity: pressed ? 0.7 : 1 })} accessibilityRole="button">
             <Avatar name={f.display_name || '?'} uri={photo?.uri ?? guide?.photo_url} size={media.thumb} />
-            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{d.photo}</Text>
+            <Text style={{ ...type.callout, ...font.bold, color: brand.link }}>{`${d.photo} (${g.needed})`}</Text>
           </Pressable>
+          {!photo && !guide?.photo_url && <Muted>{g.photoNeeded}</Muted>}
           <Field label={d.displayName} value={f.display_name} onChangeText={set('display_name')} />
           <ChipSelect label={d.baseRegion} options={REGIONS.map((r) => ({ value: r, label: r }))} selected={f.base_region} onChange={set('base_region')} multiple={false} />
           <ChipSelect label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} selected={f.languages} onChange={set('languages')} />
@@ -431,8 +457,28 @@ export default function ProfileEditScreen() {
         </Card>
       )}
 
+      {/* Your trips: nothing to fill in here, trips are packages made on their own screen. */}
       {current === 3 && (
         <Card>
+          <Muted>{g.tripsIntro}</Muted>
+          {packages.isLoading ? (
+            <ScreenState loading />
+          ) : packages.error ? (
+            <ScreenState error retryLabel={g.retry} onRetry={() => void packages.refetch()} />
+          ) : (
+            <Text style={{ ...type.body, ...font.bold }}>{tripCount === 0 ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</Text>
+          )}
+          <Button title={tripCount ? g.tripsSee : g.tripsAdd} icon={tripCount ? GLYPHS.list : GLYPHS.plus} variant="outline" size="md" onPress={() => router.push('/my-packages')} />
+        </Card>
+      )}
+
+      {current === 4 && (
+        <Card>
+          {/* Cover photo and gallery have their own screen (S4); travellers see them from S6. */}
+          <Muted>{uploadsText(locale).menuHint}</Muted>
+          <Button title={uploadsText(locale).title} icon={GLYPHS.photos} variant="outline" size="md" onPress={() => router.push('/photos' as Href)} />
+          <Muted>{profileLinksText(locale).entryNote}</Muted>
+          <Button title={profileLinksText(locale).entry} icon={GLYPHS.globe} variant="outline" size="md" onPress={() => router.push('/profile-links' as Href)} />
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
           <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} hint={d.certificationsHint} />
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
@@ -453,7 +499,7 @@ export default function ProfileEditScreen() {
         </Card>
       )}
 
-      {current === 4 && (
+      {current === 5 && (
         <Card>
           <Muted>{d.callsHint}</Muted>
           <Toggle label={d.callEnabled} value={f.call_enabled} onChange={set('call_enabled')} />

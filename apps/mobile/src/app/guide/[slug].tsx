@@ -15,8 +15,10 @@ import { GuideChecksCard, useCheckLabels } from '@/components/guide-checks';
 import { GuidePackages } from '@/components/guide-packages';
 import { PhotoCredits } from '@/components/sample-offer';
 import { getGuidePackages } from '@/lib/packages';
+import { ProfileLinks, ProfileWebsite } from '@/components/profile-links';
+import { getGuideLinks, profileLinksOn } from '@/lib/profile-links';
 
-import { EVENTS, formatUsd, guideChecks, hasIdAndLicenceCheck } from '@kwetuly/shared';
+import { EVENTS, GUIDE_LINK_KINDS, SWITCHED_GUIDE_LINK_KINDS, formatUsd, guideChecks, hasIdAndLicenceCheck, shownProfileLinks } from '@kwetuly/shared';
 import { track } from '@/lib/analytics';
 import { brand, colors, layout, space, textSize } from '@/theme';
 import { useType } from '@/lib/use-type';
@@ -45,6 +47,8 @@ export default function GuideScreen() {
   const guide = useQuery({ queryKey: ['guide', slug], queryFn: () => getGuide(slug) });
   const packages = useQuery({ queryKey: ['guide-packages', guide.data?.id], queryFn: () => getGuidePackages(guide.data!.id), enabled: !!guide.data });
   const reviews = useQuery({ queryKey: ['reviews', guide.data?.id], queryFn: () => listReviews(guide.data!.id), enabled: !!guide.data });
+  const linkRow = useQuery({ queryKey: ['guide-links', guide.data?.id], queryFn: () => getGuideLinks(guide.data!.id), enabled: !!guide.data });
+  const linksOn = useQuery({ queryKey: ['feature', 'profile_links'], queryFn: profileLinksOn, staleTime: 5 * 60_000 });
   const [opening, setOpening] = useState(false);
   const guideSlug = guide.data?.slug;
   useEffect(() => {
@@ -83,6 +87,10 @@ export default function GuideScreen() {
     { title: t.profile.expertise, items: [...expertiseOf(g.expertise).map((e) => e.label[locale]), ...(g.female_guide ? [t.guides.female] : [])] },
   ].filter((group) => group.items.length > 0);
   const callPrice = g.call_price_usd != null ? formatUsd(g.call_price_usd) : null;
+  // The guide's own links (slice S5): Instagram, Facebook and TikTok always; website, Google and
+  // YouTube only while feature.profile_links is on. The website sits under the "Ask" buttons.
+  const links = shownProfileLinks(linkRow.data, GUIDE_LINK_KINDS.filter((kind) => linksOn.data === true || !SWITCHED_GUIDE_LINK_KINDS.includes(kind)));
+  const website = links.find((link) => link.kind === 'website');
   const stats = [
     g.years_experience != null ? { value: String(g.years_experience), label: t.guides.years } : null,
     g.summits ? { value: String(g.summits), label: t.guides.summits } : null,
@@ -149,6 +157,7 @@ export default function GuideScreen() {
             />
           </View>
         )}
+        <ProfileWebsite link={website} name={g.display_name} locale={locale} />
       </Card>
 
       <GuideChecksCard guide={g} approved={g.verification_status === 'approved' && !g.is_sample} />
@@ -159,6 +168,8 @@ export default function GuideScreen() {
           <Text selectable style={type.callout}>{g.bio}</Text>
         </Card>
       )}
+
+      <ProfileLinks links={links.filter((link) => link.kind !== 'website')} name={g.display_name} locale={locale} />
 
       <GuidePackages packages={packages.data ?? []} guideId={g.id} guideName={g.display_name} guideSlug={g.slug} sample={g.is_sample} />
       {g.is_sample && <PhotoCredits urls={[g.photo_url, ...(packages.data ?? []).map((p) => p.photo_url)]} />}
