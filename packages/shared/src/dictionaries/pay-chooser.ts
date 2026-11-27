@@ -28,7 +28,7 @@ export type PayChooserText = {
 const en: PayChooserText = {
   payNow: 'Pay now',
   title: 'Choose how to pay',
-  subtitle: 'Kwetuly only shows ways of paying that work today.',
+  subtitle: 'Choose a way to pay that is open today. Others are coming soon.',
   close: 'Close',
   live: 'Available now',
   comingSoon: 'Coming soon',
@@ -51,7 +51,7 @@ const en: PayChooserText = {
 const sw: PayChooserText = {
   payNow: 'Lipa sasa',
   title: 'Chagua jinsi ya kulipa',
-  subtitle: 'Kwetuly inaonyesha njia za kulipa zinazofanya kazi leo tu.',
+  subtitle: 'Chagua njia ya kulipa iliyo wazi leo. Nyingine zinakuja hivi karibuni.',
   close: 'Funga',
   live: 'Inapatikana sasa',
   comingSoon: 'Inakuja hivi karibuni',
@@ -74,7 +74,7 @@ const sw: PayChooserText = {
 const fr: PayChooserText = {
   payNow: 'Payer maintenant',
   title: 'Choisissez comment payer',
-  subtitle: 'Kwetuly n\'affiche que les moyens de paiement qui fonctionnent aujourd\'hui.',
+  subtitle: 'Choisissez un moyen de paiement ouvert aujourd\'hui. D\'autres arrivent bientôt.',
   close: 'Fermer',
   live: 'Disponible',
   comingSoon: 'Bientôt disponible',
@@ -97,7 +97,7 @@ const fr: PayChooserText = {
 const it: PayChooserText = {
   payNow: 'Paga ora',
   title: 'Scegli come pagare',
-  subtitle: 'Kwetuly mostra solo i metodi di pagamento che funzionano oggi.',
+  subtitle: 'Scegli un metodo di pagamento attivo oggi. Altri arriveranno presto.',
   close: 'Chiudi',
   live: 'Disponibile ora',
   comingSoon: 'In arrivo',
@@ -120,7 +120,7 @@ const it: PayChooserText = {
 const de: PayChooserText = {
   payNow: 'Jetzt bezahlen',
   title: 'Zahlungsart wählen',
-  subtitle: 'Kwetuly zeigt nur Zahlungsarten, die heute funktionieren.',
+  subtitle: 'Wählen Sie eine Zahlungsart, die heute offen ist. Weitere folgen bald.',
   close: 'Schließen',
   live: 'Jetzt verfügbar',
   comingSoon: 'Demnächst',
@@ -143,7 +143,7 @@ const de: PayChooserText = {
 const pl: PayChooserText = {
   payNow: 'Zapłać teraz',
   title: 'Wybierz sposób płatności',
-  subtitle: 'Kwetuly pokazuje tylko sposoby płatności, które działają dzisiaj.',
+  subtitle: 'Wybierz sposób płatności otwarty dzisiaj. Kolejne wkrótce.',
   close: 'Zamknij',
   live: 'Dostępne teraz',
   comingSoon: 'Wkrótce',
@@ -166,7 +166,7 @@ const pl: PayChooserText = {
 const zh: PayChooserText = {
   payNow: '立即付款',
   title: '选择付款方式',
-  subtitle: 'Kwetuly 只显示今天可用的付款方式。',
+  subtitle: '请选择今天开放的付款方式。其他方式即将推出。',
   close: '关闭',
   live: '现已可用',
   comingSoon: '即将推出',

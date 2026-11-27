@@ -27,7 +27,7 @@
 --                                   research table, so the safest grey value). Boosts, subscriptions,
 --                                   donations: web_only. Web: everything third_party_in_app. A missing
 --                                   app value counts as not_offered (fail closed).
---        'payments.store_flags'     show_coming_soon per platform (web true; ios and android false:
+--        'payments.store_flags'     show_coming_soon per platform (all true, Walter 2026-11-27, against the research advice for apps:
 --                                   Apple 2.1(a) and 2.5.19), show_prices_for_web_only_items_in_app
 --                                   (false), link-out lists (empty: Tanzania is in no program).
 --      In the apps a web_only item gets NO rows from payment_methods_for: no price, button, link,
@@ -122,7 +122,7 @@ insert into public.site_settings (key, value) values
              "marketplace_item": "third_party_in_app", "tip_person": "third_party_in_app", "verification": "web_only",
              "crew_verification": "web_only", "business_badge": "web_only", "reservation_commission": "web_only",
              "profile_boost": "web_only", "subscription_premium": "web_only", "donation_cause": "web_only", "jobs_contact_fee": "web_only"}}'),
-  ('payments.store_flags', '{"show_coming_soon": {"web": true, "ios": false, "android": false},
+  ('payments.store_flags', '{"show_coming_soon": {"web": true, "ios": true, "android": true},
      "show_prices_for_web_only_items_in_app": false, "ios_link_out_storefronts": [], "android_link_out_countries": []}')
 on conflict (key) do nothing;
 
@@ -387,14 +387,14 @@ begin
       raise exception 'someone else is paying this' using errcode = 'P0001';
     end if;
     if v_open.status <> 'awaiting_payment'
-       or (v_open.amount_tzs = v_amount and v_open.period is not distinct from p_period
+       or (v_open.amount_tzs = v_amount and v_open.period is not distinct from (case when p_purpose = 'verification' then p_period when p_purpose = 'business_badge' then 'year' end)
            and v_open.price_id is not distinct from v_price.id and v_open.created_at > now() - interval '7 days') then
       return query select v_open.reference, v_open.status, v_open.amount_tzs, v_open.amount_usd;
       return;
     end if;
     update public.payment_orders set status = 'cancelled', status_reason = 'replaced' where id = v_open.id;
     if v_open.payment_id is not null then
-      update public.payments set status = 'failed', status_reason = 'manual_replaced', status_source = 'admin_manual'
+      update public.payments set status = 'failed', status_reason = 'manual_replaced', status_source = 'payer_cancel'
       where id = v_open.payment_id and status = 'pending';
     end if;
     perform private.payment_audit('order', v_open.id, 'order_replaced', 'payer', v_open.reference, '{}'::jsonb);

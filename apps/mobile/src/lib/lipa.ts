@@ -10,6 +10,7 @@ import {
   type MyPaymentOrder,
   type PaymentMethodRow,
   type PaymentPlatform,
+  type PaymentProviderKey,
   type PaymentPurpose,
   type RpcClient,
   type StartResult,
@@ -27,8 +28,9 @@ export async function paymentMethods(purpose: PaymentPurpose): Promise<PaymentMe
   return parseMethodRows(data);
 }
 
-export async function startOrder(args: { purpose: PaymentPurpose; subject?: string | null; period?: 'month' | 'year' | null; month?: string | null; locale: string }): Promise<StartResult> {
-  return PAYMENT_ADAPTERS.manual_lipa.createPayment(supabase as unknown as RpcClient, {
+export async function startOrder(args: { provider: PaymentProviderKey; purpose: PaymentPurpose; subject?: string | null; period?: 'month' | 'year' | null; month?: string | null; locale: string }): Promise<StartResult> {
+  // The chosen provider's adapter; the server refuses any provider that is not live (QA 11).
+  return PAYMENT_ADAPTERS[args.provider].createPayment(supabase as unknown as RpcClient, {
     purpose: args.purpose,
     subject: args.subject ?? null,
     period: args.period ?? null,
@@ -37,6 +39,17 @@ export async function startOrder(args: { purpose: PaymentPurpose; subject?: stri
     locale: args.locale,
     platform: appPlatform,
   });
+}
+
+export async function myOrders(): Promise<MyPaymentOrder[]> {
+  const { data, error } = await supabase.rpc('my_payment_orders', { p_reference: null });
+  if (error) throw new Error('orders');
+  return (data ?? []) as MyPaymentOrder[];
+}
+
+export async function cancelOrder(reference: string): Promise<string | null> {
+  const { error } = await supabase.rpc('cancel_payment_order', { p_reference: reference });
+  return error ? paymentErrorCode(error.message) : null;
 }
 
 export async function myOrder(reference: string): Promise<MyPaymentOrder | null> {

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LIPA_NETWORKS,
   LIPA_NETWORK_NAMES,
+  appMayShowPay,
   fillText,
   formatTzsAmount,
   isPaymentReference,
@@ -14,30 +15,36 @@ import {
 } from '@kwetuly/shared';
 import { Button, Card, ChipSelect, ErrorText, Field, FormScreen, Muted, ScreenState } from '@/components/ui';
 import { SignInPrompt } from '@/components/sign-in-prompt';
-import { useSession } from '@/lib/auth';
+import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
-import { myOrder, payerNumbers, submitClaim } from '@/lib/lipa';
+import { cancelOrder, myOrder, payerNumbers, paymentMethods, submitClaim } from '@/lib/lipa';
 import { useType } from '@/lib/use-type';
-import { brand, radius, space } from '@/theme';
+import { brand, space } from '@/theme';
 
 const networkName = (n: LipaNetwork, t: LipaPayText) => (n === 'bank' ? t.bank : LIPA_NETWORK_NAMES[n]);
 
 // One Lipa payment in the app: the amount from the server, Kwetuly's numbers, the payment code, the
-// steps for each network and the "I have paid" form. Only an admin confirmation makes it paid.
+// steps for each network and the "I have paid" form. Only an admin confirmation makes it paid. For a
+// purpose the store policy keeps on the website, the app shows the status only (no amount to pay, no
+// numbers, no form, no link). The code and numbers are selectable text (long-press to copy); a copy
+// button needs expo-clipboard, a new native module (not added without a dev build).
 export default function PayOrderScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>();
   const reference = (ref ?? '').toUpperCase();
   const { locale } = useI18n();
   const t = lipaPayText(locale);
   const { type, font } = useType();
-  const session = useSession();
+  const { session } = useSession();
+  const profile = useProfile();
   const queryClient = useQueryClient();
   const valid = isPaymentReference(reference);
   const order = useQuery({ queryKey: ['lipa-order', reference], queryFn: () => myOrder(reference), enabled: valid && !!session });
+  const purpose = order.data?.purpose;
+  const methods = useQuery({ queryKey: ['pay-methods', purpose], queryFn: () => paymentMethods(purpose!), enabled: !!purpose });
   const numbers = useQuery({ queryKey: ['lipa-numbers'], queryFn: payerNumbers, enabled: valid && !!session });
-  const [network, setNetwork] = useState<LipaNetwork>('mpesa');
+  const [network, setNetwork] = useState<LipaNetwork | null>(null);
   const [tx, setTx] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -50,22 +57,42 @@ export default function PayOrderScreen() {
   const o = order.data;
   const amount = formatTzsAmount(o.amount_tzs);
   const received = o.received_tzs ? formatTzsAmount(o.received_tzs) : '';
-  const open = o.status === 'awaiting_payment' || o.status === 'wrong_amount';
+  const appAllowed = appMayShowPay(methods.data);
+  const open = (o.status === 'awaiting_payment' || o.status === 'wrong_amount') && appAllowed;
   const list = numbers.data ?? [];
+  // Defaults: the first switched-on number's network, and the profile phone (QA 20, 7).
+  const chosen = network ?? list[0]?.network ?? 'mpesa';
+  const phoneValue = phone ?? profile.data?.phone ?? '';
+  const deposit = o.purpose === 'offer_deposit' || o.purpose === 'group_deposit';
 
   async function send() {
     setBusy(true);
     setError('');
     setMessage('');
-    const result = await submitClaim(reference, network, tx, phone);
+    const result = await submitClaim(reference, chosen, tx, phoneValue);
     setBusy(false);
     if (result === 'submitted') {
       setMessage(t.submittedOk);
       setTx('');
       queryClient.invalidateQueries({ queryKey: ['lipa-order', reference] });
+      queryClient.invalidateQueries({ queryKey: ['my-payments'] });
       return;
     }
+    // The typed values stay in the fields (QA 7).
     setError(Object.hasOwn(t.errors, result) ? t.errors[result] : t.errors.failed);
+  }
+
+  async function cancel() {
+    setBusy(true);
+    const result = await cancelOrder(reference);
+    setBusy(false);
+    if (result) {
+      setError(Object.hasOwn(t.errors, result) ? t.errors[result] : t.errors.failed);
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ['lipa-order', reference] });
+    queryClient.invalidateQueries({ queryKey: ['my-payments'] });
+    router.back();
   }
 
   return (
@@ -73,31 +100,35 @@ export default function PayOrderScreen() {
       <Stack.Screen options={{ title: t.purposes[o.purpose] }} />
       <Card style={{ backgroundColor: o.status === 'confirmed' ? brand.mint : brand.sand }}>
         <Text accessibilityRole="header" style={{ ...type.cardTitle, color: brand.ink }}>{t.status[o.status]}</Text>
-        <Text selectable style={{ ...type.body, color: brand.ink }}>{fillText(t.statusBody[o.status], { amount, received })}</Text>
+        {appAllowed && <Text selectable style={{ ...type.body, color: brand.ink }}>{fillText(t.statusBody[o.status], { amount, received })}</Text>}
         {o.claim_status === 'rejected' && o.claim_reason && o.status !== 'confirmed' && (
-          <Text style={{ ...type.callout, color: brand.ink }}>{`${t.rejectedTitle}. ${t.rejected[o.claim_reason]}${o.claim_note ? ` ${o.claim_note}` : ''}`}</Text>
+          <Text style={{ ...type.callout, color: brand.ink }}>{`${t.rejectedTitle}. ${t.rejected[o.claim_reason]}`}</Text>
         )}
+        {o.claim_note ? <Text selectable style={{ ...type.callout, color: brand.ink }}>{o.claim_note}</Text> : null}
       </Card>
 
-      <Card>
-        <Muted>{t.amount}</Muted>
-        <Text selectable style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>{amount}</Text>
-        {(o.purpose === 'offer_deposit' || o.purpose === 'group_deposit') && <Muted>{t.depositHeld}</Muted>}
-        <Muted>{t.reference}</Muted>
-        <Text selectable style={{ ...type.title2, ...font.bold, color: brand.ink, letterSpacing: 2 }}>{o.reference}</Text>
-        <Muted>{t.referenceHint}</Muted>
-      </Card>
+      {appAllowed && (
+        <Card>
+          <Muted>{t.amount}</Muted>
+          <Text selectable style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>{amount}</Text>
+          {o.usd_tzs_rate != null && <Muted>{fillText(t.rateOnOrder, { rate: String(o.usd_tzs_rate), source: o.rate_source ?? '' })}</Muted>}
+          {deposit && <Muted>{t.depositHeld}</Muted>}
+          <Muted>{t.reference}</Muted>
+          <Text selectable style={{ ...type.title2, ...font.bold, color: brand.ink, letterSpacing: 2 }}>{o.reference}</Text>
+          <Muted>{t.referenceHint}</Muted>
+        </Card>
+      )}
 
       {open && (
         <>
           <Card>
             <Text accessibilityRole="header" style={type.cardTitle}>{t.numbersTitle}</Text>
-            {numbers.isError ? <ErrorText>{t.errors.failed}</ErrorText> : list.length === 0 ? <Muted>{t.noNumbers}</Muted> : null}
+            {numbers.isPending ? <Muted>{t.stepsTitle}</Muted> : numbers.isError ? <ErrorText>{t.errors.failed}</ErrorText> : list.length === 0 ? <Muted>{t.noNumbers}</Muted> : null}
             {list.map((n) => {
               const steps = n.network === 'bank' ? t.stepsBank : t.stepsMobile;
               const values = { network: networkName(n.network, t), number: n.lipa_number, name: n.business_name, amount, code: o.reference, bank: n.bank_name ?? t.bank };
               return (
-                <View key={n.id} style={{ gap: space.xs, paddingVertical: space.sm, borderTopWidth: 1, borderColor: brand.mint, borderRadius: radius.button }}>
+                <View key={n.id} style={{ gap: space.xs, paddingTop: space.sm, borderTopWidth: 1, borderColor: brand.mint }}>
                   <Text style={{ ...type.body, ...font.bold }}>{networkName(n.network, t)}{n.bank_name ? ` (${n.bank_name})` : ''}</Text>
                   <Text selectable style={{ ...type.title2, ...font.bold, color: brand.ink }}>{n.lipa_number}</Text>
                   <Muted selectable>{fillText(t.nameShown, { name: n.business_name })}</Muted>
@@ -115,20 +146,21 @@ export default function PayOrderScreen() {
             <Text accessibilityRole="header" style={type.cardTitle}>{t.formTitle}</Text>
             <ChipSelect
               label={t.network}
-              selected={[network]}
+              selected={[chosen]}
               multiple={false}
               onChange={(v) => v[0] && setNetwork(v[0])}
               options={LIPA_NETWORKS.map((n) => ({ value: n, label: networkName(n, t) }))}
             />
             <Field label={t.transactionId} value={tx} onChangeText={setTx} hint={t.transactionHint} autoCapitalize="characters" autoCorrect={false} maxLength={40} />
-            <Field label={t.phone} value={phone} onChangeText={setPhone} hint={t.phoneHint} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
+            <Field label={chosen === 'bank' ? t.phone : `${t.phone} *`} value={phoneValue} onChangeText={setPhone} hint={t.phoneHint} keyboardType="phone-pad" maxLength={20} autoComplete="tel" />
             {error ? <ErrorText>{error}</ErrorText> : null}
             {message ? <Text accessibilityRole="alert" style={{ ...type.callout, ...font.semibold, color: brand.forest }}>{message}</Text> : null}
-            <Button title={t.submit} onPress={send} loading={busy} disabled={tx.trim().length < 6} />
+            <Button title={t.submit} onPress={send} loading={busy} disabled={tx.trim().length < 6 || (chosen !== 'bank' && phoneValue.trim().length < 9)} />
+            {o.status === 'awaiting_payment' && o.claims_count === 0 && <Button title={t.cancel} variant="outline" size="md" onPress={cancel} disabled={busy} />}
           </Card>
         </>
       )}
-      <Muted>{t.refundNotes.manual}</Muted>
+      {appAllowed && <Muted>{t.refundNotes.manual}</Muted>}
     </FormScreen>
   );
 }

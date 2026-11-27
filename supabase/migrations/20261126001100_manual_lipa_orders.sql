@@ -28,14 +28,20 @@
 --                    today) for one month or year. Guides only: crew fees are refused until crew
 --                    accounts exist and the server can check that the payer is the vouching guide or
 --                    the operator (never the porter or job seeker), and feature.crew_verification_fees.
---   business_badge   a member_subscriptions row for one year; a badge that is valid now is extended to
---                    the paid date, otherwise the business goes into the badge-check queue
---                    (badge_requested_at). The badge itself still needs Kwetuly's check.
+--   business_badge   a member_subscriptions row for one year and ALWAYS a re-check in the badge queue
+--                    (badge_requested_at). Paying never changes badge_valid_until (review M3).
 --   reservation_commission  the invoiced lines of that business and month are marked paid (through
 --                    admin_set_reservation_commission). Only while feature.reservation_commission_billing is on.
 --   offer_deposit, group_deposit  the public.payments row made at step 1 (provider manual_lipa, passed
---                    private.guard_new_payment) becomes paid: the existing alerts and payout rules apply.
+--                    private.guard_new_payment) becomes paid, after the 8-day cut-off (from the day the
+--                    payer submitted) and the payee's approval are checked again (L8). Its
+--                    provider_transaction_id is the order reference, not the payer's ID (L9).
 --                    Behind feature.deposits_via_kwetuly_lipa. HOLDS OTHER PEOPLE'S MONEY (see part 1).
+--   When an effect cannot run (refusals starting 'not_applicable'), confirming records the money as
+--   received_not_applied with refund_due and a refund_needs_walter audit row (M2).
+-- Duplicate transaction IDs are checked on transaction_key (A-Z0-9 only, H1); the queue warns about
+-- O/0 and I,L/1 look-alikes and earlier blocked attempts. Admins cannot confirm their own payment or
+-- a deposit paid to them (L3).
 --
 -- Access: payment_orders and payment_claims have RLS on and no client grants at all; everything goes
 -- through the security definer functions below. member_subscriptions: the member reads his own rows,
@@ -57,7 +63,7 @@
 -- ---------------------------------------------------------------------------
 alter table public.payments drop constraint if exists payments_status_source_check;
 alter table public.payments add constraint payments_status_source_check
-  check (status_source in ('checkout', 'payer_check', 'webhook', 'sweeper', 'admin_manual'));
+  check (status_source in ('checkout', 'payer_check', 'webhook', 'sweeper', 'admin_manual', 'payer_cancel'));
 
 -- ---------------------------------------------------------------------------
 -- 1. Tables
@@ -88,9 +94,16 @@ create table if not exists public.payment_orders (
   amount_usd numeric(12, 2) check (amount_usd > 0),
   usd_tzs_rate numeric(12, 4) check (usd_tzs_rate > 0),
   rate_source text check (char_length(rate_source) <= 60),
+  -- received_not_applied: the money arrived but the paid effect could not run (deposit no longer
+  -- payable, commission lines changed, ...): Walter decides a refund (refund_due).
   status text not null default 'awaiting_payment'
-    check (status in ('awaiting_payment', 'submitted', 'wrong_amount', 'confirmed', 'cancelled')),
+    check (status in ('awaiting_payment', 'submitted', 'wrong_amount', 'confirmed', 'cancelled', 'received_not_applied')),
   status_reason text check (char_length(status_reason) <= 40),
+  -- Money Kwetuly received on this order (whole TZS) when it was closed without the effect, and
+  -- whether a refund is due. Refunds are recorded in payment_refund_records (20261126001300).
+  received_tzs bigint check (received_tzs between 0 and 100000000000),
+  refund_due boolean not null default false,
+  refunded_tzs bigint not null default 0 check (refunded_tzs >= 0),
   effect_key text unique check (effect_key ~ '^[A-Za-z0-9-]{8,64}$'),
   effect jsonb,
   confirmed_by uuid,
@@ -119,9 +132,17 @@ create table if not exists public.payment_claims (
   order_id uuid not null references public.payment_orders (id) on delete restrict,
   user_id uuid not null,
   network text not null check (network in ('mpesa', 'mixx', 'airtel', 'halopesa', 'bank')),
-  -- Upper case, no spaces. Unique over ALL claims ever, rejected ones included.
-  transaction_id text not null check (transaction_id ~ '^[A-Z0-9][A-Z0-9._-]{5,39}$'),
+  -- As typed (upper case, no spaces), for display only. No leading or trailing punctuation. Exact
+  -- formats per network are not enforced: Walter checks them against real statements first.
+  transaction_id text not null check (transaction_id ~ '^[A-Z0-9][A-Z0-9._-]{4,38}[A-Z0-9]$'),
+  -- The key every duplicate check uses: only A-Z and 0-9 (security review H1: QK12-AB34CD = QK12AB34CD).
+  -- Unique over ALL claims ever, rejected ones included.
+  transaction_key text generated always as (upper(regexp_replace(transaction_id, '[^A-Za-z0-9]', '', 'g'))) stored,
+  -- For the admin warning only: O read as 0 and I or L as 1.
+  transaction_loose text generated always as (translate(upper(regexp_replace(transaction_id, '[^A-Za-z0-9]', '', 'g')), 'OIL', '011')) stored,
   payer_phone text check (payer_phone ~ '^255[67][0-9]{8}$'),
+  -- Set when the phone is removed (12 months after the decision, or account deletion; M4).
+  phone_purged_at timestamptz,
   status text not null default 'waiting' check (status in ('waiting', 'confirmed', 'rejected', 'wrong_amount')),
   received_tzs bigint check (received_tzs between 1 and 100000000000),
   reason_code text check (reason_code in ('not_found', 'wrong_reference', 'wrong_network', 'duplicate', 'other')),
@@ -129,12 +150,14 @@ create table if not exists public.payment_claims (
   decided_by uuid,
   decided_at timestamptz,
   submitted_at timestamptz not null default now(),
-  constraint payment_claims_phone_needed check (network = 'bank' or payer_phone is not null),
+  constraint payment_claims_phone_needed check (network = 'bank' or payer_phone is not null or phone_purged_at is not null),
+  constraint payment_claims_key_length check (char_length(transaction_key) >= 6),
   constraint payment_claims_decided check ((status = 'waiting') = (decided_at is null)),
   constraint payment_claims_received check (status not in ('confirmed', 'wrong_amount') or received_tzs is not null),
   constraint payment_claims_reason check ((status = 'rejected') = (reason_code is not null))
 );
-create unique index if not exists payment_claims_transaction_unique on public.payment_claims (transaction_id);
+create unique index if not exists payment_claims_transaction_unique on public.payment_claims (transaction_key);
+create index if not exists payment_claims_loose_idx on public.payment_claims (transaction_loose);
 create unique index if not exists payment_claims_one_waiting on public.payment_claims (order_id) where status = 'waiting';
 create index if not exists payment_claims_order_idx on public.payment_claims (order_id, submitted_at);
 create index if not exists payment_claims_waiting_idx on public.payment_claims (submitted_at) where status = 'waiting';
@@ -186,7 +209,7 @@ begin
       old.price_id, old.payment_id, old.subject_key, old.created_at) then
     raise exception 'The amount and payer of an order cannot change' using errcode = 'P0001';
   end if;
-  if old.status in ('confirmed', 'cancelled') and new.status is distinct from old.status then
+  if old.status in ('confirmed', 'cancelled', 'received_not_applied') and new.status is distinct from old.status then
     raise exception 'This order is already closed' using errcode = 'P0001';
   end if;
   new.updated_at := now();
@@ -207,8 +230,14 @@ begin
   if tg_op = 'DELETE' then
     raise exception 'Payment claims are never deleted' using errcode = 'P0001';
   end if;
-  if (new.order_id, new.user_id, new.network, new.transaction_id, new.payer_phone, new.submitted_at)
-     is distinct from (old.order_id, old.user_id, old.network, old.transaction_id, old.payer_phone, old.submitted_at) then
+  -- The only change to the phone: removing it, with phone_purged_at (retention job, account deletion).
+  if new.payer_phone is null and old.payer_phone is not null and new.phone_purged_at is not null then
+    new.payer_phone := null;
+  elsif new.payer_phone is distinct from old.payer_phone or new.phone_purged_at is distinct from old.phone_purged_at then
+    raise exception 'A submitted claim cannot be changed' using errcode = 'P0001';
+  end if;
+  if (new.order_id, new.user_id, new.network, new.transaction_id, new.submitted_at)
+     is distinct from (old.order_id, old.user_id, old.network, old.transaction_id, old.submitted_at) then
     raise exception 'A submitted claim cannot be changed' using errcode = 'P0001';
   end if;
   if old.status in ('confirmed', 'rejected') and new.status is distinct from old.status then
@@ -302,6 +331,8 @@ declare
   v_user uuid := (select auth.uid());
   v_order public.payment_orders;
   v_tx text := upper(regexp_replace(coalesce(p_transaction_id, ''), '\s', '', 'g'));
+  -- Same key as payment_claims.transaction_key and normalizeTransactionId (packages/shared).
+  v_key text := regexp_replace(upper(coalesce(p_transaction_id, '')), '[^A-Z0-9]', '', 'g');
   v_phone text := private.normalize_tz_phone(p_phone);
   v_claim uuid;
 begin
@@ -331,7 +362,7 @@ begin
   if p_network is null or p_network not in ('mpesa', 'mixx', 'airtel', 'halopesa', 'bank') then
     raise exception 'unknown network' using errcode = 'P0001';
   end if;
-  if v_tx !~ '^[A-Z0-9][A-Z0-9._-]{5,39}$' then
+  if v_tx !~ '^[A-Z0-9][A-Z0-9._-]{4,38}[A-Z0-9]$' or char_length(v_key) < 6 then
     raise exception 'transaction_format' using errcode = 'P0001';
   end if;
   if p_network <> 'bank' and v_phone is null then
@@ -344,9 +375,10 @@ begin
     raise exception 'too_many_claims' using errcode = 'P0001';
   end if;
 
-  if exists (select 1 from public.payment_claims c where c.transaction_id = v_tx) then
+  if exists (select 1 from public.payment_claims c where c.transaction_key = v_key) then
     perform private.payment_audit('order', v_order.id, 'duplicate_blocked', 'payer', v_order.reference,
-      jsonb_build_object('network', p_network, 'transaction_id', v_tx, 'phone', private.mask_phone(v_phone)));
+      jsonb_build_object('network', p_network, 'transaction_id', v_tx, 'transaction_key', v_key,
+                         'transaction_loose', translate(v_key, 'OIL', '011'), 'phone', private.mask_phone(v_phone)));
     return 'duplicate';
   end if;
 
@@ -385,7 +417,7 @@ begin
   end if;
   update public.payment_orders set status = 'cancelled', status_reason = 'payer_cancelled' where id = v_order.id;
   if v_order.payment_id is not null then
-    update public.payments set status = 'failed', status_reason = 'manual_cancelled', status_source = 'admin_manual'
+    update public.payments set status = 'failed', status_reason = 'manual_cancelled', status_source = 'payer_cancel'
     where id = v_order.payment_id and status = 'pending';
   end if;
   perform private.payment_audit('order', v_order.id, 'order_cancelled', 'payer', v_order.reference, '{}'::jsonb);
@@ -395,21 +427,26 @@ revoke execute on function public.cancel_payment_order(text) from public, anon;
 grant execute on function public.cancel_payment_order(text) to authenticated;
 
 -- The payer's own orders (p_reference null = the latest 50), with the latest claim. Phone masked.
+-- The rate shown is the one stored on the order (QA 4), never today's rate.
+drop function if exists public.my_payment_orders(text);
 create or replace function public.my_payment_orders(p_reference text default null)
 returns table (reference text, purpose text, account_type text, period text, provider_id uuid,
-               amount_tzs bigint, amount_usd numeric, status text, status_reason text, created_at timestamptz,
-               confirmed_at timestamptz, claim_network text, claim_transaction_id text, claim_phone text,
-               claim_status text, claim_reason text, claim_note text, received_tzs bigint, claims_count integer)
+               amount_tzs bigint, amount_usd numeric, usd_tzs_rate numeric, rate_source text, status text,
+               status_reason text, created_at timestamptz, confirmed_at timestamptz, claim_network text,
+               claim_transaction_id text, claim_phone text, claim_status text, claim_reason text, claim_note text,
+               received_tzs bigint, claims_count integer, refund_due boolean)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select o.reference, o.purpose, o.account_type, o.period, o.provider_id, o.amount_tzs, o.amount_usd, o.status,
-         o.status_reason, o.created_at, o.confirmed_at, c.network, c.transaction_id, private.mask_phone(c.payer_phone),
-         c.status, c.reason_code, c.admin_note,
-         (select sum(x.received_tzs) from public.payment_claims x where x.order_id = o.id and x.status in ('wrong_amount', 'confirmed'))::bigint,
-         (select count(*) from public.payment_claims x where x.order_id = o.id)::integer
+  select o.reference, o.purpose, o.account_type, o.period, o.provider_id, o.amount_tzs, o.amount_usd, o.usd_tzs_rate,
+         o.rate_source, o.status, o.status_reason, o.created_at, o.confirmed_at, c.network, c.transaction_id,
+         private.mask_phone(c.payer_phone), c.status, c.reason_code, c.admin_note,
+         coalesce(o.received_tzs, (select sum(x.received_tzs) from public.payment_claims x
+                                   where x.order_id = o.id and x.status in ('wrong_amount', 'confirmed')))::bigint,
+         (select count(*) from public.payment_claims x where x.order_id = o.id)::integer,
+         o.refund_due
   from public.payment_orders o
   left join lateral (
     select * from public.payment_claims c where c.order_id = o.id order by c.submitted_at desc limit 1) c on true
@@ -454,14 +491,16 @@ declare
   v_until date;
   v_count integer;
   v_sum bigint;
-  v_badge_valid date;
-  v_badge_checks integer;
+  v_ok boolean;
+  v_paid_on date;
 begin
   select * into o from public.payment_orders where id = p_order for update;
   select * into c from public.payment_claims where id = p_claim;
   if o.status = 'confirmed' then
     raise exception 'effect already applied' using errcode = 'P0001';
   end if;
+  -- Refusals that start with 'not_applicable' mean "the money arrived but this effect cannot run":
+  -- admin_confirm_payment then closes the order as received_not_applied with a refund due.
 
   if o.purpose in ('verification', 'business_badge') then
     -- Paying early extends from the end of the paid period, never from today.
@@ -475,12 +514,8 @@ begin
     values (o.user_id, case when o.purpose = 'verification' then 'verification' else 'business_badge' end, o.account_type,
             o.provider_id, o.period, v_start, v_until, o.amount_tzs, o.price_id, o.id);
     if o.purpose = 'business_badge' then
-      select p.badge_valid_until, cardinality(p.badge_checks) into v_badge_valid, v_badge_checks
-      from public.providers p where p.id = o.provider_id for update;
-      if v_badge_valid >= v_today and v_badge_checks > 0 then
-        update public.providers set badge_valid_until = greatest(badge_valid_until, v_until) where id = o.provider_id;
-        return jsonb_build_object('effect', 'badge_extended', 'starts_on', v_start, 'paid_until', v_until);
-      end if;
+      -- Paying never extends the badge itself (security review M3): the paid period is stored above and
+      -- a re-check is always queued. badge_valid_until changes only through the admin badge check.
       update public.providers set badge_requested_at = coalesce(badge_requested_at, now()) where id = o.provider_id;
       return jsonb_build_object('effect', 'badge_check_queued', 'starts_on', v_start, 'paid_until', v_until);
     end if;
@@ -492,21 +527,53 @@ begin
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date >= o.commission_month
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date < (o.commission_month + interval '1 month')::date;
     if v_sum is distinct from o.amount_tzs then
-      raise exception 'commission lines changed' using errcode = 'P0001',
-        hint = 'The invoiced lines no longer add up to the order amount. Mark as wrong amount and check the statement.';
+      raise exception 'not_applicable: commission lines changed' using errcode = 'P0001',
+        hint = 'The money is recorded as received and the order is held for a refund decision.';
     end if;
     v_count := public.admin_set_reservation_commission(o.provider_id, o.commission_month, 'paid');
     return jsonb_build_object('effect', 'commission_paid', 'lines', v_count);
 
   else
+    -- Re-checked at confirmation (security review L8), against the day the payer said they paid: the
+    -- 8-day cut-off, the offer or spot still accepted, the payee still approved and not a sample.
+    v_paid_on := (c.submitted_at at time zone 'Africa/Dar_es_Salaam')::date;
+    if o.purpose = 'offer_deposit' then
+      select exists (
+        select 1 from public.trip_offers f join public.trip_requests r on r.id = f.request_id
+        where f.id = o.trip_offer_id and f.status = 'accepted' and r.status <> 'closed'
+          and (r.start_date is null or r.start_date >= v_paid_on + 8)
+          and case when f.guide_id is not null
+                   then exists (select 1 from public.guides g where g.id = f.guide_id and g.owner_id = f.offered_by
+                                and g.verification_status = 'approved' and not g.is_sample)
+                   else exists (select 1 from public.providers p where p.owner_id = f.offered_by
+                                and p.verification_status = 'approved' and not p.is_sample) end)
+        into v_ok;
+    else
+      select exists (
+        select 1 from public.group_trip_members m join public.group_trips t on t.id = m.group_trip_id
+        where m.id = o.group_member_id and m.status = 'accepted' and t.status = 'approved' and not t.cancelled
+          and t.start_date >= v_paid_on + 8
+          and case when t.guide_id is not null
+                   then exists (select 1 from public.guides g where g.id = t.guide_id and g.owner_id = t.organizer_id
+                                and g.verification_status = 'approved' and not g.is_sample)
+                   else exists (select 1 from public.providers p where p.owner_id = t.organizer_id
+                                and p.verification_status = 'approved' and not p.is_sample) end)
+        into v_ok;
+    end if;
+    if not coalesce(v_ok, false) then
+      raise exception 'not_applicable: deposit no longer payable' using errcode = 'P0001',
+        hint = 'Trip or offer closed, within the 8-day cut-off, or payee no longer approved.';
+    end if;
+    -- The order reference, never the payer's own transaction ID: payees can read payments rows (L9).
     update public.payments
-    set status = 'paid', paid_at = now(), provider_transaction_id = left(c.transaction_id, 64),
-        provider_reference = o.reference, provider_channel = 'lipa_' || c.network, provider_amount = o.amount_tzs,
+    set status = 'paid', paid_at = now(), provider_transaction_id = o.reference,
+        provider_reference = null, provider_channel = 'lipa_' || c.network, provider_amount = o.amount_tzs,
         status_reason = 'paid', status_source = 'admin_manual'
     where id = o.payment_id and status = 'pending' and provider = 'manual_lipa';
     get diagnostics v_count = row_count;
     if v_count <> 1 then
-      raise exception 'deposit not pending' using errcode = 'P0001';
+      raise exception 'not_applicable: deposit not pending' using errcode = 'P0001',
+        hint = 'The money is recorded as received and the order is held for a refund decision.';
     end if;
     return jsonb_build_object('effect', 'deposit_paid', 'payment_id', o.payment_id);
   end if;
@@ -519,11 +586,15 @@ revoke execute on function private.apply_payment_effect(uuid, uuid) from public,
 -- ---------------------------------------------------------------------------
 -- p_status: 'waiting' (claims to check), 'wrong_amount' (orders held), 'recent' (latest 200 claims).
 -- Full phone numbers here only: the admin matches them against the statement.
+-- similar_claims: other claims (any status) whose transaction key matches or differs only by O/0 or
+-- I,L/1; blocked_attempts: duplicate_blocked audit rows for that ID (security review H1, L2).
+drop function if exists public.admin_payment_queue(text);
 create or replace function public.admin_payment_queue(p_status text default 'waiting')
 returns table (claim_id uuid, reference text, purpose text, account_type text, period text, amount_tzs bigint,
                amount_usd numeric, received_before_tzs bigint, payer_id uuid, payer_name text, network text,
                transaction_id text, payer_phone text, claim_status text, reason_code text, admin_note text,
-               received_tzs bigint, order_status text, submitted_at timestamptz, order_created_at timestamptz)
+               received_tzs bigint, order_status text, submitted_at timestamptz, order_created_at timestamptz,
+               similar_claims integer, blocked_attempts integer)
 language plpgsql
 stable
 security definer
@@ -539,7 +610,10 @@ begin
            (select sum(x.received_tzs) from public.payment_claims x
              where x.order_id = o.id and x.status = 'wrong_amount' and x.id <> c.id)::bigint,
            o.user_id, coalesce(pf.full_name, 'Account'), c.network, c.transaction_id, c.payer_phone, c.status,
-           c.reason_code, c.admin_note, c.received_tzs, o.status, c.submitted_at, o.created_at
+           c.reason_code, c.admin_note, c.received_tzs, o.status, c.submitted_at, o.created_at,
+           (select count(*) from public.payment_claims y where y.id <> c.id and y.transaction_loose = c.transaction_loose)::integer,
+           (select count(*) from public.payment_audit_log l
+             where l.action = 'duplicate_blocked' and l.details ->> 'transaction_loose' = c.transaction_loose)::integer
     from public.payment_claims c
     join public.payment_orders o on o.id = c.order_id
     left join public.profiles pf on pf.id = o.user_id
@@ -598,7 +672,11 @@ begin
   if o.user_id = v_admin then
     raise exception 'own payment' using errcode = 'P0001', hint = 'Another admin confirms payments you made yourself.';
   end if;
-  if o.status = 'cancelled' then
+  -- Nor a deposit that is paid to the admin himself (security review L3).
+  if o.payment_id is not null and exists (select 1 from public.payments p where p.id = o.payment_id and p.payee_user_id = v_admin) then
+    raise exception 'own payment' using errcode = 'P0001', hint = 'Another admin confirms deposits paid to you.';
+  end if;
+  if o.status in ('cancelled', 'received_not_applied') then
     raise exception 'order_closed' using errcode = 'P0001';
   end if;
   select coalesce(sum(x.received_tzs), 0) into v_before from public.payment_claims x
@@ -608,7 +686,33 @@ begin
       hint = 'The amount received must equal the order amount (with earlier part payments). Use "wrong amount" instead.';
   end if;
 
-  v_effect := private.apply_payment_effect(o.id, c.id);
+  begin
+    v_effect := private.apply_payment_effect(o.id, c.id);
+  exception when sqlstate 'P0001' then
+    if sqlerrm not like 'not_applicable%' then
+      raise;
+    end if;
+    -- The money arrived but the effect cannot run (security review M2): record it and hold for Walter.
+    update public.payment_claims
+    set status = 'confirmed', received_tzs = p_received_tzs, admin_note = left(v_note, 200), decided_by = v_admin, decided_at = now()
+    where id = c.id;
+    update public.payment_claims set status = 'confirmed', decided_by = v_admin, decided_at = now()
+    where order_id = o.id and status = 'wrong_amount';
+    update public.payment_orders
+    set status = 'received_not_applied', status_reason = left(sqlerrm, 40), received_tzs = p_received_tzs + v_before, refund_due = true
+    where id = o.id;
+    if o.payment_id is not null then
+      update public.payments set status = 'failed', status_reason = 'manual_not_applied', status_source = 'admin_manual'
+      where id = o.payment_id and status = 'pending';
+    end if;
+    perform private.payment_audit('order', o.id, 'received_not_applied', 'admin', o.reference,
+      jsonb_build_object('claim', c.id, 'received_tzs', p_received_tzs + v_before, 'currency', 'TZS', 'why', sqlerrm, 'note', v_note));
+    perform private.payment_audit('order', o.id, 'refund_needs_walter', 'admin', o.reference,
+      jsonb_build_object('received_tzs', p_received_tzs + v_before, 'currency', 'TZS'));
+    perform private.payment_notify('manual_payment_held', o.user_id,
+      jsonb_build_object('reference', o.reference, 'amount', (p_received_tzs + v_before)::text, 'link', '/payments/orders/' || o.reference));
+    return 'received_not_applied';
+  end;
 
   update public.payment_claims
   set status = 'confirmed', received_tzs = p_received_tzs, admin_note = left(v_note, 200), decided_by = v_admin, decided_at = now()
@@ -680,7 +784,8 @@ begin
 
   if coalesce(p_close, false) then
     update public.payment_orders
-    set status = 'cancelled', status_reason = case when v_received > 0 then 'closed_refund_needed' else 'closed_by_kwetuly' end
+    set status = 'cancelled', status_reason = case when v_received > 0 then 'closed_refund_needed' else 'closed_by_kwetuly' end,
+        received_tzs = v_received, refund_due = v_received > 0
     where id = o.id;
     if o.payment_id is not null then
       update public.payments set status = 'failed', status_reason = 'manual_rejected', status_source = 'admin_manual'

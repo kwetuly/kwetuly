@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { canPick, depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 import { LipaPayButton } from '@/components/lipa-pay-button';
 import { supabase } from '@/lib/supabase';
+import { paymentMethods } from '@/lib/lipa';
 import { Button, Card, IconSquare } from '@/components/ui';
 import { GLYPHS } from '@/components/glyph';
 import { depositPayable, depositState, payDeposit, paymentsConfig } from '@/lib/api-requests';
@@ -41,6 +42,9 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
     enabled: config.data?.enabled === false,
     staleTime: 10 * 60_000,
   });
+  // The server's list for this deposit on this platform (QA 2): a Lipa price is shown only with a live method.
+  const purpose = kind === 'offer' ? 'offer_deposit' : 'group_deposit';
+  const methods = useQuery({ queryKey: ['pay-methods', purpose], queryFn: () => paymentMethods(purpose), enabled: config.data?.enabled === false, staleTime: 60_000 });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
@@ -68,7 +72,7 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   if (config.data && !config.data.enabled && paid.data?.paid === false) {
     // Lipa numbers (2026-11-26): trip deposits may be paid in the app (store rules: real-world service).
     // LipaPayButton renders only when the server lists a method for this deposit on this platform.
-    const lipaTzs = depositTzsFromRateText(totalUsd * percent, lipaRate.data ?? null);
+    const lipaTzs = methods.data?.some(canPick) ? depositTzsFromRateText(totalUsd * percent, lipaRate.data ?? null) : null;
     return (
       <Card style={{ backgroundColor: brand.sand }}>
         <Text style={{ ...type.cardTitle, color: brand.ink }}>{p.title}</Text>
@@ -78,7 +82,7 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
         {lipaTzs ? (
           <>
             <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{formatTzsAmount(lipaTzs)}</Text>
-            <LipaPayButton purpose={kind === 'offer' ? 'offer_deposit' : 'group_deposit'} subject={id} amountTzs={lipaTzs} />
+            <LipaPayButton purpose={purpose} subject={id} amountTzs={lipaTzs} />
             <Text style={type.caption}>{lipaPayText(locale).depositHeld}</Text>
           </>
         ) : (

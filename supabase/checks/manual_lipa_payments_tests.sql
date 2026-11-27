@@ -1,4 +1,5 @@
--- Tests for the manual Lipa payments migrations 20261126001000, 20261126001100 and 20261126001200.
+-- Tests for the manual Lipa payments migrations 20261126001000, 001100, 001200 and 001300.
+-- Needs 20261126000000_feature_switch_admin.sql (branch claude/wave1) on the test project first.
 -- Run ONLY on a local or test project (never live), after those three files, in the SQL editor or psql
 -- as postgres. One transaction that ends with ROLLBACK: nothing below stays. Any failure stops the
 -- script with "FAIL: ...". The last line prints "all passed". Every name, number and transaction ID
@@ -114,8 +115,8 @@ select pg_temp.check((select state = 'coming_soon' from public.payment_methods_f
   'A: Flutterwave coming soon on the website (payments_live off)');
 select pg_temp.check((select count(*) = 0 from public.payment_methods_for('verification', 'ios')),
   'A: verification is web only in the iOS app: no rows at all');
-select pg_temp.check((select count(*) = 0 from public.payment_methods_for('offer_deposit', 'android') where state = 'coming_soon'),
-  'A: the Android app hides coming-soon methods');
+select pg_temp.check((select count(*) >= 1 from public.payment_methods_for('offer_deposit', 'android') where state = 'coming_soon'),
+  'A: the Android app shows coming-soon methods for deposits (Walter 2026-11-27), not selectable');
 
 -- ===========================================================================
 -- B. Guide verification: order, claim, confirm, idempotency
@@ -249,6 +250,166 @@ set local role authenticated;
 select pg_temp.expect_code($q$select * from public.start_payment_order('business_badge', '66666666-0000-4000-8000-000000000066', null, null, null, 'manual_lipa', 'web')$q$,
   'payments_off', 'D: payments_manual off stops new orders');
 reset role;
+
+update public.site_settings set value = '{"on": true}' where key = 'feature.payments_manual';
+
+-- ===========================================================================
+-- E. Security review round (H1, M2, M3, M4, L3, L7-L9) and QA
+-- ===========================================================================
+-- H1: punctuation and case do not dodge the duplicate check; edges are refused; look-alikes are flagged.
+select pg_temp.as_user('22222222-0000-4000-8000-0000000000b1');
+set local role authenticated;
+create temp table o4 on commit drop as
+  select * from public.start_payment_order('business_badge', '66666666-0000-4000-8000-000000000066', null, null, null, 'manual_lipa', 'web');
+select pg_temp.check((select reference from public.start_payment_order('business_badge', '66666666-0000-4000-8000-000000000066', null, null, null, 'manual_lipa', 'web'))
+                     = (select reference from o4), 'E/L1: pressing Pay again for the badge keeps the same order');
+select pg_temp.check(public.submit_payment_claim((select reference from o4), 'mpesa', 'TESTTX-0001', '0754000111') = 'duplicate', 'E/H1: dash does not dodge');
+select pg_temp.check(public.submit_payment_claim((select reference from o4), 'mpesa', 'testtx.0001', '0754000111') = 'duplicate', 'E/H1: dot and case do not dodge');
+select pg_temp.expect_code($q$select public.submit_payment_claim((select reference from o4), 'mpesa', '-TESTTX7777', '0754000111')$q$,
+  'transaction_format', 'E/H1: leading punctuation refused');
+select pg_temp.expect_code($q$select public.submit_payment_claim((select reference from o4), 'mpesa', 'TESTTX7777.', '0754000111')$q$,
+  'transaction_format', 'E/H1: trailing punctuation refused');
+select pg_temp.check(public.submit_payment_claim((select reference from o4), 'mpesa', 'TESTTXOOO1', '0754000111') = 'submitted', 'E/H1: look-alike accepted for checking');
+-- Cross-user: another payer cannot see or use this reference.
+reset role;
+grant select on o4 to authenticated;
+select pg_temp.as_user('11111111-0000-4000-8000-0000000000a1');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.submit_payment_claim((select reference from o4), 'mpesa', 'TESTTX8888', '0712345678')$q$,
+  'order not found', 'E: another payer cannot use this reference');
+select pg_temp.check((select count(*) = 0 from public.my_payment_orders((select reference from o4))), 'E: another payer cannot read this order');
+reset role;
+-- M3: a valid badge is not extended by paying; a re-check is queued.
+update public.providers set badge_checks = '{licence}', badge_checked_at = private.tz_today(), badge_valid_until = private.tz_today() + 30,
+  badge_requested_at = null where id = '66666666-0000-4000-8000-000000000066';
+select pg_temp.as_user('44444444-0000-4000-8000-0000000000c2', 'aal2');
+set local role authenticated;
+select pg_temp.check((select similar_claims >= 1 and blocked_attempts >= 2 from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'),
+  'E/H1: the queue warns about the look-alike and the blocked attempts');
+select pg_temp.check(public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'), 120000, 'key-test-0005') = 'confirmed',
+  'E: badge renewal confirmed');
+reset role;
+select pg_temp.check((select badge_valid_until = private.tz_today() + 30 and badge_requested_at is not null from public.providers
+                      where id = '66666666-0000-4000-8000-000000000066'), 'E/M3: paying does not extend the badge; a re-check is queued');
+select pg_temp.check((select count(*) = 0 from public.payment_audit_log where reference = (select reference from o4) and action = 'refund_needs_walter'),
+  'E: no refund flag on a badge payment');
+
+-- Cancel and rate limits (p1).
+update public.price_list set amount_tzs = 5000, active_from = private.tz_today()
+where account_type = 'guide' and service_code = 'verification' and period = 'month' and status = 'draft';
+update public.price_list set status = 'active'
+where account_type = 'guide' and service_code = 'verification' and period = 'month' and status = 'draft';
+select pg_temp.as_user('11111111-0000-4000-8000-0000000000a1');
+set local role authenticated;
+create temp table o5 on commit drop as select * from public.start_payment_order('verification', null, 'month', 'guide', null, 'manual_lipa', 'web');
+select public.cancel_payment_order((select reference from o5));
+select pg_temp.check((select status = 'cancelled' from public.my_payment_orders((select reference from o5))), 'E: payer cancels an unpaid order');
+select pg_temp.expect_code($q$select public.cancel_payment_order((select reference from o5))$q$, 'order_closed', 'E: a cancelled order stays closed');
+create temp table o6 on commit drop as select * from public.start_payment_order('verification', null, 'month', 'guide', null, 'manual_lipa', 'web');
+select public.submit_payment_claim((select reference from o6), 'mpesa', 'TESTTX0003', '0712345678');
+select public.submit_payment_claim((select reference from o6), 'mpesa', 'TESTTX0003', '0712345678');
+select public.submit_payment_claim((select reference from o6), 'mpesa', 'TESTTX0003', '0712345678');
+select public.submit_payment_claim((select reference from o6), 'mpesa', 'TESTTX0003', '0712345678');
+select pg_temp.expect_code($q$select public.submit_payment_claim((select reference from o6), 'mpesa', 'TESTTX0003', '0712345678')$q$,
+  'rate_limited', 'E: the sixth attempt in an hour is refused');
+-- Commission: billing is off.
+select pg_temp.expect_code($q$select * from public.start_payment_order('reservation_commission', '66666666-0000-4000-8000-000000000066', null, null, date_trunc('month', now())::date - 1, 'manual_lipa', 'web')$q$,
+  'payments_off', 'E: commission cannot be paid while its billing switch is off');
+reset role;
+
+-- Overpayment, close with refund due, refund records (b1).
+select pg_temp.as_user('22222222-0000-4000-8000-0000000000b1');
+set local role authenticated;
+create temp table o7 on commit drop as
+  select * from public.start_payment_order('business_badge', '66666666-0000-4000-8000-000000000066', null, null, null, 'manual_lipa', 'web');
+select public.submit_payment_claim((select reference from o7), 'mpesa', 'TESTTX0010', '0754000111');
+reset role;
+grant select on o7 to authenticated;
+select pg_temp.as_user('44444444-0000-4000-8000-0000000000c2', 'aal2');
+set local role authenticated;
+select public.admin_mark_wrong_amount((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTX0010'), 150000, 'Paid too much');
+select pg_temp.expect_code($q$select public.admin_close_order((select reference from o7), 'refund_due', 0)$q$, 'received amount needed', 'E/M2: refund_due needs the amount');
+select public.admin_close_order((select reference from o7), 'refund_due', 150000, 'Overpaid; refund to the payer');
+select pg_temp.check((select count(*) = 1 from public.admin_refunds_due() where reference = (select reference from o7)), 'E/M2: listed as refund due');
+select pg_temp.expect_code($q$select public.admin_record_refund((select reference from o7), 150001, 'mpesa', 'RF12345')$q$,
+  'refund more than received', 'E/M2: never more than received');
+select public.admin_record_refund((select reference from o7), 150000, 'mpesa', 'RF12345', 'Sent back');
+select pg_temp.check((select count(*) = 0 from public.admin_refunds_due() where reference = (select reference from o7)), 'E/M2: refund recorded, nothing due');
+select pg_temp.expect_code($q$select public.admin_record_refund((select reference from o7), 1, 'mpesa', 'RF12346')$q$, 'no refund due', 'E/M2: no second refund');
+reset role;
+select pg_temp.check((select count(*) >= 2 from public.payment_audit_log where reference = (select reference from o7) and action = 'refund_needs_walter'),
+  'E/M2: overpayment and close logged for Walter');
+select pg_temp.expect_code($q$update public.payment_refund_records set amount_tzs = 1$q$, 'cannot be changed', 'E/M2: refund records are append-only');
+
+-- L7: the rate's range and jump.
+select pg_temp.as_user('33333333-0000-4000-8000-0000000000c1', 'aal2');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.admin_set_manual_rate('50', 'Test source', private.tz_today())$q$, 'rate out of range', 'E/L7: implausible rate');
+select public.admin_set_manual_rate('2650', 'Test source', private.tz_today());
+select pg_temp.expect_code($q$select public.admin_set_manual_rate('3000', 'Test source', private.tz_today())$q$, 'rate jump', 'E/L7: a jump over 10% needs confirming');
+reset role;
+
+-- Deposits: matched against guard_new_payment, confirmed (L9), and received-not-applied (L8, M2).
+insert into auth.users (id, email, aud, role, raw_user_meta_data) values
+  ('88888888-0000-4000-8000-0000000000d8', 'lipa-traveller@example.test', 'authenticated', 'authenticated', '{}');
+update public.profiles set onboarded_at = now() where id = '88888888-0000-4000-8000-0000000000d8';
+insert into public.trip_requests (id, traveler_id, traveler_name, title, details, specialty, start_date) values
+  ('a0a0a0a0-0000-4000-8000-0000000000a0', '88888888-0000-4000-8000-0000000000d8', 'Test Traveller', 'Test climb request', 'A test request with enough words.', 'mountain', private.tz_today() + 30),
+  ('b0b0b0b0-0000-4000-8000-0000000000b0', '88888888-0000-4000-8000-0000000000d8', 'Test Traveller', 'Test safari request', 'A test request with enough words.', 'safari', private.tz_today() + 30),
+  ('c0c0c0c0-0000-4000-8000-0000000000c0', '88888888-0000-4000-8000-0000000000d8', 'Test Traveller', 'Test city request', 'A test request with enough words.', 'city', private.tz_today() + 30);
+insert into public.trip_offers (id, request_id, offered_by, guide_id, price_total_usd, deposit_percent, itinerary, status) values
+  ('a1a1a1a1-1111-4000-8000-0000000000a1', 'a0a0a0a0-0000-4000-8000-0000000000a0', '11111111-0000-4000-8000-0000000000a1', '55555555-0000-4000-8000-000000000055', 1000, 30, 'Day one walk, day two climb, day three down.', 'accepted'),
+  ('b1b1b1b1-1111-4000-8000-0000000000b1', 'b0b0b0b0-0000-4000-8000-0000000000b0', '11111111-0000-4000-8000-0000000000a1', '55555555-0000-4000-8000-000000000055', 1000, 30, 'Day one drive, day two park, day three back.', 'accepted'),
+  ('c1c1c1c1-1111-4000-8000-0000000000c1', 'c0c0c0c0-0000-4000-8000-0000000000c0', '11111111-0000-4000-8000-0000000000a1', '55555555-0000-4000-8000-000000000055', 1000, 30, 'Day one town, day two market, day three back.', 'accepted');
+select pg_temp.as_user('88888888-0000-4000-8000-0000000000d8');
+set local role authenticated;
+create temp table d1 on commit drop as select * from public.start_payment_order('offer_deposit', 'a1a1a1a1-1111-4000-8000-0000000000a1', null, null, null, 'manual_lipa', 'web');
+create temp table d2 on commit drop as select * from public.start_payment_order('offer_deposit', 'b1b1b1b1-1111-4000-8000-0000000000b1', null, null, null, 'manual_lipa', 'android');
+create temp table d3 on commit drop as select * from public.start_payment_order('offer_deposit', 'c1c1c1c1-1111-4000-8000-0000000000c1', null, null, null, 'manual_lipa', 'web');
+select pg_temp.check((select amount_tzs = 795000 and amount_usd = 300 from d1), 'E: deposit amount from the offer and the admin rate (USD 300 at 2650)');
+select public.submit_payment_claim((select reference from d1), 'mpesa', 'TESTTX0020', '0765111222');
+select public.submit_payment_claim((select reference from d2), 'airtel', 'TESTTX0021', '0685111222');
+reset role;
+grant select on d1, d2, d3 to authenticated;
+select pg_temp.check((select count(*) = 3 from public.payments p join public.payment_orders o on o.payment_id = p.id
+                      where o.reference in ((select reference from d1), (select reference from d2), (select reference from d3))
+                        and p.status = 'pending' and p.provider = 'manual_lipa' and p.amount_tzs = o.amount_tzs),
+  'E: each deposit order has a pending payments row that passed guard_new_payment with the same amount');
+-- The trip of d2 moves inside the 8-day cut-off of its claim day.
+update public.trip_requests set start_date = private.tz_today() + 3 where id = 'b0b0b0b0-0000-4000-8000-0000000000b0';
+select pg_temp.as_user('11111111-0000-4000-8000-0000000000a1', 'aal2');
+set local role authenticated;
+select pg_temp.expect_code($q$select public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTX0020'), 795000, 'key-test-0006')$q$,
+  'admins only', 'E: a guide who is not an admin cannot confirm');
+reset role;
+select pg_temp.as_user('33333333-0000-4000-8000-0000000000c1', 'aal2');
+set local role authenticated;
+select pg_temp.check(public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTX0020'), 795000, 'key-test-0007') = 'confirmed',
+  'E: deposit confirmed');
+select pg_temp.check(public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTX0021'), 795000, 'key-test-0008') = 'received_not_applied',
+  'E/L8: a deposit inside the cut-off is received but not applied');
+reset role;
+select pg_temp.check((select p.status = 'paid' and p.provider_transaction_id = (select reference from d1) and p.provider_reference is null
+                      from public.payments p join public.payment_orders o on o.payment_id = p.id where o.reference = (select reference from d1)),
+  'E/L9: the payments row carries the order reference, not the payer''s transaction ID');
+select pg_temp.check((select o.status = 'received_not_applied' and o.refund_due and o.received_tzs = 795000 and p.status = 'failed'
+                      from public.payment_orders o join public.payments p on p.id = o.payment_id where o.reference = (select reference from d2)),
+  'E/M2: received_not_applied keeps the money received and flags a refund');
+-- H2: switching deposits off and closing the waiting deposit orders.
+update public.site_settings set value = '{"on": false}' where key = 'feature.deposits_via_kwetuly_lipa';
+select pg_temp.as_user('33333333-0000-4000-8000-0000000000c1', 'aal2');
+set local role authenticated;
+select pg_temp.check(public.admin_close_open_deposit_orders() >= 1, 'E/H2: waiting deposit orders closed');
+reset role;
+select pg_temp.check((select status = 'cancelled' from public.payment_orders where reference = (select reference from d3)), 'E/H2: the unpaid deposit order is closed');
+
+-- M4: phones of claims decided more than 12 months ago are removed; audit rows stay.
+update public.payment_claims set decided_at = now() - interval '13 months' where transaction_key = 'TESTTX0001';
+select pg_temp.check(private.purge_claim_phones() >= 1, 'E/M4: the purge removed a phone');
+select pg_temp.check((select payer_phone is null and phone_purged_at is not null from public.payment_claims where transaction_key = 'TESTTX0001'),
+  'E/M4: phone removed, claim kept');
+select pg_temp.check((select count(*) >= 1 from public.payment_audit_log where details ->> 'transaction_key' = 'TESTTX0001' or details ->> 'transaction_id' = 'TESTTX0001'),
+  'E/M4: audit rows stay');
 
 select 'all passed';
 rollback;

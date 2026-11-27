@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { LIPA_NETWORKS, PAYMENT_METHODS, fillText, lipaAdminText, parseProviderSettings, tanzaniaToday, type LipaAdminText } from '@kwetuly/shared';
+import { LIPA_NETWORKS, PAYMENT_METHODS, PAYMENT_PROVIDER_IDS, PROVIDER_INFO, addDaysIso, fillText, lipaAdminText, parseProviderSettings, tanzaniaToday, type LipaAdminText } from '@kwetuly/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -103,13 +103,25 @@ async function Content({ locale, a, searchParams }: { locale: Locale; a: LipaAdm
       <section className="card space-y-3" aria-labelledby="providers">
         <h2 id="providers" className="text-xl font-bold">{a.providersTitle}</h2>
         <p className="text-sm text-muted">{a.providersIntro}</p>
-        <form action={saveProviders} className="grid gap-3 sm:grid-cols-3">
+        <form action={saveProviders} className="grid gap-4 sm:grid-cols-3">
           <input type="hidden" name="locale" value={locale} />
-          {PAYMENT_METHODS.map((m) => (
-            <label key={m} className="text-sm"><span className="block font-semibold">{a.methods[m]}</span>
-              <input name={m} defaultValue={providers[m].join(', ')} placeholder="manual_lipa, flutterwave" className="field font-mono" />
-            </label>
-          ))}
+          {PAYMENT_METHODS.map((m) => {
+            const options = PAYMENT_PROVIDER_IDS.filter((id) => PROVIDER_INFO[id].methods.includes(m) && !(m === 'card' && id === 'manual_lipa'));
+            return (
+              <fieldset key={m} className="space-y-2 text-sm">
+                <legend className="font-semibold">{a.methods[m]}</legend>
+                {[1, 2].map((n) => (
+                  <label key={n} className="block"><span className="block text-muted">{n === 1 ? a.firstChoice : a.secondChoice}</span>
+                    <select name={`${m}.${n}`} defaultValue={providers[m][n - 1] ?? ''} className="field">
+                      <option value="">{a.noneOption}</option>
+                      {options.map((id) => <option key={id} value={id}>{PROVIDER_INFO[id].name}</option>)}
+                    </select>
+                  </label>
+                ))}
+                {providers[m].length === 0 && <p role="status" className="font-semibold text-red-800">{a.noProvider}</p>}
+              </fieldset>
+            );
+          })}
           <div className="sm:col-span-3"><SubmitButton className="btn-outline">{a.providersSave}</SubmitButton></div>
         </form>
       </section>
@@ -118,11 +130,13 @@ async function Content({ locale, a, searchParams }: { locale: Locale; a: LipaAdm
         <h2 id="rate" className="text-xl font-bold">{a.rateTitle}</h2>
         <p className="text-sm text-muted">{a.rateIntro}</p>
         <p className="font-semibold">{rate?.rate ? fillText(a.rateNow, { rate: rate.rate, source: rate.source ?? '', date: rate.as_of ?? '' }) : a.rateNone}</p>
+        {rate?.as_of && rate.as_of < addDaysIso(tanzaniaToday(), -7) && <p role="alert" className="font-semibold text-red-800">{a.ratePaused}</p>}
         <form action={saveRate} className="grid gap-3 sm:grid-cols-3">
           <input type="hidden" name="locale" value={locale} />
           <label className="text-sm"><span className="block font-semibold">{a.rate}</span><input name="rate" required inputMode="decimal" className="field" /></label>
           <label className="text-sm"><span className="block font-semibold">{a.rateSource}</span><input name="source" required minLength={3} maxLength={120} className="field" /></label>
           <label className="text-sm"><span className="block font-semibold">{a.rateDate}</span><input name="as_of" type="date" required max={tanzaniaToday()} className="field" /></label>
+          <label className="flex items-start gap-2 text-sm sm:col-span-3"><input type="checkbox" name="confirm_jump" value="yes" className="mt-1" /> <span>{a.rateConfirm}</span></label>
           <div className="sm:col-span-3"><SubmitButton className="btn-outline">{a.rateSave}</SubmitButton></div>
         </form>
       </section>

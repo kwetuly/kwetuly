@@ -155,6 +155,14 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: `Kiasi hakilingani: ${v('reference')}`, body: `Tumepokea TZS ${v('received')}, lakini kiasi ni TZS ${v('amount')}. Tafadhali angalia maelezo kwenye Kwetuly.` }
         : { subject: `Amount does not match: ${v('reference')}`, body: `We received TZS ${v('received')}, but the amount is TZS ${v('amount')}. Please see the details on Kwetuly.` };
+    case 'manual_payment_held':
+      return sw
+        ? { subject: `Malipo yamepokelewa lakini hayakutumika: ${v('reference')}`, body: `Tumepokea TZS ${v('amount')} (${v('reference')}), lakini hatukuweza kuyatumia kwa kilichokusudiwa. Kwetuly itawasiliana nawe kuhusu kurudisha pesa.` }
+        : { subject: `Payment received but not applied: ${v('reference')}`, body: `We received TZS ${v('amount')} (${v('reference')}), but could not apply it to what it was for. Kwetuly will contact you about a refund.` };
+    case 'manual_payment_closed':
+      return sw
+        ? { subject: `Malipo yamefungwa: ${v('reference')}`, body: 'Malipo haya yamefungwa na Kwetuly. Tafadhali usitume pesa kwa msimbo huu. Tazama maelezo kwenye Kwetuly.' }
+        : { subject: `Payment closed: ${v('reference')}`, body: 'Kwetuly closed this payment. Please do not send money for this code. See the details on Kwetuly.' };
     case 'link_changed':
       // Admins only: an approved guide or business changed a profile link.
       return { subject: `Profile link changed: ${v('name')}`, body: `${v('kind')} "${v('name')}" changed a link after approval: ${v('changes')}. Check that the new link still points to their own page. (At most one alert per profile every 15 minutes.)` };

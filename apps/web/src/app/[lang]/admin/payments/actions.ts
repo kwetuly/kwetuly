@@ -34,6 +34,11 @@ function code(message: string | undefined): string {
   if (/order_closed/.test(m)) return 'closed';
   if (/deposit not pending/.test(m)) return 'deposit';
   if (/commission lines changed/.test(m)) return 'changed';
+  if (/rate out of range/.test(m)) return 'rate_range';
+  if (/rate jump/.test(m)) return 'rate_jump';
+  if (/refund more than received/.test(m)) return 'refund_more';
+  if (/no refund due/.test(m)) return 'no_refund';
+  if (/unknown outcome/.test(m)) return 'outcome';
   if (/check constraint|violates|not found|date not allowed/.test(m)) return 'input';
   return 'failed';
 }
@@ -63,7 +68,7 @@ export async function confirmClaim(formData: FormData) {
     p_note: note(formData),
   });
   if (error) go(back, { e: code(error.message) });
-  go(back, { ok: data === 'already_confirmed' ? 'already' : 'confirmed' });
+  go(back, { ok: data === 'already_confirmed' ? 'already' : data === 'received_not_applied' ? 'held' : 'confirmed' });
 }
 
 export async function rejectClaim(formData: FormData) {
@@ -118,11 +123,9 @@ export async function saveProviders(formData: FormData) {
   const back = await admin(formData, '/numbers');
   const value: Record<string, string[]> = {};
   for (const m of PAYMENT_METHODS) {
-    value[m] = String(formData.get(m) ?? '')
-      .split(',')
-      .map((s) => s.trim())
-      .filter((s) => (PAYMENT_PROVIDER_IDS as readonly string[]).includes(s))
-      .slice(0, 4);
+    const picks = [formData.get(`${m}.1`), formData.get(`${m}.2`)].map(String)
+      .filter((id) => (PAYMENT_PROVIDER_IDS as readonly string[]).includes(id) && !(m === 'card' && id === 'manual_lipa'));
+    value[m] = [...new Set(picks)];
   }
   const supabase = await createClient();
   const { error } = await supabase.rpc('admin_set_payment_providers', { p_value: value });
@@ -134,9 +137,15 @@ export async function saveRate(formData: FormData) {
   const back = await admin(formData, '/numbers');
   const rate = String(formData.get('rate') ?? '').trim();
   const date = String(formData.get('as_of') ?? '').trim();
-  if (!/^[1-9]\d{0,5}(\.\d{1,4})?$/.test(rate) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) go(back, { e: 'input' });
+  if (!/^[1-9]\d{0,5}(\.\d{1,4})?$/.test(rate)) go(back, { e: 'rate_range' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) go(back, { e: 'input' });
   const supabase = await createClient();
-  const { error } = await supabase.rpc('admin_set_manual_rate', { p_rate: rate, p_source: String(formData.get('source') ?? '').slice(0, 120), p_as_of: date });
+  const { error } = await supabase.rpc('admin_set_manual_rate', {
+    p_rate: rate,
+    p_source: String(formData.get('source') ?? '').slice(0, 120),
+    p_as_of: date,
+    p_confirm_jump: formData.get('confirm_jump') === 'yes',
+  });
   if (error) go(back, { e: code(error.message) });
   go(back, { ok: 'saved' });
 }
@@ -181,4 +190,43 @@ export async function saveStorePolicy(formData: FormData) {
   const { error } = await supabase.rpc('admin_set_store_policy', { p_kinds: null, p_policy: policy, p_flags: flags });
   if (error) go(back, { e: code(error.message) });
   go(back, { ok: 'saved' });
+}
+
+const REF = /^KW[2-9A-HJKMNP-Z]{6}$/;
+
+/** Close a submitted or wrong-amount order that cannot go ahead (refund due or nothing received). */
+export async function closeOrder(formData: FormData) {
+  const back = await admin(formData, '');
+  const reference = String(formData.get('reference') ?? '');
+  const outcome = String(formData.get('outcome') ?? '');
+  const raw = String(formData.get('received') ?? '').replace(/[\s,]/g, '');
+  const received = /^\d{1,12}$/.test(raw) ? Number(raw) : null;
+  if (!REF.test(reference) || received === null || !['refund_due', 'nothing_received'].includes(outcome)) go(back, { e: 'outcome' });
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('admin_close_order', { p_reference: reference, p_outcome: outcome, p_received_tzs: received, p_note: note(formData) });
+  if (error) go(back, { e: code(error.message) });
+  go(back, { ok: 'closed' });
+}
+
+/** Records a refund Walter has sent outside Kwetuly. No money moves here. */
+export async function recordRefund(formData: FormData) {
+  const back = await admin(formData, '');
+  const reference = String(formData.get('reference') ?? '');
+  const amount = tzs(formData.get('amount'));
+  const channel = String(formData.get('channel') ?? '');
+  const sent = String(formData.get('sent_reference') ?? '').trim();
+  if (!REF.test(reference) || amount === null || !/^[A-Za-z0-9._-]{4,64}$/.test(sent)) go(back, { e: 'input' });
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('admin_record_refund', { p_reference: reference, p_amount_tzs: amount, p_channel: channel, p_sent_reference: sent, p_note: note(formData) });
+  if (error) go(back, { e: code(error.message) });
+  go(back, { ok: 'refund' });
+}
+
+/** While deposits by Lipa are off: close deposit orders still waiting for payment (no claim yet). */
+export async function closeDepositOrders(formData: FormData) {
+  const back = await admin(formData, '');
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('admin_close_open_deposit_orders');
+  if (error) go(back, { e: code(error.message) });
+  go(back, { ok: 'deposits' });
 }

@@ -6,13 +6,10 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 import {
   LIPA_NETWORKS,
   LIPA_NETWORK_NAMES,
-  centsText,
   fillText,
   formatTzsAmount,
   isPaymentReference,
   lipaPayText,
-  maskPhone,
-  tzsToUsdCents,
   type LipaNetwork,
   type LipaNumber,
   type LipaPayText,
@@ -21,10 +18,11 @@ import {
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
-import { manualRate } from '@/lib/lipa';
 import { createClient } from '@/lib/supabase/server';
+import { CopyButton } from '@/components/copy-button';
 import { SubmitButton } from '@/components/submit-button';
-import { cancelOrder, submitClaim } from '../../lipa-actions';
+import { cancelOrder } from '../../lipa-actions';
+import { ClaimForm } from './claim-form';
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: lipaPayText(await getLocale()).title, robots: { index: false } };
@@ -53,24 +51,33 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
   const t = lipaPayText(locale);
   const reference = ref.toUpperCase();
   if (!isPaymentReference(reference)) notFound();
-  await requireUser(locale, `/${locale}/payments/orders/${reference}`);
+  const user = await requireUser(locale, `/${locale}/payments/orders/${reference}`);
   const sp = await searchParams;
   const supabase = await createClient();
-  const [orders, numbers, rate] = await Promise.all([
+  const [orders, numbers, profile] = await Promise.all([
     supabase.rpc('my_payment_orders', { p_reference: reference }),
     supabase.rpc('payment_numbers_for_payers'),
-    manualRate(),
+    supabase.from('profiles').select('phone').eq('id', user.id).maybeSingle<{ phone: string | null }>(),
   ]);
+  // A database error is not "not found" (QA 5).
+  if (orders.error) {
+    return (
+      <div role="alert" className="card mt-4 space-y-3">
+        <p>{t.loadError}</p>
+        <Link href={`/${locale}/payments/orders/${reference}`} className="btn-outline">{t.retry}</Link>
+      </div>
+    );
+  }
   const order = ((orders.data ?? []) as MyPaymentOrder[])[0];
   if (!order) notFound();
   const list = (numbers.error ? [] : (numbers.data ?? [])) as LipaNumber[];
   const amount = formatTzsAmount(order.amount_tzs);
-  const e = typeof sp.e === 'string' && Object.hasOwn(t.errors, sp.e) ? t.errors[sp.e] : '';
   const ok = sp.ok === 'submitted' ? t.submittedOk : sp.ok === 'cancelled' ? t.cancelled : '';
+  const e = typeof sp.e === 'string' && Object.hasOwn(t.errors, sp.e) ? t.errors[sp.e] : '';
   const open = order.status === 'awaiting_payment' || order.status === 'wrong_amount';
   const received = order.received_tzs ? formatTzsAmount(order.received_tzs) : '';
   const deposit = order.purpose === 'offer_deposit' || order.purpose === 'group_deposit';
-  const usdCents = order.amount_usd == null && rate ? tzsToUsdCents(order.amount_tzs, rate.rate) : null;
+  const networkNames = Object.fromEntries(LIPA_NETWORKS.map((n) => [n, networkName(n, t)])) as Record<LipaNetwork, string>;
 
   const Icon = order.status === 'confirmed' ? CheckCircle2 : order.status === 'cancelled' ? XCircle : Clock;
   const tone = order.status === 'confirmed' ? 'bg-mint text-forest' : order.status === 'cancelled' ? 'bg-surface' : 'bg-sand';
@@ -87,13 +94,16 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
         {order.claim_status === 'rejected' && order.claim_reason && order.status !== 'confirmed' && (
           <div className="mt-3 rounded-[5px] bg-white p-3">
             <p className="font-semibold">{t.rejectedTitle}</p>
-            <p className="text-sm">{t.rejected[order.claim_reason]}{order.claim_note ? ` ${order.claim_note}` : ''}</p>
+            <p className="text-sm">{t.rejected[order.claim_reason]}</p>
             {open && <p className="mt-1 text-sm">{t.tryAgain}</p>}
           </div>
         )}
+        {order.claim_note && <p className="mt-2 text-sm">{order.claim_note}</p>}
         {order.claim_network && order.claim_transaction_id && (
           <p className="mt-2 text-sm opacity-80">
-            {fillText(t.sentWith, { network: networkName(order.claim_network, t), code: order.claim_transaction_id, phone: order.claim_phone ?? maskPhone(null) })}
+            {order.claim_phone
+              ? fillText(t.sentWith, { network: networkName(order.claim_network, t), code: order.claim_transaction_id, phone: order.claim_phone })
+              : fillText(t.sentWithBank, { network: networkName(order.claim_network, t), code: order.claim_transaction_id })}
           </p>
         )}
       </section>
@@ -101,14 +111,17 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
       <section className="card space-y-2" aria-labelledby="amount">
         <h2 id="amount" className="text-sm font-semibold text-muted">{t.amount}</h2>
         <p className="text-3xl font-extrabold tabular-nums">{amount}</p>
-        {order.amount_usd != null && rate && (
-          <p className="text-sm text-muted">{fillText(t.usdNote, { usd: String(order.amount_usd), rate: rate.rate, date: rate.asOf })}</p>
+        {/* The rate saved on the order, never today's (QA 4). */}
+        {order.amount_usd != null && order.usd_tzs_rate != null && (
+          <p className="text-sm text-muted">{fillText(t.rateOnOrder, { rate: String(order.usd_tzs_rate), source: order.rate_source ?? '' })}</p>
         )}
-        {usdCents && rate && <p className="text-sm text-muted">{fillText(t.usdNote, { usd: centsText(usdCents), rate: rate.rate, date: rate.asOf })}</p>}
         {deposit && <p className="text-sm">{t.depositHeld}</p>}
         <div className="pt-2">
           <p className="text-sm font-semibold text-muted">{t.reference}</p>
-          <p className="font-mono text-2xl font-bold tracking-wider">{order.reference}</p>
+          <p className="flex flex-wrap items-center gap-3">
+            <span className="font-mono text-2xl font-bold tracking-wider">{order.reference}</span>
+            <CopyButton value={order.reference} label={t.copy} done={t.copied} />
+          </p>
           <p className="text-sm text-muted">{t.referenceHint}</p>
         </div>
       </section>
@@ -125,18 +138,19 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
                   const steps = n.network === 'bank' ? t.stepsBank : t.stepsMobile;
                   const values = { network: networkName(n.network, t), number: n.lipa_number, name: n.business_name, amount, code: order.reference, bank: n.bank_name ?? t.bank };
                   return (
-                    <li key={n.id} className="card">
-                      <details>
-                        <summary className="cursor-pointer list-none">
-                          <span className="flex flex-wrap items-baseline justify-between gap-2">
-                            <span className="font-bold">{networkName(n.network, t)}{n.bank_name ? ` (${n.bank_name})` : ''}</span>
-                            <span className="font-mono text-xl font-bold">{n.lipa_number}</span>
-                          </span>
-                          <span className="block text-sm text-muted">{fillText(t.nameShown, { name: n.business_name })}</span>
-                          {n.menu_hint && <span className="block text-sm text-muted">{fillText(t.menu, { hint: n.menu_hint })}</span>}
-                          <span className="mt-2 inline-block text-sm font-semibold text-forest underline">{t.stepsTitle}</span>
-                        </summary>
-                        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm">
+                    <li key={n.id} className="card space-y-2">
+                      <p className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="font-bold">{networkName(n.network, t)}{n.bank_name ? ` (${n.bank_name})` : ''}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="font-mono text-xl font-bold">{n.lipa_number}</span>
+                          <CopyButton value={n.lipa_number} label={t.copy} done={t.copied} />
+                        </span>
+                      </p>
+                      <p className="text-sm text-muted">{fillText(t.nameShown, { name: n.business_name })}</p>
+                      {n.menu_hint && <p className="text-sm text-muted">{fillText(t.menu, { hint: n.menu_hint })}</p>}
+                      <details open>
+                        <summary className="cursor-pointer text-sm font-semibold text-forest underline">{t.stepsTitle}</summary>
+                        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
                           {steps.map((s, i) => <li key={i}>{fillText(s, values)}</li>)}
                         </ol>
                       </details>
@@ -149,27 +163,14 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
 
           <section id="paid" aria-labelledby="paid-title" className="card scroll-mt-28 space-y-4">
             <h2 id="paid-title" className="text-xl font-bold">{t.formTitle}</h2>
-            <form action={submitClaim} className="space-y-4">
-              <input type="hidden" name="locale" value={locale} />
-              <input type="hidden" name="reference" value={order.reference} />
-              <label className="block">
-                <span className="mb-1 block font-semibold">{t.network}</span>
-                <select name="network" required className="field" defaultValue={list[0]?.network ?? 'mpesa'}>
-                  {LIPA_NETWORKS.map((n) => <option key={n} value={n}>{networkName(n, t)}</option>)}
-                </select>
-              </label>
-              <label className="block">
-                <span className="mb-1 block font-semibold">{t.transactionId}</span>
-                <input name="transaction_id" required minLength={6} maxLength={40} autoComplete="off" autoCapitalize="characters" spellCheck={false} className="field font-mono" aria-describedby="tx-hint" />
-                <span id="tx-hint" className="mt-1 block text-sm text-muted">{t.transactionHint}</span>
-              </label>
-              <label className="block">
-                <span className="mb-1 block font-semibold">{t.phone}</span>
-                <input name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={20} className="field" aria-describedby="phone-hint" />
-                <span id="phone-hint" className="mt-1 block text-sm text-muted">{t.phoneHint}</span>
-              </label>
-              <SubmitButton className="btn w-full">{t.submit}</SubmitButton>
-            </form>
+            <ClaimForm
+              locale={locale}
+              reference={order.reference}
+              t={t}
+              networkNames={networkNames}
+              defaultNetwork={list[0]?.network ?? 'mpesa'}
+              profilePhone={profile.data?.phone ?? ''}
+            />
             {order.status === 'awaiting_payment' && order.claims_count === 0 && (
               <form action={cancelOrder}>
                 <input type="hidden" name="locale" value={locale} />

@@ -28,9 +28,25 @@ async function List({ locale }: { locale: Locale }) {
   await requireUser(locale, `/${locale}/payments/orders`);
   const t = lipaPayText(locale);
   const supabase = await createClient();
-  const { data } = await supabase.rpc('my_payment_orders', { p_reference: null });
+  const { data, error } = await supabase.rpc('my_payment_orders', { p_reference: null });
+  if (error) {
+    return (
+      <div role="alert" className="card mt-6 space-y-3">
+        <p>{t.loadError}</p>
+        <Link href={`/${locale}/payments/orders`} className="btn-outline">{t.retry}</Link>
+      </div>
+    );
+  }
   const rows = (data ?? []) as MyPaymentOrder[];
-  if (rows.length === 0) return <p className="mt-6 text-muted">{t.none}</p>;
+  if (rows.length === 0) {
+    return (
+      <div className="card mt-6 space-y-3">
+        <p className="font-semibold">{t.none}</p>
+        <p className="text-muted">{t.emptyNext}</p>
+        <Link href={`/${locale}/dashboard`} className="btn-outline">{t.open}</Link>
+      </div>
+    );
+  }
   return (
     <ul className="mt-6 space-y-3">
       {rows.map((o) => (

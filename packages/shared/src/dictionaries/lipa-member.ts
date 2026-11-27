@@ -17,6 +17,7 @@ const en = {
   badgeBody: 'One year. After you pay, Kwetuly checks your business and shows on your page what was checked and when.',
   badgePay: 'Pay for the badge: {amount}',
   badgePaidUntil: 'Badge paid until {date}.',
+  badgeNoRefund: 'The fee pays for the check. It is not refunded if the business does not pass.',
   myPayments: 'My payments',
 };
 
@@ -37,6 +38,7 @@ const sw: LipaMemberText = {
   badgeBody: 'Mwaka mmoja. Ukishalipa, Kwetuly inakagua biashara yako na kuonyesha kwenye ukurasa wako kilichokaguliwa na lini.',
   badgePay: 'Lipia beji: {amount}',
   badgePaidUntil: 'Beji imelipwa hadi {date}.',
+  badgeNoRefund: 'Ada inalipia ukaguzi. Hairudishwi kama biashara haitapita ukaguzi.',
   myPayments: 'Malipo yangu',
 };
 

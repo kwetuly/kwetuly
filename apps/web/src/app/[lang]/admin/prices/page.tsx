@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { isNotAppliedError, tanzaniaToday } from '@kwetuly/shared';
+import { fillText, isNotAppliedError, lipaAdminText, tanzaniaToday } from '@kwetuly/shared';
 import { getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireAdmin } from '@/lib/auth';
@@ -21,8 +21,6 @@ const TYPES = ['Porter', 'Cook', 'Driver', 'Assistant guide', 'Guide', 'Business
 
 type Cell = 'open' | 'n/a';
 const ROWS: { service: string; periods: string; status: string; cells: Cell[] }[] = [
-  { service: 'Verification subscription', periods: 'month, year', status: 'Legal hold for crew until gate 6.3; open for guide and business after gate 6.1', cells: ['open', 'open', 'open', 'open', 'open', 'open'] },
-  { service: '"Checked by Kwetuly" business badge', periods: 'year', status: 'Moves into this table from the badge fee setting', cells: ['n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'open'] },
   { service: 'Extra checks (video interview, references, certificates)', periods: 'once or year', status: 'Walter decides if separate from verification', cells: ['open', 'open', 'open', 'open', 'open', 'open'] },
   { service: 'Crew team seats paid by the guide or operator', periods: 'year', status: 'Optional', cells: ['n/a', 'n/a', 'n/a', 'n/a', 'open', 'open'] },
   { service: 'Prep calls', periods: 'percent', status: 'Proposal (decision 32 pattern)', cells: ['n/a', 'n/a', 'n/a', 'n/a', 'open', 'n/a'] },
@@ -81,7 +79,7 @@ type PriceRow = {
 };
 type LogRow = { id: number; price_id: string | null; action: string; actor_name: string; created_at: string };
 
-const tzs = (n: number) => `TSh ${n.toLocaleString('en-US')}`;
+const tzs = (n: number) => `TZS ${n.toLocaleString("en-US")}`;
 
 function basis(row: PriceRow): string {
   if (FEE_CODES.has(row.service_code)) return `TZS per ${row.period}, paid to Kwetuly by Lipa number`;
@@ -136,13 +134,17 @@ async function Content({ locale, searchParams }: { locale: Locale; searchParams:
     <div className="mt-4 space-y-10">
       {ok && <p role="status" className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{ok}</p>}
       {error && <p role="alert" className="rounded-[5px] bg-red-50 p-3 font-semibold text-red-800">{error}</p>}
-      <ReservationRates locale={locale} />
+      <ReservationRates locale={locale} fees={false} />
+      <ReservationRates locale={locale} fees />
       <Grid />
     </div>
   );
 }
 
-async function ReservationRates({ locale }: { locale: Locale }) {
+async function ReservationRates({ locale, fees }: { locale: Locale; fees: boolean }) {
+  const a = lipaAdminText(locale);
+  const sectionId = fees ? 'kwetuly-fees' : 'reservation-rates';
+  const title = fees ? a.feesTitle : 'Reservation commission';
   const supabase = await createClient();
   const [rows, log] = await Promise.all([
     supabase.rpc('admin_price_rows'),
@@ -150,39 +152,42 @@ async function ReservationRates({ locale }: { locale: Locale }) {
   ]);
   if (rows.error) {
     return (
-      <section aria-labelledby="reservation-rates" role="alert" className="card space-y-3">
-        <h2 id="reservation-rates" className="text-xl font-bold">Reservation commission</h2>
+      <section aria-labelledby={sectionId} role="alert" className="card space-y-3">
+        <h2 id={sectionId} className="text-xl font-bold">{title}</h2>
         <p>{isNotAppliedError(rows.error) ? 'Reservation rates open soon: the reservation migration is not on this database yet.' : 'Sorry, the rates could not be loaded. Please try again.'}</p>
         <Link href={`/${locale}/admin/prices`} className="btn-outline">Try again</Link>
       </section>
     );
   }
   const today = tanzaniaToday();
-  const rates = ((rows.data ?? []) as PriceRow[]).filter((r) => r.editable);
+  const rates = ((rows.data ?? []) as PriceRow[]).filter((r) => r.editable && FEE_CODES.has(r.service_code) === fees);
+  const feeHeading = (row: PriceRow) =>
+    fillText(a.feeRow, {
+      service: a.services[row.service_code as keyof typeof a.services] ?? row.service_code,
+      account: a.accounts[row.account_type as keyof typeof a.accounts] ?? row.account_type,
+      period: a.periods[row.period as keyof typeof a.periods] ?? row.period,
+    });
+  const feeBasis = (row: PriceRow) => fillText(a.feeBasis, { period: a.periods[row.period as keyof typeof a.periods] ?? row.period });
   const logRows = (log.data ?? []) as LogRow[];
 
   return (
-    <section aria-labelledby="reservation-rates" className="space-y-4">
-      <h2 id="reservation-rates" className="text-xl font-bold">Reservation commission</h2>
-      <p className="text-sm text-muted">
+    <section aria-labelledby={sectionId} className="space-y-4">
+      <h2 id={sectionId} className="text-xl font-bold">{title}</h2>
+      {fees ? <p className="text-sm text-muted">{a.feesIntro}</p> : <p className="text-sm text-muted">
         One rate per business type. The business pays Kwetuly this for each reservation that takes place; nothing is added to the
         guest&apos;s price, and Kwetuly charges nobody from this page. No rate in use for a type means its businesses cannot take
         reservations. A rate in use cannot be edited: make a new version and activate it from a date. Every save is logged below.
-      </p>
+      </p>}
       <ul className="space-y-4">
         {rates.map((row) => (
           <li key={row.id} id={`price-${row.id}`} className="card space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-semibold">
-                {SERVICE_LABEL[row.service_code] ?? row.service_code}
-                {' · '}
-                {FEE_CODES.has(row.service_code)
-                  ? `${ACCOUNT_LABEL[row.account_type] ?? row.account_type}, per ${row.period}`
-                  : row.business_type ? (TYPE_LABEL[row.business_type] ?? row.business_type) : 'Spa and salon'}
+                {fees ? feeHeading(row) : `${SERVICE_LABEL[row.service_code] ?? row.service_code} · ${row.business_type ? (TYPE_LABEL[row.business_type] ?? row.business_type) : 'Spa and salon'}`}
               </h3>
               <span className="text-sm font-semibold">{statusText(row, today)}</span>
             </div>
-            <p className="text-sm text-muted">{basis(row)}. Now: <strong className="text-ink">{valueText(row)}</strong>{row.active_from ? `, from ${row.active_from}` : ''}</p>
+            <p className="text-sm text-muted">{fees ? feeBasis(row) : basis(row)}. Now: <strong className="text-ink">{valueText(row)}</strong>{row.active_from ? `, from ${row.active_from}` : ''}</p>
 
             {row.status === 'draft' && <DraftForm row={row} locale={locale} today={today} />}
 
@@ -202,7 +207,7 @@ async function ReservationRates({ locale }: { locale: Locale }) {
                   </label>
                   <label className="flex items-center gap-2 text-sm">
                     <input type="checkbox" name="confirm" value="yes" required />
-                    <span>Businesses of this type stop taking new reservations on that date</span>
+                    <span>{fees ? a.feeEnd : 'Businesses of this type stop taking new reservations on that date'}</span>
                   </label>
                   <button type="submit" className="btn-outline">Save end date</button>
                 </form>
@@ -212,7 +217,7 @@ async function ReservationRates({ locale }: { locale: Locale }) {
         ))}
       </ul>
 
-      <details className="card">
+      {!fees && <details className="card">
         <summary className="cursor-pointer font-semibold">Change log (latest 20)</summary>
         {logRows.length === 0 ? (
           <p className="mt-3 text-sm text-muted">No changes yet.</p>
@@ -225,7 +230,7 @@ async function ReservationRates({ locale }: { locale: Locale }) {
             ))}
           </ul>
         )}
-      </details>
+      </details>}
     </section>
   );
 }
@@ -290,7 +295,7 @@ function Grid() {
       <h2 id="other-prices" className="text-xl font-bold">Other prices</h2>
       <p id="prices-soon" className="rounded-[5px] bg-sand p-3 font-semibold">Price saving opens soon for these (test prices only).</p>
       <p className="text-sm text-muted">
-        Amounts in TZS. A new price applies to new subscriptions and renewals only. Nothing on this page can switch on live charging.
+        Amounts in TZS. A new price applies to new subscriptions and renewals only. Verification and badge fees are paid by Lipa number once their price above is active; card and API providers stay off until payments_live (locked).
         Cheaper-ranked types (porter, then guide, then business) should never pay more than higher-ranked ones for the same service; the page will warn, not block.
       </p>
       <div className="overflow-x-auto rounded-[5px] border border-line bg-white">

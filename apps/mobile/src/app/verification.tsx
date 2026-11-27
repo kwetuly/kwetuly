@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Platform, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -186,6 +186,7 @@ function Member({ v, locale, userId, data, guide, business }: { v: VerificationT
           price, a buy or renew button, a link or "pay on the website". If Walter changes the store
           policy, the server lists methods and LipaPayButton appears; otherwise it renders nothing. */}
       <MemberPaidStatus />
+      <Button title={lipaMemberText(locale).myPayments} variant="outline" size="md" onPress={() => router.push('/my-payments')} />
       <LipaPayButton purpose="verification" period="year" title={lipaMemberText(locale).payYearShort} />
       <LipaPayButton purpose="verification" period="month" variant="outline" title={lipaMemberText(locale).payMonthShort} />
     </FormScreen>

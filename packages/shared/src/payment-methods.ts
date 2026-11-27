@@ -21,7 +21,7 @@ export type LipaNetwork = (typeof LIPA_NETWORKS)[number];
 /** Brand names, the same in every language. */
 export const LIPA_NETWORK_NAMES: Record<Exclude<LipaNetwork, 'bank'>, string> = {
   mpesa: 'M-Pesa',
-  mixx: 'Mixx by Yas (Tigo Pesa)',
+  mixx: 'Mixx by Yas',
   airtel: 'Airtel Money',
   halopesa: 'HaloPesa',
 };
@@ -134,7 +134,7 @@ export type PaymentProviderAdapter = {
 /** Short codes for database refusals, for fixed texts on screen (never the raw message). */
 export function paymentErrorCode(message: string | null | undefined): string {
   const m = message ?? '';
-  const known = ['use_website', 'provider_not_live', 'use_hosted_checkout', 'rate_limited', 'payments_off', 'no_lipa_method', 'crew_fees_not_open', 'checks_first', 'price_not_set', 'billing_off',
+  const known = ['not_in_app', 'use_website', 'provider_not_live', 'use_hosted_checkout', 'not_configured', 'rate_limited', 'payments_off', 'no_lipa_method', 'crew_fees_not_open', 'checks_first', 'price_not_set', 'billing_off',
     'nothing_to_pay', 'deposits_off', 'rate_not_set', 'rate_too_old', 'deposit_not_allowed', 'claim_waiting', 'order_closed',
     'transaction_format', 'phone_format', 'too_many_claims'];
   const hit = known.find((k) => m.includes(k));
@@ -199,11 +199,23 @@ export const PAYMENT_ADAPTERS: Record<PaymentProviderKey, PaymentProviderAdapter
 export const PAYMENT_REFERENCE_PATTERN = /^KW[2-9A-HJKMNP-Z]{6}$/;
 export const isPaymentReference = (v: unknown): v is string => typeof v === 'string' && PAYMENT_REFERENCE_PATTERN.test(v);
 
-/** Transaction ID as stored: upper case, no spaces; null when it cannot be one. */
+/**
+ * Transaction ID as typed, for display: upper case, no spaces, no leading or trailing punctuation;
+ * null when it cannot be one. The database checks the same pattern.
+ */
 export function normalizeTransactionId(raw: string | null | undefined): string | null {
   const t = (raw ?? '').replace(/\s/g, '').toUpperCase();
-  return /^[A-Z0-9][A-Z0-9._-]{5,39}$/.test(t) ? t : null;
+  return /^[A-Z0-9][A-Z0-9._-]{4,38}[A-Z0-9]$/.test(t) && transactionKey(t).length >= 6 ? t : null;
 }
+
+/**
+ * The key every duplicate check uses (payment_claims.transaction_key): only A-Z and 0-9, so
+ * "QK12-AB34CD", "qk12ab34cd." and "QK12AB34CD" are the same transaction (security review H1).
+ */
+export const transactionKey = (raw: string | null | undefined): string => (raw ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/** For the admin look-alike warning only: O read as 0, I and L as 1 (payment_claims.transaction_loose). */
+export const transactionLooseKey = (raw: string | null | undefined): string => transactionKey(raw).replace(/O/g, '0').replace(/[IL]/g, '1');
 
 /** Tanzanian mobile number as 255XXXXXXXXX (06.. or 07..), or null. */
 export function normalizeTzMobile(raw: string | null | undefined): string | null {
@@ -227,7 +239,7 @@ export function formatTzsAmount(amount: number | string | null | undefined): str
   return `TZS ${text.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 }
 
-export type PaymentOrderStatus = 'awaiting_payment' | 'submitted' | 'wrong_amount' | 'confirmed' | 'cancelled';
+export type PaymentOrderStatus = 'awaiting_payment' | 'submitted' | 'wrong_amount' | 'confirmed' | 'cancelled' | 'received_not_applied';
 export type PaymentClaimStatus = 'waiting' | 'confirmed' | 'rejected' | 'wrong_amount';
 export type PaymentRejectReason = 'not_found' | 'wrong_reference' | 'wrong_network' | 'duplicate' | 'other';
 
@@ -240,6 +252,9 @@ export type MyPaymentOrder = {
   provider_id: string | null;
   amount_tzs: number;
   amount_usd: number | string | null;
+  /** The rate saved on the order (deposits), with its source; never today's rate. */
+  usd_tzs_rate: number | string | null;
+  rate_source: string | null;
   status: PaymentOrderStatus;
   status_reason: string | null;
   created_at: string;
@@ -252,4 +267,5 @@ export type MyPaymentOrder = {
   claim_note: string | null;
   received_tzs: number | null;
   claims_count: number;
+  refund_due: boolean;
 };

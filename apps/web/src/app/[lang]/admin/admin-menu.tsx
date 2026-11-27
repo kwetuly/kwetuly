@@ -54,7 +54,7 @@ export function AdminMenu({ locale, current }: { locale: string; current?: strin
         { href: `${a}/payments/methods`, label: 'Payment methods', hint: 'Chooser and app store rules', icon: Wallet },
         { href: `${a}/all#payments`, label: 'Deposits (old page)', hint: 'Payouts', icon: Wallet },
         { href: `${a}/commissions`, label: 'Commissions', icon: HandCoins },
-        { href: `${a}/prices`, label: 'Prices', hint: 'Not set yet', icon: Tags },
+        { href: `${a}/prices`, label: 'Prices', hint: 'Reservation rates and Kwetuly fees', icon: Tags },
         { href: `${a}/all#businesses`, label: 'Badge fee and badge requests', hint: 'On the old page for now', icon: BadgeCheck },
       ],
     },

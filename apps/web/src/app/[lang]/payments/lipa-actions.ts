@@ -1,7 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { PAYMENT_ADAPTERS, PAYMENT_PROVIDER_IDS, PAYMENT_PURPOSES, isPaymentReference, normalizeTransactionId, paymentErrorCode, type PaymentProviderKey, type PaymentPurpose } from '@kwetuly/shared';
+import { LIPA_NETWORKS, PAYMENT_ADAPTERS, PAYMENT_PROVIDER_IDS, PAYMENT_PURPOSES, isPaymentReference, normalizeTransactionId, paymentErrorCode, type LipaNetwork, type PaymentProviderKey, type PaymentPurpose, type RpcClient } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, type Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -36,7 +36,7 @@ export async function startPayment(formData: FormData) {
   const period = String(formData.get('period') ?? '');
   const month = String(formData.get('month') ?? '');
   const supabase = await createClient();
-  const result = await PAYMENT_ADAPTERS[provider].createPayment(supabase, {
+  const result = await PAYMENT_ADAPTERS[provider].createPayment(supabase as unknown as RpcClient, {
     purpose,
     subject: UUID.test(subject) ? subject : null,
     period: period === 'month' || period === 'year' ? period : null,
@@ -69,6 +69,28 @@ export async function submitClaim(formData: FormData) {
   if (error) redirect(withParam(here, 'e', paymentErrorCode(error.message)) + '#paid');
   if (data === 'duplicate') redirect(withParam(here, 'e', 'duplicate') + '#paid');
   redirect(withParam(here, 'ok', 'submitted'));
+}
+
+export type ClaimState = { error: string | null; network: LipaNetwork; tx: string; phone: string };
+
+/** The same as submitClaim, for useActionState: a refusal returns the typed values (QA 7). */
+export async function submitClaimState(_prev: ClaimState, formData: FormData): Promise<ClaimState> {
+  const locale = localeOf(formData);
+  await requireUser(locale);
+  const reference = String(formData.get('reference') ?? '');
+  const raw = String(formData.get('network') ?? '');
+  const network = ((LIPA_NETWORKS as readonly string[]).includes(raw) ? raw : 'mpesa') as LipaNetwork;
+  const typed = String(formData.get('transaction_id') ?? '').slice(0, 60);
+  const phone = String(formData.get('phone') ?? '').slice(0, 30);
+  const back = (error: string): ClaimState => ({ error, network, tx: typed, phone });
+  if (!isPaymentReference(reference)) return back('not_found');
+  const tx = normalizeTransactionId(typed);
+  if (!tx) return back('transaction_format');
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('submit_payment_claim', { p_reference: reference, p_network: network, p_transaction_id: tx, p_phone: phone });
+  if (error) return back(paymentErrorCode(error.message));
+  if (data === 'duplicate') return back('duplicate');
+  redirect(withParam(`/${locale}/payments/orders/${reference}`, 'ok', 'submitted'));
 }
 
 export async function cancelOrder(formData: FormData) {

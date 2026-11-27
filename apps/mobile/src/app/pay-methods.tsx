@@ -12,6 +12,7 @@ import {
   payChooserText,
   lipaPayText,
   type MethodBadge,
+  type PaymentProviderKey,
   type PaymentPurpose,
 } from '@kwetuly/shared';
 import { Button, ErrorState, Muted, Skeleton } from '@/components/ui';
@@ -47,6 +48,7 @@ export default function PayMethodsScreen() {
     setBusy(id);
     setNote('');
     const result = await startOrder({
+      provider: id as PaymentProviderKey,
       purpose,
       subject: params.subject ?? null,
       period: params.period === 'month' || params.period === 'year' ? params.period : null,
@@ -65,7 +67,7 @@ export default function PayMethodsScreen() {
     <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.md }} contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: t.title }} />
       <Muted>{t.subtitle}</Muted>
-      {amount && (
+      {amount && list.length > 0 && (
         <View style={{ backgroundColor: brand.sand, borderRadius: radius.button, padding: space.md, gap: space.xxs }}>
           <Text style={type.muted}>{t.amountLabel}</Text>
           <Text style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>{amount}</Text>

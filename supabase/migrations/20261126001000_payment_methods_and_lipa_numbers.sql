@@ -3,15 +3,14 @@
 -- Apply only with Walter's yes, after security-reviewer and qa-tester, on a test project first
 -- (supabase/checks/manual_lipa_payments_tests.sql). Part 2 is 20261126001100_manual_lipa_orders.sql.
 -- Needs on the database first: 20261031214101 (feature switches), 20261122000000 (tz_today),
--- 20261122100000 (payments provider columns), 20261122200000 (price_list).
+-- 20261122100000 (payments provider columns), 20261122200000 (price_list) and
+-- 20261126000000_feature_switch_admin.sql (the payments_live lock, manual_payments_on(id),
+-- money_feature_on(id)); step 0 stops if that slice is missing (security review M1).
 --
 -- What this file does:
---   1. Switches. feature.payments_manual (ON), feature.deposits_via_kwetuly_lipa (ON, Walter's
---      "everything on"; see the warning below), feature.guide_verification_fees and
---      feature.business_badge_fees (ON). feature.payments_live is not touched (stays OFF).
---      private.manual_payments_on(p_id) (payments_manual AND that path's own switch) and
---      private.money_feature_on(id) are defined with create or replace so this file and the switches
---      slice (20261126000000) can run in either order; both define the same bodies.
+--   1. Switches. feature.payments_manual, feature.guide_verification_fees and feature.business_badge_fees
+--      (ON). feature.deposits_via_kwetuly_lipa on its own marked line for Walter (ON now; the security
+--      review recommends OFF). feature.payments_live is not touched (stays locked OFF by the slice).
 --      private.payment_feature_id(purpose) names each charge path's switch.
 --   2. site_settings 'payments.providers': which provider takes each payment method, chosen by admins,
 --      not in code. Default {"mobile_money": ["manual_lipa"], "bank": ["manual_lipa"], "card": []}.
@@ -38,7 +37,7 @@
 -- badge, commission) do not have this problem.
 --
 -- Undo (in this order; part 2 first):
---   drop function public.admin_set_manual_rate(text, text, date), public.admin_set_payment_providers(jsonb),
+--   drop function public.admin_set_manual_rate(text, text, date, boolean), public.admin_set_payment_providers(jsonb),
 --     public.admin_save_payment_number(uuid, text, text, text, text, text, boolean, integer),
 --     public.admin_payment_numbers(), public.payment_numbers_for_payers(), public.admin_payment_audit(integer, text),
 --     private.payment_audit(text, uuid, text, text, text, jsonb), private.mask_phone(text),
@@ -66,6 +65,16 @@ begin
                     where table_schema = 'public' and table_name = 'payments' and column_name = 'provider_transaction_id') then
     raise exception 'manual lipa: apply 20261031214101, 20261122000000, 20261122100000 and 20261122200000 first; nothing was changed.';
   end if;
+  -- The payments_live lock lives in the switches slice (20261126000000_feature_switch_admin.sql, branch
+  -- claude/wave1): its guard trigger keeps feature.payments_live off for every API caller. This file
+  -- does not copy the lock; it refuses to run without it (security review M1).
+  if to_regprocedure('private.site_settings_feature_guard()') is null
+     or not exists (select 1 from pg_trigger
+                    where tgname = 'site_settings_feature_guard' and tgrelid = 'public.site_settings'::regclass and not tgisinternal)
+     or to_regprocedure('private.manual_payments_on(text)') is null
+     or to_regprocedure('private.money_feature_on(text)') is null then
+    raise exception 'manual lipa: apply 20261126000000_feature_switch_admin.sql (the payments_live lock, manual_payments_on and money_feature_on) first; nothing was changed.';
+  end if;
 end;
 $$;
 
@@ -77,24 +86,16 @@ $$;
 -- jobs_contact_fees belong to the switches slice and are not seeded here.
 insert into public.site_settings (key, value) values
   ('feature.payments_manual', '{"on": true}'),
-  ('feature.deposits_via_kwetuly_lipa', '{"on": true}'),
   ('feature.guide_verification_fees', '{"on": true}'),
   ('feature.business_badge_fees', '{"on": true}')
 on conflict (key) do nothing;
 
--- Same body as the switches slice (20261126000000, one-argument form); whichever runs last leaves the
--- same function: Lipa payments are on AND the charge path's own switch is on.
-create or replace function private.manual_payments_on(p_id text)
-returns boolean
-language sql
-stable
-security invoker
-set search_path = ''
-as $$
-  select private.feature_on('payments_manual') and private.feature_on(p_id);
-$$;
-revoke execute on function private.manual_payments_on(text) from public;
-grant execute on function private.manual_payments_on(text) to anon, authenticated;
+-- WALTER DECIDES THIS ONE LINE (holding guides' and businesses' money; Bank of Tanzania question for legal).
+-- Walter's "everything on" (2026-11-24) = true; the security review recommends false. Flip the word only.
+insert into public.site_settings (key, value) values ('feature.deposits_via_kwetuly_lipa', '{"on": true}') on conflict (key) do nothing;
+
+-- private.manual_payments_on(id) and private.money_feature_on(id) come from the switches slice
+-- (checked in step 0); they are not redefined here.
 
 -- The switch of each charge path (order purpose). Unknown purposes have none (always off).
 create or replace function private.payment_feature_id(p_purpose text)
@@ -114,18 +115,6 @@ $$;
 revoke execute on function private.payment_feature_id(text) from public;
 grant execute on function private.payment_feature_id(text) to authenticated;
 
-create or replace function private.money_feature_on(p_id text)
-returns boolean
-language sql
-stable
-security invoker
-set search_path = ''
-as $$
-  select private.feature_on(p_id) and private.feature_on('payments_live');
-$$;
-revoke execute on function private.money_feature_on(text) from public;
-grant execute on function private.money_feature_on(text) to anon, authenticated;
-
 -- ---------------------------------------------------------------------------
 -- 2 and 3. Provider choice and the deposit rate in site_settings, with a shape check.
 -- ---------------------------------------------------------------------------
@@ -142,7 +131,7 @@ alter table public.site_settings add constraint site_settings_payments_shape che
       and jsonb_array_length(value -> 'mobile_money') <= 4
       and jsonb_array_length(value -> 'bank') <= 4
       and jsonb_array_length(value -> 'card') <= 4
-      and not jsonb_path_exists(value, '$.*[*] ? (!(@ == "manual_lipa" || @ == "flutterwave" || @ == "azampay" || @ == "selcom" || @ == "pesapal"))')
+      and not jsonb_path_exists(value, '$.*[*] ? (@.type() != "string" || !(@ == "manual_lipa" || @ == "flutterwave" || @ == "azampay" || @ == "selcom" || @ == "pesapal"))')
       -- Lipa numbers cannot take cards.
       and not (value -> 'card') ? 'manual_lipa')
   or (key = 'payments.manual_usd_tzs_rate'
@@ -157,7 +146,7 @@ alter table public.site_settings add constraint site_settings_payments_shape che
   or (key = 'payments.purchase_kinds'
       and jsonb_typeof(value) = 'object'
       and (value - array['verification', 'business_badge', 'reservation_commission', 'offer_deposit', 'group_deposit']) = '{}'::jsonb
-      and not jsonb_path_exists(value, '$.* ? (!(@ == "real_world_service" || @ == "physical_goods" || @ == "digital_feature"))'))
+      and not jsonb_path_exists(value, '$.* ? (@.type() != "string" || !(@ == "real_world_service" || @ == "physical_goods" || @ == "digital_feature"))'))
   -- Per platform and item type: the route (part 3, from docs/legal/app-store-payment-rules-2026-11.md).
   or (key = 'payments.store_policy'
       and jsonb_typeof(value) = 'object'
@@ -167,13 +156,13 @@ alter table public.site_settings add constraint site_settings_payments_shape che
             || @.key == "reservation_commission" || @.key == "offer_deposit" || @.key == "group_deposit" || @.key == "accommodation_reservation"
             || @.key == "marketplace_item" || @.key == "tip_person" || @.key == "donation_cause" || @.key == "profile_boost"
             || @.key == "subscription_premium" || @.key == "jobs_contact_fee"))')
-      and not jsonb_path_exists(value, '$.*.* ? (!(@ == "third_party_in_app" || @ == "store_billing" || @ == "web_only" || @ == "not_offered"))'))
+      and not jsonb_path_exists(value, '$.*.* ? (@.type() != "string" || !(@ == "third_party_in_app" || @ == "store_billing" || @ == "web_only" || @ == "not_offered"))'))
   -- Display-only rates for the viewer's own currency, typed by an admin with a source (none seeded):
   -- {"EUR": {"per_usd": "0.92", "source": "...", "as_of": "YYYY-MM-DD"}}. Never used for any charge.
   or (key = 'payments.display_rates'
       and jsonb_typeof(value) = 'object'
       and not jsonb_path_exists(value, '$.keyvalue() ? (!(@.key like_regex "^[A-Z]{3}$"))')
-      and not jsonb_path_exists(value, '$.* ? (@.type() != "object" || @.per_usd.type() != "string" || @.source.type() != "string")')
+      and not jsonb_path_exists(value, '$.* ? (@.type() != "object" || !exists(@.per_usd) || !exists(@.source) || @.per_usd.type() != "string" || @.source.type() != "string")')
       and not jsonb_path_exists(value, '$.*.per_usd ? (!(@ like_regex "^[0-9]{1,6}(\\.[0-9]{1,6})?$"))'))
   -- Store flags: coming-soon methods per platform, link-out lists (empty: Tanzania is in no program).
   or (key = 'payments.store_flags'
@@ -726,18 +715,35 @@ revoke execute on function public.admin_set_payment_providers(jsonb) from public
 grant execute on function public.admin_set_payment_providers(jsonb) to authenticated;
 
 -- The rate is text so no floating point is involved ("2650" or "2650.75"). Source is required.
-create or replace function public.admin_set_manual_rate(p_rate text, p_source text, p_as_of date)
+-- Plausible USD-TZS only (1000 to 10000, security review L7); a move of more than 10% from the
+-- current rate needs p_confirm_jump.
+drop function if exists public.admin_set_manual_rate(text, text, date);
+create or replace function public.admin_set_manual_rate(p_rate text, p_source text, p_as_of date, p_confirm_jump boolean default false)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  v_new numeric;
+  v_old numeric;
 begin
   if not private.is_admin() then
     raise exception 'admins only' using errcode = 'P0001';
   end if;
   if p_as_of is null or p_as_of > private.tz_today() or p_as_of < private.tz_today() - 31 then
     raise exception 'rate date not allowed' using errcode = 'P0001';
+  end if;
+  if btrim(coalesce(p_rate, '')) !~ '^[1-9][0-9]{0,5}(\.[0-9]{1,4})?$' then
+    raise exception 'rate out of range' using errcode = 'P0001';
+  end if;
+  v_new := btrim(p_rate)::numeric;
+  if v_new < 1000 or v_new > 10000 then
+    raise exception 'rate out of range' using errcode = 'P0001';
+  end if;
+  select (s.value ->> 'rate')::numeric into v_old from public.site_settings s where s.key = 'payments.manual_usd_tzs_rate';
+  if v_old is not null and abs(v_new - v_old) * 10 > v_old and not coalesce(p_confirm_jump, false) then
+    raise exception 'rate jump needs confirmation' using errcode = 'P0001';
   end if;
   insert into public.site_settings (key, value)
   values ('payments.manual_usd_tzs_rate',
@@ -746,8 +752,8 @@ begin
   on conflict (key) do update set value = excluded.value;
 end;
 $$;
-revoke execute on function public.admin_set_manual_rate(text, text, date) from public, anon;
-grant execute on function public.admin_set_manual_rate(text, text, date) to authenticated;
+revoke execute on function public.admin_set_manual_rate(text, text, date, boolean) from public, anon;
+grant execute on function public.admin_set_manual_rate(text, text, date, boolean) to authenticated;
 
 create or replace function public.admin_payment_audit(p_limit integer default 50, p_reference text default null)
 returns table (id bigint, entity text, entity_id uuid, action text, actor_name text, actor_role text,

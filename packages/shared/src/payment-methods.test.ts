@@ -13,6 +13,8 @@ import {
   parseProviderSettings,
   paymentErrorCode,
   providerFor,
+  transactionKey,
+  transactionLooseKey,
 } from './payment-methods';
 import { depositTzs } from './payment-rules';
 import { appMayShowPay, depositTzsFromRateText, canPick, orderMethods, parseMethodRows, STORE_ROUTES, tzsToUsdCents, viewerCurrency, type PaymentMethodRow } from './payment-chooser';
@@ -23,13 +25,14 @@ const file = (name: string) => new URL(`../../../supabase/migrations/${name}`, i
 const part1 = readFileSync(file('20261126001000_payment_methods_and_lipa_numbers.sql'), 'utf8');
 const part2 = readFileSync(file('20261126001100_manual_lipa_orders.sql'), 'utf8');
 const part3 = readFileSync(file('20261126001200_payment_method_registry.sql'), 'utf8');
-const all = part1 + part2 + part3;
+const part4 = readFileSync(file('20261126001300_lipa_close_refund_retention.sql'), 'utf8');
+const all = part1 + part2 + part3 + part4;
 
 const on = { manual: true, live: false, depositsViaLipa: true };
 
 describe('migrations', () => {
   it('stay under 60KB each', () => {
-    for (const n of ['20261126001000_payment_methods_and_lipa_numbers.sql', '20261126001100_manual_lipa_orders.sql', '20261126001200_payment_method_registry.sql']) {
+    for (const n of ['20261126001000_payment_methods_and_lipa_numbers.sql', '20261126001100_manual_lipa_orders.sql', '20261126001200_payment_method_registry.sql', '20261126001300_lipa_close_refund_retention.sql']) {
       expect(statSync(file(n)).size).toBeLessThan(60 * 1024);
     }
   });
@@ -52,15 +55,29 @@ describe('migrations', () => {
     expect(fn).toContain('already_confirmed');
   });
   it('block duplicate transaction IDs over all claims', () => {
-    expect(part2).toContain('create unique index if not exists payment_claims_transaction_unique on public.payment_claims (transaction_id);');
+    expect(part2).toContain('create unique index if not exists payment_claims_transaction_unique on public.payment_claims (transaction_key);');
   });
   it('give payers no write access to orders or claims', () => {
     expect(part2).toContain('revoke all on public.payment_orders from public, anon, authenticated;');
     expect(part2).toContain('revoke all on public.payment_claims from public, anon, authenticated;');
   });
-  it('gate each Lipa charge path with its own switch', () => {
-    expect(part1).toContain('create or replace function private.manual_payments_on(p_id text)');
+  it('gate each Lipa charge path with its own switch, and need the payments_live lock (M1)', () => {
+    expect(all).not.toMatch(/create or replace function private\.(manual_payments_on|money_feature_on)/);
+    expect(part1).toContain("to_regprocedure('private.site_settings_feature_guard()') is null");
     expect(all).not.toMatch(/manual_payments_on\(\)/);
+    expect(part3).toContain('private.manual_payments_on(private.payment_feature_id(p_purpose))');
+  });
+  it('checks duplicates on the normalised key (H1)', () => {
+    expect(part2).toContain('payment_claims_transaction_unique on public.payment_claims (transaction_key)');
+    expect(part2).toContain("c.transaction_key = v_key");
+  });
+  it('never extends the badge by paying (M3) and never stores the payer ID on payments (L9)', () => {
+    const fn = part2.match(/create or replace function private\.apply_payment_effect[\s\S]*?\n\$\$;/)![0];
+    expect(fn).not.toMatch(/badge_valid_until\s*=/);
+    expect(fn).toContain('provider_transaction_id = o.reference');
+  });
+  it('keeps the deposits switch on one marked line', () => {
+    expect(part1.match(/^insert into public\.site_settings \(key, value\) values \('feature\.deposits_via_kwetuly_lipa', '\{"on": (true|false)\}'\) on conflict \(key\) do nothing;$/m)).not.toBeNull();
   });
   it('store routes match the shared list', () => {
     for (const r of STORE_ROUTES) expect(part1).toContain(`@ == "${r}"`);
@@ -82,6 +99,15 @@ describe('formats', () => {
     expect(normalizeTransactionId(' qk12 abc3de ')).toBe('QK12ABC3DE');
     expect(normalizeTransactionId('ab')).toBeNull();
     expect(normalizeTransactionId('<script>')).toBeNull();
+    expect(normalizeTransactionId('-QK12AB34CD')).toBeNull();
+    expect(normalizeTransactionId('QK12AB34CD.')).toBeNull();
+    expect(normalizeTransactionId('QK12-AB34CD')).toBe('QK12-AB34CD');
+  });
+  it('one key for punctuation and case (H1)', () => {
+    expect(transactionKey('QK12-AB34CD')).toBe('QK12AB34CD');
+    expect(transactionKey('qk12.ab34cd')).toBe('QK12AB34CD');
+    expect(transactionLooseKey('QKI2-ABO4CD')).toBe(transactionLooseKey('QK12AB04CD'));
+    expect(transactionLooseKey('L0O')).toBe('100');
   });
   it('phones', () => {
     expect(normalizeTzMobile('0712 345 678')).toBe('255712345678');

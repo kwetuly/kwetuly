@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, CreditCard, Smartphone, WifiOff, X } from 'lucide-react';
 import {
@@ -33,6 +33,8 @@ type Props = {
   t: PayChooserText;
   buttonLabel?: string;
   buttonClassName?: string;
+  /** A line the payer must read before paying (e.g. the badge fee is not refunded). */
+  note?: string | null;
 };
 
 const METHOD_ICON: Record<PaymentMethod, typeof CreditCard> = { mobile_money: Smartphone, bank: Building2, card: CreditCard };
@@ -66,13 +68,13 @@ function saveLast(id: string) {
 // "Pay now" and its method chooser: a bottom sheet on phones, a centred dialog on larger screens. The
 // native <dialog> gives the focus trap, Escape to close and the modal semantics. Every method the
 // server lists is shown; only rows the server calls live (and the store route allows) can be picked.
-export function PaymentChooser({ purpose, subject, period, month, rows, amountText, usdText, localText, locale, back, t, buttonLabel, buttonClassName }: Props) {
+export function PaymentChooser({ purpose, subject, period, month, rows, amountText, usdText, localText, locale, back, t, buttonLabel, buttonClassName, note }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
   const [refreshing, startRefresh] = useTransition();
   const [last, setLast] = useState<string | null>(null);
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
-  const titleId = `pay-title-${purpose}-${period ?? 'x'}`;
+  const titleId = useId();
 
   useEffect(() => setLast(readLast()), []);
 
@@ -109,6 +111,7 @@ export function PaymentChooser({ purpose, subject, period, month, rows, amountTe
             {usdText && <p className="text-sm tabular-nums">{usdText}</p>}
             {localText && <p className="text-sm text-muted">{localText}</p>}
           </div>
+          {note && <p className="mt-3 rounded-[5px] border border-gold bg-white p-3 text-sm font-semibold">{note}</p>}
 
           {!online && (
             <p role="status" className="mt-4 flex items-center gap-2 rounded-[5px] bg-red-50 p-3 text-sm font-semibold text-red-900">

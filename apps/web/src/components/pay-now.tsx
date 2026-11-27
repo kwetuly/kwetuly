@@ -13,18 +13,19 @@ type Props = {
   back: string;
   buttonLabel?: string;
   buttonClassName?: string;
+  note?: string | null;
 };
 
 // "Pay now" with the method chooser (server part): loads the methods the server allows for this purpose
 // and the display texts for the amount: TZS, about US$ (from the admin-typed rate) and, where an admin
 // typed a rate for the viewer's currency, a local estimate labelled as an estimate.
-export async function PayNow({ purpose, subject, period, month, amountTzs, locale, back, buttonLabel, buttonClassName }: Props) {
+export async function PayNow({ purpose, subject, period, month, amountTzs, locale, back, buttonLabel, buttonClassName, note }: Props) {
   const t = payChooserText(locale);
   const [rows, rate, local] = await Promise.all([paymentMethods(purpose), manualRate(), localEstimateRate(locale)]);
   const usdCents = rate ? tzsToUsdCents(amountTzs, rate.rate) : null;
   const usdText = usdCents ? fillText(t.usdApprox, { usd: centsText(usdCents) }) : null;
   const localAmount = usdCents && local ? estimateFromCents(usdCents, local.perUsd) : null;
-  const localText = localAmount && local ? fillText(t.localEstimate, { amount: `${local.currency} ${localAmount}` }) : null;
+  const localText = localAmount && local ? `${fillText(t.localEstimate, { amount: `${local.currency} ${localAmount}` })} (${local.source})` : null;
   return (
     <PaymentChooser
       purpose={purpose}
@@ -40,6 +41,7 @@ export async function PayNow({ purpose, subject, period, month, amountTzs, local
       t={t}
       buttonLabel={buttonLabel}
       buttonClassName={buttonClassName}
+      note={note}
     />
   );
 }
