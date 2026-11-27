@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, type DocumentStatus } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from './booking-link/entry';
+import { ProfileLinksEntry } from './links/entry';
 import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -99,6 +100,8 @@ async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; lo
   const businessTools = (embedded: boolean) => (
     <>
       <BusinessListing t={t} locale={locale} user={user} status={params} embedded={embedded} />
+      {/* Under a guide's overview the guide already has this line. */}
+      {!embedded && <ProfileLinksEntry locale={locale} />}
       <div className="mt-12">
         <BusinessDashboard t={t} locale={locale} user={user} />
       </div>
@@ -155,6 +158,7 @@ async function GuideEditor({
     : { count: 0 };
   const d = t.dashboard;
   const g = guideProgressText(locale);
+  const pl = profileLinksText(locale);
   const now = await today();
   const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
@@ -289,6 +293,10 @@ async function GuideEditor({
             <>
               {/* TODO(S4/S6 cover_gallery): cover photo and gallery fields go here once the photo manager exists. */}
               <p className="text-sm text-muted">{g.coverSoon}</p>
+              <p className="text-sm text-muted">
+                {pl.entryNote}{' '}
+                <Link href={`/${locale}/dashboard/links`} className="font-semibold text-forest underline">{pl.entry}</Link>
+              </p>
               <Field label={d.bio}>
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
@@ -405,6 +413,7 @@ async function GuideEditor({
         ))}
       </ol>
       {guide && <BookingLinkEntry locale={locale} />}
+      {guide && <ProfileLinksEntry locale={locale} />}
       {guide && (
         <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
           <span className="flex-1">

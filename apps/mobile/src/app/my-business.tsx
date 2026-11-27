@@ -11,6 +11,7 @@ import { useProfile, useSession } from '@/lib/auth';
 import { getBadgeFee, getMyBusiness, listBusinessEnquiries, requestBadge, saveMyBusiness, type MyBusiness } from '@/lib/businesses';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
+import { ProfileLinksEntry } from '@/components/profile-links-entry';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { BusinessSalesCard } from '@/components/referral';
@@ -222,6 +223,9 @@ function Editor({
           <ListRow icon={GLYPHS.calendar} title={reservationInboxText(locale).setupLink} onPress={() => router.push('/reservations-setup' as Href)} />
         </ListGroup>
       )}
+
+      {/* Instagram, Facebook and TikTok for each business (slice S5). */}
+      {business && <ProfileLinksEntry />}
 
       {business && <BusinessSalesCard providerId={business.id} />}
 

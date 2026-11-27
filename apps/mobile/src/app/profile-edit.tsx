@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams, type Href } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, REGIONS, documentStatus, guideStatusText, isDisplayNameReservedError, isReservedDisplayName, linkTexts, profileCompletion, resolvePhone, splitPhone, GUIDE_STEP_IDS, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, type DocumentStatus } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from '@/components/booking-link';
+import { ProfileLinksEntry } from '@/components/profile-links-entry';
 import { listMyPackages } from '@/lib/packages';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
@@ -367,6 +368,7 @@ export default function ProfileEditScreen() {
           </Card>
         )}
         {guide && <BookingLinkEntry />}
+        {guide && <ProfileLinksEntry />}
         {guide && <GuideReferralCard approved={guide.verification_status === 'approved'} />}
         <ProfileStrength input={strengthInput} t={t} />
       </ScrollView>
@@ -472,6 +474,8 @@ export default function ProfileEditScreen() {
         <Card>
           {/* TODO(S4/S6 cover_gallery): cover photo and gallery go here once the photo manager exists. */}
           <Muted>{g.coverSoon}</Muted>
+          <Muted>{profileLinksText(locale).entryNote}</Muted>
+          <Button title={profileLinksText(locale).entry} icon={GLYPHS.globe} variant="outline" size="md" onPress={() => router.push('/profile-links' as Href)} />
           <Field label={d.bio} value={f.bio} onChangeText={set('bio')} multiline />
           <Field label={`${d.certifications} (First Aid, WFR…)`} value={f.certifications} onChangeText={set('certifications')} hint={d.certificationsHint} />
           <Field label={d.association} value={f.association} onChangeText={set('association')} placeholder="TTGA" />
