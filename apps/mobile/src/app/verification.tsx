@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Alert, Platform, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   datedDocumentKinds,
   documentSlots,
   fillText,
+  lipaMemberText,
   slotStatus,
   tanzaniaToday,
   verificationSummary,
@@ -17,13 +18,14 @@ import {
   type VerificationText,
 } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
+import { LipaPayButton } from '@/components/lipa-pay-button';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 import { Badge, Button, Card, Chip, EmptyState, ErrorText, Field, FormMessage, FormScreen, IconSquare, Muted, ScreenState, Toggle } from '@/components/ui';
 import { getMyGuide } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useI18n } from '@/lib/i18n';
-import { SITE_URL } from '@/lib/supabase';
+import { SITE_URL, supabase } from '@/lib/supabase';
 import { openExternal } from '@/lib/open-external';
 import { loadMyVerification, setIdentifier, uploadDocument, withdrawDocument, type IdentifierField, type OwnDocument, type OwnIdentifiers, type UploadError } from '@/lib/verification';
 import { useType } from '@/lib/use-type';
@@ -179,17 +181,14 @@ function Member({ v, locale, userId, data, guide, business }: { v: VerificationT
           ))}
       </Card>
 
-      {/* Always shown, never working yet: no price exists and payments are switched off. */}
-      <Card>
-        <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
-          <IconSquare glyph={GLYPHS.card} />
-          <Text accessibilityRole="header" style={{ ...type.cardTitle, flex: 1 }}>{v.payTitle}</Text>
-        </View>
-        <Muted>{v.payBody}</Muted>
-        <Button title={v.payMonthly} onPress={() => undefined} disabled accessibilityLabel={`${v.payMonthly}. ${v.paySoon}`} />
-        <Button title={v.payYearly} variant="outline" onPress={() => undefined} disabled accessibilityLabel={`${v.payYearly}. ${v.paySoon}`} />
-        <Text style={{ ...type.callout, ...font.semibold, color: brand.ink, backgroundColor: brand.sand, padding: space.md, borderRadius: radius.button, overflow: 'hidden' }}>{v.paySoon}</Text>
-      </Card>
+      {/* App store rules (docs/legal/app-store-payment-rules-2026-11.md): verification and the badge are
+          web_only in the apps by default, so the app shows only the paid-until status here, never a
+          price, a buy or renew button, a link or "pay on the website". If Walter changes the store
+          policy, the server lists methods and LipaPayButton appears; otherwise it renders nothing. */}
+      <MemberPaidStatus />
+      <Button title={lipaMemberText(locale).myPayments} variant="outline" size="md" onPress={() => router.push('/my-payments')} />
+      <LipaPayButton purpose="verification" period="year" title={lipaMemberText(locale).payYearShort} />
+      <LipaPayButton purpose="verification" period="month" variant="outline" title={lipaMemberText(locale).payMonthShort} />
     </FormScreen>
   );
 }
@@ -423,5 +422,30 @@ function NumberForm({
         </View>
       ) : null}
     </View>
+  );
+}
+
+// Paid-until dates only (no price, no button): what the store rules allow in the app.
+function MemberPaidStatus() {
+  const { locale } = useI18n();
+  const { type, font } = useType();
+  const m = lipaMemberText(locale);
+  const subs = useQuery({
+    queryKey: ['my-subscriptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('my_subscriptions');
+      if (error) return [];
+      return (data ?? []) as { service_code: string; paid_until: string }[];
+    },
+  });
+  const verification = subs.data?.find((s) => s.service_code === 'verification');
+  const badge = subs.data?.find((s) => s.service_code === 'business_badge');
+  if (!verification && !badge) return null;
+  const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString(locale, { dateStyle: 'medium' });
+  return (
+    <Card style={{ backgroundColor: brand.mint }}>
+      {verification && <Text style={{ ...type.body, ...font.semibold, color: brand.forest }}>{fillText(m.paidUntil, { date: day(verification.paid_until) })}</Text>}
+      {badge && <Text style={{ ...type.body, ...font.semibold, color: brand.forest }}>{fillText(m.badgePaidUntil, { date: day(badge.paid_until) })}</Text>}
+    </Card>
   );
 }

@@ -55,7 +55,7 @@ export async function signOut() {
 // Alerts carry the website path (e.g. /chats/<id>); open the matching app screen.
 export function appPathFor(path: string | undefined): Href {
   const clean = (path ?? '/').split(/[?#]/)[0];
-  const [, first, second] = clean.split('/');
+  const [, first, second, third] = clean.split('/');
   switch (first) {
     case 'chats':
       return second ? `/chat/${second}` : '/chats';
@@ -71,6 +71,12 @@ export function appPathFor(path: string | undefined): Href {
       return second ? `/guide/${second}` : '/guides';
     case 'dashboard':
       return '/account';
+    // Lipa payments: /payments/orders/<reference>. The pay screen itself shows only the status for
+    // purposes the store policy keeps on the website.
+    case 'payments':
+      return second === 'orders' && third && /^KW[2-9A-HJKMNP-Z]{6}$/.test(third)
+        ? { pathname: '/pay/[ref]', params: { ref: third } }
+        : ('/my-payments' as Href);
     default:
       return '/';
   }

@@ -50,9 +50,12 @@ export function AdminMenu({ locale, current }: { locale: string; current?: strin
     {
       title: 'Money',
       rows: [
-        { href: `${a}/all#payments`, label: 'Payments', hint: 'On the old page for now', icon: Wallet },
+        { href: `${a}/payments`, label: 'Payments to confirm', hint: 'Lipa number payments', icon: Wallet },
+        { href: `${a}/payments/numbers`, label: 'Payment numbers', hint: 'Lipa numbers, providers, rate', icon: Wallet },
+        { href: `${a}/payments/methods`, label: 'Payment methods', hint: 'Chooser and app store rules', icon: Wallet },
+        { href: `${a}/all#payments`, label: 'Deposits (old page)', hint: 'Payouts', icon: Wallet },
         { href: `${a}/commissions`, label: 'Commissions', icon: HandCoins },
-        { href: `${a}/prices`, label: 'Prices', hint: 'Not set yet', icon: Tags },
+        { href: `${a}/prices`, label: 'Prices', hint: 'Reservation rates and Kwetuly fees', icon: Tags },
         { href: `${a}/all#businesses`, label: 'Badge fee and badge requests', hint: 'On the old page for now', icon: BadgeCheck },
       ],
     },

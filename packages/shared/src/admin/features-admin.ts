@@ -304,6 +304,21 @@ export const FEATURE_ADMIN: Readonly<Record<string, FeatureAdminInfo>> = {
     legalPending: true,
     legalQuestion: 'Taking traveller payments to a Lipa number before company registration: who holds the money, BoT rules, receipts and refunds.',
   },
+  deposits_via_kwetuly_lipa: {
+    boardRef: 'payments-engineer 2026-11-26 (Walter: on, 2026-11-27)',
+    legalPending: true,
+    legalQuestion: 'Kwetuly holds trip deposits that belong to guides and businesses until payout: does that need Bank of Tanzania approval, and how is the commission shown on receipts?',
+  },
+  guide_verification_fees: {
+    boardRef: 'payments-engineer 2026-11-26',
+    legalPending: false,
+    legalQuestion: null,
+  },
+  business_badge_fees: {
+    boardRef: 'payments-engineer 2026-11-26',
+    legalPending: false,
+    legalQuestion: null,
+  },
   split_settlement: {
     boardRef: 'B1',
     legalPending: true,

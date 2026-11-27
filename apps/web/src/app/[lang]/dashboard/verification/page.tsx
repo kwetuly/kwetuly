@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { AlertTriangle, BadgeCheck, CircleDashed, Clock, CreditCard, XCircle } from 'lucide-react';
-import { fillText, tanzaniaToday, verificationSummary, verificationText, type MemberCheck, type VerificationText } from '@kwetuly/shared';
+import { fillText, formatTzsAmount, lipaMemberText, lipaPayText, tanzaniaToday, verificationSummary, verificationText, type MemberCheck, type VerificationText } from '@kwetuly/shared';
+import { PayNow } from '@/components/pay-now';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { requireUser } from '@/lib/auth';
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // Kwetuly to check, save identity numbers and, later, pay to switch verification on. Travellers never
 // see this page's tools. Uploads and withdrawals work now; numbers and payments say "opens soon" until
 // their switches are on.
-export default async function VerificationPage() {
+export default async function VerificationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const v = verificationText(locale);
   return (
@@ -27,7 +28,7 @@ export default async function VerificationPage() {
       <Link href={`/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{t.nav.dashboard}</Link>
       <h1 className="mt-2 text-3xl font-bold">{v.title}</h1>
       <Suspense fallback={<Loading />}>
-        <Content locale={locale} v={v} dashboard={t.nav.dashboard} />
+        <Content locale={locale} v={v} dashboard={t.nav.dashboard} searchParams={searchParams} />
       </Suspense>
     </div>
   );
@@ -43,7 +44,8 @@ function Loading() {
   );
 }
 
-async function Content({ locale, v, dashboard }: { locale: Locale; v: VerificationText; dashboard: string }) {
+async function Content({ locale, v, dashboard, searchParams }: { locale: Locale; v: VerificationText; dashboard: string; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const payError = (await searchParams).payError;
   const user = await requireUser(locale, `/${locale}/dashboard/verification`);
   const supabase = await createClient();
   const { data: providers } = await supabase.from('providers').select('id, business_name').eq('owner_id', user.id).order('created_at');
@@ -102,7 +104,7 @@ async function Content({ locale, v, dashboard }: { locale: Locale; v: Verificati
         identifiers={identifiers}
         businessTins={businessTins}
       />
-      <PayCard v={v} />
+      <MemberPay payError={typeof payError === 'string' ? payError : null} locale={locale} guide={guide || user.role === 'admin'} hasCheck={current.length > 0} providers={(providers ?? []).map((p) => ({ id: p.id as string, name: p.business_name as string }))} />
     </div>
   );
 }
@@ -137,19 +139,72 @@ function StatusCard({ summary, v, locale }: { summary: ReturnType<typeof verific
   );
 }
 
-// Always shown, never working yet: no price exists (Walter sets them in /admin/prices) and payments are off.
-function PayCard({ v }: { v: VerificationText }) {
+type PriceRow = { service_code: string; account_type: string; business_type: string | null; period: string; amount_tzs: number | null; active_from: string | null; active_to: string | null };
+type Sub = { service_code: string; provider_id: string | null; paid_until: string };
+
+// Paid verification and the badge by Lipa number (manual payments, 2026-11-26). Prices come from
+// /admin/prices (public active rows); the server works the amount out again when the order starts.
+// Documents first, then pay: without a current check the guide sees "send your documents first".
+async function MemberPay({ payError, locale, guide, hasCheck, providers }: { payError: string | null; locale: Locale; guide: boolean; hasCheck: boolean; providers: { id: string; name: string }[] }) {
+  const lp = lipaPayText(locale);
+  // The chooser sends the payer back here with ?payError=<code> when the server refused (QA 1).
+  const errorText = payError ? (Object.hasOwn(lp.errors, payError) ? lp.errors[payError] : lp.errors.failed) : '';
+  const m = lipaMemberText(locale);
+  const supabase = await createClient();
+  const today = tanzaniaToday();
+  const [prices, subs] = await Promise.all([
+    supabase.from('price_list').select('service_code, account_type, business_type, period, amount_tzs, active_from, active_to')
+      .in('service_code', ['verification', 'business_badge']).eq('status', 'active'),
+    supabase.rpc('my_subscriptions'),
+  ]);
+  const live = ((prices.data ?? []) as PriceRow[]).filter((p) => p.amount_tzs && p.active_from && p.active_from <= today && (!p.active_to || p.active_to > today));
+  const price = (code: string, period: string, type: string) => live.find((p) => p.service_code === code && p.period === period && p.account_type === type)?.amount_tzs ?? null;
+  const paid = (subs.error ? [] : (subs.data ?? [])) as Sub[];
+  const back = `/${locale}/dashboard/verification`;
+  const verificationUntil = paid.find((s) => s.service_code === 'verification')?.paid_until;
+  const month = price('verification', 'month', 'guide');
+  const year = price('verification', 'year', 'guide');
+  const badge = price('business_badge', 'year', 'business');
   return (
-    <section aria-labelledby="pay-title" className="card space-y-3">
-      <h2 id="pay-title" className="flex items-center gap-2 text-lg font-bold">
-        <CreditCard className="size-5 text-leaf-dark" aria-hidden /> {v.payTitle}
-      </h2>
-      <p className="text-sm text-muted">{v.payBody}</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <button type="button" className="btn" disabled aria-describedby="pay-soon">{v.payMonthly}</button>
-        <button type="button" className="btn-outline" disabled aria-describedby="pay-soon">{v.payYearly}</button>
-      </div>
-      <p id="pay-soon" className="rounded-[5px] bg-sand p-3 text-sm font-semibold">{v.paySoon}</p>
-    </section>
+    <>
+      {errorText && <p role="alert" className="rounded-[5px] bg-red-50 p-3 font-semibold text-red-800">{errorText}</p>}
+      {guide && (
+        <section aria-labelledby="pay-title" className="card space-y-3">
+          <h2 id="pay-title" className="flex items-center gap-2 text-lg font-bold">
+            <CreditCard className="size-5 text-leaf-dark" aria-hidden /> {m.payTitle}
+          </h2>
+          <p className="text-sm text-muted">{m.payBody}</p>
+          {verificationUntil && <p className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{fillText(m.paidUntil, { date: formatDay(verificationUntil, locale) })}</p>}
+          {!hasCheck ? (
+            <p className="rounded-[5px] bg-sand p-3 text-sm font-semibold">{m.checksFirst}</p>
+          ) : !month && !year ? (
+            <p className="rounded-[5px] bg-sand p-3 text-sm font-semibold">{m.priceNotSet}</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {month && <PayNow purpose="verification" period="month" amountTzs={month} locale={locale} back={back} buttonLabel={fillText(m.payMonth, { amount: formatTzsAmount(month) })} />}
+              {year && <PayNow purpose="verification" period="year" amountTzs={year} locale={locale} back={back} buttonLabel={fillText(m.payYear, { amount: formatTzsAmount(year) })} buttonClassName="btn-outline w-full" />}
+            </div>
+          )}
+        </section>
+      )}
+      {providers.map((p) => {
+        const until = paid.find((s) => s.service_code === 'business_badge' && s.provider_id === p.id)?.paid_until;
+        return (
+          <section key={p.id} aria-labelledby={`badge-${p.id}`} className="card space-y-3">
+            <h2 id={`badge-${p.id}`} className="text-lg font-bold">{m.badgeTitle}: {p.name}</h2>
+            <p className="text-sm text-muted">{m.badgeBody}</p>
+            {/* Walter 2026-11-27: the fee is kept if the business does not pass; said before paying. */}
+            <p className="rounded-[5px] bg-sand p-3 text-sm font-semibold">{m.badgeNoRefund}</p>
+            {until && <p className="rounded-[5px] bg-mint p-3 font-semibold text-forest">{fillText(m.badgePaidUntil, { date: formatDay(until, locale) })}</p>}
+            {badge ? (
+              <PayNow purpose="business_badge" subject={p.id} amountTzs={badge} locale={locale} back={back} buttonLabel={fillText(m.badgePay, { amount: formatTzsAmount(badge) })} note={m.badgeNoRefund} />
+            ) : (
+              <p className="rounded-[5px] bg-sand p-3 text-sm font-semibold">{m.priceNotSet}</p>
+            )}
+          </section>
+        );
+      })}
+      <Link href={`/${locale}/payments/orders`} className="btn-outline">{m.myPayments}</Link>
+    </>
   );
 }

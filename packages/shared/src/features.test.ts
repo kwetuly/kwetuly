@@ -33,7 +33,7 @@ describe('feature list', () => {
     for (const f of FEATURES) {
       expect(allSql, f.id).toContain(`'feature.${f.id}'`);
       const legal = FEATURE_ADMIN[f.id]?.legalPending ? 'pending' : 'none';
-      expect(new RegExp(`^\\s+\\('${f.id}',\\s+'${legal}'\\)`, 'm').test(adminSql), f.id).toBe(true);
+      expect(new RegExp(`^\\s+\\('${f.id}',\\s+'${legal}'\\)`, 'm').test(allSql), f.id).toBe(true); // meta rows may also come from the migration that adds the switch
     }
   });
 
