@@ -41,7 +41,7 @@
 --   select id, business_name, website from public.providers
 --    where website is not null and (
 --      website ~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
---      or website ~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)');
+--      or website ~ '(^|[^0-9])(\+|%2[bB]|00)?(2([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5|0)([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[67](([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[0-9]){8}([^0-9]|$)');
 --
 --
 -- Access rules: unchanged. Owners already update their own guides and providers rows ("Owners update own
@@ -117,7 +117,7 @@ alter table public.guides
       and website !~ '["<>]'
       and strpos(website, '\') = 0
       and website !~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
-      and website !~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)'
+      and website !~ '(^|[^0-9])(\+|%2[bB]|00)?(2([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5|0)([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[67](([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[0-9]){8}([^0-9]|$)'
     )
   );
 
@@ -244,7 +244,7 @@ begin
     return new;
   end if;
   if new.website ~ '^https://([a-z0-9-]+\.)*(wa\.me|wa\.link|whatsapp\.com|whatsapp\.net|t\.me|telegram\.me|telegram\.org|telegram\.dog|m\.me|ig\.me|signal\.me|viber\.me|invite\.viber\.com|messenger\.com|discord\.gg|linktr\.ee|tr\.ee|beacons\.ai|bio\.link|lnk\.bio|bit\.ly|bitly\.com|tinyurl\.com|goo\.gl|t\.co|t\.ly|s\.id|bl\.ink|j\.mp|ow\.ly|is\.gd|buff\.ly|cutt\.ly|rb\.gy|tiny\.cc|shorturl\.at|rebrand\.ly|lnkd\.in|fb\.me|qrco\.de|snip\.ly|youtu\.be|g\.page|facebook\.com|fb\.com|instagram\.com|youtube\.com|tiktok\.com|google\.([a-z]{2,63}|com?\.[a-z]{2}))(/|$)|^https://([a-z0-9-]+\.)*discord(app)?\.com/invite(/|$)'
-     or new.website ~ '(^|[^0-9])(\+|%2[bB])?(2(-|\.|%20)?5(-|\.|%20)?5|0)(-|\.|%20)?[67]((-|\.|%20)?[0-9]){8}([^0-9]|$)' then
+     or new.website ~ '(^|[^0-9])(\+|%2[bB]|00)?(2([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}5|0)([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[67](([^0-9a-z]|%[0-9a-fA-F]{2}){0,2}[0-9]){8}([^0-9]|$)' then
     raise exception 'website_not_allowed' using errcode = 'P0001',
       hint = 'Chat links, link-in-bio pages, short links, social and Google pages and phone numbers cannot be a website.';
   end if;
