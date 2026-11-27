@@ -5,7 +5,7 @@
 // "Try again" picks up where it stopped (an already stored file is not sent twice).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { UPLOAD_CONCURRENCY, UPLOAD_SPECS, type CropRect, type MediaErrorCode, type MediaField, type MediaItem, type MediaSubjectKind, type UploadQueueState } from '@kwetuly/shared';
-import { DecodeError, encodeImage, type EncodedImage } from '@/lib/image-encode';
+import { DecodeError, TooThinError, encodeImage, type EncodedImage } from '@/lib/image-encode';
 import { finishUpload, removeMedia, resumeUpload, startUpload } from '@/lib/media';
 
 export type QueueItem = {
@@ -99,7 +99,7 @@ export function useUploadQueue({ field, subjectKind, subjectId, onDone }: { fiel
         const done = await finishUpload({ id: mediaId, placeholder: encoded.placeholder });
         if (!done.ok) {
           // A refused file is deleted and its row removed: the next try starts again from the photo.
-          if (['file_type', 'file_too_big', 'bad_size'].includes(done.error)) patch(item.key, { mediaId: undefined, stored: { main: false, thumb: false } });
+          if (['file_type', 'file_too_big', 'bad_size', 'too_thin'].includes(done.error)) patch(item.key, { mediaId: undefined, stored: { main: false, thumb: false } });
           throw new UploadHttpError(`media:${done.error}`);
         }
         patch(item.key, { status: 'done' });
@@ -108,7 +108,7 @@ export function useUploadQueue({ field, subjectKind, subjectId, onDone }: { fiel
         setItems((list) => list.filter((i) => i.key !== item.key));
       } catch (error) {
         const message = error instanceof Error ? error.message : '';
-        const code: MediaErrorCode = error instanceof DecodeError ? 'decode' : message === 'network' ? 'network' : ((message.replace(/^media:/, '') || 'generic') as MediaErrorCode);
+        const code: MediaErrorCode = error instanceof TooThinError ? 'too_thin' : error instanceof DecodeError ? 'decode' : message === 'network' ? 'network' : ((message.replace(/^media:/, '') || 'generic') as MediaErrorCode);
         patch(item.key, { status: 'failed', error: code });
       } finally {
         running.current.delete(item.key);

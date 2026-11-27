@@ -42,6 +42,8 @@ grant execute on function pg_temp.check(boolean, text) to anon, authenticated, s
 
 create temp table t_ids (k text primary key, id uuid, path text, thumb text) on commit drop;
 grant all on t_ids to anon, authenticated, service_role;
+create temp table t_claims (id uuid primary key, claim uuid) on commit drop;
+grant all on t_claims to service_role;
 
 -- Made-up accounts: guide owner (a1), other user (b2), admin (c3) ----------------
 insert into auth.users (id, email, aud, role, raw_user_meta_data)
@@ -99,7 +101,7 @@ select pg_temp.expect_error($q$update public.media set state = 'live' where id =
 select pg_temp.expect_error($q$update public.media set state = 'checked' where id = (select id from t_ids where k = 'cover2')$q$, 'owner sets checked');
 select pg_temp.expect_error($q$update public.media set path = 'x' where id = (select id from t_ids where k = 'cover2')$q$, 'owner changes path (no grant)');
 select pg_temp.expect_error($q$delete from public.media where id = (select id from t_ids where k = 'cover2')$q$, 'owner deletes a row (no grant)');
-select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667)$q$,
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', gen_random_uuid(), 2000, 667)$q$,
   'client calls svc_finish_media');
 -- L5: removed rows stay as they are.
 select pg_temp.expect_error($q$update public.media set sort = 5 where id = (select id from t_ids where k = 'cover1')$q$, 'owner changes a removed row');
@@ -123,27 +125,33 @@ select pg_temp.put('media', thumb, 90000, 'image/webp') from t_ids where k = 'co
 
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
-select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667)$q$,
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', gen_random_uuid(), 2000, 667)$q$,
   'finish without a claim (N3)');
 select pg_temp.expect_error($q$select * from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'b2b2b2b2-0000-4000-8000-0000000000b2')$q$,
   'claim for another person');
-select pg_temp.check((select claimed from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1')), 'first claim');
+insert into t_claims (id, claim)
+select (select id from t_ids where k = 'cover2'), c.claim_id from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1') c where c.claimed;
+select pg_temp.check((select count(*) = 1 and bool_and(claim is not null) from t_claims), 'first claim returns a claim id (L-c)');
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', gen_random_uuid(), 2000, 667)$q$,
+  'finish with another claim id (L-c)');
+select public.svc_release_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', gen_random_uuid());
+select pg_temp.check((select finishing_claim is not null from public.media where id = (select id from t_ids where k = 'cover2')), 'release with another claim id does nothing (L-c)');
 select pg_temp.expect_error($q$select * from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1')$q$,
   'second claim within 5 minutes (N3)');
 select pg_temp.check((select not private.media_path_deletable('media-staging', path) from t_ids where k = 'cover2'), 'staging file kept while claimed (N3)');
 select pg_temp.check((select not private.media_upload_slot('media-staging', path) from t_ids where k = 'cover2'), 'no upload while claimed (N3)');
-select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667)$q$,
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', (select claim from t_claims where id = (select id from t_ids where k = 'cover2')), 2000, 667)$q$,
   'finish with a cache header other than max-age=3600 (M4)');
-select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'b2b2b2b2-0000-4000-8000-0000000000b2', 2000, 667)$q$,
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'b2b2b2b2-0000-4000-8000-0000000000b2', (select claim from t_claims where id = (select id from t_ids where k = 'cover2')), 2000, 667)$q$,
   'finish for another person');
 reset role;
 update storage.objects set metadata = metadata || '{"cacheControl":"max-age=3600"}'
 where bucket_id = 'media' and name = (select path from t_ids where k = 'cover2');
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
-select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 9000, 667)$q$,
+select pg_temp.expect_error($q$select * from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', (select claim from t_claims where id = (select id from t_ids where k = 'cover2')), 9000, 667)$q$,
   'finish with a width over 4000');
-select pg_temp.check((select state = 'live' from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', 2000, 667, '#aabbcc')),
+select pg_temp.check((select state = 'live' from public.svc_finish_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1', (select claim from t_claims where id = (select id from t_ids where k = 'cover2')), 2000, 667, '#aabbcc')),
                      'finish makes the cover live');
 select pg_temp.check((select width = 2000 and mime = 'image/webp' and bytes = 900000 and is_main and placeholder = '#aabbcc'
                       from public.media m join t_ids t on t.id = m.id where t.k = 'cover2'), 'size from the file, type and bytes from storage, main');
@@ -185,9 +193,10 @@ select pg_temp.put('media', m.path, 400000, 'image/webp'), pg_temp.put('media', 
 from public.media m where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 set local role service_role;
-select public.svc_claim_media(m.id, m.owner_id) from public.media m
+insert into t_claims (id, claim)
+select m.id, (select c.claim_id from public.svc_claim_media(m.id, m.owner_id) c) from public.media m
 where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
-select public.svc_finish_media(m.id, m.owner_id, 1600, 1067) from public.media m
+select public.svc_finish_media(m.id, m.owner_id, t.claim, 1600, 1067) from public.media m join t_claims t on t.id = m.id
 where m.field = 'gallery' and m.state = 'uploading' and m.path like '%.webp';
 reset role;
 select set_config('request.jwt.claims', '{"sub":"a1a1a1a1-0000-4000-8000-0000000000a1","role":"authenticated","aal":"aal1"}', true);

@@ -24,6 +24,7 @@ import {
   moveItem,
   placeholderColour,
   remainingSlots,
+  thumbShapeOk,
   thumbSize,
 } from './uploads';
 
@@ -63,7 +64,8 @@ describe('uploads match the media migration', () => {
   });
   it('error codes the screens know are raised by the migration', () => {
     // Raised as 'media:<code>', or returned as a reason by private.media_object_check() and raised as 'media:%'.
-    for (const code of mediaErrorCodes) expect(sql.includes(`media:${code}`) || sql.includes(`'${code}'`), code).toBe(true);
+    const finish = readFileSync(new URL('../../../supabase/functions/media-finish/index.ts', import.meta.url), 'utf8');
+    for (const code of mediaErrorCodes) expect(sql.includes(`media:${code}`) || sql.includes(`'${code}'`) || finish.includes(`'${code}'`), code).toBe(true);
   });
   it('uploads go to the private staging bucket only (review M1) and finished files carry the cache header (M4)', () => {
     expect(sql).toContain(`('${MEDIA_STAGING_BUCKET}', '${MEDIA_STAGING_BUCKET}', false, 2097152, array['image/webp', 'image/jpeg'])`);
@@ -143,6 +145,14 @@ describe('sizes and crops', () => {
     expect(wild.width).toBe(200);
     expect(wild.x + wild.width).toBeLessThanOrEqual(1200);
     expect(wild.y).toBe(0);
+  });
+  it('thumbnail shape: normal photos pass, a very thin panorama does not', () => {
+    expect(thumbShapeOk(1600, 1067, 400, 267)).toBe(true);
+    expect(thumbShapeOk(2000, 667, 800, 267)).toBe(true);
+    const thin = fitWithin(12000, 45, 1600, 1600);
+    const t = thumbSize(thin.width, thin.height, 400);
+    expect(thumbShapeOk(thin.width, thin.height, t.width, t.height)).toBe(false);
+    expect(thumbShapeOk(0, 10, 1, 1)).toBe(false);
   });
   it('clamps sides and makes colours', () => {
     expect(clampSide(0)).toBe(1);

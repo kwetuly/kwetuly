@@ -5,13 +5,14 @@
 // height from the file. The picture data itself is not decoded.
 //
 // JPEG: every segment is walked, also those between progressive scans (the compressed data after
-// each start-of-scan is followed until the next marker). Kept: APP0 only if it starts "JFIF\0",
-// APP2 only if it starts "ICC_PROFILE\0" (at most 256 KB in total), APP14 only if it starts "Adobe",
-// and the non-APP segments. Dropped: every other APP segment (EXIF, XMP, JFXX thumbnails, MPF extra
-// images, IPTC, maker data) and comments. Everything after the end-of-image marker is cut (for
-// example a file appended to the picture).
+// each start-of-scan is followed until the next marker). Kept: SOFn, DHT, DQT, DRI, SOS, DAC and DNL;
+// APP0 only if it starts "JFIF\0", APP2 only if it starts "ICC_PROFILE\0" (at most 256 KB in total),
+// APP14 only if it starts "Adobe". Dropped: every other APP segment (EXIF, XMP, JFXX thumbnails, MPF
+// extra images, IPTC, maker data) and comments. Any other marker is refused. Everything after the
+// end-of-image marker is cut (for example a file appended to the picture).
 // WebP: kept chunks VP8X, "VP8 ", VP8L, ALPH and ICCP (at most 256 KB); every other chunk is
-// dropped and VP8X's flags are set to what is left. Animated pictures are refused.
+// dropped and VP8X's flags are set to what is left. Animated pictures, and more than one VP8X,
+// "VP8 ", VP8L or ALPH chunk, are refused.
 //
 // This file has NO imports on purpose: the Edge Function keeps a byte-identical copy at
 // supabase/functions/_shared/image-bytes.ts (Deno cannot import from packages/), and
@@ -48,6 +49,8 @@ function concat(parts: Uint8Array[]): Uint8Array {
 }
 
 const JPEG_SOF = new Set([0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf]);
+// Non-APP segments a picture may have: SOFn, DHT, DAC, SOS, DQT, DNL, DRI. Any other marker is refused.
+const JPEG_ALLOWED = new Set([...JPEG_SOF, 0xc4, 0xcc, 0xda, 0xdb, 0xdc, 0xdd]);
 
 function cleanJpeg(b: Uint8Array): CleanImageBytes {
   const parts: Uint8Array[] = [b.subarray(0, 2)];
@@ -83,6 +86,8 @@ function cleanJpeg(b: Uint8Array): CleanImageBytes {
       width = (b[data + 3] << 8) | b[data + 4];
     }
     let keep = true;
+    if (marker < 0xe0 && !JPEG_ALLOWED.has(marker)) return { ok: false, problem: 'corrupt' };
+    if (marker > 0xef && marker !== 0xfe) return { ok: false, problem: 'corrupt' };
     if (marker >= 0xe0 && marker <= 0xef) {
       if (marker === 0xe0) keep = startsWith(b, data, 'JFIF\0');
       else if (marker === 0xe2) keep = startsWith(b, data, 'ICC_PROFILE\0') && icc + length <= MAX_ICC_BYTES;
@@ -139,6 +144,7 @@ function cleanWebp(b: Uint8Array): CleanImageBytes {
   let height = 0;
   let picture = false;
   let alpha = false;
+  let seenAlph = false;
   let icc = false;
   let vp8xAt = -1;
   let at = 0;
@@ -150,6 +156,10 @@ function cleanWebp(b: Uint8Array): CleanImageBytes {
     if (i + 8 + size > riffEnd) return { ok: false, problem: 'corrupt' };
     const d = i + 8;
     if (id === 'ANIM' || id === 'ANMF') return { ok: false, problem: 'animated' };
+    // One picture only: a second VP8, VP8L or ALPH chunk could hide another image.
+    if ((id === 'VP8 ' || id === 'VP8L') && picture) return { ok: false, problem: 'corrupt' };
+    if (id === 'ALPH' && seenAlph) return { ok: false, problem: 'corrupt' };
+    if (id === 'ALPH') seenAlph = true;
     let keep = WEBP_KEEP.has(id);
     if (id === 'VP8X') {
       if (size < 10 || vp8xAt >= 0) return { ok: false, problem: 'corrupt' };

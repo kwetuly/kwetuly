@@ -1,6 +1,9 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { File } from 'expo-file-system';
-import { MEDIA_THUMB_MAX_BYTES, cropRect, fitWithin, thumbSize, type CropRect, type MediaMime, type UploadFieldSpec } from '@kwetuly/shared';
+import { MEDIA_THUMB_MAX_BYTES, cropRect, fitWithin, thumbShapeOk, thumbSize, type CropRect, type MediaMime, type UploadFieldSpec } from '@kwetuly/shared';
+
+/** The picture is too long and narrow for a thumbnail of the same shape (a wide panorama). */
+export class TooThinPhotoError extends Error {}
 
 export type CleanPhoto = { uri: string; mimeType: 'image/jpeg' };
 
@@ -51,6 +54,8 @@ export async function cleanPhotoForUpload(asset: { uri: string; width: number; h
   const rect = crop ?? (spec.cropAspect && spec.cropFixed ? cropRect(asset.width, asset.height, spec.cropAspect) : { x: 0, y: 0, width: asset.width, height: asset.height });
   const size = fitWithin(rect.width, rect.height, spec.maxWidth, spec.maxHeight);
   const t = thumbSize(size.width, size.height, spec.thumbSide ?? 400);
+  // A very long, thin picture cannot get a thumbnail of the same shape; the server would refuse it.
+  if (!thumbShapeOk(size.width, size.height, t.width, t.height)) throw new TooThinPhotoError('Too thin');
   for (const [format, mimeType] of [
     [SaveFormat.WEBP, 'image/webp'],
     [SaveFormat.JPEG, 'image/jpeg'],

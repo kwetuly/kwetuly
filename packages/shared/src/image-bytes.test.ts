@@ -102,6 +102,20 @@ describe('image bytes: JPEG', () => {
     expect(count(result.bytes, 'ICC_PROFILE')).toBe(Math.floor(MAX_ICC_BYTES / 65535));
   });
 
+  it('keeps DHT, DQT, DRI, DAC and DNL; refuses any other marker (L-a)', () => {
+    const dqt = seg(0xdb, [0x00, ...new Array(64).fill(1)]);
+    const dht = seg(0xc4, [0x00, ...new Array(16).fill(0)]);
+    const dri = seg(0xdd, [0x00, 0x04]);
+    const dac = seg(0xcc, [0x00, 0x10]);
+    const dnl = seg(0xdc, [0x00, 0x10]);
+    const result = cleaned(bytes(SOI, JFIF, dqt, dht, dri, dac, SOF0, SOS, SCAN, dnl, EOI));
+    for (const marker of [0xdb, 0xc4, 0xdd, 0xcc, 0xdc]) expect(count(result.bytes, String.fromCharCode(0xff, marker))).toBe(1);
+    // DHP (0xDE), EXP (0xDF), JPG (0xC8) and the JPG extensions (0xF0-0xFD) are not used by photos.
+    for (const marker of [0xde, 0xdf, 0xc8, 0xf0, 0xf7, 0xfd]) {
+      expect(cleanImageBytes(bytes(SOI, JFIF, seg(marker, [0, 0, 0]), SOF0, SOS, SCAN, EOI)), marker.toString(16)).toEqual({ ok: false, problem: 'corrupt' });
+    }
+  });
+
   it('refuses files without a frame, a broken length, or no end', () => {
     expect(cleanImageBytes(bytes(SOI, SOS, SCAN, EOI))).toEqual({ ok: false, problem: 'corrupt' });
     expect(cleanImageBytes(bytes(SOI, [0xff, 0xe1, 0x7f, 0xff, 0x00]))).toEqual({ ok: false, problem: 'corrupt' });
@@ -132,6 +146,14 @@ describe('image bytes: WebP', () => {
     expect(has(result.bytes, 'PK')).toBe(false);
     expect(has(result.bytes, 'ICCP')).toBe(true);
     expect(result.bytes[20]).toBe(0x20);
+  });
+
+  it('refuses a second picture or alpha chunk (L-b)', () => {
+    const vp8l = bytes('VP8L', le32(5), [0x2f, 0x63, 0x40, 0x0c, 0x00], [0]);
+    const alph = bytes('ALPH', le32(2), [0, 0]);
+    expect(cleanImageBytes(webp({ extra: [vp8l] }))).toEqual({ ok: false, problem: 'corrupt' });
+    expect(cleanImageBytes(webp({ extra: [alph, alph] }))).toEqual({ ok: false, problem: 'corrupt' });
+    expect(cleanImageBytes(webp({ extra: [alph] })).ok).toBe(true);
   });
 
   it('refuses animation and files without a picture', () => {

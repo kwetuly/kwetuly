@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
   // claimant writes; while the claim is open the staging files cannot be deleted or replaced.
   const { data: claim, error: claimError } = await db
     .rpc('svc_claim_media', { p_id: id, p_user: user.id })
-    .single<{ claimed: boolean; state: string; field: string; path: string; thumb_path: string }>();
+    .single<{ claimed: boolean; claim_id: string | null; state: string; field: string; path: string; thumb_path: string }>();
   if (claimError || !claim) {
     const code = /media:(\w+)/.exec(claimError?.message ?? '')?.[1] ?? 'generic';
     return json({ error: code }, code === 'not_yours' ? 403 : 409);
@@ -64,9 +64,11 @@ Deno.serve(async (req) => {
 
   const staging = db.storage.from(STAGING);
   const dropStaging = () => staging.remove([row.path, row.thumb_path]).catch(() => undefined);
-  const release = () => db.rpc('svc_release_media', { p_id: id, p_user: user.id });
+  // L-c: only this call's claim id can end or use the claim.
+  const claimId = row.claim_id;
+  const release = () => db.rpc('svc_release_media', { p_id: id, p_user: user.id, p_claim: claimId });
   const refuse = async (code: string) => {
-    await db.rpc('svc_refuse_media', { p_id: id, p_user: user.id });
+    await db.rpc('svc_refuse_media', { p_id: id, p_user: user.id, p_claim: claimId });
     await dropStaging();
     console.log('media-finish: refused', code);
     return json({ error: code }, 422);
@@ -89,8 +91,10 @@ Deno.serve(async (req) => {
   if (cleanMain.width > 4000 || cleanMain.height > 4000) return refuse('bad_size');
   // N2: the thumbnail is small (the field's thumbnail size, at most 800 px) and the same shape as the photo.
   if (Math.max(cleanThumb.width, cleanThumb.height) > (THUMB_SIDE[row.field] ?? 400)) return refuse('bad_size');
+  // A very long, thin picture (a wide panorama) cannot get a thumbnail of the same shape: the screen
+  // then asks the person to crop it ('too_thin').
   const ratio = cleanMain.width / cleanMain.height;
-  if (Math.abs(cleanThumb.width / cleanThumb.height - ratio) / ratio > 0.02) return refuse('bad_size');
+  if (Math.abs(cleanThumb.width / cleanThumb.height - ratio) / ratio > 0.02) return refuse('too_thin');
 
   const bucket = row.field === 'product' ? 'media-pending' : 'media';
   const target = db.storage.from(bucket);
@@ -106,7 +110,7 @@ Deno.serve(async (req) => {
   }
 
   const { data: done, error: finishError } = await db
-    .rpc('svc_finish_media', { p_id: id, p_user: user.id, p_width: cleanMain.width, p_height: cleanMain.height, p_placeholder: placeholder })
+    .rpc('svc_finish_media', { p_id: id, p_user: user.id, p_claim: claimId, p_width: cleanMain.width, p_height: cleanMain.height, p_placeholder: placeholder })
     .single<{ state: string; replaced_bucket: string; replaced_paths: string[] }>();
   if (finishError || !done) {
     // Not shown: take the copies out of the field's bucket again.

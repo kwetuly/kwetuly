@@ -211,7 +211,7 @@ export type MediaItem = {
 export const MEDIA_COLUMNS = 'id, field, path, thumb_path, mime, width, height, placeholder, sort, is_main, state';
 
 /** Error codes the database raises (in the message) that screens turn into polite texts. */
-export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'file_cache', 'bad_size', 'busy'] as const;
+export const mediaErrorCodes = ['too_many', 'rate_limited', 'not_yours', 'not_onboarded', 'file_missing', 'file_too_big', 'file_type', 'file_cache', 'bad_size', 'too_thin', 'busy'] as const;
 export type MediaErrorCode = (typeof mediaErrorCodes)[number] | 'network' | 'decode' | 'generic';
 
 /** Reads our error code from a database or storage error message. */
@@ -220,4 +220,18 @@ export function mediaErrorCode(message: string | null | undefined): MediaErrorCo
   for (const code of mediaErrorCodes) if (text.includes(`media:${code}`)) return code;
   if (/fetch|network|timeout/i.test(text)) return 'network';
   return 'generic';
+}
+
+/** Largest difference in shape between a photo and its thumbnail (the media-finish function refuses more). */
+export const THUMB_SHAPE_TOLERANCE = 0.02;
+
+/**
+ * True when the thumbnail has the photo's shape within THUMB_SHAPE_TOLERANCE. A very long, thin
+ * picture (a wide panorama) fails, because its small copy rounds to a different shape; screens then
+ * ask the person to crop it ('too_thin') before anything is uploaded.
+ */
+export function thumbShapeOk(width: number, height: number, thumbWidth: number, thumbHeight: number): boolean {
+  if (width <= 0 || height <= 0 || thumbWidth <= 0 || thumbHeight <= 0) return false;
+  const ratio = width / height;
+  return Math.abs(thumbWidth / thumbHeight - ratio) / ratio <= THUMB_SHAPE_TOLERANCE;
 }

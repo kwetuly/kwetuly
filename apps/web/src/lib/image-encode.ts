@@ -3,7 +3,7 @@
 // canvas keeps only the pixels, so GPS location and camera data are never uploaded. If the browser
 // cannot read the file (for example HEIC outside Safari), this throws and the caller stops: the
 // original file is never uploaded.
-import { MEDIA_THUMB_MAX_BYTES, cropRect, fitWithin, placeholderColour, thumbSize, type CropRect, type MediaMime, type UploadFieldSpec } from '@kwetuly/shared';
+import { MEDIA_THUMB_MAX_BYTES, cropRect, fitWithin, placeholderColour, thumbShapeOk, thumbSize, type CropRect, type MediaMime, type UploadFieldSpec } from '@kwetuly/shared';
 
 export type EncodedImage = {
   main: Blob;
@@ -16,6 +16,8 @@ export type EncodedImage = {
 };
 
 export class DecodeError extends Error {}
+/** The picture is too long and narrow for a thumbnail of the same shape (a wide panorama). */
+export class TooThinError extends Error {}
 
 const QUALITIES = [0.82, 0.72, 0.62, 0.5];
 
@@ -106,6 +108,8 @@ export async function encodeImage(file: Blob, spec: UploadFieldSpec, crop?: Crop
     const size = fitWithin(rect.width, rect.height, spec.maxWidth, spec.maxHeight);
     const main = await encodeUnder(bitmap, rect, size.width, size.height, spec.maxBytes, null);
     const t = thumbSize(main.width, main.height, spec.thumbSide ?? 400);
+    // A very long, thin picture cannot get a thumbnail of the same shape; the server would refuse it.
+    if (!thumbShapeOk(main.width, main.height, t.width, t.height)) throw new TooThinError('Too thin');
     const thumb = await encodeUnder(bitmap, rect, t.width, t.height, MEDIA_THUMB_MAX_BYTES, main.mime);
     if (thumb.mime !== main.mime) throw new DecodeError('Mixed types');
     return { main: main.blob, thumb: thumb.blob, width: main.width, height: main.height, mime: main.mime, placeholder: averageColour(thumb.canvas) };

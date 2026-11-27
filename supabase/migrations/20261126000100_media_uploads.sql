@@ -36,8 +36,8 @@
 --     private.media_sweep(), public.admin_media_list(public.media_state, int), public.admin_check_media(uuid, text, text),
 --     public.remove_all_my_media(), public.remove_my_media(uuid),
 --     public.reorder_media(public.media_subject_kind, uuid, public.media_field, uuid[]),
---     public.my_media(public.media_subject_kind, uuid), public.svc_claim_media(uuid, uuid), public.svc_release_media(uuid, uuid),
---     public.svc_refuse_media(uuid, uuid), public.svc_finish_media(uuid, uuid, int, int, text),
+--     public.my_media(public.media_subject_kind, uuid), public.svc_claim_media(uuid, uuid), public.svc_release_media(uuid, uuid, uuid),
+--     public.svc_refuse_media(uuid, uuid, uuid), public.svc_finish_media(uuid, uuid, uuid, int, int, text),
 --     public.start_media_upload(public.media_field, public.media_subject_kind, uuid, text, text),
 --     private.media_recent_starts(uuid), private.media_is_mine(uuid), private.guard_media(), private.media_upload_slot(text, text), private.media_path_deletable(text, text),
 --     private.media_object_ok(uuid), private.media_object_check(uuid), private.media_subject_public(public.media_subject_kind, uuid),
@@ -156,6 +156,8 @@ create table public.media (
   finished_at timestamptz,
   -- N3: the media-finish function claims a row before writing; a second claim is refused until then.
   finishing_until timestamptz,
+  -- L-c: which claim is open; finish, refuse and release must give it back.
+  finishing_claim uuid,
   constraint media_path_shape check (
     path ~ ('^' || owner_id::text || '/' || id::text || '\.(webp|jpg)$')),
   constraint media_thumb_shape check (
@@ -383,6 +385,7 @@ begin
       new.checked_by := null;
       new.finished_at := null;
       new.finishing_until := null;
+      new.finishing_claim := null;
       new.created_at := now();
       new.consented_at := case when new.consent_version is null then null else now() end;
       -- Rate limits: 60 uploads started per hour and 200 per day per person.
@@ -450,7 +453,8 @@ begin
        or new.width is distinct from old.width or new.height is distinct from old.height
        or new.placeholder is distinct from old.placeholder or new.mime is distinct from old.mime
        or new.bytes is distinct from old.bytes or new.finished_at is distinct from old.finished_at
-       or new.finishing_until is distinct from old.finishing_until then
+       or new.finishing_until is distinct from old.finishing_until
+       or new.finishing_claim is distinct from old.finishing_claim then
       raise exception 'media:not_yours' using errcode = '42501';
     end if;
     if old.state = 'uploading' and (new.sort <> old.sort or new.is_main <> old.is_main) then
@@ -474,6 +478,7 @@ begin
     new.bytes := v_check.bytes;
     new.finished_at := now();
     new.finishing_until := null;
+    new.finishing_claim := null;
   end if;
   return new;
 end;
@@ -524,7 +529,8 @@ begin
     update public.media m
     set state = 'removed', removed_reason = 'replaced'
     where m.subject_kind = p_subject_kind and m.subject_id = p_subject_id and m.field = p_field
-      and m.state = 'uploading';
+      and m.state = 'uploading'
+      and private.media_is_mine(m.id); -- L-d: second safeguard next to row level security
   end if;
   insert into public.media (id, owner_id, subject_kind, subject_id, field, path, thumb_path, consent_version)
   values (v_id, v_uid, p_subject_kind, p_subject_id, p_field,
@@ -627,7 +633,8 @@ begin
   end if;
   -- Row level security ("Owners change their media") limits this to the caller's own rows.
   update public.media m set state = 'removed', removed_reason = 'owner'
-  where m.state <> 'removed';
+  where m.state <> 'removed'
+    and private.media_is_mine(m.id); -- L-d: second safeguard next to row level security
   get diagnostics v_count = row_count;
   return v_count;
 end;
@@ -663,38 +670,42 @@ grant execute on function public.remove_all_my_media() to authenticated;
 -- ---------------------------------------------------------------------------
 -- 5. Service functions for the media-finish Edge Function (service role only)
 -- ---------------------------------------------------------------------------
--- N3: the function claims the row before it writes anything. The row must be p_user's (whose token
--- the function verified) and still uploading; a second claim is refused for 5 minutes, so two calls
--- never write the same files. 'claimed' false with a finished state means "already done".
+-- N3, L-c: the function claims the row before it writes anything. The row must be p_user's (whose
+-- token the function verified) and still uploading; a second claim is refused for 5 minutes, so two
+-- calls never write the same files. The claim id it returns must be passed to finish, refuse and
+-- release, so only the claimant can end the claim. 'claimed' false with a finished state means
+-- "already done".
 create or replace function public.svc_claim_media(p_id uuid, p_user uuid)
-returns table (claimed boolean, state public.media_state, field public.media_field, path text, thumb_path text)
+returns table (claimed boolean, claim_id uuid, state public.media_state, field public.media_field, path text, thumb_path text)
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
   r public.media;
+  v_claim uuid := gen_random_uuid();
 begin
   select * into r from public.media m where m.id = p_id for update;
   if not found or r.owner_id <> p_user then
     raise exception 'media:not_yours' using errcode = '42501';
   end if;
   if r.state <> 'uploading' then
-    return query select false, r.state, r.field, r.path, r.thumb_path;
+    return query select false, null::uuid, r.state, r.field, r.path, r.thumb_path;
     return;
   end if;
   if r.finishing_until > now() then
     raise exception 'media:busy' using errcode = '23514';
   end if;
-  update public.media m set finishing_until = now() + interval '5 minutes' where m.id = p_id;
-  return query select true, r.state, r.field, r.path, r.thumb_path;
+  update public.media m set finishing_until = now() + interval '5 minutes', finishing_claim = v_claim where m.id = p_id;
+  return query select true, v_claim, r.state, r.field, r.path, r.thumb_path;
 end;
 $$;
 
 -- Called after the function wrote the cleaned files to the field's bucket. The row must be p_user's,
--- still uploading and claimed (svc_claim_media). The guard runs the object check. A new cover or avatar replaces the old one; the old file names come back for deletion. The
--- first photo of a field becomes the main photo.
-create or replace function public.svc_finish_media(p_id uuid, p_user uuid, p_width int, p_height int, p_placeholder text default null)
+-- still uploading and claimed with p_claim. The guard runs the object check. A new cover or avatar
+-- replaces the old one; the old file names come back for deletion. The first photo of a field
+-- becomes the main photo.
+create or replace function public.svc_finish_media(p_id uuid, p_user uuid, p_claim uuid, p_width int, p_height int, p_placeholder text default null)
 returns table (state public.media_state, replaced_bucket text, replaced_paths text[])
 language plpgsql
 security definer
@@ -712,7 +723,7 @@ begin
     return query select r.state, private.media_field_bucket(r.field), v_paths;
     return;
   end if;
-  if r.finishing_until is null or r.finishing_until <= now() then
+  if r.finishing_until is null or r.finishing_until <= now() or r.finishing_claim is distinct from p_claim then
     raise exception 'media:busy' using errcode = '23514';
   end if;
   if coalesce(p_width, 0) not between 1 and 4000 or coalesce(p_height, 0) not between 1 and 4000 then
@@ -742,36 +753,36 @@ begin
 end;
 $$;
 
--- The function refused the files (not a still JPEG or WebP, broken, animated, too big).
-create or replace function public.svc_refuse_media(p_id uuid, p_user uuid)
+-- The claimant refused the files (not a still JPEG or WebP, broken, animated, too big, wrong shape).
+create or replace function public.svc_refuse_media(p_id uuid, p_user uuid, p_claim uuid)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  update public.media m set state = 'removed', removed_reason = 'refused', finishing_until = null
-  where m.id = p_id and m.owner_id = p_user and m.state = 'uploading';
+  update public.media m set state = 'removed', removed_reason = 'refused', finishing_until = null, finishing_claim = null
+  where m.id = p_id and m.owner_id = p_user and m.state = 'uploading' and m.finishing_claim = p_claim;
 $$;
 
--- A write failed: end the claim so "Try again" can claim the row again.
-create or replace function public.svc_release_media(p_id uuid, p_user uuid)
+-- The claimant's write failed: end the claim so "Try again" can claim the row again.
+create or replace function public.svc_release_media(p_id uuid, p_user uuid, p_claim uuid)
 returns void
 language sql
 security definer
 set search_path = ''
 as $$
-  update public.media m set finishing_until = null
-  where m.id = p_id and m.owner_id = p_user and m.state = 'uploading';
+  update public.media m set finishing_until = null, finishing_claim = null
+  where m.id = p_id and m.owner_id = p_user and m.state = 'uploading' and m.finishing_claim = p_claim;
 $$;
 
 revoke all on function public.svc_claim_media(uuid, uuid) from public, anon, authenticated;
-revoke all on function public.svc_finish_media(uuid, uuid, int, int, text) from public, anon, authenticated;
-revoke all on function public.svc_refuse_media(uuid, uuid) from public, anon, authenticated;
-revoke all on function public.svc_release_media(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.svc_finish_media(uuid, uuid, uuid, int, int, text) from public, anon, authenticated;
+revoke all on function public.svc_refuse_media(uuid, uuid, uuid) from public, anon, authenticated;
+revoke all on function public.svc_release_media(uuid, uuid, uuid) from public, anon, authenticated;
 grant execute on function public.svc_claim_media(uuid, uuid) to service_role;
-grant execute on function public.svc_finish_media(uuid, uuid, int, int, text) to service_role;
-grant execute on function public.svc_refuse_media(uuid, uuid) to service_role;
-grant execute on function public.svc_release_media(uuid, uuid) to service_role;
+grant execute on function public.svc_finish_media(uuid, uuid, uuid, int, int, text) to service_role;
+grant execute on function public.svc_refuse_media(uuid, uuid, uuid) to service_role;
+grant execute on function public.svc_release_media(uuid, uuid, uuid) to service_role;
 
 -- ---------------------------------------------------------------------------
 -- 6. Admin functions (two-step sign-in)
