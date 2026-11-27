@@ -3,13 +3,14 @@ import Animated from 'react-native-reanimated';
 import { Link, Stack, router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useQuery } from '@tanstack/react-query';
-import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS } from '@kwetuly/shared';
+import { GUIDE_EXPERTISE, GUIDE_SPECIALTIES, MENU, PHOTOS, menuFor } from '@kwetuly/shared';
 import { GroupTripCard } from '@/components/cards';
 import { GLYPHS } from '@/components/glyph';
 import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, ListGroup, ListRow, Section, SkeletonCard, contentFadeIn } from '@/components/ui';
 import { listGroupTrips } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { appHref } from '@/lib/menu';
+import { useFeatures } from '@/lib/features';
 import { menuIcon } from '@/lib/menu-icons';
 import { photoSource } from '@/lib/photos';
 import { brand, colors, layout, media, radius, scrim, space } from '@/theme';
@@ -19,6 +20,7 @@ export default function ExploreScreen() {
   const { type, font } = useType();
   const { t, locale } = useI18n();
   const groups = useQuery({ queryKey: ['group-trips'], queryFn: listGroupTrips });
+  const features = useFeatures();
   const hero = PHOTOS.saddleHikers;
   const trips = groups.data ?? [];
 
@@ -99,7 +101,7 @@ export default function ExploreScreen() {
           whole description shows in every language (two columns cut German and English off at 320–375 wide). */}
       <Section title={t.explore.title} style={{ paddingHorizontal: layout.screenX }}>
         <ListGroup>
-          {MENU.map((section) => (
+          {menuFor(MENU, (features.data ?? {})).map((section) => (
             <ListRow
               key={section.slug}
               icon={menuIcon(section.icon)}
