@@ -30,3 +30,4 @@ export { RESERVE_TEXT, reserveText, type ReserveText } from './reserve';
 export { reservationInboxText, type ReservationInboxText } from './reservation-inbox';
 export { guideProgressText, guideProgressLine, type GuideProgressText } from './guide-progress';
 export * from './profile-links';
+export { uploadsText, type UploadsText, type UploadQueueState } from './uploads';

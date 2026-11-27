@@ -27,3 +27,4 @@ export * from './reservation-rules';
 export * from './reservation-screens';
 export * from './steps';
 export * from './features';
+export * from './uploads';
