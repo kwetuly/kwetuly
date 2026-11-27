@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type Key
 import { usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Menu, X } from 'lucide-react';
-import { MENU, MENU_TEXT, UX_TEXT, type MenuSection } from '@kwetuly/shared';
+import { MENU, MENU_TEXT, UX_TEXT, menuFor, type FeatureMap, type MenuSection } from '@kwetuly/shared';
 import type { Locale } from '@/i18n/config';
 import { itemHref } from '@/lib/menu';
 import { Icon } from './icon';
@@ -13,7 +13,9 @@ import { Logo } from './logo';
 
 // Phones and tablets (below 1024px): a full-screen drawer with expandable sections. The desktop row
 // is DesktopNav below. `account` holds the sign-in / account links that do not fit in the phone header.
-export function SiteNav({ locale, account }: { locale: Locale; account?: ReactNode }) {
+// `features` are the switched-on admin features; items behind a switch that is off are left out.
+export function SiteNav({ locale, account, features }: { locale: Locale; account?: ReactNode; features: FeatureMap }) {
+  const menu = menuFor(MENU, features);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -92,7 +94,7 @@ export function SiteNav({ locale, account }: { locale: Locale; account?: ReactNo
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 pb-10">
-            {MENU.map((section) => {
+            {menu.map((section) => {
               const isOpen = expanded === section.slug;
               if (section.items.length === 1)
                 return (
@@ -249,7 +251,8 @@ const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLa
 // itself, and the sections that do not fit (narrower screens, long German or Polish labels) move
 // under "More" at the end, so nothing overlaps or is cut off in any language. Until it has been
 // measured (server render, first paint) the row is clipped sideways so nothing spills over the page.
-export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: string }) {
+export function DesktopNav({ locale, soonLabel, features }: { locale: Locale; soonLabel: string; features: FeatureMap }) {
+  const menu = menuFor(MENU, features);
   const row = useRef<HTMLDivElement>(null);
   const ruler = useRef<HTMLUListElement>(null);
   const [fit, setFit] = useState<number | null>(null);
@@ -284,12 +287,12 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
     return () => observer.disconnect();
   }, [locale]);
 
-  const shown = fit ?? MENU.length;
+  const shown = fit ?? menu.length;
 
   return (
     <div ref={row} className={`relative ${fit === null ? 'overflow-x-clip' : ''}`}>
       <ul className="flex items-center gap-0.5 whitespace-nowrap">
-        {MENU.slice(0, shown).map((section, index) => (
+        {menu.slice(0, shown).map((section, index) => (
           <SectionMenu
             key={section.slug}
             section={section}
@@ -300,8 +303,8 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
             dropdown={dropdown(section.slug)}
           />
         ))}
-        {shown < MENU.length && (
-          <MoreMenu sections={MENU.slice(shown)} locale={locale} soonLabel={soonLabel} label={text.more} dropdown={dropdown('more')} />
+        {shown < menu.length && (
+          <MoreMenu sections={menu.slice(shown)} locale={locale} soonLabel={soonLabel} label={text.more} dropdown={dropdown('more')} />
         )}
       </ul>
 
@@ -309,7 +312,7 @@ export function DesktopNav({ locale, soonLabel }: { locale: Locale; soonLabel: s
           box around it keeps it from widening the page. */}
       <div aria-hidden className="pointer-events-none invisible absolute left-0 top-0 size-0 overflow-hidden">
         <ul ref={ruler} className="flex w-max gap-0.5 whitespace-nowrap">
-          {MENU.map((section) => (
+          {menu.map((section) => (
             <li key={section.slug} className={TRIGGER}>
               {section.items.length === 1 && <Icon name={section.icon} className="size-4" />}
               {section.label[locale]}

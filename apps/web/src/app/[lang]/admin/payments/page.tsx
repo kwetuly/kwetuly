@@ -86,6 +86,7 @@ async function Queue({ locale, a, searchParams }: { locale: Locale; a: LipaAdmin
         </form>
       )}
 
+      <p className="text-sm"><Link href={`/${locale}/admin/features`} className="font-semibold text-forest underline">{a.switchesLink}</Link></p>
       <nav aria-label={a.status} className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link key={t} href={`${base}?tab=${t}`} aria-current={t === tab ? 'page' : undefined} className={t === tab ? 'btn' : 'btn-outline'}>{a.tabs[t]}</Link>
@@ -138,6 +139,9 @@ async function Queue({ locale, a, searchParams }: { locale: Locale; a: LipaAdmin
                         <input name="note" maxLength={200} className="field" />
                       </label>
                       <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="found" value="yes" required className="mt-1" /> <span>{a.foundIt}</span></label>
+                      {(r.similar_claims > 0 || r.blocked_attempts > 0) && (
+                        <label className="flex items-start gap-2 text-sm font-semibold text-red-900"><input type="checkbox" name="lookalikes" value="yes" required className="mt-1" /> <span>{a.lookalikesChecked}</span></label>
+                      )}
                       <SubmitButton className="btn w-full">{a.confirm}</SubmitButton>
                     </form>
                     <form action={wrongAmount} className="space-y-2 rounded-[5px] bg-sand p-3">

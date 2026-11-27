@@ -13,6 +13,7 @@ import {
   parseProviderSettings,
   paymentErrorCode,
   providerFor,
+  commissionTzs,
   transactionKey,
   transactionLooseKey,
 } from './payment-methods';
@@ -126,6 +127,12 @@ describe('formats', () => {
     expect(tzsToUsdCents(100000, '2650.75')).toBe(3773);
     expect(tzsToUsdCents(100000, 'abc')).toBeNull();
     expect(tzsToUsdCents(-1, '2650')).toBeNull();
+  });
+  it('commission in whole shillings, half up', () => {
+    expect(commissionTzs(795000, '10')).toBe(79500);
+    expect(commissionTzs(1005, '12.50')).toBe(126);
+    expect(commissionTzs(1000, '0')).toBeNull();
+    expect(commissionTzs(1000, 'x')).toBeNull();
   });
   it('deposit amount matches depositTzs and the database rule', () => {
     expect(depositTzsFromRateText(123456, '2650.75')).toBe(depositTzs(123456, 265075));

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { canPick, depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { canPick, commissionTzs, depositTzs, depositTzsFromRateText, fillText, formatTzsAmount, lipaPayText, pctText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 import { LipaPayButton } from '@/components/lipa-pay-button';
 import { supabase } from '@/lib/supabase';
 import { paymentMethods } from '@/lib/lipa';
@@ -45,6 +45,15 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
   // The server's list for this deposit on this platform (QA 2): a Lipa price is shown only with a live method.
   const purpose = kind === 'offer' ? 'offer_deposit' : 'group_deposit';
   const methods = useQuery({ queryKey: ['pay-methods', purpose], queryFn: () => paymentMethods(purpose), enabled: config.data?.enabled === false, staleTime: 60_000 });
+  const commission = useQuery({
+    queryKey: ['deposit-commission', purpose, id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('deposit_commission_preview', { p_purpose: purpose, p_subject: id });
+      return error || data == null ? null : String(data);
+    },
+    enabled: config.data?.enabled === false,
+    staleTime: 10 * 60_000,
+  });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
 
@@ -82,6 +91,11 @@ export function PayDeposit({ kind, id, totalUsd, percent }: Props) {
         {lipaTzs ? (
           <>
             <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{formatTzsAmount(lipaTzs)}</Text>
+            {commission.data && commissionTzs(lipaTzs, commission.data) != null && (
+              <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>
+                {fillText(lipaPayText(locale).commissionLine, { amount: formatTzsAmount(commissionTzs(lipaTzs, commission.data)!), pct: pctText(commission.data) })}
+              </Text>
+            )}
             <LipaPayButton purpose={purpose} subject={id} amountTzs={lipaTzs} />
             <Text style={type.caption}>{lipaPayText(locale).depositHeld}</Text>
           </>

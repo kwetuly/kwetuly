@@ -5,7 +5,8 @@ import { ALL_SECTIONS, type MenuItem, type MenuSection } from '@kwetuly/shared';
 export function appHref(section: MenuSection, item: MenuItem): Href {
   const href = item.href;
   if (!href) return { pathname: '/soon/[section]/[item]', params: { section: section.slug, item: item.slug } };
-  const [path, query = ''] = href.split('?');
+  // The #part only scrolls on the website; app screens ignore it.
+  const [path, query = ''] = href.split('#')[0].split('?');
   const params = Object.fromEntries(new URLSearchParams(query));
   switch (path) {
     case '/guides':
@@ -28,6 +29,8 @@ export function appHref(section: MenuSection, item: MenuItem): Href {
       return '/merch' as Href;
     case '/invest':
       return '/invest' as Href;
+    case '/hosts':
+      return '/hosts' as Href;
     case '/calls':
       return { pathname: '/calls', params };
     case '/jobs/post':

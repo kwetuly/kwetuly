@@ -180,6 +180,11 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Ufutaji wa nyaraka umesimamishwa', body: 'Ufutaji wa kila saa wa nyaraka za utambulisho ulitaka kufuta faili nyingi kuliko kawaida, kwa hiyo haukufuta chochote. Tafadhali endesha "verification-sweep" kwa dry_run na uangalie kabla ya kuendelea.' }
         : { subject: 'Document sweep stopped', body: 'The hourly sweep of identity documents wanted to delete more files than usual, so it deleted nothing. Please run "verification-sweep" with dry_run and check before it continues.' };
+    case 'media_sweep_halted':
+      // To every admin (migration 20261126000100, security review M3). Counts are in the function log.
+      return sw
+        ? { subject: 'Ufutaji wa picha umesimama kwa sehemu', body: 'Ufutaji wa kila saa wa picha ulikuta faili nyingi zisizo na mmiliki au safu, kwa hiyo haukuzifuta hizo. Picha zilizoondolewa bado zinafutwa. Tafadhali endesha "media-sweep" kwa dry_run na uangalie.' }
+        : { subject: 'Photo sweep partly stopped', body: 'The hourly photo sweep found more files without an account or row than usual, so it did not delete those. Removed photos are still deleted. Please run "media-sweep" with dry_run and check.' };
     // Reservations (migration 20261122300000). Payloads carry ids only: no name, note, diet line or
     // phone number. The texts say what to do; details are on Kwetuly. Kiswahili to be checked by Walter.
     case 'reservation_requested':

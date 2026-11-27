@@ -1,5 +1,5 @@
 import { CreditCard } from 'lucide-react';
-import { canPick, depositTzs, depositTzsFromRateText, formatTzsAmount, lipaPayText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
+import { canPick, commissionTzs, depositTzs, depositTzsFromRateText, fillText, formatTzsAmount, lipaPayText, pctText, PAYMENT_PROVIDER_NAME } from '@kwetuly/shared';
 import { manualRate, paymentMethods } from '@/lib/lipa';
 import { PayNow } from './pay-now';
 import type { Dictionary } from '@/i18n/dictionaries';
@@ -72,11 +72,20 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
     // deposit (feature.deposits_via_kwetuly_lipa, a switched-on number, a current rate). This money
     // belongs to the guide or business: Kwetuly holds it until it is paid out.
     const purpose = kind === 'offer' ? 'offer_deposit' : 'group_deposit';
-    const [rows, rate] = await Promise.all([paymentMethods(purpose), manualRate()]);
+    const supabase = await createClient();
+    const [rows, rate, preview] = await Promise.all([
+      paymentMethods(purpose),
+      manualRate(),
+      supabase.rpc('deposit_commission_preview', { p_purpose: purpose, p_subject: id }),
+    ]);
     const cents = totalUsd * percent;
     const lipaTzs = rate && Number.isSafeInteger(cents) ? depositTzsFromRateText(cents, rate.rate) : null;
     if (lipaTzs && rows?.some(canPick)) {
       const lp = lipaPayText(locale);
+      // Kwetuly's commission from the business's agreement, when there is one (Walter 2026-11-27).
+      const pct = preview.error || preview.data == null ? null : String(preview.data);
+      const commission = pct ? commissionTzs(lipaTzs, pct) : null;
+      const commissionLine = pct && commission != null ? fillText(lp.commissionLine, { amount: formatTzsAmount(commission), pct: pctText(pct) }) : null;
       return (
         <div id="pay" className={`scroll-mt-28 space-y-3 rounded-[5px] p-4 ${dark ? 'bg-white/10' : 'bg-sand'}`}>
           <p className="flex items-center gap-2 font-bold"><CreditCard className="size-5" aria-hidden /> {p.title}</p>
@@ -84,8 +93,9 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
             ${depositUsd(totalUsd, percent).toLocaleString(locale)} <span className="text-sm font-semibold">({percent}%)</span>
           </p>
           <p className="text-sm font-semibold">{formatTzsAmount(lipaTzs)}</p>
+          {commissionLine && <p className="text-sm font-semibold">{commissionLine}</p>}
           {error && <p role="alert" className="text-sm font-semibold">{Object.hasOwn(lp.errors, error) ? lp.errors[error] : errorText(error, p)}</p>}
-          <PayNow purpose={purpose} subject={id} amountTzs={lipaTzs} locale={locale} back={back} note={lp.depositHeld} />
+          <PayNow purpose={purpose} subject={id} amountTzs={lipaTzs} locale={locale} back={back} note={commissionLine ? `${commissionLine}. ${lp.depositHeld}` : lp.depositHeld} />
           <p className="text-xs opacity-70">{p.direct}</p>
         </div>
       );

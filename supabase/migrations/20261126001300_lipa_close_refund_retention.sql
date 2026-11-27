@@ -43,6 +43,8 @@ declare
   o public.payment_orders;
   v_note text := nullif(btrim(regexp_replace(coalesce(p_note, ''), '[[:cntrl:]]+', ' ', 'g')), '');
   v_received bigint := coalesce(p_received_tzs, 0);
+  v_recorded bigint;
+  w public.payment_claims;
 begin
   if v_admin is null or not private.is_admin() then
     raise exception 'admins only' using errcode = 'P0001';
@@ -65,11 +67,30 @@ begin
     raise exception 'received amount needed' using errcode = 'P0001',
       hint = 'refund_due needs the amount found on the statement; nothing_received needs 0.';
   end if;
+  -- Every shilling is tied to a transaction ID (re-review M1): what the wrong-amount claims already
+  -- recorded, plus at most the waiting claim, which then records the rest.
+  select coalesce(sum(x.received_tzs), 0) into v_recorded from public.payment_claims x
+  where x.order_id = o.id and x.status = 'wrong_amount';
+  select * into w from public.payment_claims where order_id = o.id and status = 'waiting' for update;
+  if p_outcome = 'nothing_received' and v_recorded > 0 then
+    raise exception 'money recorded' using errcode = 'P0001', hint = 'Money is recorded on this order: close it as refund_due.';
+  end if;
+  if p_outcome = 'refund_due' and (v_received < v_recorded or (v_received > v_recorded and w.id is null)) then
+    raise exception 'received amount needed' using errcode = 'P0001',
+      hint = 'At least what is recorded; more only with a waiting claim, which then records the rest.';
+  end if;
 
-  update public.payment_claims
-  set status = 'rejected', reason_code = 'other', admin_note = left(coalesce(v_note, 'Closed by Kwetuly'), 200),
-      decided_by = v_admin, decided_at = now()
-  where order_id = o.id and status = 'waiting';
+  if w.id is not null and v_received > v_recorded then
+    update public.payment_claims
+    set status = 'wrong_amount', received_tzs = v_received - v_recorded, admin_note = left(coalesce(v_note, 'Closed by Kwetuly'), 200),
+        decided_by = v_admin, decided_at = now()
+    where id = w.id;
+  else
+    update public.payment_claims
+    set status = 'rejected', reason_code = 'other', admin_note = left(coalesce(v_note, 'Closed by Kwetuly'), 200),
+        decided_by = v_admin, decided_at = now()
+    where order_id = o.id and status = 'waiting';
+  end if;
   update public.payment_orders
   set status = 'cancelled', status_reason = case when v_received > 0 then 'closed_refund_needed' else 'closed_by_kwetuly' end,
       received_tzs = v_received, refund_due = v_received > 0
@@ -139,6 +160,7 @@ declare
   v_admin uuid := (select auth.uid());
   o public.payment_orders;
   v_note text := nullif(btrim(regexp_replace(coalesce(p_note, ''), '[[:cntrl:]]+', ' ', 'g')), '');
+  v_recorded bigint;
 begin
   if v_admin is null or not private.is_admin() then
     raise exception 'admins only' using errcode = 'P0001';
@@ -147,13 +169,19 @@ begin
   if o.id is null then
     raise exception 'order not found' using errcode = 'P0001';
   end if;
-  if o.user_id = v_admin then
+  -- Not on one's own payment, nor on a deposit paid to oneself (re-review L1).
+  if o.user_id = v_admin or (o.payment_id is not null and exists (
+        select 1 from public.payments p where p.id = o.payment_id and p.payee_user_id = v_admin)) then
     raise exception 'own payment' using errcode = 'P0001';
   end if;
   if not o.refund_due then
     raise exception 'no refund due' using errcode = 'P0001';
   end if;
-  if p_amount_tzs is null or p_amount_tzs <= 0 or o.refunded_tzs + p_amount_tzs > coalesce(o.received_tzs, 0) then
+  -- Capped at what the claims recorded against transaction IDs (re-review M1).
+  select coalesce(sum(x.received_tzs), 0) into v_recorded from public.payment_claims x
+  where x.order_id = o.id and x.status in ('wrong_amount', 'confirmed');
+  if p_amount_tzs is null or p_amount_tzs <= 0
+     or o.refunded_tzs + p_amount_tzs > least(coalesce(o.received_tzs, 0), v_recorded) then
     raise exception 'refund more than received' using errcode = 'P0001';
   end if;
   insert into public.payment_refund_records (order_id, amount_tzs, channel, sent_reference, note, recorded_by)

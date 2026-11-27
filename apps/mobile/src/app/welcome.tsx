@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, Chip, Field, FormMessage, Muted } from '@/components/ui';
+import { hostSignUpOption } from '@kwetuly/shared';
+import { Button, Card, Chip, Field, FormMessage, ListGroup, ListRow, Muted } from '@/components/ui';
 import { PhoneField, initialPhone } from '@/components/phone-field';
 import { completeOnboarding, getInviteOnly } from '@/lib/api-more';
 import { useProfile } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { useFeatures } from '@/lib/features';
+import { menuIcon } from '@/lib/menu-icons';
 import { safeNext } from '@/lib/onboarding';
 import { colors, space } from '@/theme';
 
@@ -15,7 +18,7 @@ const ROLES = ['traveler', 'guide', 'provider'] as const;
 // One-time step after signing up with Google / Facebook / Apple: account type, name and phone.
 // Also where unfinished accounts are sent from a form; `next` is the screen they wanted.
 export default function WelcomeScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const params = useLocalSearchParams<{ next?: string; role?: string }>();
   const next = safeNext(params.next);
   const profile = useProfile();
@@ -27,6 +30,9 @@ export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const inviteOnly = useQuery({ queryKey: ['invite-only'], queryFn: getInviteOnly });
   const [busy, setBusy] = useState(false);
+  // "Become a concierge or VIP host" (or investment visit host) while a host switch is on. It picks Guide
+  // and opens the hosts screen, whose Apply comes back to this screen instead of opening a second one.
+  const hostOption = hostSignUpOption(useFeatures().data ?? {});
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
 
   // Fill in the account name once the profile arrives (adjusting state while rendering, not in an effect).
@@ -64,6 +70,20 @@ export default function WelcomeScreen() {
           ))}
         </View>
         <Muted>{t.join[role].body}</Muted>
+        {hostOption && (
+          <ListGroup>
+            <ListRow
+              icon={menuIcon(hostOption.anchor === 'concierge' ? 'crown' : 'trending-up')}
+              title={hostOption.title[locale]}
+              subtitle={hostOption.body[locale]}
+              accessibilityRole="link"
+              onPress={() => {
+                setRole('guide');
+                router.push({ pathname: '/hosts', params: { from: 'welcome' } });
+              }}
+            />
+          </ListGroup>
+        )}
         {inviteOnly.data && <Field label={t.auth.inviteCode} value={inviteCode} onChangeText={setInviteCode} autoCapitalize="none" hint={t.auth.inviteHint} />}
         <Field label={t.auth.fullName} value={name} onChangeText={setName} />
         <PhoneField

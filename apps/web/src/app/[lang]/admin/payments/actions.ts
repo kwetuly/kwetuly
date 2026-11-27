@@ -34,6 +34,8 @@ function code(message: string | undefined): string {
   if (/order_closed/.test(m)) return 'closed';
   if (/deposit not pending/.test(m)) return 'deposit';
   if (/commission lines changed/.test(m)) return 'changed';
+  if (/lookalikes not checked/.test(m)) return 'lookalikes';
+  if (/money recorded/.test(m)) return 'outcome';
   if (/rate out of range/.test(m)) return 'rate_range';
   if (/rate jump/.test(m)) return 'rate_jump';
   if (/refund more than received/.test(m)) return 'refund_more';
@@ -66,6 +68,7 @@ export async function confirmClaim(formData: FormData) {
     p_received_tzs: received,
     p_idempotency_key: /^[A-Za-z0-9-]{8,64}$/.test(key) ? key : randomUUID(),
     p_note: note(formData),
+    p_lookalikes_checked: formData.get('lookalikes') === 'yes',
   });
   if (error) go(back, { e: code(error.message) });
   go(back, { ok: data === 'already_confirmed' ? 'already' : data === 'received_not_applied' ? 'held' : 'confirmed' });

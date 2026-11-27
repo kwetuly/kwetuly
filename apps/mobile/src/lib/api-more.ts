@@ -113,6 +113,18 @@ export async function listMoments(): Promise<Moment[]> {
   return rows.map((r) => ({ ...r, sender_name: shortName(r.sender_name), media_url: r.media_path ? urls.get(r.media_path) ?? null : null }));
 }
 
+/**
+ * True when the signed-in account already sent this interest request (public.my_interest_exists,
+ * supabase/migrations/20261126000060_interest_signups_owner.sql; it only answers for the caller's own
+ * rows). Any error, such as the function not being there yet, reads as "not sent", so the button shows.
+ */
+export async function myInterestExists(section: string, item: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('my_interest_exists', { p_section: section, p_item: item });
+  return !error && data === true;
+}
+
+// user_id is not sent: the database fills it from the session (default auth.uid()), and refuses more
+// than 5 requests an hour (error 'rate_limited', see isRateLimited in @kwetuly/shared).
 export async function registerInterest(input: { section: string; item: string; kind: 'traveler' | 'business'; name: string; contact: string; businessName?: string; message?: string; locale: string }) {
   const { error } = await supabase.from('interest_signups').insert({
     section: input.section,

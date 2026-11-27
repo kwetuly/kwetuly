@@ -10,6 +10,7 @@ import {
   formatTzsAmount,
   isPaymentReference,
   lipaPayText,
+  pctText,
   type LipaNetwork,
   type LipaNumber,
   type LipaPayText,
@@ -114,6 +115,9 @@ async function Order({ params, searchParams, locale }: { params: Promise<{ ref: 
         {/* The rate saved on the order, never today's (QA 4). */}
         {order.amount_usd != null && order.usd_tzs_rate != null && (
           <p className="text-sm text-muted">{fillText(t.rateOnOrder, { rate: String(order.usd_tzs_rate), source: order.rate_source ?? '' })}</p>
+        )}
+        {deposit && order.commission_pct != null && order.commission_tzs != null && (
+          <p className="text-sm font-semibold">{fillText(t.commissionLine, { amount: formatTzsAmount(order.commission_tzs), pct: pctText(order.commission_pct) })}</p>
         )}
         {deposit && <p className="text-sm">{t.depositHeld}</p>}
         <div className="pt-2">

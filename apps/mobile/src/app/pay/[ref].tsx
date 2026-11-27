@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import { Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,6 +11,7 @@ import {
   formatTzsAmount,
   isPaymentReference,
   lipaPayText,
+  pctText,
   type LipaNetwork,
   type LipaPayText,
 } from '@kwetuly/shared';
@@ -26,8 +28,7 @@ const networkName = (n: LipaNetwork, t: LipaPayText) => (n === 'bank' ? t.bank :
 // One Lipa payment in the app: the amount from the server, Kwetuly's numbers, the payment code, the
 // steps for each network and the "I have paid" form. Only an admin confirmation makes it paid. For a
 // purpose the store policy keeps on the website, the app shows the status only (no amount to pay, no
-// numbers, no form, no link). The code and numbers are selectable text (long-press to copy); a copy
-// button needs expo-clipboard, a new native module (not added without a dev build).
+// numbers, no form, no link). Copy buttons use expo-clipboard (from claude/wave1).
 export default function PayOrderScreen() {
   const { ref } = useLocalSearchParams<{ ref: string }>();
   const reference = (ref ?? '').toUpperCase();
@@ -48,6 +49,12 @@ export default function PayOrderScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState('');
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(''), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
 
   if (!session) return <SignInPrompt screen />;
   if (!valid) return <ScreenState empty emptyText={t.errors.not_found} />;
@@ -68,6 +75,15 @@ export default function PayOrderScreen() {
   const chosen = network ?? list[0]?.network ?? 'mpesa';
   const phoneValue = phone ?? profile.data?.phone ?? '';
   const deposit = o.purpose === 'offer_deposit' || o.purpose === 'group_deposit';
+
+  async function copy(value: string) {
+    try {
+      await Clipboard.setStringAsync(value);
+      setCopied(value);
+    } catch {
+      // The value stays on screen as selectable text.
+    }
+  }
 
   async function send() {
     setBusy(true);
@@ -116,9 +132,13 @@ export default function PayOrderScreen() {
           <Muted>{t.amount}</Muted>
           <Text selectable style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>{amount}</Text>
           {o.usd_tzs_rate != null && <Muted>{fillText(t.rateOnOrder, { rate: String(o.usd_tzs_rate), source: o.rate_source ?? '' })}</Muted>}
+          {deposit && o.commission_pct != null && o.commission_tzs != null && (
+            <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{fillText(t.commissionLine, { amount: formatTzsAmount(o.commission_tzs), pct: pctText(o.commission_pct) })}</Text>
+          )}
           {deposit && <Muted>{t.depositHeld}</Muted>}
           <Muted>{t.reference}</Muted>
           <Text selectable style={{ ...type.title2, ...font.bold, color: brand.ink, letterSpacing: 2 }}>{o.reference}</Text>
+          <Button title={copied === o.reference ? t.copied : t.copy} variant="outline" size="md" onPress={() => copy(o.reference)} accessibilityLabel={`${t.copy}: ${o.reference}`} />
           <Muted>{t.referenceHint}</Muted>
         </Card>
       )}
@@ -135,6 +155,7 @@ export default function PayOrderScreen() {
                 <View key={n.id} style={{ gap: space.xs, paddingTop: space.sm, borderTopWidth: 1, borderColor: brand.mint }}>
                   <Text style={{ ...type.body, ...font.bold }}>{networkName(n.network, t)}{n.bank_name ? ` (${n.bank_name})` : ''}</Text>
                   <Text selectable style={{ ...type.title2, ...font.bold, color: brand.ink }}>{n.lipa_number}</Text>
+                  <Button title={copied === n.lipa_number ? t.copied : t.copy} variant="outline" size="md" onPress={() => copy(n.lipa_number)} accessibilityLabel={`${t.copy}: ${n.lipa_number}`} />
                   <Muted selectable>{fillText(t.nameShown, { name: n.business_name })}</Muted>
                   {n.menu_hint ? <Muted selectable>{fillText(t.menu, { hint: n.menu_hint })}</Muted> : null}
                   <Text style={{ ...type.callout, ...font.semibold }}>{t.stepsTitle}</Text>

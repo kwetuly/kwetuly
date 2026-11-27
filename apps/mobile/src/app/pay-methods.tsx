@@ -7,6 +7,9 @@ import {
   METHOD_BADGE_NAMES,
   PAYMENT_PURPOSES,
   canPick,
+  commissionTzs,
+  fillText,
+  pctText,
   formatTzsAmount,
   orderMethods,
   payChooserText,
@@ -18,6 +21,7 @@ import {
 import { Button, ErrorState, Muted, Skeleton } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { paymentMethods, readLastMethod, saveLastMethod, startOrder } from '@/lib/lipa';
+import { supabase } from '@/lib/supabase';
 import { useType } from '@/lib/use-type';
 import { brand, colors, radius, space } from '@/theme';
 
@@ -40,6 +44,15 @@ export default function PayMethodsScreen() {
 
   const rows = useQuery({ queryKey: ['pay-methods', purpose], queryFn: () => paymentMethods(purpose!), enabled: !!purpose, staleTime: 0 });
   const list = orderMethods(rows.data ?? [], last);
+  const deposit = purpose === 'offer_deposit' || purpose === 'group_deposit';
+  const commission = useQuery({
+    queryKey: ['deposit-commission', purpose, params.subject],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('deposit_commission_preview', { p_purpose: purpose, p_subject: params.subject });
+      return error || data == null ? null : String(data);
+    },
+    enabled: deposit && !!params.subject,
+  });
   const amount = /^\d{1,12}$/.test(params.amount ?? '') ? formatTzsAmount(params.amount!) : null;
   const badgeName = (b: MethodBadge) => (b === 'bank' ? t.bank : METHOD_BADGE_NAMES[b]);
 
@@ -71,6 +84,12 @@ export default function PayMethodsScreen() {
         <View style={{ backgroundColor: brand.sand, borderRadius: radius.button, padding: space.md, gap: space.xxs }}>
           <Text style={type.muted}>{t.amountLabel}</Text>
           <Text style={{ ...type.title2, ...font.extrabold, color: brand.ink, fontVariant: ['tabular-nums'] }}>{amount}</Text>
+          {deposit && commission.data && commissionTzs(Number(params.amount), commission.data) != null && (
+            <Text style={{ ...type.callout, ...font.semibold, color: brand.ink }}>
+              {fillText(lp.commissionLine, { amount: formatTzsAmount(commissionTzs(Number(params.amount), commission.data)!), pct: pctText(commission.data) })}
+            </Text>
+          )}
+          {deposit && <Text style={type.caption}>{lp.depositHeld}</Text>}
         </View>
       )}
       {offline && <Text accessibilityRole="alert" style={{ ...type.callout, ...font.semibold, color: brand.ink }}>{t.offline}</Text>}

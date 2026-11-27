@@ -268,4 +268,22 @@ export type MyPaymentOrder = {
   received_tzs: number | null;
   claims_count: number;
   refund_due: boolean;
+  /** Kwetuly's commission on a deposit from the business's agreement; null = "as agreed". */
+  commission_pct: number | string | null;
+  commission_tzs: number | null;
 };
+
+/**
+ * Kwetuly's commission in whole TZS from an amount and a percent text such as "10" or "12.50",
+ * rounded half up (the same as the database's round()). BigInt only. null when not computable.
+ */
+export function commissionTzs(amountTzs: number, pctText: string | number | null | undefined): number | null {
+  const m = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(String(pctText ?? '').trim());
+  if (!m || !Number.isSafeInteger(amountTzs) || amountTzs <= 0) return null;
+  const pct100 = BigInt(m[1]) * BigInt(100) + BigInt((m[2] ?? '').padEnd(2, '0'));
+  if (pct100 <= BigInt(0) || pct100 > BigInt(10000)) return null;
+  return Number((BigInt(amountTzs) * pct100 + BigInt(5000)) / BigInt(10000));
+}
+
+/** "10" or "12.5" for display, from a numeric(5,2) value. */
+export const pctText = (pct: string | number): string => String(Number(pct));

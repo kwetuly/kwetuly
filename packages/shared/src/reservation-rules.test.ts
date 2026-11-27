@@ -18,7 +18,7 @@ import {
 } from './reservation-rules';
 import { percentCommissionTzs, roundHalfUpDiv } from './reservations';
 
-const sql = readFileSync(new URL('../../../supabase/migrations/20261122300000_reservations.sql', import.meta.url), 'utf8');
+const sql = readFileSync(new URL('../../../supabase/migrations/20261122300000_reservations.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n'); // Windows checkouts have CRLF
 const quoted = (block: string) => [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
 const fn = (name: string) => sql.match(new RegExp(`create or replace function ${name.replace('.', '\\.')}[\\s\\S]*?\\n\\$\\$;`))![0];
 

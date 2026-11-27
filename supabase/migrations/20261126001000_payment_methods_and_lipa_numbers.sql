@@ -72,7 +72,8 @@ begin
      or not exists (select 1 from pg_trigger
                     where tgname = 'site_settings_feature_guard' and tgrelid = 'public.site_settings'::regclass and not tgisinternal)
      or to_regprocedure('private.manual_payments_on(text)') is null
-     or to_regprocedure('private.money_feature_on(text)') is null then
+     or to_regprocedure('private.money_feature_on(text)') is null
+     or to_regclass('private.feature_switch_meta') is null then
     raise exception 'manual lipa: apply 20261126000000_feature_switch_admin.sql (the payments_live lock, manual_payments_on and money_feature_on) first; nothing was changed.';
   end if;
 end;
@@ -93,6 +94,15 @@ on conflict (key) do nothing;
 -- WALTER DECIDES THIS ONE LINE (holding guides' and businesses' money; Bank of Tanzania question for legal).
 -- Walter's "everything on" (2026-11-24) = true; the security review recommends false. Flip the word only.
 insert into public.site_settings (key, value) values ('feature.deposits_via_kwetuly_lipa', '{"on": true}') on conflict (key) do nothing;
+
+-- Admin data for the three new switches, so /admin/features lists them (switches slice table).
+insert into private.feature_switch_meta (feature_id, legal)
+select v.id, v.legal from (values
+  ('deposits_via_kwetuly_lipa',         'pending'),
+  ('guide_verification_fees',           'none'),
+  ('business_badge_fees',               'none')
+) as v(id, legal)
+on conflict (feature_id) do nothing;
 
 -- private.manual_payments_on(id) and private.money_feature_on(id) come from the switches slice
 -- (checked in step 0); they are not redefined here.
@@ -137,7 +147,9 @@ alter table public.site_settings add constraint site_settings_payments_shape che
   or (key = 'payments.manual_usd_tzs_rate'
       and jsonb_typeof(value) = 'object'
       and jsonb_typeof(value -> 'rate') = 'string'
-      and (value ->> 'rate') ~ '^[1-9][0-9]{0,5}(\.[0-9]{1,4})?$'
+      -- Plausible USD-TZS only (re-review L3); case keeps the cast safe.
+      and case when (value ->> 'rate') ~ '^[1-9][0-9]{0,5}(\.[0-9]{1,4})?$'
+               then (value ->> 'rate')::numeric between 1000 and 10000 else false end
       and jsonb_typeof(value -> 'source') = 'string'
       and char_length(value ->> 'source') between 3 and 120
       and jsonb_typeof(value -> 'as_of') = 'string'

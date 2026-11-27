@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, linkTexts, profileCompletion, safeExternalUrl, verificationText, reserveText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
+import { StepProgress } from '@/components/step-progress';
+import { BookingLinkEntry } from './booking-link/entry';
+import { ProfileLinksEntry } from './links/entry';
+import { PhotosEntry } from './photos/entry';
 import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
@@ -18,7 +22,6 @@ import { today } from '@/lib/today';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
 import { PhoneField } from '@/components/phone-field';
-import { LinkInput } from '@/components/link-input';
 import { KeepForm } from '@/components/keep-form';
 import { SavedNote } from '@/components/saved-note';
 import { MarkedInput } from '@/components/marked-input';
@@ -97,6 +100,8 @@ async function DashboardForRole({ t, locale, searchParams }: { t: Dictionary; lo
   const businessTools = (embedded: boolean) => (
     <>
       <BusinessListing t={t} locale={locale} user={user} status={params} embedded={embedded} />
+      {/* Under a guide's overview the guide already has this line (the same page covers both). */}
+      {!embedded && <ProfileLinksEntry locale={locale} business />}
       <div className="mt-12">
         <BusinessDashboard t={t} locale={locale} user={user} />
       </div>
@@ -147,7 +152,14 @@ async function GuideEditor({
         .eq('guide_id', guide.id)
         .maybeSingle<PrivateDetails>()
     : { data: null };
+  // Step 4 "your trips": packages sent for checking or approved (drafts and refused ones do not count).
+  const { count: tripCount } = guide
+    ? await supabase.from('guide_packages').select('id', { count: 'exact', head: true }).eq('guide_id', guide.id).in('status', ['pending', 'approved'])
+    : { count: 0 };
   const d = t.dashboard;
+  const g = guideProgressText(locale);
+  const pl = profileLinksText(locale);
+  const up = uploadsText(locale);
   const now = await today();
   const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
@@ -167,29 +179,24 @@ async function GuideEditor({
     phone: `${guideStatusText(locale).phoneShort}: ${t.phone.invalidGeneric}`,
     whatsapp: `${guideStatusText(locale).whatsappShort}: ${t.phone.invalidGeneric}`,
     slug: guideStatusText(locale).slugTaken,
-    ...Object.fromEntries(['link_facebook', 'link_instagram', 'link_tiktok', 'links'].map((code) => [code, linkErrorMessage(code, locale) ?? t.auth.error])),
+    // A link saved before the database checks can still refuse a save of this step ('links').
+    links: linkErrorMessage('links', locale) ?? t.auth.error,
   };
-  const stepDone: Record<GuideStep, boolean> = {
-    basics: !!guide,
-    work: (guide?.specialties.length ?? 0) > 0 && !!guide?.headline,
-    documents: !!details?.id_document_path && !!details?.license_document_path,
-    story: !!guide?.bio,
-    calls: !!guide?.call_enabled,
-  };
+  const progress = guideStepProgress({ guide, idDocument: !!details?.id_document_path, licenceDocument: !!details?.license_document_path, tripCount: tripCount ?? 0 });
+  const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
 
   if (step) {
     const index = GUIDE_STEPS.indexOf(step);
     const next = GUIDE_STEPS[index + 1];
     return (
       <>
-        <p className="text-sm font-semibold text-leaf-dark">{d.stepOf.replace('{n}', String(index + 1)).replace('{total}', String(GUIDE_STEPS.length))}</p>
-        <h1 className="mt-1 text-3xl font-bold">{d.steps[index]}</h1>
-        {!guide && <p className="mt-2 text-muted">{d.stepsIntro}</p>}
-        <ol className="mt-4 flex gap-1.5" aria-hidden>
-          {GUIDE_STEPS.map((s, i) => (
-            <li key={s} className={`h-1.5 flex-1 rounded-[5px] ${i <= index ? 'bg-leaf' : 'bg-surface'}`} />
-          ))}
-        </ol>
+        <p className="text-sm font-semibold text-leaf-dark">{g.stepOf.replace('{n}', String(index + 1)).replace('{total}', String(GUIDE_STEPS.length))}</p>
+        <h1 className="mt-1 text-3xl font-bold">
+          {g.steps[index]}
+          {progress.steps[index].optional && <span className="ml-2 align-middle text-sm font-semibold text-muted">({g.optional})</span>}
+        </h1>
+        {!guide && <p className="mt-2 text-muted">{g.stepsIntro}</p>}
+        <StepProgress progress={progress} titles={g.steps} line={guideProgressLine(progress, locale)} labels={progressLabels} current={index} />
         {/* Refusals come back into the form, which keeps everything typed (KeepForm). */}
         {/* key: a message from one step never shows on the next. */}
         <KeepForm key={step} action={saveGuideProfile} messages={stepMessages} fallback={t.auth.error} className="card mt-6 space-y-5">
@@ -208,7 +215,9 @@ async function GuideEditor({
                 </select>
               </Field>
               <Checkboxes name="languages" label={d.languages} options={GUIDE_LANGUAGES.map((l) => ({ value: l.code, label: l.name }))} checked={guide?.languages ?? ['sw', 'en']} />
-              <Field label={d.photo}>
+              <Field label={`${d.photo} (${g.needed})`}>
+                {/* Needed for step 1 to count as finished; saving without one still works, as before. */}
+                {!guide?.photo_url && <span className="mb-2 block text-sm text-muted">{g.photoNeeded}</span>}
                 {guide?.photo_url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={guide.photo_url} alt={d.currentPhoto} className="mb-2 block size-20 rounded-[5px] object-cover" />
@@ -273,8 +282,30 @@ async function GuideEditor({
             </>
           )}
 
+          {/* Nothing to save here: trips are packages, made on their own page. "Save and continue" moves on. */}
+          {step === 'trips' && (
+            <>
+              <p className="text-sm text-muted">{g.tripsIntro}</p>
+              <p className="font-semibold">{!tripCount ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</p>
+              <Link href={`/${locale}/dashboard/packages?next=trips${tripCount ? '' : '&new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
+            </>
+          )}
+
           {step === 'story' && (
             <>
+              {/* Photos (S4) and profile links (S5) have their own pages, which come back here (?next=story).
+                  They leave this form, so the guide is asked to save first. */}
+              <div className="space-y-2 rounded-[5px] bg-surface p-4 text-sm">
+                <p className="font-semibold">{g.saveFirst}</p>
+                <p>
+                  <Link href={`/${locale}/dashboard/photos?next=story`} className="font-semibold text-forest underline">{up.title}</Link>
+                  <span className="block text-muted">{up.menuHint}</span>
+                </p>
+                <p>
+                  <Link href={`/${locale}/dashboard/links?next=story`} className="font-semibold text-forest underline">{pl.entry}</Link>
+                  <span className="block text-muted">{pl.entryNote}</span>
+                </p>
+              </div>
               <Field label={d.bio}>
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
@@ -293,12 +324,6 @@ async function GuideEditor({
                 <input type="checkbox" name="open_to_partners" defaultChecked={guide?.open_to_partners ?? false} className="size-4 accent-forest" />
                 {d.openToPartners}
               </label>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Facebook"><LinkInput id="facebook_url" name="facebook_url" kind="facebook" locale={locale} defaultValue={guide?.facebook_url} placeholder="facebook.com/…" /></Field>
-                <Field label="Instagram"><LinkInput id="instagram_url" name="instagram_url" kind="instagram" locale={locale} defaultValue={guide?.instagram_url} placeholder="@…" /></Field>
-                <Field label="TikTok"><LinkInput id="tiktok_url" name="tiktok_url" kind="tiktok" locale={locale} defaultValue={guide?.tiktok_url} placeholder="@…" /></Field>
-              </div>
-              <p className="text-sm text-muted">{linkTexts(locale).socialHint}</p>
               <p className="text-sm text-muted">{d.followUs}</p>
               <Field label={`${d.slug} (kwetuly.com/${locale}/guides/…)`}>
                 <MarkedInput id="slug" errorCode="slug" message={guideStatusText(locale).slugTaken} className="field" name="slug" maxLength={60} pattern="[a-z0-9\-]+" defaultValue={guide?.slug ?? ''} placeholder="your-name" />
@@ -367,21 +392,30 @@ async function GuideEditor({
       )}
       {status.error && <p role="alert" className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{linkErrorMessage(status.error, locale) ?? (status.error === 'name' ? t.auth.nameReserved : t.auth.error)}</p>}
 
-      {/* The sign-up steps, each with its own short form. */}
+      {/* The progress line and the sign-up steps, each with its own short form. */}
+      <StepProgress progress={progress} titles={g.steps} line={guideProgressLine(progress, locale)} labels={progressLabels} />
       <ol className="card mt-6 divide-y divide-line">
         {GUIDE_STEPS.map((s, i) => (
           <li key={s} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-            {stepDone[s] ? <CircleCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-5 shrink-0 text-muted" aria-hidden />}
-            <span className="font-semibold">
-              {i + 1}. {d.steps[i]}
+            {progress.steps[i].done ? <CircleCheck className="size-5 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-5 shrink-0 text-muted" aria-hidden />}
+            <span className="min-w-0">
+              <span className="block font-semibold">
+                {i + 1}. {g.steps[i]}
+              </span>
+              <span className="block text-xs text-muted">
+                {progress.steps[i].done ? g.done : g.todo}
+                {progress.steps[i].optional && ` · ${g.optional}`}
+                {' · '}
+                {g.stepHints[i]}
+              </span>
             </span>
-            <span className="text-xs text-muted">{s === 'calls' ? d.optionalStep : stepDone[s] ? d.stepDone : d.stepTodo}</span>
-            <Link href={stepHref(s)} className={`ml-auto px-4 py-2 text-sm ${stepDone[s] ? 'btn-outline' : 'btn'}`}>
+            <Link href={stepHref(s)} className={`ml-auto shrink-0 px-4 py-2 text-sm ${progress.steps[i].done ? 'btn-outline' : 'btn'}`} aria-label={`${d.edit}: ${g.steps[i]}`}>
               {d.edit}
             </Link>
           </li>
         ))}
       </ol>
+      {/* Same order as the app's profile overview: packages, booking link, photos, links. */}
       {guide && (
         <Link href={`/${locale}/dashboard/packages`} className="card mt-6 flex items-center gap-3 hover:border-leaf">
           <span className="flex-1">
@@ -391,6 +425,9 @@ async function GuideEditor({
           <span className="btn px-4 py-2 text-sm">{t.packages.add}</span>
         </Link>
       )}
+      {guide && <BookingLinkEntry locale={locale} />}
+      {guide && <PhotosEntry locale={locale} />}
+      {guide && <ProfileLinksEntry locale={locale} />}
       {guide && <GuideReferral approved={guide.verification_status === 'approved'} t={t} locale={locale} />}
       <ProfileStrength guide={guide} details={details} t={t} />
     </>

@@ -49,7 +49,7 @@
 --
 -- Undo (in this order):
 --   drop function public.admin_mark_wrong_amount(uuid, bigint, text), public.admin_reject_payment(uuid, text, text, boolean),
---     public.admin_confirm_payment(uuid, bigint, text, text), public.admin_payment_queue(text),
+--     public.admin_confirm_payment(uuid, bigint, text, text, boolean), public.admin_payment_queue(text),
 --     public.my_payment_orders(text), public.cancel_payment_order(text), public.submit_payment_claim(text, text, text, text),
 --     public.my_subscriptions(),
 --     private.apply_payment_effect(uuid, uuid), private.payment_notify(text, uuid, jsonb),
@@ -94,6 +94,11 @@ create table if not exists public.payment_orders (
   amount_usd numeric(12, 2) check (amount_usd > 0),
   usd_tzs_rate numeric(12, 4) check (usd_tzs_rate > 0),
   rate_source text check (char_length(rate_source) <= 60),
+  -- Deposits only: Kwetuly's commission from the business's agreement (business_agreements.rafrika_pct)
+  -- when the payee is a business with an active agreement, copied when the order is made and shown to
+  -- the traveller (Walter 2026-11-27). null = no agreed figure: the texts say "as agreed".
+  commission_pct numeric(5, 2) check (commission_pct > 0 and commission_pct <= 100),
+  commission_tzs bigint check (commission_tzs >= 0),
   -- received_not_applied: the money arrived but the paid effect could not run (deposit no longer
   -- payable, commission lines changed, ...): Walter decides a refund (refund_due).
   status text not null default 'awaiting_payment'
@@ -192,6 +197,9 @@ create policy "Members read their own paid periods" on public.member_subscriptio
   for select to authenticated using (user_id = (select auth.uid()) or private.is_admin());
 
 create index if not exists payment_audit_actor_idx on public.payment_audit_log (actor, action, created_at desc);
+-- The queue's blocked-attempts count (re-review L4).
+create index if not exists payment_audit_loose_idx on public.payment_audit_log ((details ->> 'transaction_loose'))
+  where action = 'duplicate_blocked';
 
 create or replace function private.touch_payment_order()
 returns trigger
@@ -241,6 +249,12 @@ begin
     raise exception 'A submitted claim cannot be changed' using errcode = 'P0001';
   end if;
   if old.status in ('confirmed', 'rejected') and new.status is distinct from old.status then
+    raise exception 'This claim is already decided' using errcode = 'P0001';
+  end if;
+  -- A decided claim is frozen (re-review L2): only the phone can still be removed.
+  if old.status in ('confirmed', 'rejected')
+     and (new.received_tzs, new.decided_by, new.decided_at, new.admin_note, new.reason_code)
+         is distinct from (old.received_tzs, old.decided_by, old.decided_at, old.admin_note, old.reason_code) then
     raise exception 'This claim is already decided' using errcode = 'P0001';
   end if;
   return new;
@@ -434,7 +448,7 @@ returns table (reference text, purpose text, account_type text, period text, pro
                amount_tzs bigint, amount_usd numeric, usd_tzs_rate numeric, rate_source text, status text,
                status_reason text, created_at timestamptz, confirmed_at timestamptz, claim_network text,
                claim_transaction_id text, claim_phone text, claim_status text, claim_reason text, claim_note text,
-               received_tzs bigint, claims_count integer, refund_due boolean)
+               received_tzs bigint, claims_count integer, refund_due boolean, commission_pct numeric, commission_tzs bigint)
 language sql
 stable
 security definer
@@ -446,7 +460,7 @@ as $$
          coalesce(o.received_tzs, (select sum(x.received_tzs) from public.payment_claims x
                                    where x.order_id = o.id and x.status in ('wrong_amount', 'confirmed')))::bigint,
          (select count(*) from public.payment_claims x where x.order_id = o.id)::integer,
-         o.refund_due
+         o.refund_due, o.commission_pct, o.commission_tzs
   from public.payment_orders o
   left join lateral (
     select * from public.payment_claims c where c.order_id = o.id order by c.submitted_at desc limit 1) c on true
@@ -522,6 +536,11 @@ begin
     return jsonb_build_object('effect', 'verification_paid', 'starts_on', v_start, 'paid_until', v_until);
 
   elsif o.purpose = 'reservation_commission' then
+    -- Checked up front so it lands on the received-but-not-applied path (re-review L6).
+    if not private.feature_on('reservation_commission_billing') then
+      raise exception 'not_applicable: billing is off' using errcode = 'P0001',
+        hint = 'The money is recorded as received and the order is held for a refund decision.';
+    end if;
     select sum(r.commission_tzs) into v_sum from public.reservations r
     where r.provider_ref = o.provider_id and not r.is_sample and r.commission_status = 'invoiced'
       and (r.starts_at at time zone 'Africa/Dar_es_Salaam')::date >= o.commission_month
@@ -559,6 +578,14 @@ begin
                    else exists (select 1 from public.providers p where p.owner_id = t.organizer_id
                                 and p.verification_status = 'approved' and not p.is_sample) end)
         into v_ok;
+    end if;
+    -- Another payment of this deposit already paid (e.g. by a provider): never two (re-review L6).
+    if exists (select 1 from public.payments p
+               where p.id <> o.payment_id and p.status = 'paid'
+                 and ((o.trip_offer_id is not null and p.trip_offer_id = o.trip_offer_id)
+                      or (o.group_member_id is not null and p.group_member_id = o.group_member_id))) then
+      raise exception 'not_applicable: deposit already paid' using errcode = 'P0001',
+        hint = 'The money is recorded as received and the order is held for a refund decision.';
     end if;
     if not coalesce(v_ok, false) then
       raise exception 'not_applicable: deposit no longer payable' using errcode = 'P0001',
@@ -631,7 +658,8 @@ grant execute on function public.admin_payment_queue(text) to authenticated;
 
 -- Returns 'confirmed', or 'already_confirmed' when this order was confirmed before (same or another
 -- key): the effect is never applied twice.
-create or replace function public.admin_confirm_payment(p_claim uuid, p_received_tzs bigint, p_idempotency_key text, p_note text default null)
+create or replace function public.admin_confirm_payment(p_claim uuid, p_received_tzs bigint, p_idempotency_key text, p_note text default null,
+  p_lookalikes_checked boolean default false)
 returns text
 language plpgsql
 security definer
@@ -678,6 +706,13 @@ begin
   end if;
   if o.status in ('cancelled', 'received_not_applied') then
     raise exception 'order_closed' using errcode = 'P0001';
+  end if;
+  -- Look-alike or blocked transaction IDs need an explicit "I checked" (re-review L5).
+  if not coalesce(p_lookalikes_checked, false)
+     and (exists (select 1 from public.payment_claims y where y.id <> c.id and y.transaction_loose = c.transaction_loose)
+          or exists (select 1 from public.payment_audit_log l
+                     where l.action = 'duplicate_blocked' and l.details ->> 'transaction_loose' = c.transaction_loose)) then
+    raise exception 'lookalikes not checked' using errcode = 'P0001';
   end if;
   select coalesce(sum(x.received_tzs), 0) into v_before from public.payment_claims x
   where x.order_id = o.id and x.status = 'wrong_amount';
@@ -738,8 +773,8 @@ begin
   return 'confirmed';
 end;
 $$;
-revoke execute on function public.admin_confirm_payment(uuid, bigint, text, text) from public, anon;
-grant execute on function public.admin_confirm_payment(uuid, bigint, text, text) to authenticated;
+revoke execute on function public.admin_confirm_payment(uuid, bigint, text, text, boolean) from public, anon;
+grant execute on function public.admin_confirm_payment(uuid, bigint, text, text, boolean) to authenticated;
 
 -- Reject a claim. The transaction ID stays blocked. p_close: close the order too (otherwise the payer
 -- may send another transaction ID). Closing an order with part payments received means a refund:

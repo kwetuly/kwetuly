@@ -11,7 +11,8 @@ export type HostsText = {
   title: string;
   intro: string;
   kindsTitle: string;
-  kinds: { name: string; body: string }[];
+  /** concierge = personal trip (VIP) host, investment = investment visit host; anchors on /hosts. */
+  kinds: { id: 'concierge' | 'investment'; name: string; body: string }[];
   notOfferedTitle: string;
   notOffered: string[];
   howTitle: string;
@@ -34,10 +35,12 @@ const en: HostsText = {
   kindsTitle: 'Two kinds of host',
   kinds: [
     {
+      id: 'concierge',
       name: 'Personal trip host',
       body: 'You plan and go along on private, quiet trips. You plan each day, introduce visitors to guides on Kwetuly and keep their personal details private.',
     },
     {
+      id: 'investment',
       name: 'Investment visit host',
       body: 'You help visitors who come to look at business in Tanzania with schedules, getting around, language and introductions. You point them to official government websites only. You do not give investment, legal or tax advice, and you never promise permits, approvals or speed.',
     },
@@ -51,7 +54,7 @@ const en: HostsText = {
   ],
   howTitle: 'How it works',
   how: [
-    'Sign up in the same five steps as our guides: About you, What you do, Documents, Story and links, Prep calls.',
+    'Sign up as a guide and complete the same steps as our guides.',
     'Kwetuly reviews and approves each applicant one by one. Not every application is accepted.',
     'Once approved, you add your services. Kwetuly approves each one before it appears.',
     'You set your own price. Kwetuly’s share is explained clearly before you agree.',
@@ -72,7 +75,7 @@ const en: HostsText = {
   ],
   draftNote: 'These rules are being reviewed by a Tanzanian advocate and may change before hosts go live. Approved hosts accept the final version before their services appear.',
   apply: 'Apply to become a host',
-  applyNote: 'You will create a guide account first. Tell us in your story that you want to be a host.',
+  applyNote: 'You will create a guide account first. After approval, Kwetuly will ask you which host service you would like to add.',
 };
 
 const sw: HostsText = {
@@ -84,10 +87,12 @@ const sw: HostsText = {
   kindsTitle: 'Aina mbili za wenyeji',
   kinds: [
     {
+      id: 'concierge',
       name: 'Mwenyeji wa safari binafsi',
       body: 'Unapanga na kuongozana na wageni katika safari za faragha na tulivu. Unapanga kila siku, unawatambulisha kwa waongozaji walio kwenye Kwetuly na unatunza siri ya taarifa zao binafsi.',
     },
     {
+      id: 'investment',
       name: 'Mwenyeji wa ziara za uwekezaji',
       body: 'Unawasaidia wageni wanaokuja kuangalia biashara Tanzania kwa ratiba, kuzunguka, lugha na kuwatambulisha. Unawaelekeza kwenye tovuti rasmi za serikali tu. Hutoi ushauri wa uwekezaji, sheria wala kodi, na huahidi kamwe vibali, idhini wala kasi.',
     },
@@ -101,7 +106,7 @@ const sw: HostsText = {
   ],
   howTitle: 'Jinsi inavyofanya kazi',
   how: [
-    'Jisajili kwa hatua tano zile zile za waongozaji: Kuhusu wewe, Unachofanya, Nyaraka, Hadithi na viungo, Simu za maandalizi.',
+    'Jisajili kama mwongozaji na ukamilishe hatua zile zile za waongozaji wetu.',
     'Kwetuly inakagua na kuidhinisha kila mwombaji mmoja mmoja. Si kila ombi linakubaliwa.',
     'Ukikubaliwa, unaongeza huduma zako. Kwetuly inaidhinisha kila huduma kabla haijaonekana.',
     'Unaweka bei yako mwenyewe. Sehemu ya Kwetuly inaelezwa wazi kabla hujakubali.',
@@ -122,7 +127,7 @@ const sw: HostsText = {
   ],
   draftNote: 'Kanuni hizi zinakaguliwa na wakili wa Tanzania na zinaweza kubadilika kabla wenyeji hawajaanza. Wenyeji walioidhinishwa wanakubali toleo la mwisho kabla huduma zao hazijaonekana.',
   apply: 'Omba kuwa mwenyeji',
-  applyNote: 'Utafungua akaunti ya mwongozaji kwanza. Tuambie kwenye hadithi yako kuwa unataka kuwa mwenyeji.',
+  applyNote: 'Utafungua akaunti ya mwongozaji kwanza. Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza.',
 };
 
 export const HOSTS_TEXT: Partial<Record<Locale, HostsText>> & { en: HostsText } = { en, sw };

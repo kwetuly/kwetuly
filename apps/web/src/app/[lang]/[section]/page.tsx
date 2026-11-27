@@ -3,13 +3,14 @@ import { pageMeta } from '@/lib/seo';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { ALL_SECTIONS } from '@kwetuly/shared';
+import { ALL_SECTIONS, visibleItems } from '@kwetuly/shared';
 import { defaultLocale, hasLocale, locales } from '@/i18n/config';
 import { getDictionary, getLocale } from '@/i18n/dictionaries';
 import { Icon } from '@/components/icon';
 import { itemHref } from '@/lib/menu';
 import { PhotoHero } from '@/components/photo-hero';
 import { SECTION_PHOTOS } from '@/lib/photos';
+import { getFeatures } from '@/lib/features';
 
 const sections = ALL_SECTIONS;
 
@@ -40,7 +41,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
   const { section: slug } = await params;
   const section = sections.find((s) => s.slug === slug);
   if (!section) notFound();
-  const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const [t, locale, features] = await Promise.all([getDictionary(), getLocale(), getFeatures()]);
 
   return (
     <>
@@ -54,7 +55,7 @@ async function SectionContent({ params }: PageProps<'/[lang]/[section]'>) {
         </div>
       </PhotoHero>
       <section className="mx-auto grid max-w-6xl gap-5 px-4 py-12 sm:grid-cols-2">
-        {section.items.map((item) => (
+        {visibleItems(section.items, features).map((item) => (
           <Link
             key={item.slug}
             href={itemHref(locale, section, item)}

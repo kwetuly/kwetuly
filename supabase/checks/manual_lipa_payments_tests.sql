@@ -105,6 +105,8 @@ reset role;
 select pg_temp.check((select count(*) >= 2 from public.payment_audit_log where action = 'number_added'), 'A: number changes logged');
 select pg_temp.expect_code($q$delete from public.payment_numbers$q$, 'never deleted', 'A: numbers are never deleted');
 select pg_temp.expect_code($q$update public.payment_audit_log set action = 'x'$q$, 'cannot be changed', 'A: audit log is append-only');
+select pg_temp.expect_code($q$insert into public.site_settings (key, value) values ('payments.manual_usd_tzs_rate', '{"rate": "50", "source": "Test source", "as_of": "2026-11-27"}')
+  on conflict (key) do update set value = excluded.value$q$, 'site_settings_payments_shape', 'A/re-L3: an implausible rate is refused by the shape check too');
 
 select pg_temp.as_user('11111111-0000-4000-8000-0000000000a1');
 set local role authenticated;
@@ -286,7 +288,9 @@ select pg_temp.as_user('44444444-0000-4000-8000-0000000000c2', 'aal2');
 set local role authenticated;
 select pg_temp.check((select similar_claims >= 1 and blocked_attempts >= 2 from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'),
   'E/H1: the queue warns about the look-alike and the blocked attempts');
-select pg_temp.check(public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'), 120000, 'key-test-0005') = 'confirmed',
+select pg_temp.expect_code($q$select public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'), 120000, 'key-test-0005')$q$,
+  'lookalikes not checked', 'E/L5: a look-alike needs the explicit check');
+select pg_temp.check(public.admin_confirm_payment((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTXOOO1'), 120000, 'key-test-0005', null, true) = 'confirmed',
   'E: badge renewal confirmed');
 reset role;
 select pg_temp.check((select badge_valid_until = private.tz_today() + 30 and badge_requested_at is not null from public.providers
@@ -329,6 +333,8 @@ select pg_temp.as_user('44444444-0000-4000-8000-0000000000c2', 'aal2');
 set local role authenticated;
 select public.admin_mark_wrong_amount((select claim_id from public.admin_payment_queue('waiting') where transaction_id = 'TESTTX0010'), 150000, 'Paid too much');
 select pg_temp.expect_code($q$select public.admin_close_order((select reference from o7), 'refund_due', 0)$q$, 'received amount needed', 'E/M2: refund_due needs the amount');
+select pg_temp.expect_code($q$select public.admin_close_order((select reference from o7), 'nothing_received', 0)$q$, 'money recorded', 'E/re-M1: nothing_received refused when money is recorded');
+select pg_temp.expect_code($q$select public.admin_close_order((select reference from o7), 'refund_due', 200000)$q$, 'received amount needed', 'E/re-M1: more than recorded needs a waiting claim');
 select public.admin_close_order((select reference from o7), 'refund_due', 150000, 'Overpaid; refund to the payer');
 select pg_temp.check((select count(*) = 1 from public.admin_refunds_due() where reference = (select reference from o7)), 'E/M2: listed as refund due');
 select pg_temp.expect_code($q$select public.admin_record_refund((select reference from o7), 150001, 'mpesa', 'RF12345')$q$,
@@ -404,7 +410,12 @@ reset role;
 select pg_temp.check((select status = 'cancelled' from public.payment_orders where reference = (select reference from d3)), 'E/H2: the unpaid deposit order is closed');
 
 -- M4: phones of claims decided more than 12 months ago are removed; audit rows stay.
+select pg_temp.expect_code($q$update public.payment_claims set received_tzs = 1 where transaction_key = 'TESTTX0001'$q$,
+  'already decided', 'E/L2: a decided claim is frozen');
+-- Age the claim for the purge test (the guard freezes decided claims, so it is paused for this setup only).
+alter table public.payment_claims disable trigger payment_claims_guard;
 update public.payment_claims set decided_at = now() - interval '13 months' where transaction_key = 'TESTTX0001';
+alter table public.payment_claims enable trigger payment_claims_guard;
 select pg_temp.check(private.purge_claim_phones() >= 1, 'E/M4: the purge removed a phone');
 select pg_temp.check((select payer_phone is null and phone_purged_at is not null from public.payment_claims where transaction_key = 'TESTTX0001'),
   'E/M4: phone removed, claim kept');

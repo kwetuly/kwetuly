@@ -40,7 +40,8 @@
 -- Undo: drop function public.start_payment_order(text, uuid, text, text, date, text, text),
 --   public.payment_methods_for(text, text), public.admin_payment_methods(), public.admin_save_payment_method(text, text, text, integer, text[]),
 --   public.admin_set_store_policy(jsonb, jsonb, jsonb), private.payment_method_state(text, text), private.purchase_kind(text),
---   private.store_route(text, text), private.show_coming_soon(text), private.log_payment_methods();
+--   private.store_route(text, text), private.show_coming_soon(text), private.log_payment_methods(),
+--   public.deposit_commission_preview(text, uuid), private.deposit_commission_pct(text, uuid);
 --   drop table public.payment_method_registry;
 --   delete from public.site_settings where key in ('payments.purchase_kinds', 'payments.store_policy', 'payments.store_flags');
 
@@ -214,6 +215,53 @@ revoke execute on function private.payment_method_state(text, text) from public;
 grant execute on function private.payment_method_state(text, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
+-- 3b. Kwetuly's commission on a deposit (Walter 2026-11-27): the business's agreement
+--     (business_agreements.rafrika_pct, active) when the payee is a business. Guides have no agreement
+--     table: null, and the texts say "as agreed". Never invented.
+-- ---------------------------------------------------------------------------
+create or replace function private.deposit_commission_pct(p_purpose text, p_subject uuid)
+returns numeric
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select a.rafrika_pct
+  from public.business_agreements a
+  join public.providers p on p.id = a.provider_id
+  where a.active and a.rafrika_pct > 0 and p.verification_status = 'approved' and not p.is_sample
+    and p.owner_id = case p_purpose
+      when 'offer_deposit' then (select f.offered_by from public.trip_offers f where f.id = p_subject and f.guide_id is null)
+      when 'group_deposit' then (select t.organizer_id from public.group_trip_members m join public.group_trips t on t.id = m.group_trip_id
+                                 where m.id = p_subject and t.guide_id is null)
+    end
+  order by p.created_at
+  limit 1;
+$$;
+revoke execute on function private.deposit_commission_pct(text, uuid) from public, anon, authenticated;
+
+-- For the deposit box and the chooser before an order exists: only the traveller of that offer or spot.
+create or replace function public.deposit_commission_preview(p_purpose text, p_subject uuid)
+returns numeric
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when p_purpose = 'offer_deposit' and exists (
+      select 1 from public.trip_offers f join public.trip_requests r on r.id = f.request_id
+      where f.id = p_subject and r.traveler_id = (select auth.uid()))
+      then private.deposit_commission_pct(p_purpose, p_subject)
+    when p_purpose = 'group_deposit' and exists (
+      select 1 from public.group_trip_members m where m.id = p_subject and m.traveler_id = (select auth.uid()))
+      then private.deposit_commission_pct(p_purpose, p_subject)
+  end;
+$$;
+revoke execute on function public.deposit_commission_preview(text, uuid) from public, anon;
+grant execute on function public.deposit_commission_preview(text, uuid) to authenticated;
+
+-- ---------------------------------------------------------------------------
 -- 4. Payer: start an order (amounts from the server only). p_provider is the method the payer chose
 --    in the chooser; the server refuses it unless it is live now. p_platform is what the client says
 --    it runs on; it only picks the store route (never a security decision).
@@ -248,6 +296,7 @@ declare
   v_ref text;
   v_try integer := 0;
   v_kind text;
+  v_commission_pct numeric(5, 2);
 begin
   if v_user is null then
     raise exception 'sign in first' using errcode = 'P0001';
@@ -377,6 +426,7 @@ begin
     -- Same integer rule as private.guard_new_payment and depositTzs (packages/shared): no floating point.
     v_usd := v_cents::numeric / 100;
     v_amount := (ceil(v_cents * v_rate * 100 / 1000000) * 100)::bigint;
+    v_commission_pct := private.deposit_commission_pct(p_purpose, p_subject);
   end if;
 
   -- An open order for the same thing is reused; a stale one with no claim is replaced.
@@ -422,14 +472,15 @@ begin
       insert into public.payment_orders (reference, user_id, purpose, provider, account_type, period, price_id, guide_id,
                                          provider_id, commission_month, trip_offer_id, group_member_id, payment_id,
                                          subject_key, amount_tzs, amount_usd, usd_tzs_rate, rate_source,
-                                         purchase_kind, platform)
+                                         purchase_kind, platform, commission_pct, commission_tzs)
       values (v_ref, v_user, p_purpose, 'manual_lipa',
               case when p_purpose = 'verification' then p_account_type when p_purpose = 'business_badge' then 'business' end,
               case when p_purpose = 'verification' then p_period when p_purpose = 'business_badge' then 'year' end,
               v_price.id, v_guide, v_provider, v_month,
               case when p_purpose = 'offer_deposit' then p_subject end,
               case when p_purpose = 'group_deposit' then p_subject end,
-              v_payment, v_key, v_amount, v_usd, v_rate, v_rate_source, v_kind, p_platform)
+              v_payment, v_key, v_amount, v_usd, v_rate, v_rate_source, v_kind, p_platform,
+              v_commission_pct, case when v_commission_pct is not null then round(v_amount * v_commission_pct / 100)::bigint end)
       returning * into v_order;
       exit;
     exception when unique_violation then
