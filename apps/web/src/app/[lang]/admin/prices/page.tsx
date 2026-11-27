@@ -189,7 +189,10 @@ async function ReservationRates({ locale, fees }: { locale: Locale; fees: boolea
             </div>
             <p className="text-sm text-muted">{fees ? feeBasis(row) : basis(row)}. Now: <strong className="text-ink">{valueText(row)}</strong>{row.active_from ? `, from ${row.active_from}` : ''}</p>
 
-            {row.status === 'draft' && <DraftForm row={row} locale={locale} today={today} />}
+            {row.status === 'draft' && (
+              <DraftForm row={row} locale={locale} today={today}
+                amountLabel={fees ? fillText(a.feeAmountLabel, { period: a.periods[row.period as keyof typeof a.periods] ?? row.period }) : undefined} />
+            )}
 
             {row.status === 'active' && (!row.active_to || row.active_to > today) && (
               <div className="flex flex-wrap gap-3">
@@ -235,7 +238,7 @@ async function ReservationRates({ locale, fees }: { locale: Locale; fees: boolea
   );
 }
 
-function DraftForm({ row, locale, today }: { row: PriceRow; locale: Locale; today: string }) {
+function DraftForm({ row, locale, today, amountLabel }: { row: PriceRow; locale: Locale; today: string; amountLabel?: string }) {
   const percent = row.period === 'percent';
   const perGuest = row.service_code === 'reservation_commission' && row.period === 'once';
   const complete = (percent ? row.percent != null : row.amount_tzs != null) && !!row.active_from && (!perGuest || row.max_guests_counted != null);
@@ -252,7 +255,7 @@ function DraftForm({ row, locale, today }: { row: PriceRow; locale: Locale; toda
           </label>
         ) : (
           <label className="text-sm">
-            <span className="block font-semibold">{perGuest ? 'TZS per guest who came' : 'TZS per person served'}</span>
+            <span className="block font-semibold">{amountLabel ?? (perGuest ? 'TZS per guest who came' : 'TZS per person served')}</span>
             <input name="amount_tzs" inputMode="numeric" defaultValue={row.amount_tzs ?? ''} placeholder="not set" className="w-40 rounded-[5px] border border-line px-2 py-1.5" />
           </label>
         )}

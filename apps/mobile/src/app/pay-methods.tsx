@@ -115,6 +115,7 @@ export default function PayMethodsScreen() {
               </View>
               <Text style={type.muted}>{row.methods.map((m) => t.methods[m]).join(', ')}</Text>
               {row.badges.length > 0 && <Text style={type.caption}>{row.badges.map(badgeName).join(' · ')}</Text>}
+              {!pick && <Text style={type.caption}>{t.comingSoonHint}</Text>}
               {busy === row.id && <Text style={type.caption}>{t.loading}</Text>}
             </Pressable>
           );

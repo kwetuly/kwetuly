@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Building2, CreditCard, Smartphone, WifiOff, X } from 'lucide-react';
 import {
   LAST_METHOD_KEY,
@@ -77,6 +77,12 @@ export function PaymentChooser({ purpose, subject, period, month, rows, amountTe
   const titleId = useId();
 
   useEffect(() => setLast(readLast()), []);
+  // A refusal comes back as ?payError on the same page (soft navigation keeps this dialog open):
+  // close it so the error shown on the page is seen (QA re-check 1).
+  const payError = useSearchParams().get('payError');
+  useEffect(() => {
+    if (payError) dialog.current?.close();
+  }, [payError]);
 
   const list = rows ? orderMethods(rows, last) : [];
   const badgeName = (b: MethodBadge) => (b === 'bank' ? t.bank : METHOD_BADGE_NAMES[b]);

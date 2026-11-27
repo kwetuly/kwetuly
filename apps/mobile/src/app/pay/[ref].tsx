@@ -54,6 +54,10 @@ export default function PayOrderScreen() {
   if (order.isPending) return <ScreenState loading />;
   if (order.isError) return <ScreenState error={order.error} onRetry={() => order.refetch()} />;
   if (!order.data) return <ScreenState empty emptyText={t.errors.not_found} />;
+  // The store route needs the server's answer: loading and errors get their own state; status-only
+  // only when the server returned an empty list (QA re-check 3).
+  if (methods.isPending) return <ScreenState loading />;
+  if (methods.isError) return <ScreenState error={methods.error} onRetry={() => methods.refetch()} retryLabel={t.retry} />;
   const o = order.data;
   const amount = formatTzsAmount(o.amount_tzs);
   const received = o.received_tzs ? formatTzsAmount(o.received_tzs) : '';

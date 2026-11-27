@@ -86,7 +86,6 @@ export async function PayDeposit({ kind, id, totalUsd, percent, paid, review, pa
           <p className="text-sm font-semibold">{formatTzsAmount(lipaTzs)}</p>
           {error && <p role="alert" className="text-sm font-semibold">{Object.hasOwn(lp.errors, error) ? lp.errors[error] : errorText(error, p)}</p>}
           <PayNow purpose={purpose} subject={id} amountTzs={lipaTzs} locale={locale} back={back} note={lp.depositHeld} />
-          <p className="text-xs opacity-80">{lp.depositHeld}</p>
           <p className="text-xs opacity-70">{p.direct}</p>
         </div>
       );
