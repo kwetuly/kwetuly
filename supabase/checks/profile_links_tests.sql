@@ -54,7 +54,7 @@ insert into public.providers (id, owner_id, business_name, base_region, business
 values ('5c5c5c5c-0000-4000-8000-0000000000b2', '5a5a5a5a-0000-4000-8000-0000000000b2', 'PL test lodge', 'Moshi', 'hotel', 'approved');
 
 -- Switch on for parts A to C.
-insert into public.site_settings (key, value) values ('feature.profile_links', '{"on": true, "legal": "none"}')
+insert into public.site_settings (key, value) values ('feature.profile_links', '{"on": true}')
 on conflict (key) do update set value = excluded.value;
 
 -- ===========================================================================
@@ -293,7 +293,7 @@ select pg_temp.check((select count(*) >= 1 from public.notification_outbox where
 -- ===========================================================================
 -- D. Switch off: new links are refused, clearing and the old guide links still work
 -- ===========================================================================
-update public.site_settings set value = '{"on": false, "legal": "none"}' where key = 'feature.profile_links';
+update public.site_settings set value = '{"on": false}' where key = 'feature.profile_links';
 
 select pg_temp.as_user('5a5a5a5a-0000-4000-8000-0000000000a1');
 set local role authenticated;

@@ -160,6 +160,25 @@ from public.start_media_upload('avatar', 'guide', '97979797-0000-4000-8000-00000
 select pg_temp.check((select count(*) = 1 from t_ids where k = 'avatar_off'), 'avatar upload still works while cover_gallery is off');
 select pg_temp.check((select count(*) = 1 from public.remove_my_media((select id from t_ids where k = 'avatar_off'))), 'test avatar removed again');
 reset role;
+-- An upload started while the switch was on (cover2) cannot be claimed, so it is not published.
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+set local role service_role;
+do $$
+begin
+  begin
+    perform * from public.svc_claim_media((select id from t_ids where k = 'cover2'), 'a1a1a1a1-0000-4000-8000-0000000000a1');
+    raise exception 'FAIL: claim of a cover upload while feature.cover_gallery is off (should have been refused)';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+    if sqlerrm not like '%media:switched_off%' then
+      raise exception 'FAIL: switched-off claim refused with the wrong error: %', sqlerrm;
+    end if;
+  end;
+end $$;
+reset role;
+select pg_temp.check((select state = 'uploading' and finishing_claim is null and finishing_until is null
+                      from public.media m join t_ids t on t.id = m.id where t.k = 'cover2'),
+                     'a refused claim leaves the upload unclaimed');
 select set_config('request.jwt.claims', '', true);
 update public.site_settings set value = '{"on": true}' where key = 'feature.cover_gallery';
 

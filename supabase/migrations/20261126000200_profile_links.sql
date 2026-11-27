@@ -25,7 +25,7 @@
 --                             so websites already on live never block other saves
 --        providers.facebook_url / instagram_url / tiktok_url   the same rules as the guides' columns
 --      The columns are new and empty, so the checks are added validated (nothing to clean first).
---   3. Switch: feature.profile_links (seeded on, legal 'none', if S1 has not seeded it already). While it
+--   3. Switch: feature.profile_links (seeded {"on": true} if S1 has not seeded it already). While it
 --      is off, signed-in members cannot set the new links (clearing one is always allowed); admins and
 --      server jobs are not limited. A switch never deletes data. Instagram, Facebook and TikTok on guides
 --      are not switched: they existed before.
@@ -157,9 +157,11 @@ alter table public.providers
 -- ---------------------------------------------------------------------------
 -- 2. Switch: feature.profile_links
 -- S1 (20261126000000) seeds every new switch too; whichever runs first wins and the other leaves it.
+-- Exactly {"on": ...}: S1's site_settings_feature_shape allows no other keys (the legal state lives in
+-- S1's admin-only table), so this row never blocks S1, whichever order they are pasted in.
 -- ---------------------------------------------------------------------------
 insert into public.site_settings (key, value)
-values ('feature.profile_links', '{"on": true, "legal": "none"}')
+values ('feature.profile_links', '{"on": true}')
 on conflict (key) do nothing;
 
 -- While the switch is off, a signed-in member cannot put a new value in a switched link (clearing is

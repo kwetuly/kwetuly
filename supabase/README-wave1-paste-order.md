@@ -16,8 +16,8 @@ for a local or test project only: never run them on live.
 | --- | --- | --- | --- |
 | 1 | `migrations/20261126000000_feature_switch_admin.sql` | 32,184 bytes | `checks/feature_switch_admin_tests.sql` (15,873 bytes) |
 | 2 | `migrations/20261126000060_interest_signups_owner.sql` | 13,885 bytes | `checks/interest_signups_owner_tests.sql` (12,367 bytes) |
-| 3 | `migrations/20261126000100_media_uploads.sql` | 52,855 bytes | `checks/media_uploads_tests.sql` (25,285 bytes) |
-| 4 | `migrations/20261126000200_profile_links.sql` | 23,536 bytes | `checks/profile_links_tests.sql` (26,925 bytes) |
+| 3 | `migrations/20261126000100_media_uploads.sql` | 53,354 bytes | `checks/media_uploads_tests.sql` (26,273 bytes) |
+| 4 | `migrations/20261126000200_profile_links.sql` | 23,710 bytes | `checks/profile_links_tests.sql` (26,891 bytes) |
 
 `20261126000050_host_switches.sql` is gone on purpose: the `feature.vip_hosts` and
 `feature.investment_hosts` rows are now in step 1.

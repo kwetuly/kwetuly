@@ -4,7 +4,8 @@
 -- depend on 20261126000000_feature_switch_admin.sql (S1): it seeds feature.cover_gallery itself
 -- ({"on": true}, only if the row is missing) and reads it with private.feature_on (20261031214101).
 -- QA M1: while feature.cover_gallery is off, start_media_upload() and the insert guard refuse new
--- cover and gallery photos ('media:switched_off'). Avatar and product photos are not switched.
+-- cover and gallery photos, and svc_claim_media() refuses to publish ones started before the switch
+-- went off ('media:switched_off'). Avatar and product photos are not switched.
 --
 -- Slice S4: one upload system (design docs/team/design-2026-11-24.md, section 9.2), with the changes
 -- from the S4 security review (M1-M4, L1, L3, L5-L7).
@@ -713,6 +714,12 @@ begin
   if r.state <> 'uploading' then
     return query select false, null::uuid, r.state, r.field, r.path, r.thumb_path;
     return;
+  end if;
+  -- Security review of QA M1 (Low): an upload started while cover_gallery was on is not published
+  -- after the switch goes off. The row stays 'uploading'; the sweep gives it up after 24 hours, or it
+  -- can be finished once the switch is on again.
+  if r.field in ('cover', 'gallery') and not private.feature_on('cover_gallery') then
+    raise exception 'media:switched_off' using errcode = '42501';
   end if;
   if r.finishing_until > now() then
     raise exception 'media:busy' using errcode = '23514';
