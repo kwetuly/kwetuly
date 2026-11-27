@@ -185,6 +185,12 @@ function render(event: string, locale: string, p: Record<string, string | null>)
       return sw
         ? { subject: 'Ufutaji wa picha umesimama kwa sehemu', body: 'Ufutaji wa kila saa wa picha ulikuta faili nyingi zisizo na mmiliki au safu, kwa hiyo haukuzifuta hizo. Picha zilizoondolewa bado zinafutwa. Tafadhali endesha "media-sweep" kwa dry_run na uangalie.' }
         : { subject: 'Photo sweep partly stopped', body: 'The hourly photo sweep found more files without an account or row than usual, so it did not delete those. Removed photos are still deleted. Please run "media-sweep" with dry_run and check.' };
+    // Exchange rates (migration 20261203030000, slice S48). To every admin, email only, in English
+    // (admin texts). Payloads carry an error code or currency codes only.
+    case 'exchange_rates_failed':
+      return { subject: 'Exchange rates not updated', body: `The Bank of Tanzania rates could not be read (${v('error')}). Nothing new was saved. Screens keep the last good rate until it is 7 days old, then hide the estimate. Please check the page and the admin rates screen.` };
+    case 'exchange_rates_suspect':
+      return { subject: `Exchange rates to check: ${v('currencies')}`, body: `New Bank of Tanzania rates for ${v('currencies')} differ by more than 15% from the last stored rate, so they are not used yet. Please choose "Use anyway" or "Ignore" on the admin rates screen.` };
     // Reservations (migration 20261122300000). Payloads carry ids only: no name, note, diet line or
     // phone number. The texts say what to do; details are on Kwetuly. Kiswahili to be checked by Walter.
     case 'reservation_requested':

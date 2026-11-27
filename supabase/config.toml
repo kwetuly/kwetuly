@@ -24,3 +24,8 @@ verify_jwt = false
 [functions.media-finish]
 # Called with the signed-in person's token; the gateway checks it, and the function checks it again.
 verify_jwt = true
+
+[functions.exchange-rates]
+# Called by pg_cron with EXCHANGE_RATES_SECRET (x-exchange-rates-key header), which is not a JWT, and by an
+# admin's "Fetch now" with their own token. The function checks both itself (slice S48).
+verify_jwt = false
