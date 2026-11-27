@@ -163,7 +163,7 @@ const en: LipaPayText = {
   retry: 'Try again',
   emptyNext: 'When you pay for verification, a badge or a deposit, it shows here.',
   rateOnOrder: 'Rate used for this deposit: {rate} TZS per US dollar ({source}).',
-  commissionLine: 'Kwetuly\'s commission: {amount} ({pct}%)',
+  commissionLine: 'Kwetuly\'s commission on this deposit: {amount} ({pct}%)',
   refundNotes: {
     manual: 'Refunds are decided by Kwetuly case by case and sent back to the number you paid from.',
     hosted: 'Refunds go back through the payment provider.',
@@ -283,7 +283,7 @@ const sw: LipaPayText = {
   retry: 'Jaribu tena',
   emptyNext: 'Ukilipia uhakiki, beji au amana, itaonekana hapa.',
   rateOnOrder: 'Kiwango kilichotumika kwa amana hii: TZS {rate} kwa dola moja ({source}).',
-  commissionLine: 'Kamisheni ya Kwetuly: {amount} ({pct}%)',
+  commissionLine: 'Kamisheni ya Kwetuly kwenye amana hii: {amount} ({pct}%)',
   refundNotes: {
     manual: 'Kurudishiwa pesa kunaamuliwa na Kwetuly kwa kila hali, na hutumwa kwenye namba uliyolipia.',
     hosted: 'Kurudishiwa pesa hupitia kampuni ya malipo.',
@@ -398,7 +398,7 @@ const fr: LipaPayText = {
   retry: 'Réessayer',
   emptyNext: 'Quand vous payez une vérification, un badge ou un acompte, il apparaît ici.',
   rateOnOrder: 'Taux utilisé pour cet acompte : {rate} TZS par dollar US ({source}).',
-  commissionLine: 'Commission de Kwetuly : {amount} ({pct} %)',
+  commissionLine: 'Commission de Kwetuly sur cet acompte : {amount} ({pct} %)',
   refundNotes: {
     manual: 'Les remboursements sont décidés au cas par cas par Kwetuly et renvoyés au numéro utilisé pour payer.',
     hosted: 'Les remboursements passent par le prestataire de paiement.',
@@ -513,7 +513,7 @@ const it: LipaPayText = {
   retry: 'Riprova',
   emptyNext: 'Quando paghi una verifica, un badge o un acconto, appare qui.',
   rateOnOrder: 'Tasso usato per questo acconto: {rate} TZS per dollaro USA ({source}).',
-  commissionLine: 'Commissione di Kwetuly: {amount} ({pct}%)',
+  commissionLine: 'Commissione di Kwetuly su questo acconto: {amount} ({pct}%)',
   refundNotes: {
     manual: 'I rimborsi sono decisi da Kwetuly caso per caso e inviati al numero da cui hai pagato.',
     hosted: 'I rimborsi passano dal fornitore di pagamento.',
@@ -628,7 +628,7 @@ const de: LipaPayText = {
   retry: 'Erneut versuchen',
   emptyNext: 'Wenn Sie eine Verifizierung, ein Abzeichen oder eine Anzahlung bezahlen, erscheint sie hier.',
   rateOnOrder: 'Kurs für diese Anzahlung: {rate} TZS pro US-Dollar ({source}).',
-  commissionLine: 'Provision von Kwetuly: {amount} ({pct} %)',
+  commissionLine: 'Provision von Kwetuly auf diese Anzahlung: {amount} ({pct} %)',
   refundNotes: {
     manual: 'Über Rückerstattungen entscheidet Kwetuly im Einzelfall; sie gehen an die Nummer zurück, von der Sie bezahlt haben.',
     hosted: 'Rückerstattungen laufen über den Zahlungsanbieter.',
@@ -743,7 +743,7 @@ const pl: LipaPayText = {
   retry: 'Spróbuj ponownie',
   emptyNext: 'Gdy zapłacisz za weryfikację, odznakę lub zaliczkę, pojawi się tutaj.',
   rateOnOrder: 'Kurs użyty dla tej zaliczki: {rate} TZS za dolara USA ({source}).',
-  commissionLine: 'Prowizja Kwetuly: {amount} ({pct}%)',
+  commissionLine: 'Prowizja Kwetuly od tej zaliczki: {amount} ({pct}%)',
   refundNotes: {
     manual: 'O zwrotach Kwetuly decyduje indywidualnie; trafiają na numer, z którego zapłacono.',
     hosted: 'Zwroty przechodzą przez operatora płatności.',
@@ -858,7 +858,7 @@ const zh: LipaPayText = {
   retry: '重试',
   emptyNext: '您支付认证、徽章或定金后，会显示在这里。',
   rateOnOrder: '此定金使用的汇率：每美元 {rate} 坦桑尼亚先令（{source}）。',
-  commissionLine: 'Kwetuly 的佣金：{amount}（{pct}%）',
+  commissionLine: 'Kwetuly 对这笔定金收取的佣金：{amount}（{pct}%）',
   refundNotes: {
     manual: '退款由 Kwetuly 逐案决定，并退回您付款所用的号码。',
     hosted: '退款通过支付服务商办理。',

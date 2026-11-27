@@ -216,7 +216,8 @@ grant execute on function private.payment_method_state(text, text) to authentica
 
 -- ---------------------------------------------------------------------------
 -- 3b. Kwetuly's commission on a deposit (Walter 2026-11-27): the business's agreement
---     (business_agreements.rafrika_pct, active) when the payee is a business. Guides have no agreement
+--     (business_agreements.kwetuly_pct, active) when the payee is a business. Shown exactly as
+--     computed on this deposit (payouts record no deduction yet, so no other figure is claimed). Guides have no agreement
 --     table: null, and the texts say "as agreed". Never invented.
 -- ---------------------------------------------------------------------------
 create or replace function private.deposit_commission_pct(p_purpose text, p_subject uuid)
@@ -226,16 +227,22 @@ stable
 security definer
 set search_path = ''
 as $$
-  select a.rafrika_pct
-  from public.business_agreements a
-  join public.providers p on p.id = a.provider_id
-  where a.active and a.rafrika_pct > 0 and p.verification_status = 'approved' and not p.is_sample
-    and p.owner_id = case p_purpose
-      when 'offer_deposit' then (select f.offered_by from public.trip_offers f where f.id = p_subject and f.guide_id is null)
-      when 'group_deposit' then (select t.organizer_id from public.group_trip_members m join public.group_trips t on t.id = m.group_trip_id
-                                 where m.id = p_subject and t.guide_id is null)
-    end
-  order by p.created_at
+  -- kwetuly_pct (20261025000000_brand_rename_kwetuly.sql, kept equal to rafrika_pct by a trigger).
+  -- Offers and group trips record only the business's name (company_name), not its id: the business
+  -- of the payee with that name is preferred, then the payee's oldest approved business (review LC).
+  with payee as (
+    select f.offered_by as owner_id, f.company_name from public.trip_offers f
+    where p_purpose = 'offer_deposit' and f.id = p_subject and f.guide_id is null
+    union all
+    select t.organizer_id, t.company_name from public.group_trip_members m join public.group_trips t on t.id = m.group_trip_id
+    where p_purpose = 'group_deposit' and m.id = p_subject and t.guide_id is null
+  )
+  select a.kwetuly_pct
+  from payee y
+  join public.providers p on p.owner_id = y.owner_id
+  join public.business_agreements a on a.provider_id = p.id
+  where a.active and a.kwetuly_pct > 0 and p.verification_status = 'approved' and not p.is_sample
+  order by (y.company_name is not null and lower(btrim(p.business_name)) = lower(btrim(y.company_name))) desc, p.created_at
   limit 1;
 $$;
 revoke execute on function private.deposit_commission_pct(text, uuid) from public, anon, authenticated;

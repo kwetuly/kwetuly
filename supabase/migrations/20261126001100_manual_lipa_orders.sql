@@ -94,7 +94,7 @@ create table if not exists public.payment_orders (
   amount_usd numeric(12, 2) check (amount_usd > 0),
   usd_tzs_rate numeric(12, 4) check (usd_tzs_rate > 0),
   rate_source text check (char_length(rate_source) <= 60),
-  -- Deposits only: Kwetuly's commission from the business's agreement (business_agreements.rafrika_pct)
+  -- Deposits only: Kwetuly's commission from the business's agreement (business_agreements.kwetuly_pct)
   -- when the payee is a business with an active agreement, copied when the order is made and shown to
   -- the traveller (Walter 2026-11-27). null = no agreed figure: the texts say "as agreed".
   commission_pct numeric(5, 2) check (commission_pct > 0 and commission_pct <= 100),
@@ -658,6 +658,7 @@ grant execute on function public.admin_payment_queue(text) to authenticated;
 
 -- Returns 'confirmed', or 'already_confirmed' when this order was confirmed before (same or another
 -- key): the effect is never applied twice.
+drop function if exists public.admin_confirm_payment(uuid, bigint, text, text);
 create or replace function public.admin_confirm_payment(p_claim uuid, p_received_tzs bigint, p_idempotency_key text, p_note text default null,
   p_lookalikes_checked boolean default false)
 returns text
