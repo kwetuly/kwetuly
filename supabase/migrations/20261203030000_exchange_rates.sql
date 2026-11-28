@@ -135,6 +135,8 @@ comment on table public.exchange_rates is
 
 create unique index exchange_rates_bot_day on public.exchange_rates (currency, source, rate_date) where source = 'bot';
 create index exchange_rates_active_idx on public.exchange_rates (currency, source, rate_date desc) where status = 'active';
+-- At most one active override per currency (admin_set_rate_override also takes a per-currency lock).
+create unique index exchange_rates_one_active_override on public.exchange_rates (currency) where source = 'admin' and status = 'active';
 
 -- Append-only: only status may change, along allowed steps; no deletes, no truncate (any role).
 create or replace function private.exchange_rates_guard()
@@ -225,10 +227,11 @@ create table private.exchange_fetch_requests (
 create index exchange_fetch_requests_at_idx on private.exchange_fetch_requests (at desc);
 
 -- First call of an override that needs confirming; the second, identical call must come within 10 minutes.
+-- digest = md5 of every field of the form (currency, rate, source name, link, dates, note).
 create table private.exchange_override_pending (
   admin_id uuid not null,
   currency char(3) not null,
-  tzs_per_unit numeric(18, 6) not null,
+  digest text not null check (digest ~ '^[0-9a-f]{32}$'),
   created_at timestamptz not null default now(),
   primary key (admin_id, currency)
 );
@@ -308,7 +311,7 @@ begin
 end;
 $$;
 
-revoke execute on function private.exchange_rates_alert(text, jsonb, interval) from public, anon, authenticated;
+revoke execute on function private.exchange_rates_alert(text, jsonb, interval) from public, anon, authenticated, service_role;
 
 -- p_rows: [{currency, buying, selling, mean, rate_date (yyyy-mm-dd)}] as text, from parse.ts.
 -- Every row is checked again here. Without a good USD row nothing is saved.
@@ -537,13 +540,15 @@ $$;
 revoke all on function public.admin_rates_fetch_request() from public, anon;
 grant execute on function public.admin_rates_fetch_request() to authenticated;
 
--- Returns {saved: true, id} or {saved: false, needs_confirm: true, reason, reference_rate, diff_pct}.
--- Reference: the current BoT rate (at most 7 days old); without one, the newest override for that
--- currency (PLN always works this way). Confirming is needed when the rate is more than 25% from the
--- reference ('far') or there is no reference at all ('first'). Then the first call saves nothing and
--- remembers the rate; only a second call by the same admin, for the same currency and the same rate,
--- with p_confirm_far = true and within 10 minutes, saves it. p_confirm_far on its own never skips
--- the check. A new override ends the currency's earlier active override.
+-- Returns {saved: true, id} or {saved: false, needs_confirm: true, reason, reference_rate, diff_pct}
+-- (reference_rate and diff_pct are null for reason 'first').
+-- Reference: the current BoT rate (at most 7 days old). Without one, both the newest override for that
+-- currency and the last active BoT rate of any age are references (PLN only ever has overrides).
+-- Confirming is needed when the rate is more than 25% from a reference ('far') or there is no
+-- reference at all ('first'). Then the first call saves nothing and remembers a digest of the whole
+-- form; only a second call by the same admin with exactly the same form, p_confirm_far = true and
+-- within 10 minutes, saves it. p_confirm_far on its own never skips the check. A new override ends
+-- the currency's earlier active override.
 create or replace function public.admin_set_rate_override(
   p_currency text, p_tzs_per_unit numeric, p_source_name text, p_source_url text,
   p_rate_date date, p_valid_until date, p_note text default null, p_confirm_far boolean default false)
@@ -561,7 +566,10 @@ declare
   v_note text := nullif(btrim(coalesce(p_note, '')), '');
   v_rate numeric := round(p_tzs_per_unit, 6);
   v_ref numeric;
+  v_ref2 numeric;
   v_diff numeric;
+  v_diff2 numeric;
+  v_digest text;
   v_reason text;
   v_old uuid;
   v_id uuid;
@@ -591,36 +599,58 @@ begin
     raise exception 'note is at most 300 characters' using errcode = '22023';
   end if;
 
+  -- One override change per currency at a time.
+  perform pg_advisory_xact_lock(hashtext('exchange_override:' || v_currency));
+  v_digest := md5(concat_ws('|', v_currency, v_rate::text, v_name, coalesce(v_url, ''), p_rate_date::text,
+                            p_valid_until::text, coalesce(v_note, '')));
+
   select r.tzs_per_unit into v_ref
     from public.exchange_rates r
    where r.currency = v_currency and r.source = 'bot' and r.status = 'active'
      and r.rate_date between v_today - 7 and v_today
-   order by r.rate_date desc, r.created_at desc
+   order by r.rate_date desc, r.created_at desc, r.id desc
    limit 1;
   if v_ref is null then
+    -- Newest override (the active one first, then the newest ended one), and the last BoT rate of any age.
     select r.tzs_per_unit into v_ref
       from public.exchange_rates r
      where r.currency = v_currency and r.source = 'admin'
-     order by r.created_at desc
+     order by (r.status = 'active') desc, r.created_at desc, r.id desc
      limit 1;
+    select r.tzs_per_unit into v_ref2
+      from public.exchange_rates r
+     where r.currency = v_currency and r.source = 'bot' and r.status = 'active'
+     order by r.rate_date desc, r.created_at desc, r.id desc
+     limit 1;
+    if v_ref is null then
+      v_ref := v_ref2;
+      v_ref2 := null;
+    end if;
   end if;
   if v_ref is null then
     v_reason := 'first';
   else
     v_diff := abs(v_rate - v_ref) / v_ref;
+    if v_ref2 is not null then
+      v_diff2 := abs(v_rate - v_ref2) / v_ref2;
+      if v_diff2 > v_diff then
+        v_diff := v_diff2;
+        v_ref := v_ref2;
+      end if;
+    end if;
     if v_diff > 0.25 then v_reason := 'far'; end if;
   end if;
 
   if v_reason is not null then
     if coalesce(p_confirm_far, false) and exists (
          select 1 from private.exchange_override_pending p
-          where p.admin_id = v_admin and p.currency = v_currency and p.tzs_per_unit = v_rate
+          where p.admin_id = v_admin and p.currency = v_currency and p.digest = v_digest
             and p.created_at > now() - interval '10 minutes') then
       delete from private.exchange_override_pending p where p.admin_id = v_admin and p.currency = v_currency;
     else
-      insert into private.exchange_override_pending (admin_id, currency, tzs_per_unit)
-      values (v_admin, v_currency, v_rate)
-      on conflict (admin_id, currency) do update set tzs_per_unit = excluded.tzs_per_unit, created_at = now();
+      insert into private.exchange_override_pending (admin_id, currency, digest)
+      values (v_admin, v_currency, v_digest)
+      on conflict (admin_id, currency) do update set digest = excluded.digest, created_at = now();
       return jsonb_build_object('saved', false, 'needs_confirm', true, 'reason', v_reason,
                                 'reference_rate', v_ref, 'diff_pct', round(v_diff * 100, 1));
     end if;

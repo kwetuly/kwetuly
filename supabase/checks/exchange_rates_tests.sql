@@ -66,6 +66,7 @@ alter table public.exchange_rates enable trigger exchange_rates_guard_row;
 delete from private.exchange_fetch_log;
 delete from private.exchange_fetch_requests;
 delete from private.exchange_override_pending;
+delete from private.exchange_rate_actions;
 delete from public.notification_outbox where event like 'exchange_rates_%';
 update public.site_settings set value = '{"on": true}' where key = 'feature.local_prices';
 
@@ -89,6 +90,9 @@ select pg_temp.check(not has_function_privilege('authenticated', 'public.svc_exc
 select pg_temp.check(not has_function_privilege('authenticated', 'public.svc_exchange_fetch_failed(text, text, uuid)', 'execute'), 'authenticated cannot log failures');
 select pg_temp.check(not has_function_privilege('service_role', 'private.run_exchange_rates_fetch()', 'execute'), 'only postgres (cron) runs the fetch call');
 select pg_temp.check(not has_function_privilege('authenticated', 'private.exchange_rates_watchdog()', 'execute'), 'only postgres (cron) runs the watchdog');
+select pg_temp.check(not has_function_privilege('service_role', 'private.exchange_rates_alert(text, jsonb, interval)', 'execute'), 'service_role cannot send rate alerts directly');
+select pg_temp.check(exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'exchange_rates_one_active_override'),
+                     'one active override per currency (unique index)');
 select pg_temp.check(has_function_privilege('anon', 'public.current_rates()', 'execute'), 'anon runs current_rates');
 select pg_temp.check(not has_function_privilege('anon', 'public.admin_set_rate_override(text, numeric, text, text, date, date, text, boolean)', 'execute'), 'anon cannot set overrides');
 select pg_temp.check((select bool_and(prosecdef and proconfig @> array['search_path=""']) from pg_proc
@@ -300,10 +304,23 @@ select pg_temp.check((select (x ->> 'needs_confirm')::boolean and x ->> 'reason'
                      'far override asks to confirm');
 select pg_temp.check((public.admin_set_rate_override('EUR', 4100, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, true) ->> 'saved')::boolean is false,
                      'confirming a different rate does not save');
+select pg_temp.check((public.admin_set_rate_override('EUR', 4100, 'Test source', null, (select d from t_day), (select d from t_day) + 7, 'changed note', true) ->> 'saved')::boolean is false,
+                     'confirming with any other field changed does not save');
+select public.admin_set_rate_override('EUR', 4100, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, false);
 select pg_temp.check((select count(*) = 0 from public.admin_exchange_rates('EUR', 50) where source = 'admin'), 'nothing saved before confirming');
 select pg_temp.check((public.admin_set_rate_override('EUR', 4100, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, true) ->> 'saved')::boolean,
                      'confirmed far override saved');
 select pg_temp.check((select tzs_per_unit = 4100 and source = 'admin' from public.current_rates() where currency = 'EUR'), 'override wins');
+
+-- No BoT rate within 7 days (GBP's is 8 days old): the old BoT rate is still a reference.
+select pg_temp.check((select x ->> 'reason' = 'far' and (x ->> 'reference_rate')::numeric = 3495
+                        from public.admin_set_rate_override('GBP', 5000, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, false) x),
+                     'override compared with an old BoT rate');
+select pg_temp.check((public.admin_set_rate_override('GBP', 3500, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, false) ->> 'saved')::boolean,
+                     'override close to the old BoT rate saved at once');
+select pg_temp.check((select x ->> 'reason' = 'first' and x -> 'reference_rate' = 'null'::jsonb and x -> 'diff_pct' = 'null'::jsonb
+                        from public.admin_set_rate_override('AED', 700, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, false) x),
+                     'first override: reference_rate and diff_pct are null');
 
 -- A second EUR override ends the first.
 select public.admin_set_rate_override('EUR', 2950, 'Test source', null, (select d from t_day), (select d from t_day) + 7, null, false);
@@ -324,10 +341,12 @@ select pg_temp.expect_error($q$select public.admin_review_suspect_rate((select i
                             'an ignored row cannot be used later', 'P0002', 'no suspect rate');
 select pg_temp.check((select count(*) filter (where action = 'override_set_far') = 2
                          and count(*) filter (where action = 'override_replaced') = 2
+                         and count(*) filter (where action = 'override_set') = 3
                          and count(*) filter (where action = 'override_ended') = 1
                          and count(*) filter (where action = 'suspect_used') = 1
                          and count(*) filter (where action = 'suspect_ignored') = 1
-                        from public.admin_exchange_rate_actions(100)), 'admin actions logged');
+                        from public.admin_exchange_rate_actions(100)
+                       where admin_id = 'f1f1f1f1-0000-4000-8000-0000000000f1'), 'admin actions logged');
 select pg_temp.check((select count(*) >= 5 from public.admin_exchange_fetch_log(50)), 'admin reads the fetch log');
 reset role;
 

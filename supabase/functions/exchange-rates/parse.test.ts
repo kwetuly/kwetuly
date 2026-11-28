@@ -5,7 +5,7 @@
 // expected value below is copied from that saved page.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { eastAfricaToday, MAX_PAGE_BYTES, parseBotDate, parseBotRates } from './parse.ts';
+import { eastAfricaToday, MAX_PAGE_BYTES, MAX_TABLE_CHARS, MAX_TABLE_ROWS, parseBotDate, parseBotRates } from './parse.ts';
 
 const fixture = readFileSync(new URL('./fixtures/bot-rates-2026-11-27.html', import.meta.url), 'utf8');
 // 27 Nov 2026, 10:00 in Dar es Salaam.
@@ -64,6 +64,12 @@ describe('parseBotRates strictness', () => {
 
   it('refuses a page over the size cap before parsing', () => {
     expect(parseBotRates(page(USD) + ' '.repeat(MAX_PAGE_BYTES), NOW)).toMatchObject({ ok: false, error: 'too_large' });
+  });
+
+  it('refuses an oversized table before matching rows', () => {
+    expect(parseBotRates(page(USD, `<tr><td>${'x'.repeat(MAX_TABLE_CHARS)}</td></tr>`), NOW)).toMatchObject({ ok: false, error: 'too_large' });
+    expect(parseBotRates(page(...Array.from({ length: MAX_TABLE_ROWS + 1 }, () => USD)), NOW)).toMatchObject({ ok: false, error: 'too_large' });
+    expect(parseBotRates(page(...Array.from({ length: MAX_TABLE_ROWS }, () => USD)), NOW).ok).toBe(true);
   });
 
   it('finds the table end in any letter case', () => {

@@ -17,6 +17,13 @@
 // strictly and keeps allow-listed currencies only; public.svc_exchange_rates_save checks every row again,
 // marks jumps over 15% as suspect and alerts admins. Without a good USD row nothing is saved.
 //
+// S49: call "Fetch now" from the server (a Next server action that passes the signed-in admin's own
+// access token), not from the browser. OPTIONS and CORS headers are answered like media-finish only so
+// that a browser call fails cleanly; every call still needs the secret or an admin's token.
+//
+// Answers: 202 {"accepted":true}; 403 {"error":"forbidden"}; 429 {"error":"too_soon"} (an admin request
+// less than 2 minutes ago); 503 {"error":"not_configured"}; 405 {"error":"method"}.
+//
 // Secrets: EXCHANGE_RATES_SECRET (at least 32 random characters; also in Vault as exchange_rates_key).
 // Walter adds them by following supabase/README-exchange-rates.md. Logs counts and error codes only,
 // never page content or tokens.
@@ -33,6 +40,11 @@ const TRY_TIMEOUT_MS = 20_000;
 const WAITS_MS = [15_000, 45_000]; // before the 2nd and 3rd try
 const DEADLINE_MS = 125_000; // all tries; parsing and saving take a few seconds more
 const USER_AGENT = 'Mozilla/5.0 (compatible; rates-reader/1.0)';
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 
 /** Compares SHA-256 digests (fixed length), so neither the content nor the length of the secret leaks. */
 async function sameSecret(given: string, secret: string): Promise<boolean> {
@@ -153,7 +165,8 @@ async function run(db: Db, trigger: 'cron' | 'admin', requestedBy: string | null
 Deno.serve(async (req) => {
   const started = Date.now();
   const json = (body: unknown, status = 200) =>
-    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'method' }, 405);
 
   const url = env('SUPABASE_URL');
@@ -192,7 +205,11 @@ Deno.serve(async (req) => {
   if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) {
     EdgeRuntime.waitUntil(work);
   } else {
-    await work; // local runs without the Edge Runtime
+    // Only local runs lack the Edge Runtime; on a hosted project this would block the answer.
+    if (!/^https?:\/\/(localhost|127\.0\.0\.1|kong)(:\d+)?(\/|$)/.test(url)) {
+      console.warn('exchange-rates: EdgeRuntime.waitUntil missing on a hosted project; working before answering');
+    }
+    await work;
   }
   return json({ accepted: true }, 202);
 });

@@ -9,7 +9,8 @@
 //   - date not after today and at most 7 days old (East Africa time)
 //   - a USD row must be there and pass; otherwise nothing is returned (error 'no_usd', or 'stale'
 //     when the USD row is fine but older than 7 days: the page has not been updated)
-//   - pages over MAX_PAGE_BYTES are refused before any parsing ('too_large')
+//   - pages over MAX_PAGE_BYTES, and a table over MAX_TABLE_CHARS or MAX_TABLE_ROWS rows, are refused
+//     before any row is matched ('too_large')
 // The 15% jump check needs the stored history and is done in the database.
 import { isBotCurrency } from '../_shared/currencies.ts';
 
@@ -26,8 +27,10 @@ export type ParseResult =
   | { ok: false; error: 'too_large' | 'no_table' | 'no_rows' | 'no_usd' | 'stale'; dropped: number; refused: number };
 
 export const MAX_AGE_DAYS = 7;
-/** The real page is about 120 KB. */
+/** The real page is about 120 KB, its rates table about 15 KB with 44 rows. */
 export const MAX_PAGE_BYTES = 2_000_000;
+export const MAX_TABLE_CHARS = 200_000;
+export const MAX_TABLE_ROWS = 200;
 const MONTHS: Record<string, string> = {
   Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
   Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
@@ -77,6 +80,9 @@ export function parseBotRates(html: string, now: Date): ParseResult {
   const end = endMatch ? start + endMatch.index : -1;
   if (end < 0) return { ok: false, error: 'no_table', dropped, refused };
   const table = html.slice(start, end);
+  // Refuse an oversized table before any row matching.
+  if (table.length > MAX_TABLE_CHARS) return { ok: false, error: 'too_large', dropped, refused };
+  if ((table.match(/<tr\b/gi) ?? []).length > MAX_TABLE_ROWS) return { ok: false, error: 'too_large', dropped, refused };
   const bodyStart = table.search(/<tbody\b[^>]*>/i);
   const bodyEnd = table.search(/<\/tbody>/i);
   if (bodyStart < 0 || bodyEnd < bodyStart) return { ok: false, error: 'no_table', dropped, refused };

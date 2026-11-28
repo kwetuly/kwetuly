@@ -44,10 +44,15 @@ Keep it in your password manager. It goes in two places (steps 3 and 5), nowhere
 
 ## 4. Try one run by hand
 
-In a terminal (replace the project ref; type the secret yourself, do not save it in a file):
+In PowerShell (replace the project ref). The secret is typed at a hidden prompt, so it is neither
+shown on screen nor kept in the command history:
 
-```
-curl -X POST "https://<project-ref>.supabase.co/functions/v1/exchange-rates"   -H "x-exchange-rates-key: <EXCHANGE_RATES_SECRET>" -H "Content-Type: application/json" -d "{}"
+```powershell
+$s = Read-Host -AsSecureString "Exchange rates secret"
+$k = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($s))
+Invoke-RestMethod -Method Post -Uri "https://<project-ref>.supabase.co/functions/v1/exchange-rates" `
+  -Headers @{ "x-exchange-rates-key" = $k } -ContentType "application/json" -Body "{}"
+Remove-Variable s, k
 ```
 
 The function answers at once with `{"accepted":true}` (HTTP 202) and does the work in the background,
@@ -113,6 +118,36 @@ override stops being used after its "valid until" date, so renew it at least onc
 The undo steps are in the header of the migration. Start with `select cron.unschedule('exchange-rates');`
 and `select cron.unschedule('exchange-rates-watchdog');`, then follow the order there, and delete the
 two Vault entries.
+
+## API for S49 (admin rates screen)
+
+"Fetch now": call the function from the server (a Next server action that passes the signed-in
+admin's own access token as `Authorization: Bearer ...`), never from the browser. Answers:
+
+| Status | Body | Meaning |
+| --- | --- | --- |
+| 202 | `{"accepted":true}` | Started; the result appears in `admin_exchange_fetch_log` within about 2 minutes |
+| 429 | `{"error":"too_soon"}` | An admin asked less than 2 minutes ago |
+| 403 | `{"error":"forbidden"}` | Not an admin, or no two-step session |
+| 503 | `{"error":"not_configured"}` | Function secrets missing |
+| 405 | `{"error":"method"}` | Not a POST |
+
+Override (`public.admin_set_rate_override(p_currency, p_tzs_per_unit, p_source_name, p_source_url,
+p_rate_date, p_valid_until, p_note, p_confirm_far)`):
+
+- `{"saved":true,"id":"..."}`: saved.
+- `{"saved":false,"needs_confirm":true,"reason":"far"|"first","reference_rate":...,"diff_pct":...}`:
+  nothing saved. `far` = more than 25% from the reference; `first` = nothing to compare with
+  (`reference_rate` and `diff_pct` are null). To confirm, send the whole form again unchanged, with
+  `p_confirm_far = true`, within 10 minutes. Any changed field (rate, source, link, dates, note) asks
+  again.
+- Input errors raise SQLSTATE 22023 with a plain English message; 42501 = not an admin with two-step.
+
+Other admin functions: `admin_end_rate_override(p_id)`, `admin_review_suspect_rate(p_id, p_use)`
+("Use anyway" = true, "Ignore" = false), `admin_exchange_rates(p_currency, p_limit)`,
+`admin_exchange_fetch_log(p_limit)`, `admin_exchange_rate_actions(p_limit)`. Public:
+`current_rates()`. Read `exchange_rates` only with explicit columns (`note` and `entered_by` are not
+granted, so `select *` fails).
 
 ## Open points
 
