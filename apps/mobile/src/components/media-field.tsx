@@ -60,7 +60,22 @@ function confirmRemove(title: string, body: string, cancel: string, onYes: () =>
   ]);
 }
 
-export function MediaField({ field, subjectKind, subjectId, initial, onChanged }: { field: Field; subjectKind: MediaSubjectKind; subjectId: string; initial: MediaItem[]; onChanged?: () => void }) {
+// outline: an outline "Choose" button, for screens whose one main action is another button (sign-up step 5).
+export function MediaField({
+  field,
+  subjectKind,
+  subjectId,
+  initial,
+  onChanged,
+  outline = false,
+}: {
+  field: Field;
+  subjectKind: MediaSubjectKind;
+  subjectId: string;
+  initial: MediaItem[];
+  onChanged?: () => void;
+  outline?: boolean;
+}) {
   const { locale } = useI18n();
   const { type, font } = useType();
   const t = uploadsText(locale);
@@ -273,7 +288,7 @@ export function MediaField({ field, subjectKind, subjectId, initial, onChanged }
         </View>
       ) : null}
       {left > 0 ? (
-        <Button title={single ? (items.length ? t.replace : t.chooseOne) : t.choose} icon={GLYPHS.attach} onPress={pick} />
+        <Button title={single ? (items.length ? t.replace : t.chooseOne) : t.choose} icon={GLYPHS.attach} variant={outline ? 'outline' : 'primary'} onPress={pick} />
       ) : (
         <Text style={{ ...type.callout, ...font.semibold, color: brand.ink, backgroundColor: brand.sand, padding: space.md, borderRadius: radius.button, overflow: 'hidden' }}>{fillText(t.full, { max: spec.maxCount })}</Text>
       )}

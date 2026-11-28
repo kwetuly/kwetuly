@@ -21,9 +21,13 @@ export type LinkRow = Partial<Record<ProfileLinkColumn, string | null>>;
 const SOCIAL_COLUMNS = 'instagram_url, facebook_url, tiktok_url';
 const NEW_COLUMNS = 'google_business_url, youtube_url';
 
-/** feature.profile_links: a missing row is off, like private.feature_on. */
+/**
+ * feature.profile_links: a missing row is off, like private.feature_on. A failed read throws, so
+ * screens show a load or save error ("please try again"), never "switched off".
+ */
 export async function profileLinksOn(): Promise<boolean> {
-  const { data } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  if (error) throw new Error(error.message);
   return data?.value?.on === true;
 }
 
@@ -87,6 +91,24 @@ const dbError = (error: { message?: string } | null): SaveResult => {
   if (error.message?.includes('guides_website_format') || error.message?.includes('website_not_allowed')) return { ok: false, error: 'pl_website_blocked', kind: 'website' };
   return { ok: false, error: 'pl_save' };
 };
+
+/**
+ * The guide's typed links as guide columns, checked with the shared rules, for saving together with
+ * the rest of the profile (sign-up step 5, S8). While the switch is off only Instagram, Facebook and
+ * TikTok are taken; a switched link that was typed anyway is refused with pl_off.
+ */
+export function guideLinkPatch(values: Partial<Record<ProfileLinkKind, string>>, on: boolean): { ok: true; patch: Record<string, string | null> } | (SaveResult & { ok: false }) {
+  if (!on) {
+    const blocked = SWITCHED_GUIDE_LINK_KINDS.find((kind) => kind in values);
+    if (blocked) return { ok: false, error: 'pl_off', kind: blocked };
+  }
+  return linkPatch(values, on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind)));
+}
+
+/** Maps a refused profile save to a link error, when the database refused a link. */
+export function guideLinkSaveError(error: { message?: string } | null): SaveResult {
+  return dbError(error);
+}
 
 /** Saves the guide's links. While the switch is off only Instagram, Facebook and TikTok are written. */
 export async function saveGuideLinks(guideId: string, values: Partial<Record<ProfileLinkKind, string>>, on: boolean): Promise<SaveResult> {

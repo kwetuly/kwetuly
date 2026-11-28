@@ -1,12 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_SPECIALTIES, JOB_ROLES, REGIONS, documentStatus, USER_LINK_REL, guideStatusText, linkErrorMessage, profileCompletion, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, type DocumentStatus } from '@kwetuly/shared';
+import { CALL_TOPICS, GROUP_SIZES, GUIDE_EXPERTISE, GUIDE_LANGUAGES, GUIDE_LINK_KINDS, GUIDE_SPECIALTIES, JOB_ROLES, MEDIA_COLUMNS, PROFILE_LINK_COLUMNS, REGIONS, SWITCHED_GUIDE_LINK_KINDS, documentStatus, USER_LINK_REL, canSendForChecking, guideSignupText, guideStatusText, linkErrorMessage, profileCompletion, profileLinkErrorMessage, safeExternalUrl, verificationText, reserveText, guideStepProgress, guideProgressLine, guideProgressText, profileLinksText, uploadsText, vipHosting, type DocumentStatus, type MediaItem, type ProfileLinkColumn, type VipPackage } from '@kwetuly/shared';
 import { StepProgress } from '@/components/step-progress';
 import { BookingLinkEntry } from './booking-link/entry';
+import { bookingLinkOn } from './booking-link/feature';
 import { ProfileLinksEntry } from './links/entry';
+import { LinkField } from './links/link-field';
 import { PhotosEntry } from './photos/entry';
-import { CalendarCheck, Circle, CircleCheck, FileCheck2, ShieldCheck } from 'lucide-react';
+import { MediaField } from '@/components/upload/media-field';
+import { featureOn } from '@/lib/features';
+import { CalendarCheck, Circle, CircleCheck, FileCheck2, Link2, ShieldCheck } from 'lucide-react';
 import { getDictionary, getLocale, type Dictionary } from '@/i18n/dictionaries';
 import type { Locale } from '@/i18n/config';
 import { businessApproval, getCurrentUser, requireUser, type CurrentUser } from '@/lib/auth';
@@ -16,9 +20,10 @@ import { GUIDE_COLUMNS, type Guide } from '@/lib/guides';
 import { saveGuideProfile, saveMyDetails } from './actions';
 import { BusinessListing } from './business-listing';
 import { GuideReferral } from './guide-referral';
-import { GUIDE_STEPS, isGuideStep, type GuideStep } from '@/lib/guide-steps';
+import { GUIDE_STEPS, guideStep, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
+import { SUPPORT_EMAIL } from '@/lib/site';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
 import { PhoneField } from '@/components/phone-field';
@@ -159,11 +164,35 @@ async function GuideEditor({
   const d = t.dashboard;
   const g = guideProgressText(locale);
   const pl = profileLinksText(locale);
-  const up = uploadsText(locale);
+  const s = guideSignupText(locale);
   const now = await today();
   const phoneCountry = await phoneCountryHint();
   // A new guide goes straight into the first step; others see the overview unless they open a step.
-  const step: GuideStep | null = isGuideStep(status.step) ? status.step : guide ? null : 'basics';
+  // guideStep also opens step 5 from old ?step=story links.
+  const step: GuideStep | null = guideStep(status.step) ?? (guide ? null : 'basics');
+
+  // Step 5 "Your page": the saved links (their columns exist once 20261126000200 is applied; until
+  // then the step says so and leaves the links out of the form, so nothing is cleared).
+  const linkColumns = 'instagram_url, facebook_url, tiktok_url, google_business_url, youtube_url, website';
+  const [links, linksSwitch] =
+    step === 'page' && guide
+      ? await Promise.all([
+          supabase.from('guides').select(linkColumns).eq('id', guide.id).maybeSingle<Partial<Record<ProfileLinkColumn, string | null>>>(),
+          supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>(),
+        ])
+      : [null, null];
+  const linksOn = linksSwitch?.data?.value?.on === true;
+  // Step 6: the booking link (feature.booking_link) and "Offer VIP hosting" (feature.service_concierge),
+  // which is on while a personal_host package is sent for checking or approved.
+  const [bookingOn, vipShown, vipPackages] =
+    step === 'calls' && guide
+      ? await Promise.all([
+          bookingLinkOn(),
+          featureOn('service_concierge'),
+          supabase.from('guide_packages').select('id, kind, status').eq('guide_id', guide.id).eq('kind', 'personal_host'),
+        ])
+      : [false, false, null];
+  const vip = vipHosting((vipPackages?.data ?? []) as VipPackage[]);
 
   const statusText =
     guide?.verification_status === 'approved'
@@ -181,9 +210,23 @@ async function GuideEditor({
     slug: guideStatusText(locale).slugTaken,
     // A link saved before the database checks can still refuse a save of this step ('links').
     links: linkErrorMessage('links', locale) ?? t.auth.error,
+    // Step 5's link fields (the same codes as /dashboard/links; LinkField marks its own field).
+    ...Object.fromEntries(
+      ['pl_website', 'pl_website_blocked', 'pl_google', 'pl_youtube', 'pl_instagram', 'pl_facebook', 'pl_tiktok', 'pl_save', 'pl_off'].map((code) => [code, profileLinkErrorMessage(code, locale) ?? pl.saveError]),
+    ),
+    vip: s.vipError,
+    vip_partial: s.vipPartial,
   };
   const progress = guideStepProgress({ guide, idDocument: !!details?.id_document_path, licenceDocument: !!details?.license_document_path, tripCount: tripCount ?? 0 });
   const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
+  // Step 4: the profile can be sent for checking once steps 1-4 are done.
+  const canSend = canSendForChecking(progress);
+  // Only a profile waiting for approval (or a new one) is "sent for checking".
+  const review = guide?.verification_status ?? 'pending';
+  const offerSend = review === 'pending' && canSend;
+  // A profile that was not approved: write to the team (NEXT_PUBLIC_SUPPORT_EMAIL; no link until it is set).
+  const rejectedContact = review === 'rejected' && SUPPORT_EMAIL ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(s.rejectedSubject)}` : null;
+  const missingRequired = progress.steps.flatMap((p, i) => (!p.optional && !p.done ? [g.steps[i]] : []));
 
   if (step) {
     const index = GUIDE_STEPS.indexOf(step);
@@ -197,6 +240,22 @@ async function GuideEditor({
         </h1>
         {!guide && <p className="mt-2 text-muted">{g.stepsIntro}</p>}
         <StepProgress progress={progress} titles={g.steps} line={guideProgressLine(progress, locale)} labels={progressLabels} current={index} />
+        {step === 'page' && (
+          <>
+            <p className="mt-6 text-muted">{s.pageIntro}</p>
+            {/* Photos save themselves as they upload (slice S4), so they sit outside the step's form. */}
+            <section className="card mt-6 space-y-5" aria-labelledby="page-photos">
+              <h2 id="page-photos" className="text-lg font-bold">{s.photosTitle}</h2>
+              {guide ? (
+                <Suspense fallback={<div aria-busy="true" className="aspect-[3/1] animate-pulse rounded-[5px] bg-line" />}>
+                  <PagePhotos guideId={guide.id} locale={locale} />
+                </Suspense>
+              ) : (
+                <p className="text-sm text-muted">{s.photosLater}</p>
+              )}
+            </section>
+          </>
+        )}
         {/* Refusals come back into the form, which keeps everything typed (KeepForm). */}
         {/* key: a message from one step never shows on the next. */}
         <KeepForm key={step} action={saveGuideProfile} messages={stepMessages} fallback={t.auth.error} className="card mt-6 space-y-5">
@@ -288,24 +347,31 @@ async function GuideEditor({
               <p className="text-sm text-muted">{g.tripsIntro}</p>
               <p className="font-semibold">{!tripCount ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</p>
               <Link href={`/${locale}/dashboard/packages?next=trips${tripCount ? '' : '&new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
+              {/* A guide waiting for approval can send the profile for checking once steps 1-4 are done
+                  (steps 5 and 6 stay optional). Approved guides just save; a guide who was not approved
+                  is asked to contact Kwetuly, because saving does not reopen the check. */}
+              {review === 'rejected' ? (
+                <div className="rounded-[5px] bg-surface p-4 text-sm">
+                  <p className="font-semibold">{s.rejectedTitle}</p>
+                  <p className="mt-1">{rejectedContact ? s.rejectedBody : s.rejectedBodyNoLink}</p>
+                  {rejectedContact && (
+                    <a href={rejectedContact} className="mt-2 inline-block font-semibold text-forest underline">{t.ux.contactKwetuly}</a>
+                  )}
+                </div>
+              ) : review === 'pending' ? (
+                <div className={`rounded-[5px] p-4 text-sm ${canSend ? 'bg-mint text-forest' : 'bg-surface'}`}>
+                  <p className="font-semibold">{canSend ? s.sendTitle : s.beforeTitle}</p>
+                  <p className="mt-1">{canSend ? s.sendReady : s.sendNotReady}</p>
+                  {!canSend && missingRequired.length > 0 && <p className="mt-1 text-muted">{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</p>}
+                </div>
+              ) : null}
+              {offerSend && <input type="hidden" name="send" value="1" />}
             </>
           )}
 
-          {step === 'story' && (
+          {step === 'page' && (
             <>
-              {/* Photos (S4) and profile links (S5) have their own pages, which come back here (?next=story).
-                  They leave this form, so the guide is asked to save first. */}
-              <div className="space-y-2 rounded-[5px] bg-surface p-4 text-sm">
-                <p className="font-semibold">{g.saveFirst}</p>
-                <p>
-                  <Link href={`/${locale}/dashboard/photos?next=story`} className="font-semibold text-forest underline">{up.title}</Link>
-                  <span className="block text-muted">{up.menuHint}</span>
-                </p>
-                <p>
-                  <Link href={`/${locale}/dashboard/links?next=story`} className="font-semibold text-forest underline">{pl.entry}</Link>
-                  <span className="block text-muted">{pl.entryNote}</span>
-                </p>
-              </div>
+              <h2 className="text-lg font-bold">{s.aboutTitle}</h2>
               <Field label={d.bio}>
                 <textarea className="field min-h-36" name="bio" maxLength={4000} defaultValue={guide?.bio ?? ''} />
               </Field>
@@ -334,11 +400,32 @@ async function GuideEditor({
                   <option value="link_only">{d.visibilityLink}</option>
                 </select>
               </Field>
+
+              {/* Profile links (slice S5), saved with this step. While feature.profile_links is off only
+                  Instagram, Facebook and TikTok can be changed, as on /dashboard/links. */}
+              <section className="space-y-5 border-t border-line pt-5" aria-labelledby="page-links">
+                <h2 id="page-links" className="text-lg font-bold">{s.linksTitle}</h2>
+                <p className="text-sm text-muted">{s.linksNote}</p>
+                {/* A failed read of the links or of their switch is a load error, never "switched off". */}
+                {links?.error || linksSwitch?.error ? (
+                  <p role="alert" className="rounded-[5px] bg-surface p-3 text-sm">{pl.loadError}</p>
+                ) : (
+                  <>
+                    {!linksOn && <p className="rounded-[5px] bg-surface p-3 text-sm text-muted">{pl.switchedOff}</p>}
+                    {/* Switched-off links are left out (as in the app), so the save never touches them. */}
+                    {GUIDE_LINK_KINDS.filter((kind) => linksOn || !SWITCHED_GUIDE_LINK_KINDS.includes(kind)).map((kind) => (
+                      <LinkField key={kind} kind={kind} name={`link_${kind}`} formId="signup" locale={locale} defaultValue={links?.data?.[PROFILE_LINK_COLUMNS[kind]]} />
+                    ))}
+                    <p className="text-xs text-muted">{pl.clearNote}</p>
+                  </>
+                )}
+              </section>
             </>
           )}
 
           {step === 'calls' && (
             <>
+              <h2 className="text-lg font-bold">{s.callsTitle}</h2>
               <p className="text-sm text-muted">{d.callsHint}</p>
               <label className="flex items-center gap-2 font-semibold">
                 <input type="checkbox" name="call_enabled" defaultChecked={guide?.call_enabled ?? false} className="size-5 accent-leaf" />
@@ -355,17 +442,41 @@ async function GuideEditor({
                 </Field>
               </div>
               <Checkboxes name="call_topics" label={d.callTopics} options={CALL_TOPICS.map((c) => ({ value: c.id, label: c[locale] }))} checked={guide?.call_topics ?? []} />
+
+              {bookingOn && (
+                <section className="space-y-2 border-t border-line pt-5" aria-labelledby="calls-booking">
+                  <h2 id="calls-booking" className="text-lg font-bold">{g.linkTitle}</h2>
+                  <p className="text-sm text-muted">{guide?.verification_status === 'approved' ? g.linkMenuHint : g.linkPending}</p>
+                  <Link href={`/${locale}/dashboard/booking-link`} className="inline-flex items-center gap-2 font-semibold text-forest underline">
+                    <Link2 className="size-4" aria-hidden /> {g.linkTitle}
+                  </Link>
+                </section>
+              )}
+
+              {/* "Offer VIP hosting": the personal_host package kind (design 4.1), behind feature.service_concierge. */}
+              {vipShown && (
+                <section className="space-y-3 border-t border-line pt-5" aria-labelledby="calls-vip">
+                  <h2 id="calls-vip" className="text-lg font-bold">{s.vipTitle}</h2>
+                  <input type="hidden" name="vip_shown" value="1" />
+                  <label className="flex items-center gap-2 font-semibold">
+                    <input type="checkbox" name="vip" defaultChecked={vip.on} className="size-5 accent-leaf" aria-describedby="vip-hint" />
+                    {s.vipLabel}
+                  </label>
+                  <p id="vip-hint" className="text-sm text-muted">{s.vipHint}</p>
+                  <p className="text-sm">{vip.on ? `${s.vipOn} ${s.vipOffNote}` : s.vipCreate}</p>
+                </section>
+              )}
             </>
           )}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <SubmitButton className="btn">{next ? d.saveContinue : d.saveFinish}</SubmitButton>
+            <SubmitButton className="btn">{step === 'trips' && offerSend ? s.send : next ? d.saveContinue : d.saveFinish}</SubmitButton>
             {guide && index > 0 && (
               <Link href={stepHref(GUIDE_STEPS[index - 1])} className="btn-outline">{d.back}</Link>
             )}
             {guide && (
               <Link href={next ? stepHref(next) : `/${locale}/dashboard`} className="ml-auto text-sm font-semibold text-forest underline">
-                {d.skip}
+                {step === 'trips' && offerSend ? s.continuePage : d.skip}
               </Link>
             )}
           </div>
@@ -382,7 +493,12 @@ async function GuideEditor({
       {guide && (
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[5px] bg-mint p-4 text-forest">
           {status.saved && <SavedNote className="w-full font-semibold">{d.saved}</SavedNote>}
+          {status.sent && offerSend && <SavedNote className="w-full font-semibold">{s.sent}</SavedNote>}
           <span>{guide.verification_status === 'approved' && guide.visibility === 'link_only' ? guideStatusText(locale).approvedLinkOnly : statusText}</span>
+          {/* "Please contact Kwetuly": the team address, the same way as for a group trip that was not approved. */}
+          {rejectedContact && (
+            <a href={rejectedContact} className="font-semibold underline">{t.ux.contactKwetuly}</a>
+          )}
           {guide.verification_status === 'approved' && (
             <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
               {d.viewProfile}
@@ -429,7 +545,39 @@ async function GuideEditor({
       {guide && <PhotosEntry locale={locale} />}
       {guide && <ProfileLinksEntry locale={locale} />}
       {guide && <GuideReferral approved={guide.verification_status === 'approved'} t={t} locale={locale} />}
-      <ProfileStrength guide={guide} details={details} t={t} />
+      <ProfileStrength guide={guide} details={details} tripCount={tripCount ?? 0} t={t} tripsLabel={s.strengthTrips} />
+    </>
+  );
+}
+
+// Step 5: the cover photo and gallery (slice S4's MediaField), the same as /dashboard/photos.
+async function PagePhotos({ guideId, locale }: { guideId: string; locale: Locale }) {
+  const u = uploadsText(locale);
+  const s = guideSignupText(locale);
+  const supabase = await createClient();
+  const [media, on] = await Promise.all([
+    supabase.from('media').select(MEDIA_COLUMNS).eq('subject_kind', 'guide').eq('subject_id', guideId).in('field', ['cover', 'gallery']).not('state', 'in', '(removed,uploading)').order('sort'),
+    // feature.cover_gallery: start_media_upload() refuses cover and gallery photos while it is off.
+    featureOn('cover_gallery'),
+  ]);
+  if (!on) return <p className="text-sm text-muted">{u.switchedOff}</p>;
+  if (media.error) {
+    return (
+      <div role="alert" className="space-y-3 text-sm">
+        <p>{u.loadError}</p>
+        <Link href={`/${locale}/dashboard?step=page`} className="btn-outline">{u.retryLoad}</Link>
+      </div>
+    );
+  }
+  const rows = (media.data ?? []) as MediaItem[];
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  return (
+    <>
+      <p className="text-sm text-muted">{s.photosNote}</p>
+      {/* Outline buttons: "Save and continue" is the step's one main action. */}
+      <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'cover')} locale={locale} supabaseUrl={supabaseUrl} outline />
+      <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'gallery')} locale={locale} supabaseUrl={supabaseUrl} outline />
+      <p className="text-sm text-muted">{u.checkedAfter}</p>
     </>
   );
 }
@@ -587,9 +735,9 @@ async function BusinessDashboard({ t, locale, user }: { t: Dictionary; locale: L
 }
 
 // Profile strength: how complete the profile is and what is still missing.
-function ProfileStrength({ guide, details, t }: { guide: Guide | null; details: PrivateDetails | null; t: Dictionary }) {
+function ProfileStrength({ guide, details, tripCount, t, tripsLabel }: { guide: Guide | null; details: PrivateDetails | null; tripCount: number; t: Dictionary; tripsLabel: string }) {
   const c = t.checks;
-  const { items, percent } = profileCompletion({ ...guide, ...details });
+  const { items, percent } = profileCompletion({ ...guide, ...details, trip_count: tripCount });
   const allDone = items.every((i) => i.done || i.optional);
   return (
     <section className="card mt-6">
@@ -608,7 +756,7 @@ function ProfileStrength({ guide, details, t }: { guide: Guide | null; details: 
         {items.map((item) => (
           <li key={item.id} className={`flex items-center gap-2 ${item.done ? 'text-muted' : 'font-semibold'}`}>
             {item.done ? <CircleCheck className="size-4 shrink-0 text-leaf-dark" aria-hidden /> : <Circle className="size-4 shrink-0 text-muted" aria-hidden />}
-            <span>{c[item.id]}</span>
+            <span>{item.id === 'trips' ? tripsLabel : c[item.id]}</span>
             {item.optional && <span className="text-xs font-normal text-muted">({c.optional})</span>}
           </li>
         ))}

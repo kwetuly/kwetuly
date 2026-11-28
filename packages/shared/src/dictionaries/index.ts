@@ -35,3 +35,4 @@ export { lipaAdminText, type LipaAdminText } from './lipa-admin';
 export { guideProgressText, guideProgressLine, type GuideProgressText } from './guide-progress';
 export * from './profile-links';
 export { uploadsText, type UploadsText, type UploadQueueState } from './uploads';
+export { guideSignupText, type GuideSignupText } from './guide-signup';

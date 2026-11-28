@@ -57,6 +57,16 @@ export async function savePackage(guideId: string, userId: string, input: Packag
   check(error);
 }
 
+/**
+ * Hides packages as drafts, or sends them for checking again (the "Offer VIP hosting" switch, S8).
+ * The database guard allows a guide only these two statuses and keeps approval for Kwetuly.
+ */
+export async function setPackagesStatus(guideId: string, ids: string[], status: 'draft' | 'pending') {
+  if (ids.length === 0) return;
+  const { error } = await supabase.from('guide_packages').update({ status }).in('id', ids).eq('guide_id', guideId);
+  check(error);
+}
+
 export async function deletePackage(id: string) {
   const { error } = await supabase.from('guide_packages').delete().eq('id', id);
   check(error);
