@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { PACKAGE_KINDS, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
+import { PACKAGE_KINDS, guideProgressText, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
 import { Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, MetaItems, Muted, ScreenState } from '@/components/ui';
 import { getMyGuide } from '@/lib/api-more';
@@ -41,14 +41,30 @@ export default function MyPackagesScreen() {
   const guideId = mine.data?.guide?.id;
   const packages = useQuery({ queryKey: ['my-packages', guideId], queryFn: () => listMyPackages(guideId!), enabled: !!guideId });
 
-  // ?kind=personal_host (from "Offer VIP hosting" in sign-up step 6, S8): open a new package of that kind.
-  const params = useLocalSearchParams<{ kind?: string }>();
+  // ?kind=personal_host&next=calls (from "Offer VIP hosting" in sign-up step 6, S8): open a new package
+  // of that kind, and after saving offer the way back to step 6.
+  const params = useLocalSearchParams<{ kind?: string; next?: string }>();
   const presetKind = PACKAGE_KINDS.find((k) => k.id === params.kind)?.id;
+  const fromSignup = params.next === 'calls';
   const [editing, setEditing] = useState<GuidePackage | 'new' | null>(presetKind ? 'new' : null);
   const [f, setF] = useState(presetKind ? { ...EMPTY, kind: [presetKind] as string[] } : EMPTY);
   const [photo, setPhoto] = useState<{ uri: string; mimeType: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const [savedFromSignup, setSavedFromSignup] = useState(false);
+  // The screen can stay mounted while the route's kind changes: open the new form again then
+  // (adjusting state while rendering, instead of in an effect).
+  const [seenKind, setSeenKind] = useState(presetKind);
+  if (seenKind !== presetKind) {
+    setSeenKind(presetKind);
+    if (presetKind) {
+      setEditing('new');
+      setF({ ...EMPTY, kind: [presetKind] });
+      setPhoto(null);
+      setMessage(null);
+      setSavedFromSignup(false);
+    }
+  }
   const set = <K extends keyof typeof f>(key: K) => (value: (typeof f)[K]) => setF((current) => ({ ...current, [key]: value }));
 
   const needsSetup = useNeedsSetup();
@@ -114,6 +130,7 @@ export default function MyPackagesScreen() {
       await queryClient.invalidateQueries({ queryKey: ['my-packages'] });
       setEditing(null);
       setMessage({ tone: 'ok', text: pt.saved });
+      if (fromSignup) setSavedFromSignup(true);
     } catch {
       setMessage({ tone: 'error', text: t.auth.error });
     } finally {
@@ -155,6 +172,12 @@ export default function MyPackagesScreen() {
             <FormMessage message={message} />
             <Button title={pt.submit} onPress={() => save(false)} loading={busy} />
           </>
+        ) : savedFromSignup ? (
+          // Saved from sign-up step 6: back to that step (it is still open behind this screen).
+          <Button
+            title={guideProgressText(locale).backToSignup}
+            onPress={() => (router.canGoBack() ? router.back() : router.replace({ pathname: '/profile-edit', params: { step: '5' } }))}
+          />
         ) : (
           <Button title={pt.add} onPress={() => open('new')} />
         )

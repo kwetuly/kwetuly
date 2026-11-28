@@ -36,11 +36,13 @@ type Props = {
   supabaseUrl: string;
   /** Heading level id, for pages with several fields. */
   id?: string;
+  /** Outline "Choose" button, for screens whose one main action is another button (sign-up step 5). */
+  outline?: boolean;
 };
 
 type Message = { tone: 'ok' | 'error'; text: string } | null;
 
-export function MediaField({ field, subjectKind, subjectId, initial, locale, supabaseUrl, id = `media-${field}` }: Props) {
+export function MediaField({ field, subjectKind, subjectId, initial, locale, supabaseUrl, id = `media-${field}`, outline = false }: Props) {
   const t = uploadsText(locale);
   const spec = UPLOAD_SPECS[field];
   const single = spec.maxCount === 1;
@@ -248,7 +250,7 @@ export function MediaField({ field, subjectKind, subjectId, initial, locale, sup
           }}
           className={`flex flex-col items-center gap-3 rounded-[5px] border-2 border-dashed p-5 text-center transition ${dropping ? 'border-forest bg-mint' : 'border-line'}`}
         >
-          <button type="button" className="btn" onClick={() => inputRef.current?.click()}>
+          <button type="button" className={outline ? 'btn-outline' : 'btn'} onClick={() => inputRef.current?.click()}>
             <ImagePlus className="size-5" aria-hidden /> {single ? (items.length ? t.replace : t.chooseOne) : t.choose}
           </button>
           <p className="text-sm text-muted">{dropping ? t.dropActive : t.dropHere}</p>

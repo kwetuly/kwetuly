@@ -219,6 +219,9 @@ async function GuideEditor({
   const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
   // Step 4: the profile can be sent for checking once steps 1-4 are done.
   const canSend = canSendForChecking(progress);
+  // Only a profile waiting for approval (or a new one) is "sent for checking".
+  const review = guide?.verification_status ?? 'pending';
+  const offerSend = review === 'pending' && canSend;
   const missingRequired = progress.steps.flatMap((p, i) => (!p.optional && !p.done ? [g.steps[i]] : []));
 
   if (step) {
@@ -340,13 +343,22 @@ async function GuideEditor({
               <p className="text-sm text-muted">{g.tripsIntro}</p>
               <p className="font-semibold">{!tripCount ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</p>
               <Link href={`/${locale}/dashboard/packages?next=trips${tripCount ? '' : '&new=1'}`} className="btn-outline">{tripCount ? g.tripsSee : g.tripsAdd}</Link>
-              {/* Steps 1-4 done: the guide can send the profile for checking (steps 5 and 6 stay optional). */}
-              <div className={`rounded-[5px] p-4 text-sm ${canSend ? 'bg-mint text-forest' : 'bg-surface'}`}>
-                <p className="font-semibold">{s.sendTitle}</p>
-                <p className="mt-1">{canSend ? s.sendReady : s.sendNotReady}</p>
-                {!canSend && missingRequired.length > 0 && <p className="mt-1 text-muted">{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</p>}
-              </div>
-              {canSend && <input type="hidden" name="send" value="1" />}
+              {/* A guide waiting for approval can send the profile for checking once steps 1-4 are done
+                  (steps 5 and 6 stay optional). Approved guides just save; a guide who was not approved
+                  is asked to contact Kwetuly, because saving does not reopen the check. */}
+              {review === 'rejected' ? (
+                <div className="rounded-[5px] bg-surface p-4 text-sm">
+                  <p className="font-semibold">{s.rejectedTitle}</p>
+                  <p className="mt-1">{s.rejectedBody}</p>
+                </div>
+              ) : review === 'pending' ? (
+                <div className={`rounded-[5px] p-4 text-sm ${canSend ? 'bg-mint text-forest' : 'bg-surface'}`}>
+                  <p className="font-semibold">{canSend ? s.sendTitle : s.beforeTitle}</p>
+                  <p className="mt-1">{canSend ? s.sendReady : s.sendNotReady}</p>
+                  {!canSend && missingRequired.length > 0 && <p className="mt-1 text-muted">{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</p>}
+                </div>
+              ) : null}
+              {offerSend && <input type="hidden" name="send" value="1" />}
             </>
           )}
 
@@ -392,8 +404,9 @@ async function GuideEditor({
                 ) : (
                   <>
                     {!linksOn && <p className="rounded-[5px] bg-surface p-3 text-sm text-muted">{pl.switchedOff}</p>}
-                    {GUIDE_LINK_KINDS.map((kind) => (
-                      <LinkField key={kind} kind={kind} name={`link_${kind}`} formId="signup" locale={locale} defaultValue={links?.data?.[PROFILE_LINK_COLUMNS[kind]]} disabled={!linksOn && SWITCHED_GUIDE_LINK_KINDS.includes(kind)} />
+                    {/* Switched-off links are left out (as in the app), so the save never touches them. */}
+                    {GUIDE_LINK_KINDS.filter((kind) => linksOn || !SWITCHED_GUIDE_LINK_KINDS.includes(kind)).map((kind) => (
+                      <LinkField key={kind} kind={kind} name={`link_${kind}`} formId="signup" locale={locale} defaultValue={links?.data?.[PROFILE_LINK_COLUMNS[kind]]} />
                     ))}
                     <p className="text-xs text-muted">{pl.clearNote}</p>
                   </>
@@ -449,13 +462,13 @@ async function GuideEditor({
           )}
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <SubmitButton className="btn">{step === 'trips' && canSend ? s.send : next ? d.saveContinue : d.saveFinish}</SubmitButton>
+            <SubmitButton className="btn">{step === 'trips' && offerSend ? s.send : next ? d.saveContinue : d.saveFinish}</SubmitButton>
             {guide && index > 0 && (
               <Link href={stepHref(GUIDE_STEPS[index - 1])} className="btn-outline">{d.back}</Link>
             )}
             {guide && (
               <Link href={next ? stepHref(next) : `/${locale}/dashboard`} className="ml-auto text-sm font-semibold text-forest underline">
-                {step === 'trips' && canSend ? s.continuePage : d.skip}
+                {step === 'trips' && offerSend ? s.continuePage : d.skip}
               </Link>
             )}
           </div>
@@ -472,7 +485,7 @@ async function GuideEditor({
       {guide && (
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[5px] bg-mint p-4 text-forest">
           {status.saved && <SavedNote className="w-full font-semibold">{d.saved}</SavedNote>}
-          {status.sent && canSend && <SavedNote className="w-full font-semibold">{s.sent}</SavedNote>}
+          {status.sent && offerSend && <SavedNote className="w-full font-semibold">{s.sent}</SavedNote>}
           <span>{guide.verification_status === 'approved' && guide.visibility === 'link_only' ? guideStatusText(locale).approvedLinkOnly : statusText}</span>
           {guide.verification_status === 'approved' && (
             <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
@@ -549,8 +562,9 @@ async function PagePhotos({ guideId, locale }: { guideId: string; locale: Locale
   return (
     <>
       <p className="text-sm text-muted">{s.photosNote}</p>
-      <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'cover')} locale={locale} supabaseUrl={supabaseUrl} />
-      <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'gallery')} locale={locale} supabaseUrl={supabaseUrl} />
+      {/* Outline buttons: "Save and continue" is the step's one main action. */}
+      <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'cover')} locale={locale} supabaseUrl={supabaseUrl} outline />
+      <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={rows.filter((r) => r.field === 'gallery')} locale={locale} supabaseUrl={supabaseUrl} outline />
       <p className="text-sm text-muted">{u.checkedAfter}</p>
     </>
   );

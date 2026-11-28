@@ -12,7 +12,9 @@ export const PACKAGE_KINDS = [
   { id: 'food', ...L('Food & cooking', 'Chakula na mapishi', 'Cuisine & repas', 'Cibo e cucina', 'Essen & Kochen', 'Jedzenie i gotowanie', '美食与烹饪') },
   { id: 'city', ...L('City walk', 'Matembezi ya mjini', 'Balade en ville', 'Passeggiata in città', 'Stadtrundgang', 'Spacer po mieście', '城市漫步') },
   { id: 'nature', ...L('Nature & hiking', 'Asili na matembezi', 'Nature & randonnée', 'Natura ed escursioni', 'Natur & Wandern', 'Przyroda i wędrówki', '自然与徒步') },
-  { id: 'personal_host', ...L('Personal trip host', 'Mwenyeji wa safari binafsi', 'Hôte de voyage personnel', 'Accompagnatore di viaggio personale', 'Persönliche Reisebegleitung', 'Osobisty opiekun podróży', '私人行程陪同') },
+  // "(VIP hosting)" matches the "Offer VIP hosting" switch in guide sign-up step 6 (S8); VIP names the
+  // style of service only. Translations other than Kiswahili are drafts for the localization check.
+  { id: 'personal_host', ...L('Personal trip host (VIP hosting)', 'Mwenyeji wa safari binafsi (mwenyeji wa VIP)', 'Hôte de voyage personnel (accueil VIP)', 'Accompagnatore di viaggio personale (accoglienza VIP)', 'Persönliche Reisebegleitung (VIP-Betreuung)', 'Osobisty opiekun podróży (opieka VIP)', '私人行程陪同（VIP 接待）') },
   { id: 'investment_visit', ...L('Investment visit host', 'Mwenyeji wa ziara za uwekezaji', 'Accompagnement de visite d’investissement', 'Accompagnatore per visite d’investimento', 'Begleitung für Investitionsbesuche', 'Opiekun wizyty inwestycyjnej', '投资考察陪同') },
   { id: 'other', ...L('Other', 'Nyingine', 'Autre', 'Altro', 'Sonstiges', 'Inne', '其他') },
 ] as const;

@@ -88,6 +88,24 @@ const dbError = (error: { message?: string } | null): SaveResult => {
   return { ok: false, error: 'pl_save' };
 };
 
+/**
+ * The guide's typed links as guide columns, checked with the shared rules, for saving together with
+ * the rest of the profile (sign-up step 5, S8). While the switch is off only Instagram, Facebook and
+ * TikTok are taken; a switched link that was typed anyway is refused with pl_off.
+ */
+export function guideLinkPatch(values: Partial<Record<ProfileLinkKind, string>>, on: boolean): { ok: true; patch: Record<string, string | null> } | (SaveResult & { ok: false }) {
+  if (!on) {
+    const blocked = SWITCHED_GUIDE_LINK_KINDS.find((kind) => kind in values);
+    if (blocked) return { ok: false, error: 'pl_off', kind: blocked };
+  }
+  return linkPatch(values, on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind)));
+}
+
+/** Maps a refused profile save to a link error, when the database refused a link. */
+export function guideLinkSaveError(error: { message?: string } | null): SaveResult {
+  return dbError(error);
+}
+
 /** Saves the guide's links. While the switch is off only Instagram, Facebook and TikTok are written. */
 export async function saveGuideLinks(guideId: string, values: Partial<Record<ProfileLinkKind, string>>, on: boolean): Promise<SaveResult> {
   const kinds = on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind));

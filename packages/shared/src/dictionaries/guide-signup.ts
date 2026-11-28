@@ -9,6 +9,11 @@ import type { Locale } from '../locales';
 const en = {
   // Step 4: once steps 1-4 are done the guide can send the profile for checking.
   sendTitle: 'Ready for checking',
+  beforeTitle: 'Before checking',
+  // A guide whose profile was not approved: saving does not send it back by itself (only Kwetuly can
+  // reopen the check), so the guide is asked to get in touch.
+  rejectedTitle: 'Your profile was not approved',
+  rejectedBody: 'You are welcome to update your details and save each step. Then please contact Kwetuly and ask for your profile to be checked again.',
   sendReady: 'Asante. Steps 1 to 4 are done, so Kwetuly can now check your profile and documents.',
   sendNotReady: 'Please finish steps 1 to 4 first. Then you can send your profile for checking.',
   sendMissing: 'Still to do: {steps}',
@@ -43,6 +48,9 @@ export type GuideSignupText = typeof en;
 
 const sw: GuideSignupText = {
   sendTitle: 'Tayari kukaguliwa',
+  beforeTitle: 'Kabla ya ukaguzi',
+  rejectedTitle: 'Wasifu wako haukuidhinishwa',
+  rejectedBody: 'Unakaribishwa kusasisha taarifa zako na kuhifadhi kila hatua. Kisha tafadhali wasiliana na Kwetuly uombe wasifu wako ukaguliwe tena.',
   sendReady: 'Asante. Hatua ya 1 hadi ya 4 zimekamilika, kwa hiyo Kwetuly sasa inaweza kukagua wasifu wako na nyaraka zako.',
   sendNotReady: 'Tafadhali maliza hatua ya 1 hadi ya 4 kwanza. Kisha unaweza kutuma wasifu wako ukaguliwe.',
   sendMissing: 'Bado kufanya: {steps}',

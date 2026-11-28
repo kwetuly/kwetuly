@@ -246,8 +246,10 @@ export async function saveGuideProfile(
   profile: Omit<MyGuide, 'id' | 'verification_status' | 'photo_url' | keyof GuideCheckFields> & { photo_url?: string | null },
   details: Omit<GuidePrivate, DocumentPath>,
   uploads: { photo?: Upload; idDocument?: Upload; licenceDocument?: Upload; firstAidDocument?: Upload },
+  /** Checked profile link columns (sign-up step 5, S8), written in the same row update as the profile. */
+  links: Record<string, string | null> = {},
 ) {
-  const guide = { ...profile, owner_id: userId, slug: slugify(profile.slug || profile.display_name) };
+  const guide = { ...profile, ...links, owner_id: userId, slug: slugify(profile.slug || profile.display_name) };
   if (uploads.photo) {
     const ext = EXTENSIONS[uploads.photo.mimeType] ?? 'jpg';
     const path = `${userId}/avatar-${Date.now()}.${ext}`;
@@ -257,6 +259,10 @@ export async function saveGuideProfile(
   }
   const { data: saved, error } = await supabase.from('guides').upsert(guide, { onConflict: 'owner_id' }).select('id').single();
   if (error?.code === '23505') throw new Error('slug');
+  // A link written with this save that the database refused: nothing was saved, the caller names the link.
+  if (error && Object.keys(links).length > 0 && /profile_links_off|guides_website_format|website_not_allowed/.test(error.message ?? '')) {
+    throw new Error(`profile_links:${error.message}`);
+  }
   // 23514: a database check refused the row, which on guides means a profile link saved before the checks.
   if (error?.code === '23514') throw new Error('links');
   check(error);
@@ -280,6 +286,11 @@ export async function saveGuideProfile(
   }
   check((await supabase.from('guide_private').upsert(privateData)).error);
   if (Object.keys(cleared).length > 0) check((await supabase.from('guides').update(cleared).eq('id', saved!.id)).error);
+}
+
+/** Puts the guide's prep call settings back (sign-up step 6, when the VIP hosting change failed). */
+export async function restoreGuideCalls(guideId: string, calls: { call_enabled: boolean; call_price_usd: number | null; call_minutes: number; call_topics: string[] }) {
+  check((await supabase.from('guides').update(calls).eq('id', guideId)).error);
 }
 
 export type HubCall = { id: string; topic: string; preferred_times: string | null; message: string | null; traveler_contact: string | null; status: string; scheduled_at: string | null; price_usd: number | null; created_at: string };

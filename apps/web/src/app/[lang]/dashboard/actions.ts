@@ -165,6 +165,23 @@ async function saveGuideStep(formData: FormData) {
 
   const { data: existing } = await supabase.from('guides').select('id').eq('owner_id', user.id).maybeSingle<{ id: string }>();
   let guideId = existing?.id;
+
+  // Step 6: the "Offer VIP hosting" switch (the personal_host package kind). Only when the form showed
+  // it, which it does only while feature.service_concierge is on. Everything is read before anything
+  // is written, so a failed read saves nothing; the saved call settings are kept to put back if the
+  // package change fails after the profile was saved (all or nothing, security review L2).
+  let vip: VipChange = { kind: 'none' };
+  let savedCalls: Record<string, unknown> | null = null;
+  if (has('calls') && formData.get('vip_shown') === '1' && guideId && (await featureOn('service_concierge'))) {
+    const [{ data: packages, error: packagesError }, { data: calls, error: callsError }] = await Promise.all([
+      supabase.from('guide_packages').select('id, kind, status').eq('guide_id', guideId).eq('kind', 'personal_host'),
+      supabase.from('guides').select('call_enabled, call_price_usd, call_minutes, call_topics').eq('id', guideId).maybeSingle<Record<string, unknown>>(),
+    ]);
+    if (packagesError || callsError || !calls) fail('vip');
+    vip = vipChange((packages ?? []) as VipPackage[], formData.get('vip') === 'on');
+    savedCalls = calls;
+  }
+
   if (!guideId) {
     // A new profile always starts with the first step, which carries the name and region.
     if (!patch.display_name) redirect(`${back}?step=basics`);
@@ -189,20 +206,16 @@ async function saveGuideStep(formData: FormData) {
     if (error) fail(error.code === '23505' ? 'slug' : error.code === '23514' ? 'links' : isDisplayNameReservedError(error) ? 'name' : 'save');
   }
 
-  // Step 6: the "Offer VIP hosting" switch (the personal_host package kind). Only when the form showed
-  // it, which it does only while feature.service_concierge is on.
-  let vip: VipChange = { kind: 'none' };
-  if (has('calls') && formData.get('vip_shown') === '1' && guideId && (await featureOn('service_concierge'))) {
-    const { data: packages, error: packagesError } = await supabase.from('guide_packages').select('id, kind, status').eq('guide_id', guideId).eq('kind', 'personal_host');
-    if (packagesError) fail('vip');
-    vip = vipChange((packages ?? []) as VipPackage[], formData.get('vip') === 'on');
-    if (vip.kind === 'hide' || vip.kind === 'resend') {
-      // Hidden as drafts, never deleted; a hidden one goes back to Kwetuly for checking (database guard).
-      const ids = vip.kind === 'hide' ? vip.ids : [vip.id];
-      const { error: vipError } = await supabase.from('guide_packages').update({ status: vip.kind === 'hide' ? 'draft' : 'pending' }).in('id', ids).eq('guide_id', guideId);
-      if (vipError) fail('vip');
-      revalidateTag('packages', 'max');
+  if (vip.kind === 'hide' || vip.kind === 'resend') {
+    // Hidden as drafts, never deleted; a hidden one goes back to Kwetuly for checking (database guard).
+    const ids = vip.kind === 'hide' ? vip.ids : [vip.id];
+    const { error: vipError } = await supabase.from('guide_packages').update({ status: vip.kind === 'hide' ? 'draft' : 'pending' }).in('id', ids).eq('guide_id', guideId!);
+    if (vipError) {
+      // Put the call settings back as they were, so the step saved nothing.
+      if (savedCalls) await supabase.from('guides').update(savedCalls).eq('id', guideId!);
+      fail('vip');
     }
+    revalidateTag('packages', 'max');
   }
 
   if (has('documents')) {

@@ -49,11 +49,11 @@ import { PhotosEntry } from '@/components/photos-entry';
 import { listMyPackages, setPackagesStatus } from '@/lib/packages';
 import { useFeatures } from '@/lib/features';
 import { loadMedia } from '@/lib/media';
-import { getMyLinks, saveGuideLinks } from '@/lib/profile-links';
+import { getMyLinks, guideLinkPatch, guideLinkSaveError, profileLinksOn } from '@/lib/profile-links';
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState, SectionTitle, Toggle } from '@/components/ui';
-import { getMyGuide, saveGuideProfile } from '@/lib/api-more';
+import { getMyGuide, restoreGuideCalls, saveGuideProfile } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
@@ -283,8 +283,9 @@ export default function ProfileEditScreen() {
   const guide = mine.data?.guide;
   const num = (value: string) => (/^\d+$/.test(value.trim()) ? parseInt(value, 10) : null);
 
-  // Saves the whole form (every step's answers are loaded), and reports whether it worked.
-  async function save(): Promise<boolean> {
+  // Saves the whole form (every step's answers are loaded), and reports whether it worked. Step 5's
+  // checked links go in the same row update, so a refused link saves nothing (as on the website).
+  async function save(links: Record<string, string | null> = {}): Promise<boolean> {
     if (!f.display_name.trim() || !f.base_region[0]) {
       setMessage({ tone: 'error', text: t.auth.error });
       return false;
@@ -340,7 +341,14 @@ export default function ProfileEditScreen() {
         },
         { phone, whatsapp_number: whatsapp, registration_number: f.registration_number.trim() || null, kinapa_tanapa_id: f.kinapa_tanapa_id.trim() || null },
         { photo: photo ?? undefined, idDocument: idDocument ?? undefined, licenceDocument: licenceDocument ?? undefined, firstAidDocument: firstAidDocument ?? undefined },
+        links,
       );
+      if (Object.keys(links).length > 0) {
+        setLinkEdits({});
+        setLinkRefused(null);
+        await queryClient.invalidateQueries({ queryKey: ['my-links'] });
+        await queryClient.invalidateQueries({ queryKey: ['guide-links'] });
+      }
       setPhoto(null);
       setIdDocument(null);
       setLicenceDocument(null);
@@ -349,6 +357,15 @@ export default function ProfileEditScreen() {
       setMessage({ tone: 'ok', text: d.saved });
       return true;
     } catch (e) {
+      // A link the database refused (switch turned off meanwhile, website checks): nothing was saved.
+      if (e instanceof Error && e.message.startsWith('profile_links:')) {
+        const refused = guideLinkSaveError({ message: e.message });
+        if (!refused.ok) {
+          setLinkRefused(refused.kind ?? null);
+          setMessage({ tone: 'error', text: profileLinkErrorMessage(refused.error, locale) ?? pl.saveError });
+        }
+        return false;
+      }
       setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : e instanceof Error && e.message === 'links' ? linkTexts(locale).checkLinks : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
       return false;
     } finally {
@@ -389,28 +406,37 @@ export default function ProfileEditScreen() {
   const stepDone = progress.steps.map((s) => s.done);
 
   const canSend = canSendForChecking(progress);
+  // Only a profile waiting for approval (or a new one) is "sent for checking".
+  const review = guide?.verification_status ?? 'pending';
+  const offerSend = review === 'pending' && canSend;
   const missingRequired = progress.steps.flatMap((p, i) => (!p.optional && !p.done ? [g.steps[i]] : []));
 
-  // Step 5: the links that changed, saved after the profile with the same rules as the links screen.
-  async function saveLinks(): Promise<boolean> {
-    if (!linkRow || links.error) return true;
+  // Step 5: the links that changed, checked before anything is saved. The switch is read again, so a
+  // switch turned off meanwhile refuses here, not halfway. null: refused (the message says why).
+  async function stepLinks(): Promise<Record<string, string | null> | null> {
+    if (!linkRow || links.error) return {};
     const changed = GUIDE_LINK_KINDS.filter((kind) => linkEditable(kind) && kind in linkEdits && linkValue(kind).trim() !== savedLink(kind));
-    if (changed.length === 0) return true;
-    const result = await saveGuideLinks(linkRow.id, Object.fromEntries(changed.map((kind) => [kind, linkValue(kind)])), linksOn);
+    if (changed.length === 0) return {};
+    let on: boolean;
+    try {
+      on = await profileLinksOn();
+    } catch {
+      setMessage({ tone: 'error', text: pl.saveError });
+      return null;
+    }
+    const result = guideLinkPatch(Object.fromEntries(changed.map((kind) => [kind, linkValue(kind)])), on);
     if (!result.ok) {
       setLinkRefused(result.kind ?? null);
       setMessage({ tone: 'error', text: profileLinkErrorMessage(result.error, locale) ?? pl.saveError });
-      return false;
+      return null;
     }
-    setLinkEdits({});
-    setLinkRefused(null);
-    await queryClient.invalidateQueries({ queryKey: ['my-links'] });
-    await queryClient.invalidateQueries({ queryKey: ['guide-links'] });
-    return true;
+    return result.patch;
   }
 
   // Step 6: "Offer VIP hosting". Hiding keeps the package as a draft (nothing is deleted); a hidden one
-  // goes back for checking; with none yet, the guide describes it on My packages. Returns false on error.
+  // goes back for checking; with none yet, the guide describes it on My packages. The profile is saved
+  // first; if the package change then fails, the call settings are put back as they were saved, so the
+  // step saves nothing (security review L2). Returns false on error.
   async function saveVip(): Promise<boolean | 'create'> {
     if (!vipShown || vipWanted === null || !guideId) return true;
     const change = vipChange(packages.data ?? [], vipWanted);
@@ -418,28 +444,37 @@ export default function ProfileEditScreen() {
       if (change.kind === 'hide') await setPackagesStatus(guideId, change.ids, 'draft');
       if (change.kind === 'resend') await setPackagesStatus(guideId, [change.id], 'pending');
     } catch {
+      const saved = mine.data?.guide;
+      if (saved) {
+        await restoreGuideCalls(guideId, { call_enabled: saved.call_enabled, call_price_usd: saved.call_price_usd, call_minutes: saved.call_minutes, call_topics: saved.call_topics }).catch(() => undefined);
+        await queryClient.invalidateQueries({ queryKey: ['my-guide'] });
+      }
       setMessage({ tone: 'error', text: s.vipError });
       return false;
     }
+    // "Create" keeps the switch on as the guide set it until the new trip shows up in the packages list.
+    if (change.kind === 'create') return 'create';
     setVipWanted(null);
     await queryClient.invalidateQueries({ queryKey: ['my-packages'] });
-    return change.kind === 'create' ? 'create' : true;
+    return true;
   }
 
   async function saveStep(index: number) {
-    if (!(await save())) return;
-    if (index === 4 && !(await saveLinks())) return;
+    const linkPatch = index === 4 ? await stepLinks() : {};
+    if (!linkPatch) return;
+    if (!(await save(linkPatch))) return;
     if (index === 5) {
       const vip = await saveVip();
       if (vip === false) return;
       if (vip === 'create') {
-        setStep(null);
-        router.push({ pathname: '/my-packages', params: { kind: 'personal_host' } });
+        // Stay on step 6 and say what comes next; My packages opens a VIP hosting trip and comes back here.
+        setMessage({ tone: 'ok', text: s.vipCreate });
+        router.push({ pathname: '/my-packages', params: { kind: 'personal_host', next: 'calls' } });
         return;
       }
     }
     // Step 4 with steps 1-4 done: "Send for checking" goes back to the overview with a thank-you.
-    if (index === 3 && canSend) {
+    if (index === 3 && offerSend) {
       setStep(null);
       setMessage({ tone: 'ok', text: s.sent });
       return;
@@ -507,7 +542,7 @@ export default function ProfileEditScreen() {
         <>
           <FormMessage message={message} />
           <Button
-            title={current === 3 && canSend ? s.send : current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish}
+            title={current === 3 && offerSend ? s.send : current + 1 < STEP_COUNT ? d.saveContinue : d.saveFinish}
             onPress={() => saveStep(current)}
             loading={busy}
             disabled={current === 4 && GUIDE_LINK_KINDS.some((kind) => linkEditable(kind) && !!linkError(kind))}
@@ -598,10 +633,21 @@ export default function ProfileEditScreen() {
             <Text style={{ ...type.body, ...font.bold }}>{tripCount === 0 ? g.tripsNone : tripCount === 1 ? g.tripsOne : g.tripsMany.replace('{n}', String(tripCount))}</Text>
           )}
           <Button title={tripCount ? g.tripsSee : g.tripsAdd} icon={tripCount ? GLYPHS.list : GLYPHS.plus} variant="outline" size="md" onPress={() => router.push('/my-packages')} />
-          {/* Steps 1-4 done: the guide can send the profile for checking (steps 5 and 6 stay optional). */}
-          <SectionTitle>{s.sendTitle}</SectionTitle>
-          <Muted>{canSend ? s.sendReady : s.sendNotReady}</Muted>
-          {!canSend && missingRequired.length > 0 && <Muted>{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</Muted>}
+          {/* A guide waiting for approval can send the profile for checking once steps 1-4 are done
+              (steps 5 and 6 stay optional). Approved guides just save; a guide who was not approved is
+              asked to contact Kwetuly, because saving does not reopen the check. */}
+          {review === 'rejected' ? (
+            <>
+              <SectionTitle>{s.rejectedTitle}</SectionTitle>
+              <Muted>{s.rejectedBody}</Muted>
+            </>
+          ) : review === 'pending' ? (
+            <>
+              <SectionTitle>{canSend ? s.sendTitle : s.beforeTitle}</SectionTitle>
+              <Muted>{canSend ? s.sendReady : s.sendNotReady}</Muted>
+              {!canSend && missingRequired.length > 0 && <Muted>{s.sendMissing.replace('{steps}', () => missingRequired.join(', '))}</Muted>}
+            </>
+          ) : null}
         </Card>
       )}
 
@@ -618,8 +664,9 @@ export default function ProfileEditScreen() {
             ) : photos.data ? (
               <>
                 <Muted>{s.photosNote}</Muted>
-                <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'cover')} />
-                <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'gallery')} />
+                {/* Outline buttons: "Save and continue" is the step's one main action. */}
+                <MediaField field="cover" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'cover')} outline />
+                <MediaField field="gallery" subjectKind="guide" subjectId={guideId} initial={photos.data.filter((p) => p.field === 'gallery')} outline />
                 <Muted>{up.checkedAfter}</Muted>
               </>
             ) : (
@@ -720,7 +767,7 @@ export default function ProfileEditScreen() {
       {guide ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: space.sm }}>
           {guide && current > 0 && <Button title={d.back} variant="outline" size="md" onPress={() => setStep(current - 1)} />}
-          {guide && <Button title={current === 3 && canSend ? s.continuePage : d.skip} variant="text" size="md" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} />}
+          {guide && <Button title={current === 3 && offerSend ? s.continuePage : d.skip} variant="text" size="md" onPress={() => setStep(current + 1 < STEP_COUNT ? current + 1 : null)} />}
         </View>
       ) : null}
     </FormScreen>
