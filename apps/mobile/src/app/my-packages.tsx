@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { PACKAGE_KINDS, guideProgressText, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
+import { PACKAGE_KINDS, guideProgressText, guideSignupText, packageDuration, packagePrice, type GuidePackage, type PackageKind, type PackageStatus } from '@kwetuly/shared';
 import { GLYPHS } from '@/components/glyph';
 import { Badge, Button, Card, ChipSelect, EmptyState, Field, FormMessage, FormScreen, MetaItems, Muted, ScreenState } from '@/components/ui';
 import { getMyGuide } from '@/lib/api-more';
@@ -185,6 +185,8 @@ export default function MyPackagesScreen() {
     >
       <Stack.Title>{pt.manageTitle}</Stack.Title>
       <Muted>{pt.manageIntro}</Muted>
+      {/* Reached from "Offer VIP hosting" in sign-up step 6: what to describe here. */}
+      {fromSignup && presetKind === 'personal_host' && !savedFromSignup && <Muted>{guideSignupText(locale).vipDescribe}</Muted>}
       {!editing && <FormMessage message={message} />}
 
       {!editing && list.length === 0 && <EmptyState glyph={GLYPHS.list} text={pt.none} />}

@@ -13,7 +13,12 @@ const en = {
   // A guide whose profile was not approved: saving does not send it back by itself (only Kwetuly can
   // reopen the check), so the guide is asked to get in touch.
   rejectedTitle: 'Your profile was not approved',
-  rejectedBody: 'You are welcome to update your details and save each step. Then please contact Kwetuly and ask for your profile to be checked again.',
+  /** Shown with the "Contact Kwetuly" email link (when the team address is set). */
+  rejectedBody: 'You are welcome to update your details and save each step. Then please write to Kwetuly with the link below and ask for your profile to be checked again.',
+  /** Shown while no team address is set, so there is no link to point to. */
+  rejectedBodyNoLink: 'You are welcome to update your details and save each step. Then please contact Kwetuly and ask for your profile to be checked again.',
+  /** The subject line of that email. */
+  rejectedSubject: 'Please check my guide profile again',
   sendReady: 'Asante. Steps 1 to 4 are done, so Kwetuly can now check your profile and documents.',
   sendNotReady: 'Please finish steps 1 to 4 first. Then you can send your profile for checking.',
   sendMissing: 'Still to do: {steps}',
@@ -39,6 +44,9 @@ const en = {
   vipCreate: 'After you save, please describe your VIP hosting as a trip, with its days and price. Kwetuly checks it before travellers see it.',
   vipOffNote: 'Switching this off hides your VIP hosting trip from travellers. Nothing is deleted.',
   vipError: 'Sorry, we could not change your VIP hosting. Please try again.',
+  /** On My packages, reached from the switch (next=calls). */
+  vipDescribe: 'Please describe your VIP hosting as a trip, with its days and price. Kwetuly checks it before travellers see it.',
+  vipPartial: 'Your call settings were saved, but your VIP hosting was not changed. Please try the switch again.',
 
   // Profile strength: the item for step 4.
   strengthTrips: 'At least one trip',
@@ -50,7 +58,9 @@ const sw: GuideSignupText = {
   sendTitle: 'Tayari kukaguliwa',
   beforeTitle: 'Kabla ya ukaguzi',
   rejectedTitle: 'Wasifu wako haukuidhinishwa',
-  rejectedBody: 'Unakaribishwa kusasisha taarifa zako na kuhifadhi kila hatua. Kisha tafadhali wasiliana na Kwetuly uombe wasifu wako ukaguliwe tena.',
+  rejectedBody: 'Unakaribishwa kusasisha taarifa zako na kuhifadhi kila hatua. Kisha tafadhali iandikie Kwetuly kupitia kiungo kilicho hapa chini uombe wasifu wako ukaguliwe tena.',
+  rejectedBodyNoLink: 'Unakaribishwa kusasisha taarifa zako na kuhifadhi kila hatua. Kisha tafadhali wasiliana na Kwetuly uombe wasifu wako ukaguliwe tena.',
+  rejectedSubject: 'Tafadhali kagueni tena wasifu wangu wa mwongoza watalii',
   sendReady: 'Asante. Hatua ya 1 hadi ya 4 zimekamilika, kwa hiyo Kwetuly sasa inaweza kukagua wasifu wako na nyaraka zako.',
   sendNotReady: 'Tafadhali maliza hatua ya 1 hadi ya 4 kwanza. Kisha unaweza kutuma wasifu wako ukaguliwe.',
   sendMissing: 'Bado kufanya: {steps}',
@@ -74,6 +84,8 @@ const sw: GuideSignupText = {
   vipCreate: 'Baada ya kuhifadhi, tafadhali eleza huduma yako ya mwenyeji wa VIP kama safari, pamoja na siku na bei yake. Kwetuly itaikagua kabla wasafiri hawajaiona.',
   vipOffNote: 'Ukizima hii, safari yako ya mwenyeji wa VIP itafichwa kwa wasafiri. Hakuna kitakachofutwa.',
   vipError: 'Samahani, hatukuweza kubadilisha huduma yako ya mwenyeji wa VIP. Tafadhali jaribu tena.',
+  vipDescribe: 'Tafadhali eleza huduma yako ya mwenyeji wa VIP kama safari, pamoja na siku na bei yake. Kwetuly itaikagua kabla wasafiri hawajaiona.',
+  vipPartial: 'Mipangilio yako ya simu imehifadhiwa, lakini huduma yako ya mwenyeji wa VIP haikubadilishwa. Tafadhali jaribu kitufe hicho tena.',
 
   strengthTrips: 'Angalau safari moja',
 };

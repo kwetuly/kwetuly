@@ -42,7 +42,9 @@ export async function saveGuideLinks(_previous: FormResult, formData: FormData):
   if (!guide) return { error: 'pl_save' };
 
   // While the switch is off only Instagram, Facebook and TikTok are saved (the others are not touched).
-  const on = await linksOn(supabase);
+  // A failed switch read is a save error, never "switched off".
+  const on = await linksOn(supabase).catch(() => null);
+  if (on === null) return { error: 'pl_save' };
   const kinds = on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind));
   const { patch, error } = linkPatch(formData, kinds);
 
@@ -67,7 +69,9 @@ export async function saveBusinessLinks(_previous: FormResult, formData: FormDat
   if (!UUID.test(providerId)) return { error: 'pl_save' };
   const { data: business } = await supabase.from('providers').select('id').eq('id', providerId).eq('owner_id', user.id).maybeSingle<{ id: string }>();
   if (!business) return { error: 'pl_save' };
-  if (!(await linksOn(supabase))) return { error: 'pl_off' };
+  const on = await linksOn(supabase).catch(() => null);
+  if (on === null) return { error: 'pl_save' };
+  if (!on) return { error: 'pl_off' };
 
   const { patch, error } = linkPatch(formData, BUSINESS_LINK_KINDS);
   if (Object.keys(patch).length > 0) {

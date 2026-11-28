@@ -173,7 +173,7 @@ const en: HostsEntryText = {
     'You keep the guest’s name, plans and whereabouts private.',
   ],
   conciergeNot: 'A concierge is not a bodyguard. Security, protection and escort work are not part of this service.',
-  serviceNote: 'After approval, Kwetuly will ask you which host service you would like to add: "Personal trip host" or "Investment visit host". Kwetuly checks each service before it appears.',
+  serviceNote: 'After approval, Kwetuly will ask you which host service you would like to add: "Personal trip host (VIP hosting)" or "Investment visit host". Kwetuly checks each service before it appears.',
   joinIntent:
     'Karibu. You are applying to be a host. Please create a guide account below and complete the guide steps. After approval, Kwetuly will ask you which host service you would like to add.',
   continueGuide: 'Continue your guide profile',
@@ -190,7 +190,7 @@ const sw: HostsEntryText = {
     'Unatunza siri ya jina la mgeni, mipango yake na mahali alipo.',
   ],
   conciergeNot: 'Concierge si mlinzi binafsi. Kazi ya ulinzi, usalama au kusindikiza kwa usalama si sehemu ya huduma hii.',
-  serviceNote: 'Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza: "Mwenyeji wa safari binafsi" au "Mwenyeji wa ziara za uwekezaji". Kwetuly inakagua kila huduma kabla haijaonekana.',
+  serviceNote: 'Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza: "Mwenyeji wa safari binafsi (mwenyeji wa VIP)" au "Mwenyeji wa ziara za uwekezaji". Kwetuly inakagua kila huduma kabla haijaonekana.',
   joinIntent:
     'Karibu. Unaomba kuwa mwenyeji. Tafadhali fungua akaunti ya mwongozaji hapa chini na ukamilishe hatua za mwongozaji. Baada ya kuidhinishwa, Kwetuly itakuuliza ni huduma ipi ya mwenyeji ungependa kuongeza.',
   continueGuide: 'Endelea na wasifu wako wa mwongozaji',

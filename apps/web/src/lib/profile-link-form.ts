@@ -8,9 +8,13 @@ import type { createClient } from '@/lib/supabase/server';
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-/** feature.profile_links, read fresh for a save (missing row = off, like private.feature_on). */
+/**
+ * feature.profile_links, read fresh for a save (missing row = off, like private.feature_on). A failed
+ * read throws: callers report a save error ("please try again"), never "switched off".
+ */
 export async function linksOn(supabase: Supabase): Promise<boolean> {
-  const { data } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  if (error) throw new Error('profile_links switch could not be read');
   return data?.value?.on === true;
 }
 

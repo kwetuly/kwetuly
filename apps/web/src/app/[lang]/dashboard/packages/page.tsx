@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 import { DirectUpload } from '@/components/direct-upload';
 import { deletePackage, savePackage } from './actions';
 import { SubmitButton } from '@/components/submit-button';
-import { guideProgressText } from '@kwetuly/shared';
+import { guideProgressText, guideSignupText } from '@kwetuly/shared';
 import { signupReturn, signupReturnHref, type SignupReturn } from '@/lib/guide-steps';
 
 export const metadata: Metadata = { title: 'My packages', robots: { index: false } };
@@ -54,6 +54,8 @@ async function Packages({ t, locale, searchParams }: { t: Dictionary; locale: Lo
       <Link href={next ? signupReturnHref(locale, next) : `/${locale}/dashboard`} className="text-sm font-semibold text-forest underline">{next ? guideProgressText(locale).backToSignup : t.dashboard.title}</Link>
       <h1 className="mt-2 text-3xl font-bold">{pt.manageTitle}</h1>
       <p className="mt-2 text-muted">{pt.manageIntro}</p>
+      {/* Reached from "Offer VIP hosting" in sign-up step 6: what to describe here. */}
+      {next === 'calls' && params.kind === 'personal_host' && <p className="mt-4 text-muted">{guideSignupText(locale).vipDescribe}</p>}
       {params.saved && <p className="mt-4 rounded-[5px] bg-mint p-4 font-semibold text-forest">{pt.saved}</p>}
       {params.error && <p className="mt-4 rounded-[5px] bg-red-50 p-4 text-red-800">{t.auth.error}</p>}
 

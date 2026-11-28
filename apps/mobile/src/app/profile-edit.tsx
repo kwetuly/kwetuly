@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { cleanPhoto } from '@/lib/clean-photo';
@@ -53,7 +53,7 @@ import { getMyLinks, guideLinkPatch, guideLinkSaveError, profileLinksOn } from '
 import { GLYPHS, Glyph } from '@/components/glyph';
 import { PhoneField, devicePhoneCountry } from '@/components/phone-field';
 import { Avatar, Badge, Button, Card, ChipSelect, Field, FormMessage, FormScreen, Muted, ScreenState, SectionTitle, Toggle } from '@/components/ui';
-import { getMyGuide, restoreGuideCalls, saveGuideProfile } from '@/lib/api-more';
+import { getGuideCalls, getMyGuide, restoreGuideCalls, saveGuideProfile, type GuideCalls } from '@/lib/api-more';
 import { useProfile, useSession } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
 import { useNeedsSetup, welcomeHref } from '@/lib/onboarding';
@@ -66,6 +66,10 @@ type Upload = { uri: string; mimeType: string };
 // The six steps, the same as the website: 0 about you, 1 what you do, 2 documents, 3 your trips,
 // 4 your page, 5 calls and booking link. Steps 1-4 are required.
 const STEP_COUNT = GUIDE_STEP_IDS.length;
+
+// Where guides write to the Kwetuly team, the same address as the website's NEXT_PUBLIC_SUPPORT_EMAIL.
+// The "Contact Kwetuly" button stays hidden until EXPO_PUBLIC_SUPPORT_EMAIL is set.
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || null;
 
 // Profile photos are cropped square; ID card photos are kept as taken. Both are shrunk to at most
 // 1600px (phone photos are often 8–12 MB, too slow on mobile data and over the storage limit) and
@@ -360,10 +364,7 @@ export default function ProfileEditScreen() {
       // A link the database refused (switch turned off meanwhile, website checks): nothing was saved.
       if (e instanceof Error && e.message.startsWith('profile_links:')) {
         const refused = guideLinkSaveError({ message: e.message });
-        if (!refused.ok) {
-          setLinkRefused(refused.kind ?? null);
-          setMessage({ tone: 'error', text: profileLinkErrorMessage(refused.error, locale) ?? pl.saveError });
-        }
+        if (!refused.ok) refuseLink(refused.error, refused.kind);
         return false;
       }
       setMessage({ tone: 'error', text: e instanceof Error && e.message === 'slug' ? `${d.slug}: ${t.auth.error}` : e instanceof Error && e.message === 'links' ? linkTexts(locale).checkLinks : isDisplayNameReservedError(e as Error) ? t.auth.nameReserved : t.auth.error });
@@ -406,6 +407,10 @@ export default function ProfileEditScreen() {
   const stepDone = progress.steps.map((s) => s.done);
 
   const canSend = canSendForChecking(progress);
+  // A profile that was not approved: an email to the team asking for another check (no personal data in it).
+  const contactKwetuly = () => {
+    if (SUPPORT_EMAIL) void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(s.rejectedSubject)}`).catch(() => undefined);
+  };
   // Only a profile waiting for approval (or a new one) is "sent for checking".
   const review = guide?.verification_status ?? 'pending';
   const offerSend = review === 'pending' && canSend;
@@ -426,30 +431,49 @@ export default function ProfileEditScreen() {
     }
     const result = guideLinkPatch(Object.fromEntries(changed.map((kind) => [kind, linkValue(kind)])), on);
     if (!result.ok) {
-      setLinkRefused(result.kind ?? null);
-      setMessage({ tone: 'error', text: profileLinkErrorMessage(result.error, locale) ?? pl.saveError });
+      refuseLink(result.error, result.kind);
       return null;
     }
     return result.patch;
   }
 
+  // A refused link names its field. When the links switch was turned off meanwhile (pl_off), the
+  // switched fields are dropped from the edits and the links reloaded, so the guide is not stuck on
+  // fields that are now hidden.
+  function refuseLink(error: Parameters<typeof profileLinkErrorMessage>[0], kind?: ProfileLinkKind) {
+    setMessage({ tone: 'error', text: profileLinkErrorMessage(error, locale) ?? pl.saveError });
+    if (error === 'pl_off') {
+      setLinkRefused(null);
+      setLinkEdits((current) => Object.fromEntries(Object.entries(current).filter(([k]) => !SWITCHED_GUIDE_LINK_KINDS.includes(k as ProfileLinkKind))));
+      void queryClient.invalidateQueries({ queryKey: ['my-links'] });
+      return;
+    }
+    setLinkRefused(kind ?? null);
+  }
+
   // Step 6: "Offer VIP hosting". Hiding keeps the package as a draft (nothing is deleted); a hidden one
-  // goes back for checking; with none yet, the guide describes it on My packages. The profile is saved
-  // first; if the package change then fails, the call settings are put back as they were saved, so the
-  // step saves nothing (security review L2). Returns false on error.
-  async function saveVip(): Promise<boolean | 'create'> {
+  // goes back for checking; with none yet, the guide describes it on My packages. The saved call
+  // settings are read from the database before the profile is saved; if the package change then fails,
+  // they are put back, so the step saves nothing (security review L2). What the guide typed stays on
+  // screen either way. Returns false on error.
+  async function saveVip(savedCalls: GuideCalls | null): Promise<boolean | 'create'> {
     if (!vipShown || vipWanted === null || !guideId) return true;
     const change = vipChange(packages.data ?? [], vipWanted);
     try {
       if (change.kind === 'hide') await setPackagesStatus(guideId, change.ids, 'draft');
       if (change.kind === 'resend') await setPackagesStatus(guideId, [change.id], 'pending');
     } catch {
-      const saved = mine.data?.guide;
-      if (saved) {
-        await restoreGuideCalls(guideId, { call_enabled: saved.call_enabled, call_price_usd: saved.call_price_usd, call_minutes: saved.call_minutes, call_topics: saved.call_topics }).catch(() => undefined);
-        await queryClient.invalidateQueries({ queryKey: ['my-guide'] });
+      let restored = false;
+      if (savedCalls) {
+        try {
+          await restoreGuideCalls(guideId, savedCalls);
+          restored = true;
+        } catch {
+          restored = false;
+        }
       }
-      setMessage({ tone: 'error', text: s.vipError });
+      // Not refetched on purpose: the form keeps what the guide typed, ready to try again.
+      setMessage({ tone: 'error', text: restored ? s.vipError : s.vipPartial });
       return false;
     }
     // "Create" keeps the switch on as the guide set it until the new trip shows up in the packages list.
@@ -462,13 +486,24 @@ export default function ProfileEditScreen() {
   async function saveStep(index: number) {
     const linkPatch = index === 4 ? await stepLinks() : {};
     if (!linkPatch) return;
+    // Step 6 with a VIP hosting change: read the saved call settings first, so a failed read saves nothing.
+    const vipChanging = index === 5 && vipShown && vipWanted !== null && !!guideId && vipChange(packages.data ?? [], vipWanted).kind !== 'none';
+    let savedCalls: GuideCalls | null = null;
+    if (vipChanging) {
+      try {
+        savedCalls = await getGuideCalls(guideId!);
+      } catch {
+        setMessage({ tone: 'error', text: s.vipError });
+        return;
+      }
+    }
     if (!(await save(linkPatch))) return;
     if (index === 5) {
-      const vip = await saveVip();
+      const vip = await saveVip(savedCalls);
       if (vip === false) return;
       if (vip === 'create') {
-        // Stay on step 6 and say what comes next; My packages opens a VIP hosting trip and comes back here.
-        setMessage({ tone: 'ok', text: s.vipCreate });
+        // Stay on step 6; My packages says what comes next, opens a VIP hosting trip and comes back here.
+        setMessage(null);
         router.push({ pathname: '/my-packages', params: { kind: 'personal_host', next: 'calls' } });
         return;
       }
@@ -489,6 +524,8 @@ export default function ProfileEditScreen() {
         {status && (
           <Card>
             <Badge label={status === 'approved' ? d.statusApproved : status === 'rejected' ? d.statusRejected : d.statusPending} tone={status === 'approved' ? 'mint' : 'sand'} />
+            {/* "Please contact Kwetuly": the team address, the same one the website uses. */}
+            {status === 'rejected' && SUPPORT_EMAIL ? <Button title={t.ux.contactKwetuly} icon={GLYPHS.mail} variant="outline" size="md" onPress={contactKwetuly} /> : null}
           </Card>
         )}
         <FormMessage message={message} />
@@ -639,7 +676,8 @@ export default function ProfileEditScreen() {
           {review === 'rejected' ? (
             <>
               <SectionTitle>{s.rejectedTitle}</SectionTitle>
-              <Muted>{s.rejectedBody}</Muted>
+              <Muted>{SUPPORT_EMAIL ? s.rejectedBody : s.rejectedBodyNoLink}</Muted>
+              {SUPPORT_EMAIL ? <Button title={t.ux.contactKwetuly} icon={GLYPHS.mail} variant="outline" size="md" onPress={contactKwetuly} /> : null}
             </>
           ) : review === 'pending' ? (
             <>
@@ -752,8 +790,11 @@ export default function ProfileEditScreen() {
       {current === 5 && guide && vipShown && (
         <Card>
           <SectionTitle>{s.vipTitle}</SectionTitle>
+          {/* The switch shows only once the packages are loaded, so it never starts in the wrong position. */}
           {packages.error ? (
             <ScreenState error={packages.error} onRetry={() => void packages.refetch()} retryLabel={g.retry} />
+          ) : !packages.data ? (
+            <ScreenState loading />
           ) : (
             <>
               <Toggle label={s.vipLabel} value={vipOn} onChange={setVipWanted} />

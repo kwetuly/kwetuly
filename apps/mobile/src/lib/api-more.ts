@@ -288,8 +288,17 @@ export async function saveGuideProfile(
   if (Object.keys(cleared).length > 0) check((await supabase.from('guides').update(cleared).eq('id', saved!.id)).error);
 }
 
+export type GuideCalls = { call_enabled: boolean; call_price_usd: number | null; call_minutes: number; call_topics: string[] };
+
+/** The guide's saved prep call settings, read from the database (sign-up step 6, before saving). */
+export async function getGuideCalls(guideId: string): Promise<GuideCalls> {
+  const { data, error } = await supabase.from('guides').select('call_enabled, call_price_usd, call_minutes, call_topics').eq('id', guideId).single<GuideCalls>();
+  check(error);
+  return data!;
+}
+
 /** Puts the guide's prep call settings back (sign-up step 6, when the VIP hosting change failed). */
-export async function restoreGuideCalls(guideId: string, calls: { call_enabled: boolean; call_price_usd: number | null; call_minutes: number; call_topics: string[] }) {
+export async function restoreGuideCalls(guideId: string, calls: GuideCalls) {
   check((await supabase.from('guides').update(calls).eq('id', guideId)).error);
 }
 

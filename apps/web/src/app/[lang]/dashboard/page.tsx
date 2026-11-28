@@ -23,6 +23,7 @@ import { GuideReferral } from './guide-referral';
 import { GUIDE_STEPS, guideStep, isGuideStep, type GuideStep } from '@/lib/guide-steps';
 import { DirectUpload } from '@/components/direct-upload';
 import { today } from '@/lib/today';
+import { SUPPORT_EMAIL } from '@/lib/site';
 import { SubmitButton } from '@/components/submit-button';
 import { NameInput } from '@/components/name-input';
 import { PhoneField } from '@/components/phone-field';
@@ -214,6 +215,7 @@ async function GuideEditor({
       ['pl_website', 'pl_website_blocked', 'pl_google', 'pl_youtube', 'pl_instagram', 'pl_facebook', 'pl_tiktok', 'pl_save', 'pl_off'].map((code) => [code, profileLinkErrorMessage(code, locale) ?? pl.saveError]),
     ),
     vip: s.vipError,
+    vip_partial: s.vipPartial,
   };
   const progress = guideStepProgress({ guide, idDocument: !!details?.id_document_path, licenceDocument: !!details?.license_document_path, tripCount: tripCount ?? 0 });
   const progressLabels = { progressLabel: g.progressLabel, optional: g.optional, done: g.done, todo: g.todo, stepStatus: g.stepStatus };
@@ -222,6 +224,8 @@ async function GuideEditor({
   // Only a profile waiting for approval (or a new one) is "sent for checking".
   const review = guide?.verification_status ?? 'pending';
   const offerSend = review === 'pending' && canSend;
+  // A profile that was not approved: write to the team (NEXT_PUBLIC_SUPPORT_EMAIL; no link until it is set).
+  const rejectedContact = review === 'rejected' && SUPPORT_EMAIL ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(s.rejectedSubject)}` : null;
   const missingRequired = progress.steps.flatMap((p, i) => (!p.optional && !p.done ? [g.steps[i]] : []));
 
   if (step) {
@@ -349,7 +353,10 @@ async function GuideEditor({
               {review === 'rejected' ? (
                 <div className="rounded-[5px] bg-surface p-4 text-sm">
                   <p className="font-semibold">{s.rejectedTitle}</p>
-                  <p className="mt-1">{s.rejectedBody}</p>
+                  <p className="mt-1">{rejectedContact ? s.rejectedBody : s.rejectedBodyNoLink}</p>
+                  {rejectedContact && (
+                    <a href={rejectedContact} className="mt-2 inline-block font-semibold text-forest underline">{t.ux.contactKwetuly}</a>
+                  )}
                 </div>
               ) : review === 'pending' ? (
                 <div className={`rounded-[5px] p-4 text-sm ${canSend ? 'bg-mint text-forest' : 'bg-surface'}`}>
@@ -399,7 +406,8 @@ async function GuideEditor({
               <section className="space-y-5 border-t border-line pt-5" aria-labelledby="page-links">
                 <h2 id="page-links" className="text-lg font-bold">{s.linksTitle}</h2>
                 <p className="text-sm text-muted">{s.linksNote}</p>
-                {links?.error ? (
+                {/* A failed read of the links or of their switch is a load error, never "switched off". */}
+                {links?.error || linksSwitch?.error ? (
                   <p role="alert" className="rounded-[5px] bg-surface p-3 text-sm">{pl.loadError}</p>
                 ) : (
                   <>
@@ -487,6 +495,10 @@ async function GuideEditor({
           {status.saved && <SavedNote className="w-full font-semibold">{d.saved}</SavedNote>}
           {status.sent && offerSend && <SavedNote className="w-full font-semibold">{s.sent}</SavedNote>}
           <span>{guide.verification_status === 'approved' && guide.visibility === 'link_only' ? guideStatusText(locale).approvedLinkOnly : statusText}</span>
+          {/* "Please contact Kwetuly": the team address, the same way as for a group trip that was not approved. */}
+          {rejectedContact && (
+            <a href={rejectedContact} className="font-semibold underline">{t.ux.contactKwetuly}</a>
+          )}
           {guide.verification_status === 'approved' && (
             <Link href={`/${locale}/guides/${guide.slug}`} className="font-semibold underline">
               {d.viewProfile}

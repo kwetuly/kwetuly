@@ -21,9 +21,13 @@ export type LinkRow = Partial<Record<ProfileLinkColumn, string | null>>;
 const SOCIAL_COLUMNS = 'instagram_url, facebook_url, tiktok_url';
 const NEW_COLUMNS = 'google_business_url, youtube_url';
 
-/** feature.profile_links: a missing row is off, like private.feature_on. */
+/**
+ * feature.profile_links: a missing row is off, like private.feature_on. A failed read throws, so
+ * screens show a load or save error ("please try again"), never "switched off".
+ */
 export async function profileLinksOn(): Promise<boolean> {
-  const { data } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'feature.profile_links').maybeSingle<{ value: { on?: unknown } | null }>();
+  if (error) throw new Error(error.message);
   return data?.value?.on === true;
 }
 

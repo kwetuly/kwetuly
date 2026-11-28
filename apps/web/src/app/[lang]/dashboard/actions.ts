@@ -132,7 +132,11 @@ async function saveGuideStep(formData: FormData) {
   let linksStep = false;
   if (has('page') && GUIDE_LINK_KINDS.some((kind) => formData.has(`link_${kind}`))) {
     linksStep = true;
-    const on = await linksOn(supabase);
+    // A failed switch read is a save error ("please try again"), never "switched off".
+    const on = await linksOn(supabase).catch(() => fail('pl_save'));
+    // The form leaves switched-off links out; one carried anyway (switch turned off meanwhile) is
+    // refused, as in the app, instead of being dropped without a word.
+    if (!on && SWITCHED_GUIDE_LINK_KINDS.some((kind) => formData.has(`link_${kind}`))) fail('pl_off');
     const kinds = on ? GUIDE_LINK_KINDS : GUIDE_LINK_KINDS.filter((kind) => !SWITCHED_GUIDE_LINK_KINDS.includes(kind));
     const links = linkPatch(formData, kinds);
     if (links.error) fail(links.error);
@@ -211,9 +215,10 @@ async function saveGuideStep(formData: FormData) {
     const ids = vip.kind === 'hide' ? vip.ids : [vip.id];
     const { error: vipError } = await supabase.from('guide_packages').update({ status: vip.kind === 'hide' ? 'draft' : 'pending' }).in('id', ids).eq('guide_id', guideId!);
     if (vipError) {
-      // Put the call settings back as they were, so the step saved nothing.
-      if (savedCalls) await supabase.from('guides').update(savedCalls).eq('id', guideId!);
-      fail('vip');
+      // Put the call settings back as they were, so the step saved nothing. If that fails too, say
+      // plainly that the call settings were saved but VIP hosting was not changed.
+      const { error: restoreError } = savedCalls ? await supabase.from('guides').update(savedCalls).eq('id', guideId!) : { error: null };
+      fail(restoreError ? 'vip_partial' : 'vip');
     }
     revalidateTag('packages', 'max');
   }
