@@ -30,3 +30,4 @@ export * from './payment-chooser';
 export * from './steps';
 export * from './features';
 export * from './uploads';
+export * from './currencies';
