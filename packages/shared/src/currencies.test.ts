@@ -20,11 +20,12 @@ const RATES = [
   { currency: 'JPY', tzs_per_unit: 16.8174 },
   { currency: 'KES', tzs_per_unit: 20.5617 },
   { currency: 'UGX', tzs_per_unit: 0.6207 },
+  { currency: 'PKR', tzs_per_unit: 9.686 },
 ];
 
 describe('allow-list', () => {
-  it('has no obsolete codes, no GOLD and no SDR', () => {
-    for (const code of ['ATS', 'NLG', 'ZWD', 'MZM', 'CUC', 'GOLD', 'SDR', 'XDR']) {
+  it('has no obsolete codes, no GOLD, no SDR and no IRR', () => {
+    for (const code of ['ATS', 'NLG', 'ZWD', 'MZM', 'CUC', 'GOLD', 'SDR', 'XDR', 'IRR']) {
       expect(isRateCurrency(code)).toBe(false);
     }
   });
@@ -41,12 +42,13 @@ describe('allow-list', () => {
     for (const c of RATE_CURRENCIES) expect(c).toMatch(/^[A-Z]{3}$/);
   });
 
-  it('matches private.rate_currencies() in the migration', () => {
+  it('matches the check constraint and private.rate_currencies() in the migration', () => {
     const sql = readFileSync(new URL('../../../supabase/migrations/20261203030000_exchange_rates.sql', import.meta.url), 'utf8');
+    const codesIn = (text: string) => [...text.matchAll(/'([A-Z]{3})'/g)].map((m) => m[1]);
     const body = sql.slice(sql.indexOf('create or replace function private.rate_currencies()'));
-    const list = body.slice(body.indexOf('array['), body.indexOf(']::text[]'));
-    const codes = [...list.matchAll(/'([A-Z]{3})'/g)].map((m) => m[1]);
-    expect(codes).toEqual([...RATE_CURRENCIES]);
+    expect(codesIn(body.slice(body.indexOf('array['), body.indexOf(']::text[]')))).toEqual([...RATE_CURRENCIES]);
+    const check = sql.slice(sql.indexOf('constraint exchange_rates_currency_allowed check ('));
+    expect(codesIn(check.slice(check.indexOf('in ('), check.indexOf('))')))).toEqual([...RATE_CURRENCIES]);
   });
 
   it('supabase/functions/_shared/currencies.ts is identical to this file', () => {
@@ -58,7 +60,7 @@ describe('allow-list', () => {
 
 describe('country and locale', () => {
   it('euro countries give EUR', () => {
-    for (const c of ['DE', 'FR', 'IT', 'ES', 'NL', 'AT', 'IE', 'HR']) expect(currencyForCountry(c)).toBe('EUR');
+    for (const c of ['DE', 'FR', 'IT', 'ES', 'NL', 'AT', 'IE', 'HR', 'BG', 'RE', 'GP', 'AX']) expect(currencyForCountry(c)).toBe('EUR');
   });
 
   it('other countries', () => {
@@ -98,12 +100,26 @@ describe('estimateLocal', () => {
     expect(estimateLocal(56, 'USD', 'EUR', RATES)).toBe(51);
   });
 
-  it('large-number currencies round to the nearest 100', () => {
-    // 150,000 / 16.8174 = 8919.3 -> 8,900; 150,000 / 0.6207 = 241,662 -> 241,700
-    expect(estimateLocal(150_000, 'TZS', 'JPY', RATES)).toBe(8900);
+  it('large-number currencies: nearest 100 from 10,000, 2 significant figures from 100, whole below', () => {
+    // 150,000 / 0.6207 = 241,662 -> 241,700; 150,000 / 9.686 = 15,486 -> 15,500
     expect(estimateLocal(150_000, 'TZS', 'UGX', RATES)).toBe(241_700);
+    expect(estimateLocal(150_000, 'TZS', 'PKR', RATES)).toBe(15_500);
+    // 150,000 / 16.8174 = 8,919 -> 8,900; 5,000 / 16.8174 = 297.3 -> 300; 1,000 / 16.8174 = 59.5 -> 59
+    expect(estimateLocal(150_000, 'TZS', 'JPY', RATES)).toBe(8900);
+    expect(estimateLocal(5_000, 'TZS', 'JPY', RATES)).toBe(300);
+    expect(estimateLocal(1_000, 'TZS', 'JPY', RATES)).toBe(59);
+    // 500 / 9.686 = 51.6 -> 52; 10,000 / 9.686 = 1,032 -> 1,000
+    expect(estimateLocal(500, 'TZS', 'PKR', RATES)).toBe(52);
+    expect(estimateLocal(10_000, 'TZS', 'PKR', RATES)).toBe(1000);
     expect(roundEstimate(8949.9, 'KRW')).toBe(8900);
+    expect(roundEstimate(9_960, 'KRW')).toBe(10_000);
     expect(roundEstimate(7294.5, 'KES')).toBe(7295);
+  });
+
+  it('a positive value never rounds to 0', () => {
+    expect(roundEstimate(0.4, 'EUR')).toBe(1);
+    expect(roundEstimate(0.4, 'JPY')).toBe(1);
+    expect(roundEstimate(40, 'JPY')).toBe(40);
   });
 
   it('no estimate for TZS or USD visitors, unknown currencies or missing rates', () => {
@@ -115,7 +131,7 @@ describe('estimateLocal', () => {
     expect(estimateLocal(56, 'USD', 'EUR', RATES.filter((r) => r.currency !== 'USD'))).toBeNull();
   });
 
-  it('no estimate for zero, negative or broken amounts, or a result that rounds to 0', () => {
+  it('no estimate for zero, negative or broken amounts, or less than one unit', () => {
     expect(estimateLocal(0, 'TZS', 'EUR', RATES)).toBeNull();
     expect(estimateLocal(-5, 'TZS', 'EUR', RATES)).toBeNull();
     expect(estimateLocal(Number.NaN, 'TZS', 'EUR', RATES)).toBeNull();
@@ -124,7 +140,7 @@ describe('estimateLocal', () => {
 
   it('accepts a prepared map and ignores bad rows', () => {
     const map = ratesByCurrency([...RATES, { currency: 'XXX', tzs_per_unit: 5 }, { currency: 'GBP', tzs_per_unit: 'abc' }, { currency: 'CNY', tzs_per_unit: -1 }]);
-    expect([...map.keys()].sort()).toEqual(['EUR', 'JPY', 'KES', 'UGX', 'USD']);
+    expect([...map.keys()].sort()).toEqual(['EUR', 'JPY', 'KES', 'PKR', 'UGX', 'USD']);
     expect(estimateLocal(150_000, 'TZS', 'KES', map)).toBe(7295);
   });
 });

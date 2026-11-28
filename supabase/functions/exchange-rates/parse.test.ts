@@ -5,7 +5,7 @@
 // expected value below is copied from that saved page.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { eastAfricaToday, parseBotDate, parseBotRates } from './parse.ts';
+import { eastAfricaToday, MAX_PAGE_BYTES, parseBotDate, parseBotRates } from './parse.ts';
 
 const fixture = readFileSync(new URL('./fixtures/bot-rates-2026-11-27.html', import.meta.url), 'utf8');
 // 27 Nov 2026, 10:00 in Dar es Salaam.
@@ -31,20 +31,20 @@ describe('parseBotRates on the saved Bank of Tanzania page', () => {
     expect(by.JPY.mean).toBe('16.8174');
     expect(by.KES.mean).toBe('20.5617');
     expect(by.UGX.mean).toBe('0.6207');
-    expect(result.rates).toHaveLength(37);
+    expect(result.rates).toHaveLength(36);
   });
 
-  it('drops obsolete codes, GOLD and SDR', () => {
+  it('drops obsolete codes, GOLD, SDR and IRR', () => {
     if (!result.ok) throw new Error('parse failed');
     const codes = result.rates.map((r) => r.currency);
-    for (const code of ['ATS', 'NLG', 'ZWD', 'MZM', 'CUC', 'SDR', 'GOLD']) expect(codes).not.toContain(code);
-    expect(result.dropped).toBe(7);
+    for (const code of ['ATS', 'NLG', 'ZWD', 'MZM', 'CUC', 'SDR', 'GOLD', 'IRR']) expect(codes).not.toContain(code);
+    expect(result.dropped).toBe(8);
     expect(result.refused).toBe(0);
   });
 
-  it('refuses the whole page as too old a week later', () => {
+  it('calls an unchanged page more than 7 days old stale, and saves nothing', () => {
     const later = parseBotRates(fixture, new Date('2026-12-05T07:00:00Z'));
-    expect(later).toMatchObject({ ok: false, error: 'no_usd' });
+    expect(later).toMatchObject({ ok: false, error: 'stale' });
   });
 
   it('accepts the page up to 7 days later', () => {
@@ -60,6 +60,15 @@ describe('parseBotRates strictness', () => {
   it('no table, or a changed table id', () => {
     expect(parseBotRates('<html><body>Maintenance</body></html>', NOW)).toMatchObject({ ok: false, error: 'no_table' });
     expect(parseBotRates(page(USD).replace('table1', 'table2'), NOW)).toMatchObject({ ok: false, error: 'no_table' });
+  });
+
+  it('refuses a page over the size cap before parsing', () => {
+    expect(parseBotRates(page(USD) + ' '.repeat(MAX_PAGE_BYTES), NOW)).toMatchObject({ ok: false, error: 'too_large' });
+  });
+
+  it('finds the table end in any letter case', () => {
+    expect(parseBotRates(page(USD).replace('</table>', '</TABLE >'), NOW).ok).toBe(true);
+    expect(parseBotRates(page(USD).replace('</table>', ''), NOW)).toMatchObject({ ok: false, error: 'no_table' });
   });
 
   it('empty table', () => {

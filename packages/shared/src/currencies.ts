@@ -18,12 +18,13 @@ export type PriceCurrency = (typeof PRICE_CURRENCIES)[number];
 
 /**
  * Currencies kept from the Bank of Tanzania table (checked against the page on 2026-11-27).
- * Dropped on purpose: obsolete codes (ATS, NLG, ZWD, MZM, CUC), GOLD and SDR (not a currency
- * visitors hold). Any code not in this list is ignored by the fetch.
+ * Dropped on purpose: obsolete codes (ATS, NLG, ZWD, MZM, CUC), GOLD, SDR (not a currency visitors
+ * hold) and IRR (published with too few decimals to give a useful estimate). Any code not in this
+ * list is ignored by the fetch.
  */
 export const BOT_CURRENCIES = [
   'AED', 'AUD', 'BIF', 'BWP', 'CAD', 'CHF', 'CNY', 'DKK', 'DZD', 'EUR', 'GBP', 'HKD', 'IDR', 'INR',
-  'IQD', 'IRR', 'JPY', 'KES', 'KRW', 'KWD', 'MWK', 'MYR', 'NAD', 'NGN', 'NOK', 'NZD', 'PKR', 'QAR',
+  'IQD', 'JPY', 'KES', 'KRW', 'KWD', 'MWK', 'MYR', 'NAD', 'NGN', 'NOK', 'NZD', 'PKR', 'QAR',
   'RWF', 'SAR', 'SEK', 'SGD', 'TRY', 'UGX', 'USD', 'ZAR', 'ZMW',
 ] as const;
 
@@ -47,15 +48,18 @@ export const isBotCurrency = (code: unknown): code is (typeof BOT_CURRENCIES)[nu
 export const isDisplayCurrency = (code: unknown): code is DisplayCurrency => typeof code === 'string' && DISPLAY_SET.has(code);
 
 /**
- * Currencies with large numbers: the estimate is rounded to the nearest 100 (others to whole units).
- * Rule of thumb: one unit is worth less than about 20 TZS.
+ * Currencies with large numbers (one unit is worth less than about 20 TZS). Their estimate is rounded
+ * to the nearest 100 from 10,000 up, to 2 significant figures from 100 to 9,999, and to whole units
+ * below 100. Other currencies are rounded to whole units.
  */
-export const ROUND_TO_100 = ['JPY', 'KRW', 'IDR', 'UGX', 'IRR', 'IQD', 'BIF', 'RWF', 'MWK', 'NGN', 'PKR'] as const;
+export const ROUND_TO_100 = ['JPY', 'KRW', 'IDR', 'UGX', 'IQD', 'BIF', 'RWF', 'MWK', 'NGN', 'PKR'] as const;
 const ROUND_100_SET: ReadonlySet<string> = new Set(ROUND_TO_100);
 
 const EURO_COUNTRIES = [
-  'AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT',
-  'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'ME', 'XK',
+  'AT', 'BE', 'BG', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+  'PT', 'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'ME', 'XK',
+  // French overseas regions and territories, and Aland, which use the euro
+  'RE', 'YT', 'GP', 'MQ', 'GF', 'PM', 'BL', 'MF', 'AX',
 ] as const;
 
 /**
@@ -69,7 +73,7 @@ export const COUNTRY_CURRENCY: Readonly<Record<string, DisplayCurrency>> = {
   US: 'USD', PR: 'USD', GU: 'USD', VI: 'USD', AS: 'USD', MP: 'USD', EC: 'USD', SV: 'USD',
   AE: 'AED', AU: 'AUD', BI: 'BIF', BW: 'BWP', CA: 'CAD', CH: 'CHF', LI: 'CHF', CN: 'CNY',
   DK: 'DKK', FO: 'DKK', GL: 'DKK', DZ: 'DZD', GB: 'GBP', IM: 'GBP', JE: 'GBP', GG: 'GBP',
-  HK: 'HKD', ID: 'IDR', IN: 'INR', IQ: 'IQD', IR: 'IRR', JP: 'JPY', KE: 'KES', KR: 'KRW',
+  HK: 'HKD', ID: 'IDR', IN: 'INR', IQ: 'IQD', JP: 'JPY', KE: 'KES', KR: 'KRW',
   KW: 'KWD', MW: 'MWK', MY: 'MYR', NA: 'NAD', NG: 'NGN', NO: 'NOK', NZ: 'NZD', PK: 'PKR',
   QA: 'QAR', RW: 'RWF', SA: 'SAR', SE: 'SEK', SG: 'SGD', TR: 'TRY', UG: 'UGX', ZA: 'ZAR',
   ZM: 'ZMW', PL: 'PLN',
@@ -113,15 +117,25 @@ export function ratesByCurrency(rows: readonly Pick<CurrentRate, 'currency' | 't
   return out;
 }
 
-/** Whole units, or the nearest 100 for currencies with large numbers. */
+/**
+ * Whole units; for currencies with large numbers (ROUND_TO_100) the nearest 100 from 10,000 up and 2
+ * significant figures from 100 up. A positive value never rounds to 0 (the smallest result is 1).
+ */
 export function roundEstimate(value: number, currency: string): number {
-  return ROUND_100_SET.has(currency) ? Math.round(value / 100) * 100 : Math.round(value);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  let rounded: number;
+  if (ROUND_100_SET.has(currency) && value >= 10_000) rounded = Math.round(value / 100) * 100;
+  else if (ROUND_100_SET.has(currency) && value >= 100) {
+    const step = 10 ** (Math.floor(Math.log10(value)) - 1);
+    rounded = Math.round(value / step) * step;
+  } else rounded = Math.round(value);
+  return Math.max(1, rounded);
 }
 
 /**
  * The "about" amount of a TZS or USD price in the visitor's currency, or null when no estimate
- * should be shown: the target is TZS or USD, the amount is not a positive number, or a rate is
- * missing (a USD price also needs the USD rate). Rates are TZS per 1 unit (see ratesByCurrency).
+ * should be shown: the target is TZS or USD, the amount is not a positive number, the result is
+ * less than one unit, or a rate is missing (a USD price also needs the USD rate). Rates are TZS per 1 unit (see ratesByCurrency).
  */
 export function estimateLocal(
   amount: number,
@@ -141,6 +155,8 @@ export function estimateLocal(
     if (!usd || !Number.isFinite(usd) || usd <= 0) return null;
     tzs = amount * usd;
   }
-  const rounded = roundEstimate(tzs / target, to);
-  return rounded > 0 ? rounded : null;
+  const value = tzs / target;
+  // Less than one unit of the visitor's currency: no "about" line.
+  if (!(value >= 1)) return null;
+  return roundEstimate(value, to);
 }

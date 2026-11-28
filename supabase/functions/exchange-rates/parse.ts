@@ -7,7 +7,9 @@
 //   - code [A-Z]{3}; buying, selling and mean are plain decimals; date dd-Mon-yy
 //   - buying <= mean <= selling, and mean is the average of buying and selling (rounding allowed)
 //   - date not after today and at most 7 days old (East Africa time)
-//   - a USD row must be there and pass; otherwise nothing is returned (error 'no_usd')
+//   - a USD row must be there and pass; otherwise nothing is returned (error 'no_usd', or 'stale'
+//     when the USD row is fine but older than 7 days: the page has not been updated)
+//   - pages over MAX_PAGE_BYTES are refused before any parsing ('too_large')
 // The 15% jump check needs the stored history and is done in the database.
 import { isBotCurrency } from '../_shared/currencies.ts';
 
@@ -21,9 +23,11 @@ export type ParsedRate = {
 
 export type ParseResult =
   | { ok: true; rates: ParsedRate[]; dropped: number; refused: number }
-  | { ok: false; error: 'no_table' | 'no_rows' | 'no_usd'; dropped: number; refused: number };
+  | { ok: false; error: 'too_large' | 'no_table' | 'no_rows' | 'no_usd' | 'stale'; dropped: number; refused: number };
 
 export const MAX_AGE_DAYS = 7;
+/** The real page is about 120 KB. */
+export const MAX_PAGE_BYTES = 2_000_000;
 const MONTHS: Record<string, string> = {
   Jan: '01', Feb: '02', Mar: '03', Apr: '04', May: '05', Jun: '06',
   Jul: '07', Aug: '08', Sep: '09', Oct: '10', Nov: '11', Dec: '12',
@@ -66,9 +70,11 @@ function meanFits(buying: number, selling: number, mean: number): boolean {
 export function parseBotRates(html: string, now: Date): ParseResult {
   let dropped = 0;
   let refused = 0;
+  if (html.length > MAX_PAGE_BYTES) return { ok: false, error: 'too_large', dropped, refused };
   const start = html.search(/<table\b[^>]*\bid="table1"[^>]*>/i);
   if (start < 0) return { ok: false, error: 'no_table', dropped, refused };
-  const end = html.indexOf('</table>', start);
+  const endMatch = /<\/table\s*>/i.exec(html.slice(start));
+  const end = endMatch ? start + endMatch.index : -1;
   if (end < 0) return { ok: false, error: 'no_table', dropped, refused };
   const table = html.slice(start, end);
   const bodyStart = table.search(/<tbody\b[^>]*>/i);
@@ -81,6 +87,7 @@ export function parseBotRates(html: string, now: Date): ParseResult {
   const seen = new Set<string>();
   const rates: ParsedRate[] = [];
   let rows = 0;
+  let usdStale = false;
 
   for (const row of body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
     rows++;
@@ -100,9 +107,11 @@ export function parseBotRates(html: string, now: Date): ParseResult {
       continue;
     }
     const date = parseBotDate(dateText);
+    const numbersFit = DECIMAL.test(buying) && DECIMAL.test(selling) && DECIMAL.test(mean) &&
+      meanFits(Number(buying), Number(selling), Number(mean));
+    if (code === 'USD' && numbersFit && date !== null && date < oldest) usdStale = true;
     if (
-      !DECIMAL.test(buying) || !DECIMAL.test(selling) || !DECIMAL.test(mean) ||
-      !meanFits(Number(buying), Number(selling), Number(mean)) ||
+      !numbersFit ||
       date === null || date > today || date < oldest ||
       seen.has(code)
     ) {
@@ -114,6 +123,6 @@ export function parseBotRates(html: string, now: Date): ParseResult {
   }
 
   if (rows === 0) return { ok: false, error: 'no_rows', dropped, refused };
-  if (!seen.has('USD')) return { ok: false, error: 'no_usd', dropped, refused };
+  if (!seen.has('USD')) return { ok: false, error: usdStale ? 'stale' : 'no_usd', dropped, refused };
   return { ok: true, rates, dropped, refused };
 }

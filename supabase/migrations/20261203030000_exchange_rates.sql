@@ -6,20 +6,24 @@
 --   (private.notify_user with channels), 20261016001400_admin_two_step_business_gate_deposits_leads.sql
 --   (private.is_admin() = admin role AND a two-step aal2 session), 20261031214101_feature_switches.sql
 --   (private.feature_on), 20261122000000_person_documents_identifiers.sql (private.tz_today),
---   20261126000000_feature_switch_admin.sql (row feature.local_prices).
+--   20261126000000_feature_switch_admin.sql (row feature.local_prices). pg_net and Vault are used only
+--   when the schedule below is set up.
 --
 -- What it adds:
---   1. private.rate_currencies(): the allow-list (same list as RATE_CURRENCIES in
---      packages/shared/src/currencies.ts; packages/shared/src/currencies.test.ts checks they match).
+--   1. The allow-list: the check constraint exchange_rates_currency_allowed and
+--      private.rate_currencies() (both the same list as RATE_CURRENCIES in
+--      packages/shared/src/currencies.ts; packages/shared/src/currencies.test.ts checks all three).
 --      PLN is not on the BoT list: it can only come from an admin override (Walter, 2026-11-27: source
 --      National Bank of Poland, the source name and rate date are shown with the estimate).
 --   2. public.exchange_rates: append-only. Only `status` may change (active -> ended, suspect -> active
 --      or ended), enforced by a trigger that also refuses deletes and truncate, for every role.
---      No client role can insert, update or delete; writes go through the functions below.
---      Anyone reads active rows (not `note` or `entered_by`); admins read everything through
---      public.admin_exchange_rates().
---   3. private.exchange_fetch_log (counts, ok flag, error code; never page content) and
---      private.exchange_rate_actions (who set, ended, used or ignored which row).
+--      No client role and not service_role can write to it directly; writes go through the
+--      security definer functions below. Anyone reads active rows (not `note` or `entered_by`);
+--      admins read everything through public.admin_exchange_rates().
+--   3. Private tables: exchange_fetch_log (counts, ok flag, error code; never page content),
+--      exchange_fetch_requests ("Fetch now" requests, for the 2-minute limit),
+--      exchange_override_pending (first calls of an override that needs confirming) and
+--      exchange_rate_actions (who set, ended, used or ignored which row).
 --   4. public.current_rates(): per currency, an active override whose valid_until is today or later
 --      wins; else the newest active BoT row at most 7 days old; else nothing. Empty when the switch
 --      feature.local_prices is off.
@@ -28,52 +32,40 @@
 --      mean = average, date not in the future and at most 7 days old; a currency more than 15% away
 --      from its last active BoT mean is saved as `suspect` and admins are alerted; without a good USD
 --      row nothing is saved and admins are alerted) and svc_exchange_fetch_failed.
---   6. Admin functions (two-step session): admin_rates_fetch_request ("Fetch now"),
---      admin_set_rate_override (source name required; more than 25% away from the BoT rate needs a
---      second call with p_confirm_far = true), admin_end_rate_override, admin_review_suspect_rate
---      ("Use anyway" / "Ignore"), admin_exchange_rates, admin_exchange_fetch_log,
---      admin_exchange_rate_actions.
+--   6. Scheduled helpers (created here, scheduled only by Walter): private.run_exchange_rates_fetch()
+--      calls the Edge Function with the key from Vault and does nothing without it;
+--      private.exchange_rates_watchdog() alerts admins when no fetch succeeded for 48 hours, even if the
+--      Edge Function never runs or never logs.
+--   7. Admin functions (two-step session): admin_rates_fetch_request ("Fetch now", recorded at once,
+--      one every 2 minutes), admin_set_rate_override (source name required; a rate more than 25% from
+--      the reference, or a first rate with no reference, is saved only by a second identical call
+--      with p_confirm_far = true within 10 minutes), admin_end_rate_override,
+--      admin_review_suspect_rate ("Use anyway" / "Ignore"), admin_exchange_rates,
+--      admin_exchange_fetch_log, admin_exchange_rate_actions.
 --
--- Schedule (NOT run by this migration; Walter follows supabase/README-exchange-rates.md). Secrets live in
+-- Schedule: NOT run by this migration. Walter runs these himself, in this order, following
+-- supabase/README-exchange-rates.md (step 5, where the same lines are ready to paste). Secrets go in
 -- Vault and the function's secrets, never in this file:
---   select vault.create_secret('https://<project>.supabase.co/functions/v1/exchange-rates', 'exchange_rates_url');
+--   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/exchange-rates', 'exchange_rates_url');
 --   select vault.create_secret('<EXCHANGE_RATES_SECRET>', 'exchange_rates_key');
---
---   create or replace function private.run_exchange_rates_fetch()
---   returns void
---   language plpgsql
---   security definer
---   set search_path = ''
---   as $fn$
---   declare
---     v_url text := (select decrypted_secret from vault.decrypted_secrets where name = 'exchange_rates_url');
---     v_key text := (select decrypted_secret from vault.decrypted_secrets where name = 'exchange_rates_key');
---   begin
---     if v_url is null or v_key is null then return; end if;
---     perform net.http_post(
---       url := v_url,
---       headers := jsonb_build_object('Content-Type', 'application/json', 'x-exchange-rates-key', v_key),
---       body := '{}'::jsonb,
---       timeout_milliseconds := 5000);
---   end;
---   $fn$;
---   revoke execute on function private.run_exchange_rates_fetch() from public, anon, authenticated;
---
 --   -- 10:00 and 16:00 East Africa time = 07:00 and 13:00 UTC (pg_cron runs in UTC).
 --   select cron.schedule('exchange-rates', '0 7,13 * * *', 'select private.run_exchange_rates_fetch()');
+--   select cron.schedule('exchange-rates-watchdog', '30 8 * * *', 'select private.exchange_rates_watchdog()');
 --
--- Undo (only while no rate is relied on; dropping the tables deletes their rows):
+-- Undo (only while no rate is relied on; dropping the tables deletes their rows), in this order:
 --   select cron.unschedule('exchange-rates');            -- if it was scheduled
---   drop function if exists private.run_exchange_rates_fetch();
+--   select cron.unschedule('exchange-rates-watchdog');   -- if it was scheduled
 --   drop function public.admin_exchange_rate_actions(int), public.admin_exchange_fetch_log(int),
 --     public.admin_exchange_rates(text, int), public.admin_review_suspect_rate(uuid, boolean),
 --     public.admin_end_rate_override(uuid),
 --     public.admin_set_rate_override(text, numeric, text, text, date, date, text, boolean),
 --     public.admin_rates_fetch_request(), public.svc_exchange_fetch_failed(text, text, uuid),
 --     public.svc_exchange_rates_save(jsonb, text, uuid, int, int), public.current_rates(),
---     private.exchange_rates_alert(text, jsonb, interval), private.exchange_rates_guard(),
+--     private.run_exchange_rates_fetch(), private.exchange_rates_watchdog();
+--   drop table private.exchange_rate_actions, private.exchange_override_pending,
+--     private.exchange_fetch_requests, private.exchange_fetch_log, public.exchange_rates;
+--   drop function private.exchange_rates_guard(), private.exchange_rates_alert(text, jsonb, interval),
 --     private.rate_currencies();
---   drop table private.exchange_rate_actions, private.exchange_fetch_log, public.exchange_rates;
 --   and delete the Vault secrets exchange_rates_url and exchange_rates_key in the dashboard if they were added.
 
 -- ---------------------------------------------------------------------------
@@ -87,14 +79,14 @@ set search_path = ''
 as $$
   select array[
     'AED', 'AUD', 'BIF', 'BWP', 'CAD', 'CHF', 'CNY', 'DKK', 'DZD', 'EUR', 'GBP', 'HKD', 'IDR', 'INR',
-    'IQD', 'IRR', 'JPY', 'KES', 'KRW', 'KWD', 'MWK', 'MYR', 'NAD', 'NGN', 'NOK', 'NZD', 'PKR', 'QAR',
-    'RWF', 'SAR', 'SEK', 'SGD', 'TRY', 'UGX', 'USD', 'ZAR', 'ZMW',
+    'IQD', 'JPY', 'KES', 'KRW', 'KWD', 'MWK', 'MYR', 'NAD', 'NGN', 'NOK', 'NZD', 'PKR', 'QAR', 'RWF',
+    'SAR', 'SEK', 'SGD', 'TRY', 'UGX', 'USD', 'ZAR', 'ZMW',
     'PLN'
   ]::text[];
 $$;
 
 comment on function private.rate_currencies() is
-  'Currencies that may have a rate. Same list as RATE_CURRENCIES in packages/shared/src/currencies.ts. PLN: admin override only.';
+  'Currencies that may have a rate. Same list as the check constraint exchange_rates_currency_allowed and RATE_CURRENCIES in packages/shared/src/currencies.ts. PLN: admin override only.';
 
 revoke execute on function private.rate_currencies() from public;
 grant execute on function private.rate_currencies() to anon, authenticated, service_role;
@@ -104,8 +96,7 @@ grant execute on function private.rate_currencies() to anon, authenticated, serv
 -- ---------------------------------------------------------------------------
 create table public.exchange_rates (
   id uuid primary key default gen_random_uuid(),
-  currency char(3) not null
-    check (currency ~ '^[A-Z]{3}$' and currency::text = any (private.rate_currencies())),
+  currency char(3) not null,
   tzs_per_unit numeric(18, 6) not null check (tzs_per_unit > 0),
   buying numeric(18, 6),
   selling numeric(18, 6),
@@ -119,6 +110,12 @@ create table public.exchange_rates (
   entered_by uuid, -- the admin who set an override; no foreign key, so the row outlives the account
   fetched_at timestamptz,
   created_at timestamptz not null default now(),
+  -- The allow-list (same list as private.rate_currencies() and RATE_CURRENCIES in currencies.ts).
+  constraint exchange_rates_currency_allowed check (currency in (
+    'AED', 'AUD', 'BIF', 'BWP', 'CAD', 'CHF', 'CNY', 'DKK', 'DZD', 'EUR', 'GBP', 'HKD', 'IDR', 'INR',
+    'IQD', 'JPY', 'KES', 'KRW', 'KWD', 'MWK', 'MYR', 'NAD', 'NGN', 'NOK', 'NZD', 'PKR', 'QAR', 'RWF',
+    'SAR', 'SEK', 'SGD', 'TRY', 'UGX', 'USD', 'ZAR', 'ZMW',
+    'PLN')),
   constraint exchange_rates_shape check (
     (source = 'bot'
       and buying is not null and selling is not null
@@ -182,6 +179,8 @@ create policy "Admins read all rates" on public.exchange_rates
   using ((select private.is_admin()));
 
 revoke all on public.exchange_rates from anon, authenticated;
+-- service_role keeps read access only: every write goes through the security definer functions.
+revoke insert, update, delete, truncate, references, trigger on public.exchange_rates from service_role;
 -- note and entered_by are left out on purpose; admins get them from admin_exchange_rates().
 grant select (id, currency, tzs_per_unit, buying, selling, source, source_name, source_url, rate_date,
               valid_until, status, fetched_at, created_at)
@@ -216,9 +215,30 @@ create table private.exchange_rate_actions (
   currency char(3) not null
 );
 
+-- "Fetch now" requests, written when a request is accepted (counted in the 2-minute limit at once).
+create table private.exchange_fetch_requests (
+  id bigint generated always as identity primary key,
+  at timestamptz not null default now(),
+  admin_id uuid not null
+);
+
+create index exchange_fetch_requests_at_idx on private.exchange_fetch_requests (at desc);
+
+-- First call of an override that needs confirming; the second, identical call must come within 10 minutes.
+create table private.exchange_override_pending (
+  admin_id uuid not null,
+  currency char(3) not null,
+  tzs_per_unit numeric(18, 6) not null,
+  created_at timestamptz not null default now(),
+  primary key (admin_id, currency)
+);
+
 alter table private.exchange_fetch_log enable row level security;
+alter table private.exchange_fetch_requests enable row level security;
+alter table private.exchange_override_pending enable row level security;
 alter table private.exchange_rate_actions enable row level security;
-revoke all on private.exchange_fetch_log, private.exchange_rate_actions from public, anon, authenticated;
+revoke all on private.exchange_fetch_log, private.exchange_fetch_requests, private.exchange_override_pending,
+  private.exchange_rate_actions from public, anon, authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
 -- 4. What screens use
@@ -414,9 +434,10 @@ $$;
 revoke all on function public.svc_exchange_rates_save(jsonb, text, uuid, int, int) from public, anon, authenticated;
 grant execute on function public.svc_exchange_rates_save(jsonb, text, uuid, int, int) to service_role;
 
--- A run that read nothing. A changed page (no_table, no_rows, no_usd) alerts at once; a site that does
--- not answer alerts only when there was no good run in the last 48 hours (BoT often refuses a
--- connection, and publishes on working days only). At most one alert every 12 hours.
+-- A run that read nothing. A changed or moved page, a page not updated for more than 7 days, or a
+-- failure on our side alerts at once; a site that does not answer (timeout, network, http_status)
+-- alerts only when there was no good run in the last 48 hours (BoT often refuses a connection, and
+-- publishes on working days only). At most one alert every 12 hours.
 create or replace function public.svc_exchange_fetch_failed(p_error text, p_trigger text, p_requested_by uuid default null)
 returns void
 language plpgsql
@@ -431,7 +452,7 @@ begin
   end if;
   insert into private.exchange_fetch_log (trigger, requested_by, ok, error_code)
   values (p_trigger, p_requested_by, false, v_error);
-  if v_error in ('no_table', 'no_rows', 'no_usd')
+  if v_error not in ('timeout', 'network', 'http_status')
      or not exists (select 1 from private.exchange_fetch_log l where l.ok and l.run_at > now() - interval '48 hours') then
     perform private.exchange_rates_alert('exchange_rates_failed', jsonb_build_object('error', v_error), interval '12 hours');
   end if;
@@ -442,35 +463,87 @@ revoke all on function public.svc_exchange_fetch_failed(text, text, uuid) from p
 grant execute on function public.svc_exchange_fetch_failed(text, text, uuid) to service_role;
 
 -- ---------------------------------------------------------------------------
--- 6. Admin functions (private.is_admin() requires a two-step session)
+-- 6. Scheduled helpers (created here; Walter schedules them, see the header and the README)
 -- ---------------------------------------------------------------------------
--- "Fetch now": the Edge Function calls this with the admin's own token. Returns the admin's id.
--- At most one admin fetch every 2 minutes.
-create or replace function public.admin_rates_fetch_request()
-returns uuid
+-- Calls the Edge Function with the key from Vault. Without the Vault entries it does nothing.
+-- The function answers at once (202) and works in the background, so 30 s is plenty.
+create or replace function private.run_exchange_rates_fetch()
+returns void
 language plpgsql
-stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_url text := (select decrypted_secret from vault.decrypted_secrets where name = 'exchange_rates_url');
+  v_key text := (select decrypted_secret from vault.decrypted_secrets where name = 'exchange_rates_key');
+begin
+  if v_url is null or v_key is null then return; end if;
+  perform net.http_post(
+    url := v_url,
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-exchange-rates-key', v_key),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 30000);
+end;
+$$;
+
+revoke execute on function private.run_exchange_rates_fetch() from public, anon, authenticated, service_role;
+
+-- Safety net that does not depend on the Edge Function: no good fetch logged in 48 hours (or none at
+-- all) alerts every admin, at most once every 12 hours.
+create or replace function private.exchange_rates_watchdog()
+returns void
+language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
+  if not exists (select 1 from private.exchange_fetch_log l where l.ok and l.run_at > now() - interval '48 hours') then
+    perform private.exchange_rates_alert('exchange_rates_failed', jsonb_build_object('error', 'no_good_run_48h'), interval '12 hours');
+  end if;
+end;
+$$;
+
+revoke execute on function private.exchange_rates_watchdog() from public, anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- 7. Admin functions (private.is_admin() requires a two-step session)
+-- ---------------------------------------------------------------------------
+-- "Fetch now": the Edge Function calls this with the admin's own token, before it starts. The request
+-- is recorded at once, so a second request within 2 minutes is refused even while the first is still
+-- running. Returns the admin's id.
+create or replace function public.admin_rates_fetch_request()
+returns uuid
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  v_admin uuid := (select auth.uid());
+begin
   if not private.is_admin() then
     raise exception 'admins with two-step sign-in only' using errcode = '42501';
   end if;
-  if exists (select 1 from private.exchange_fetch_log l
-              where l.trigger = 'admin' and l.run_at > now() - interval '2 minutes') then
-    raise exception 'a fetch ran less than 2 minutes ago' using errcode = 'P0001';
+  -- One request at a time across admins (the lock is released at the end of this call).
+  perform pg_advisory_xact_lock(hashtext('exchange_rates_fetch_request'));
+  if exists (select 1 from private.exchange_fetch_requests r where r.at > now() - interval '2 minutes') then
+    raise exception 'a fetch was requested less than 2 minutes ago' using errcode = 'P0001';
   end if;
-  return (select auth.uid());
+  insert into private.exchange_fetch_requests (admin_id) values (v_admin);
+  return v_admin;
 end;
 $$;
 
 revoke all on function public.admin_rates_fetch_request() from public, anon;
 grant execute on function public.admin_rates_fetch_request() to authenticated;
 
--- Returns {saved: true, id} or, when the rate is more than 25% from the current BoT rate and
--- p_confirm_far is false, {saved: false, needs_confirm: true, bot_rate, diff_pct} without saving.
--- A new override ends the currency's earlier active override.
+-- Returns {saved: true, id} or {saved: false, needs_confirm: true, reason, reference_rate, diff_pct}.
+-- Reference: the current BoT rate (at most 7 days old); without one, the newest override for that
+-- currency (PLN always works this way). Confirming is needed when the rate is more than 25% from the
+-- reference ('far') or there is no reference at all ('first'). Then the first call saves nothing and
+-- remembers the rate; only a second call by the same admin, for the same currency and the same rate,
+-- with p_confirm_far = true and within 10 minutes, saves it. p_confirm_far on its own never skips
+-- the check. A new override ends the currency's earlier active override.
 create or replace function public.admin_set_rate_override(
   p_currency text, p_tzs_per_unit numeric, p_source_name text, p_source_url text,
   p_rate_date date, p_valid_until date, p_note text default null, p_confirm_far boolean default false)
@@ -487,8 +560,9 @@ declare
   v_url text := nullif(btrim(coalesce(p_source_url, '')), '');
   v_note text := nullif(btrim(coalesce(p_note, '')), '');
   v_rate numeric := round(p_tzs_per_unit, 6);
-  v_bot numeric;
+  v_ref numeric;
   v_diff numeric;
+  v_reason text;
   v_old uuid;
   v_id uuid;
 begin
@@ -517,17 +591,38 @@ begin
     raise exception 'note is at most 300 characters' using errcode = '22023';
   end if;
 
-  select r.tzs_per_unit into v_bot
+  select r.tzs_per_unit into v_ref
     from public.exchange_rates r
    where r.currency = v_currency and r.source = 'bot' and r.status = 'active'
      and r.rate_date between v_today - 7 and v_today
    order by r.rate_date desc, r.created_at desc
    limit 1;
-  if v_bot is not null then
-    v_diff := abs(v_rate - v_bot) / v_bot;
-    if (v_diff > 0.25) and not coalesce(p_confirm_far, false) then
-      return jsonb_build_object('saved', false, 'needs_confirm', true, 'bot_rate', v_bot,
-                                'diff_pct', round(v_diff * 100, 1));
+  if v_ref is null then
+    select r.tzs_per_unit into v_ref
+      from public.exchange_rates r
+     where r.currency = v_currency and r.source = 'admin'
+     order by r.created_at desc
+     limit 1;
+  end if;
+  if v_ref is null then
+    v_reason := 'first';
+  else
+    v_diff := abs(v_rate - v_ref) / v_ref;
+    if v_diff > 0.25 then v_reason := 'far'; end if;
+  end if;
+
+  if v_reason is not null then
+    if coalesce(p_confirm_far, false) and exists (
+         select 1 from private.exchange_override_pending p
+          where p.admin_id = v_admin and p.currency = v_currency and p.tzs_per_unit = v_rate
+            and p.created_at > now() - interval '10 minutes') then
+      delete from private.exchange_override_pending p where p.admin_id = v_admin and p.currency = v_currency;
+    else
+      insert into private.exchange_override_pending (admin_id, currency, tzs_per_unit)
+      values (v_admin, v_currency, v_rate)
+      on conflict (admin_id, currency) do update set tzs_per_unit = excluded.tzs_per_unit, created_at = now();
+      return jsonb_build_object('saved', false, 'needs_confirm', true, 'reason', v_reason,
+                                'reference_rate', v_ref, 'diff_pct', round(v_diff * 100, 1));
     end if;
   end if;
 
@@ -546,7 +641,7 @@ begin
   returning id into v_id;
 
   insert into private.exchange_rate_actions (admin_id, action, rate_id, currency)
-  values (v_admin, case when v_diff > 0.25 then 'override_set_far' else 'override_set' end, v_id, v_currency);
+  values (v_admin, case when v_reason is not null then 'override_set_far' else 'override_set' end, v_id, v_currency);
 
   return jsonb_build_object('saved', true, 'id', v_id);
 end;
